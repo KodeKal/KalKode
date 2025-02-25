@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/components/shop/FeaturedItem,js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1738039975448,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1738039975448,
+            "name": "Commit-0",
+            "content": "// src/components/shop/FeaturedItem.js\r\n\r\nimport React from 'react';\r\nimport styled from 'styled-components';\r\nimport { useNavigate } from 'react-router-dom';\r\n\r\nconst ItemCard = styled.div`\r\n  background: rgba(0, 0, 0, 0.4);\r\n  border-radius: 12px;\r\n  overflow: hidden;\r\n  border: 1px solid rgba(128, 0, 0, 0.3);\r\n  cursor: pointer;\r\n  transition: all 0.3s ease;\r\n\r\n  &:hover {\r\n    transform: translateY(-5px);\r\n    border-color: #800000;\r\n  }\r\n`;\r\n\r\nconst ImageContainer = styled.div`\r\n  position: relative;\r\n  width: 100%;\r\n  height: 200px;\r\n  overflow: hidden;\r\n\r\n  img {\r\n    width: 100%;\r\n    height: 100%;\r\n    object-fit: cover;\r\n  }\r\n`;\r\n\r\nconst ItemInfo = styled.div`\r\n  padding: 1rem;\r\n\r\n  h3 {\r\n    font-size: 1.2rem;\r\n    margin-bottom: 0.5rem;\r\n    color: #FFFFFF;\r\n  }\r\n\r\n  .price {\r\n    font-size: 1.1rem;\r\n    color: #800000;\r\n    font-weight: bold;\r\n  }\r\n\r\n  .shop-name {\r\n    font-size: 0.9rem;\r\n    color: rgba(255, 255, 255, 0.7);\r\n    margin-top: 0.5rem;\r\n  }\r\n`;\r\n\r\nconst FeaturedItem = ({ item }) => {\r\n  const navigate = useNavigate();\r\n  \r\n  // Format price with error handling\r\n  const formatPrice = (price) => {\r\n    try {\r\n      return parseFloat(price).toFixed(2);\r\n    } catch {\r\n      return '0.00';\r\n    }\r\n  };\r\n\r\n  // Get the first valid image or fallback\r\n  const getDisplayImage = () => {\r\n    if (item.images && Array.isArray(item.images)) {\r\n      const validImage = item.images.find(img => img);\r\n      return validImage || '/placeholder-image.jpg';  // Add a placeholder image\r\n    }\r\n    return '/placeholder-image.jpg';\r\n  };\r\n\r\n  return (\r\n    <ItemCard onClick={() => navigate(`/shop/${item.shopId}`)}>\r\n      <ImageContainer>\r\n        <img \r\n          src={getDisplayImage()} \r\n          alt={item.name}\r\n          onError={(e) => {\r\n            e.target.onerror = null;\r\n            e.target.src = '/placeholder-image.jpg';\r\n          }}\r\n        />\r\n      </ImageContainer>\r\n      <ItemInfo>\r\n        <h3>{item.name}</h3>\r\n        <div className=\"price\">${formatPrice(item.price)}</div>\r\n        <div className=\"shop-name\">{item.shopName || 'Unknown Shop'}</div>\r\n      </ItemInfo>\r\n    </ItemCard>\r\n  );\r\n};\r\n\r\nexport default FeaturedItem;"
+        }
+    ]
+}

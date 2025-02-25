@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/pages/shop/ShopDiscovery.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1736990206824,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1736990206824,
+            "name": "Commit-0",
+            "content": "// Save this file at: src/pages/ShopDiscovery.js\r\nimport React, { useState, useEffect } from 'react';\r\nimport styled from 'styled-components';\r\nimport { useNavigate } from 'react-router-dom';\r\nimport { collection, query, where, getDocs } from 'firebase/firestore';\r\nimport { db } from '../firebase/config';\r\nimport MapView from '../components/Map/MapView';\r\n\r\nconst DiscoveryContainer = styled.div`\r\n  min-height: 100vh;\r\n  background: ${props => props.theme?.colors?.background || '#000000'};\r\n  color: ${props => props.theme?.colors?.text || '#FFFFFF'};\r\n  padding: 2rem;\r\n`;\r\n\r\nconst Header = styled.div`\r\n  text-align: center;\r\n  margin-bottom: 2rem;\r\n\r\n  h1 {\r\n    font-size: 2.5rem;\r\n    margin-bottom: 1rem;\r\n    color: ${props => props.theme?.colors?.accent};\r\n  }\r\n`;\r\n\r\nconst ShopDiscovery = () => {\r\n  const navigate = useNavigate();\r\n  const [shops, setShops] = useState([]);\r\n  const [loading, setLoading] = useState(true);\r\n\r\n  useEffect(() => {\r\n    const fetchShops = async () => {\r\n      try {\r\n        const shopsRef = collection(db, 'shops');\r\n        const q = query(shopsRef, where('status', '==', 'active'));\r\n        const querySnapshot = await getDocs(q);\r\n        \r\n        const shopsData = querySnapshot.docs.map(doc => ({\r\n          id: doc.id,\r\n          ...doc.data()\r\n        }));\r\n        \r\n        setShops(shopsData);\r\n      } catch (error) {\r\n        console.error('Error fetching shops:', error);\r\n      } finally {\r\n        setLoading(false);\r\n      }\r\n    };\r\n\r\n    fetchShops();\r\n  }, []);\r\n\r\n  const handleShopClick = (shopId) => {\r\n    navigate(`/shop/${shopId}`);\r\n  };\r\n\r\n  if (loading) {\r\n    return <div>Loading...</div>;\r\n  }\r\n\r\n  return (\r\n    <DiscoveryContainer>\r\n      <Header>\r\n        <h1>Discover Shops</h1>\r\n        <p>Find unique creators in your area</p>\r\n      </Header>\r\n      \r\n      <MapView \r\n        shops={shops} \r\n        onShopClick={handleShopClick}\r\n      />\r\n    </DiscoveryContainer>\r\n  );\r\n};\r\n\r\nexport default ShopDiscovery;"
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/theme/theme.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1735712211565,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1735712211565,
+            "name": "Commit-0",
+            "content": "// src/theme/theme.js\r\nexport const DEFAULT_THEME = {\r\n    colors: {\r\n      background: '#000000',\r\n      text: '#FFFFFF',\r\n      primary: '#800000',\r\n      secondary: '#4A0404',\r\n      accent: '#800000',\r\n      surface: 'rgba(255, 255, 255, 0.05)'\r\n    },\r\n    fonts: {\r\n      heading: \"'Space Grotesk', sans-serif\",\r\n      body: \"'Inter', sans-serif\"\r\n    },\r\n    styles: {\r\n      borderRadius: '12px',\r\n      containerWidth: '1400px'\r\n    }\r\n  };"
+        }
+    ]
+}

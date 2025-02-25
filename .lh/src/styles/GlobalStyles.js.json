@@ -1,0 +1,30 @@
+{
+    "sourceFile": "src/styles/GlobalStyles.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 3,
+            "patches": [
+                {
+                    "date": 1735709967170,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1735711813864,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,4 +1,5 @@\n+// src/styles/GlobalStyles.js\r\n import { createGlobalStyle } from 'styled-components';\r\n \r\n export const GlobalStyles = createGlobalStyle`\r\n   body {\r\n@@ -6,5 +7,41 @@\n     margin: 0;\r\n     padding: 0;\r\n     min-height: 100vh;\r\n   }\r\n+\r\n+  /* Custom Scrollbar Styles */\r\n+  ::-webkit-scrollbar {\r\n+    width: 10px;\r\n+    background: transparent;\r\n+  }\r\n+\r\n+  ::-webkit-scrollbar-track {\r\n+    background: transparent;\r\n+  }\r\n+\r\n+  ::-webkit-scrollbar-thumb {\r\n+    background: rgba(255, 255, 255, 0.1);\r\n+    border-radius: 10px;\r\n+    border: 2px solid transparent;\r\n+    background-clip: padding-box;\r\n+  }\r\n+\r\n+  ::-webkit-scrollbar-thumb:hover {\r\n+    background: rgba(255, 255, 255, 0.2);\r\n+    border: 2px solid transparent;\r\n+    background-clip: padding-box;\r\n+  }\r\n+\r\n+  /* Firefox scrollbar */\r\n+  * {\r\n+    scrollbar-width: thin;\r\n+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;\r\n+  }\r\n+\r\n+  /* Hide scrollbar when not needed */\r\n+  @media screen and (min-height: 100vh) {\r\n+    body:not(:hover)::-webkit-scrollbar {\r\n+      display: none;\r\n+    }\r\n+  }\r\n `;\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1735712038742,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,36 @@\n // src/styles/GlobalStyles.js\r\n-import { createGlobalStyle } from 'styled-components';\r\n+import { createGlobalStyle, css } from 'styled-components';\r\n \r\n+// Create reusable scroll bar style\r\n+export const ScrollableContainer = css`\r\n+  ::-webkit-scrollbar {\r\n+    width: 8px;\r\n+    background: transparent;\r\n+  }\r\n+\r\n+  ::-webkit-scrollbar-track {\r\n+    background: transparent;\r\n+  }\r\n+\r\n+  ::-webkit-scrollbar-thumb {\r\n+    background: rgba(255, 255, 255, 0.1);\r\n+    border-radius: 8px;\r\n+    border: 2px solid transparent;\r\n+    background-clip: padding-box;\r\n+  }\r\n+\r\n+  ::-webkit-scrollbar-thumb:hover {\r\n+    background: rgba(255, 255, 255, 0.2);\r\n+    border: 2px solid transparent;\r\n+    background-clip: padding-box;\r\n+  }\r\n+\r\n+  /* Firefox */\r\n+  scrollbar-width: thin;\r\n+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;\r\n+`;\r\n+\r\n export const GlobalStyles = createGlobalStyle`\r\n   body {\r\n     background: #0B0B3B;\r\n     margin: 0;\r\n"
+                },
+                {
+                    "date": 1735713244828,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,76 +1,21 @@\n // src/styles/GlobalStyles.js\r\n-import { createGlobalStyle, css } from 'styled-components';\r\n+import { createGlobalStyle } from 'styled-components';\r\n \r\n-// Create reusable scroll bar style\r\n-export const ScrollableContainer = css`\r\n-  ::-webkit-scrollbar {\r\n-    width: 8px;\r\n-    background: transparent;\r\n-  }\r\n-\r\n-  ::-webkit-scrollbar-track {\r\n-    background: transparent;\r\n-  }\r\n-\r\n-  ::-webkit-scrollbar-thumb {\r\n-    background: rgba(255, 255, 255, 0.1);\r\n-    border-radius: 8px;\r\n-    border: 2px solid transparent;\r\n-    background-clip: padding-box;\r\n-  }\r\n-\r\n-  ::-webkit-scrollbar-thumb:hover {\r\n-    background: rgba(255, 255, 255, 0.2);\r\n-    border: 2px solid transparent;\r\n-    background-clip: padding-box;\r\n-  }\r\n-\r\n-  /* Firefox */\r\n-  scrollbar-width: thin;\r\n-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;\r\n-`;\r\n-\r\n export const GlobalStyles = createGlobalStyle`\r\n   body {\r\n     background: #0B0B3B;\r\n     margin: 0;\r\n     padding: 0;\r\n     min-height: 100vh;\r\n   }\r\n \r\n-  /* Custom Scrollbar Styles */\r\n-  ::-webkit-scrollbar {\r\n-    width: 10px;\r\n-    background: transparent;\r\n-  }\r\n-\r\n-  ::-webkit-scrollbar-track {\r\n-    background: transparent;\r\n-  }\r\n-\r\n-  ::-webkit-scrollbar-thumb {\r\n-    background: rgba(255, 255, 255, 0.1);\r\n-    border-radius: 10px;\r\n-    border: 2px solid transparent;\r\n-    background-clip: padding-box;\r\n-  }\r\n-\r\n-  ::-webkit-scrollbar-thumb:hover {\r\n-    background: rgba(255, 255, 255, 0.2);\r\n-    border: 2px solid transparent;\r\n-    background-clip: padding-box;\r\n-  }\r\n-\r\n-  /* Firefox scrollbar */\r\n+  /* Hide scrollbars but keep functionality */\r\n   * {\r\n-    scrollbar-width: thin;\r\n-    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;\r\n+    -ms-overflow-style: none;  /* IE and Edge */\r\n+    scrollbar-width: none;  /* Firefox */\r\n   }\r\n \r\n-  /* Hide scrollbar when not needed */\r\n-  @media screen and (min-height: 100vh) {\r\n-    body:not(:hover)::-webkit-scrollbar {\r\n-      display: none;\r\n-    }\r\n+  *::-webkit-scrollbar {\r\n+    display: none;  /* Chrome, Safari and Opera */\r\n   }\r\n `;\n\\ No newline at end of file\n"
+                }
+            ],
+            "date": 1735709967169,
+            "name": "Commit-0",
+            "content": "import { createGlobalStyle } from 'styled-components';\r\n\r\nexport const GlobalStyles = createGlobalStyle`\r\n  body {\r\n    background: #0B0B3B;\r\n    margin: 0;\r\n    padding: 0;\r\n    min-height: 100vh;\r\n  }\r\n`;"
+        }
+    ]
+}

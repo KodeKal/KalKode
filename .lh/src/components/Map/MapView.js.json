@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/components/Map/MapView.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1736990213087,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1736990213087,
+            "name": "Commit-0",
+            "content": "// Save this file at: src/components/Map/MapView.js\r\nimport React from 'react';\r\nimport styled from 'styled-components';\r\nimport { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';\r\nimport 'leaflet/dist/leaflet.css';\r\nimport L from 'leaflet';\r\n\r\n// Fix for default marker icons\r\ndelete L.Icon.Default.prototype._getIconUrl;\r\nL.Icon.Default.mergeOptions({\r\n  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),\r\n  iconUrl: require('leaflet/dist/images/marker-icon.png'),\r\n  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),\r\n});\r\n\r\nconst MapWrapper = styled.div`\r\n  width: 100%;\r\n  height: 600px;\r\n  border-radius: 12px;\r\n  overflow: hidden;\r\n  \r\n  .leaflet-container {\r\n    width: 100%;\r\n    height: 100%;\r\n  }\r\n`;\r\n\r\nconst ShopPopup = styled(Popup)`\r\n  .leaflet-popup-content-wrapper {\r\n    background: rgba(0, 0, 0, 0.8);\r\n    color: white;\r\n    border-radius: 8px;\r\n  }\r\n\r\n  .leaflet-popup-tip {\r\n    background: rgba(0, 0, 0, 0.8);\r\n  }\r\n\r\n  h3 {\r\n    margin: 0 0 0.5rem 0;\r\n    color: ${props => props.theme?.colors?.accent};\r\n  }\r\n`;\r\n\r\nconst MapView = ({ shops, onShopClick }) => {\r\n  // Center on US by default\r\n  const defaultCenter = [39.8283, -98.5795];\r\n  const defaultZoom = 4;\r\n\r\n  return (\r\n    <MapWrapper>\r\n      <MapContainer \r\n        center={defaultCenter} \r\n        zoom={defaultZoom} \r\n        scrollWheelZoom={true}\r\n      >\r\n        <TileLayer\r\n          attribution='&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>'\r\n          url=\"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png\"\r\n        />\r\n        {shops.map(shop => (\r\n          shop.location?.coordinates && (\r\n            <Marker\r\n              key={shop.id}\r\n              position={[shop.location.coordinates.lat, shop.location.coordinates.lng]}\r\n            >\r\n              <ShopPopup>\r\n                <h3>{shop.name}</h3>\r\n                <p>{shop.description?.slice(0, 100)}...</p>\r\n                <button onClick={() => onShopClick(shop.id)}>\r\n                  View Shop\r\n                </button>\r\n              </ShopPopup>\r\n            </Marker>\r\n          )\r\n        ))}\r\n      </MapContainer>\r\n    </MapWrapper>\r\n  );\r\n};\r\n\r\nexport default MapView;"
+        }
+    ]
+}

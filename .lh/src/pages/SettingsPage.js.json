@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/pages/SettingsPage.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1735689499126,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1735690453735,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,23 +1,40 @@\n-// src/pages/SettingsPage.js\r\n+// src/pages/shop/SettingsPage.js\r\n import React from 'react';\r\n import styled from 'styled-components';\r\n-import { DEFAULT_THEME } from './shop/LiveShopCreation';\r\n-import NavMenu from './shop/components/NavMenu';\r\n+import NavMenu from './components/NavMenu';\r\n+import { DEFAULT_THEME } from './LiveShopCreation';\r\n \r\n const PageContainer = styled.div`\r\n   min-height: 100vh;\r\n-  background: ${props => props.theme?.colors?.background || DEFAULT_THEME.colors.background};\r\n-  color: ${props => props.theme?.colors?.text || DEFAULT_THEME.colors.text};\r\n+  background: linear-gradient(to bottom, #0B0B3B, #1A1A4C);\r\n+  color: #FFFFFF;\r\n   padding: 2rem;\r\n `;\r\n \r\n+const SettingsContainer = styled.div`\r\n+  max-width: 800px;\r\n+  margin: 0 auto;\r\n+`;\r\n+\r\n+const SettingsHeader = styled.header`\r\n+  margin-bottom: 2rem;\r\n+  h1 {\r\n+    font-size: 2rem;\r\n+    color: #FFFFFF;\r\n+  }\r\n+`;\r\n+\r\n const SettingsPage = () => {\r\n   return (\r\n     <PageContainer>\r\n-      <NavMenu />\r\n-      <h1>Settings</h1>\r\n-      <p>Settings page coming soon...</p>\r\n+      <NavMenu theme={DEFAULT_THEME} />\r\n+      <SettingsContainer>\r\n+        <SettingsHeader>\r\n+          <h1>Shop Settings</h1>\r\n+        </SettingsHeader>\r\n+        {/* Settings content will go here */}\r\n+      </SettingsContainer>\r\n     </PageContainer>\r\n   );\r\n };\r\n \r\n"
+                }
+            ],
+            "date": 1735689499126,
+            "name": "Commit-0",
+            "content": "// src/pages/SettingsPage.js\r\nimport React from 'react';\r\nimport styled from 'styled-components';\r\nimport { DEFAULT_THEME } from './shop/LiveShopCreation';\r\nimport NavMenu from './shop/components/NavMenu';\r\n\r\nconst PageContainer = styled.div`\r\n  min-height: 100vh;\r\n  background: ${props => props.theme?.colors?.background || DEFAULT_THEME.colors.background};\r\n  color: ${props => props.theme?.colors?.text || DEFAULT_THEME.colors.text};\r\n  padding: 2rem;\r\n`;\r\n\r\nconst SettingsPage = () => {\r\n  return (\r\n    <PageContainer>\r\n      <NavMenu />\r\n      <h1>Settings</h1>\r\n      <p>Settings page coming soon...</p>\r\n    </PageContainer>\r\n  );\r\n};\r\n\r\nexport default SettingsPage;"
+        }
+    ]
+}

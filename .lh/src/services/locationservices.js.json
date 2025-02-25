@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/services/locationservices.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1736990214681,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1736990983335,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,17 +1,14 @@\n // Save this file at: src/services/locationService.js\r\n import axios from 'axios';\r\n \r\n-const ZIPCODE_API_KEY = 'YOUR_API_KEY'; // You'll need to get an API key from a geocoding service\r\n-\r\n export const validateZipCode = (zipCode) => {\r\n   const zipRegex = /^\\d{5}$/;\r\n   return zipRegex.test(zipCode);\r\n };\r\n \r\n export const getCoordinatesFromZip = async (zipCode) => {\r\n   try {\r\n-    // Using the free nominatim service (consider using a paid service for production)\r\n     const response = await axios.get(\r\n       `https://nominatim.openstreetmap.org/search?postalcode=${zipCode}&country=US&format=json`\r\n     );\r\n \r\n@@ -20,9 +17,9 @@\n         lat: parseFloat(response.data[0].lat),\r\n         lng: parseFloat(response.data[0].lon)\r\n       };\r\n     }\r\n-    throw new Error('Location not found');\r\n+    return null;\r\n   } catch (error) {\r\n     console.error('Error getting coordinates:', error);\r\n     return null;\r\n   }\r\n"
+                }
+            ],
+            "date": 1736990214681,
+            "name": "Commit-0",
+            "content": "// Save this file at: src/services/locationService.js\r\nimport axios from 'axios';\r\n\r\nconst ZIPCODE_API_KEY = 'YOUR_API_KEY'; // You'll need to get an API key from a geocoding service\r\n\r\nexport const validateZipCode = (zipCode) => {\r\n  const zipRegex = /^\\d{5}$/;\r\n  return zipRegex.test(zipCode);\r\n};\r\n\r\nexport const getCoordinatesFromZip = async (zipCode) => {\r\n  try {\r\n    // Using the free nominatim service (consider using a paid service for production)\r\n    const response = await axios.get(\r\n      `https://nominatim.openstreetmap.org/search?postalcode=${zipCode}&country=US&format=json`\r\n    );\r\n\r\n    if (response.data && response.data[0]) {\r\n      return {\r\n        lat: parseFloat(response.data[0].lat),\r\n        lng: parseFloat(response.data[0].lon)\r\n      };\r\n    }\r\n    throw new Error('Location not found');\r\n  } catch (error) {\r\n    console.error('Error getting coordinates:', error);\r\n    return null;\r\n  }\r\n};"
+        }
+    ]
+}

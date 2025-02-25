@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/pages/shop/components/EditableComponents/EditableText.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1736264862764,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1736264862764,
+            "name": "Commit-0",
+            "content": "// src/pages/shop/components/EditableComponents/EditableText.js\nimport React from 'react';\nimport styled from 'styled-components';\n\nconst TextInput = styled.input`\n  width: 100%;\n  background: transparent;\n  border: none;\n  text-align: center;\n  color: inherit;\n  font-size: inherit;\n  font-family: inherit;\n  padding: 0.5rem;\n  outline: none;\n  \n  &::placeholder {\n    color: rgba(255, 255, 255, 0.5);\n  }\n\n  &:focus {\n    background: rgba(255, 255, 255, 0.05);\n  }\n`;\n\nconst TextArea = styled.textarea`\n  width: 100%;\n  background: transparent;\n  border: none;\n  text-align: center;\n  color: inherit;\n  font-size: inherit;\n  font-family: inherit;\n  padding: 0.5rem;\n  resize: none;\n  outline: none;\n  min-height: ${props => props.multiline ? '100px' : 'auto'};\n  \n  &::placeholder {\n    color: rgba(255, 255, 255, 0.5);\n  }\n\n  &:focus {\n    background: rgba(255, 255, 255, 0.05);\n  }\n`;\n\nconst EditableText = ({\n  value,\n  onChange,\n  placeholder = 'Enter text',\n  multiline = false,\n  style = {},\n  ...props\n}) => {\n  const handleChange = (e) => {\n    onChange(e.target.value);\n  };\n\n  const Component = multiline ? TextArea : TextInput;\n\n  return (\n    <Component\n      value={value || ''}\n      onChange={handleChange}\n      placeholder={placeholder}\n      style={style}\n      {...props}\n    />\n  );\n};\n\nexport default EditableText;"
+        }
+    ]
+}
