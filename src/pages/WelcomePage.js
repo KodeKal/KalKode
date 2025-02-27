@@ -153,8 +153,8 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
     border-radius: 50%;
     background: ${props => props.theme?.colors?.accent || '#800000'};
     pointer-events: none;
-    display: ${props => props.theme?.animations?.pingAnimation ? 'block' : 'none'};
-    z-index: 0; // Set a low z-index to ensure it's behind other content
+    display: block;
+    z-index: 0; 
   }
 
   /* Updated ping animation to be 1/3 the size */
@@ -163,8 +163,8 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 67px; // Reduced from 200px to about 1/3
-    height: 67px; // Reduced from 200px to about 1/3
+    width: 40px; // Reduced from 200px to about 1/3
+    height: 40px; // Reduced from 200px to about 1/3
     border-radius: 50%;
     background: transparent;
     border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
@@ -1322,21 +1322,12 @@ React.useEffect(() => {
               </MotivationalMessage>
             </>
           ) : (
-            // Non-logged in view (original)
             <>
               <h1>Welcome to KalKode</h1>
               <p>Join the underground marketplace where local creators thrive. </p>
               <p>Build your empire and discover unique treasures.</p>
-            </>
-          )}
-          
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
-            {isAuthenticated ? (
-              <ActionButton theme={currentStyle} onClick={() => navigate('/shop/dashboard')}>
-                My Dashboard
-              </ActionButton>
-            ) : (
-              <>
+
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
                 <ActionButton theme={currentStyle} onClick={handleOpenShop}>Open Up Shop</ActionButton>
                 <ActionButton 
                   theme={currentStyle}
@@ -1349,9 +1340,9 @@ React.useEffect(() => {
                 >
                   Sign In
                 </ActionButton>
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </WelcomeSection>
 
         <TabContainer>

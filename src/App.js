@@ -18,6 +18,7 @@ import VerifyEmail from './pages/auth/VerifyEmail';
 import ShopDashboard from './pages/shop/ShopDashboard';
 import ProfilePage from './pages/shop/ProfilePage.js';
 import NotificationsPage from './pages/shop/NotificationsPage.js';
+import ShopPublicView from './pages/shop/shopPublicView.js';
 
 // Create a new component for the routes
 const AppRoutes = () => {
@@ -36,6 +37,7 @@ const AppRoutes = () => {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/shop/create/template" element={<LiveShopCreation />} />
         <Route path="/shop/:userId" element={<ShopPage />} />
+        <Route path="/shop/:shopId/view" element={<ShopPublicView />} />
 
         {/* Protected Routes */}
         <Route path="/shop/dashboard" element={
