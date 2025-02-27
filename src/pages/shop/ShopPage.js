@@ -17,52 +17,310 @@ import AddressInput from '../../components/shop/AddressInput';
 import ThemeSelector from '../../components/ThemeSelector/ThemeSelector';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 
-// First, update the ItemCard styling:
+const ShopProfileSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 800px;
+  margin: 2rem auto 4rem;
+  padding: 2rem;
+
+  .profile-image {
+    margin-bottom: 1rem;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.1);
+    border: 3px solid ${props => props.theme?.colors?.accent || '#800000'};
+    box-shadow: 0 0 20px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+    transition: all 0.3s ease;
+    
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 25px ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
+    }
+  }
+
+  .shop-name-container {
+    width: 100%;
+    margin: 0.5rem 0;
+
+    input {
+      width: 100%;
+      text-align: center;
+      background: transparent;
+      border: none;
+      font-size: ${props => props.fontSize || '2.5rem'};
+      font-family: ${props => props.theme?.fonts?.heading || "'Space Grotesk', sans-serif"};
+      color: ${props => props.theme?.colors?.accent || '#800000'};
+      background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      outline: none;
+      padding: 0.5rem;
+      transition: all 0.3s ease;
+
+      &:focus {
+        transform: scale(1.02);
+      }
+
+      &::placeholder {
+        background: ${props => props.theme?.colors?.accentGradient ? 
+          `${props.theme.colors.accentGradient.replace(')', '80)')}` : 
+          'linear-gradient(45deg, rgba(128, 0, 0, 0.8), rgba(74, 4, 4, 0.8))'};
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+    }
+  }
+
+  .shop-description-container {
+    width: 100%;
+    margin-top: 0.25rem;
+
+    textarea {
+      width: 100%;
+      text-align: center;
+      background: transparent;
+      border: none;
+      font-size: 1.1rem;
+      font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
+      color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+      opacity: 0.8;
+      outline: none;
+      padding: 0.5rem;
+      resize: none;
+      min-height: 60px;
+      transition: all 0.3s ease;
+
+      &:focus {
+        opacity: 1;
+      }
+
+      &::placeholder {
+        color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+        opacity: 0.5;
+      }
+    }
+  }
+`;
+
+// Now, let's update the AddItemButton to better complement theme changes
+const AddItemButton = styled.button`
+  background: ${props => props.theme?.colors?.accent || '#800000'};
+  color: ${props => props.theme?.colors?.background || '#000000'};
+  border: none;
+  border-radius: ${props => props.theme?.styles?.borderRadius || '8px'};
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+  font-family: ${props => props.theme?.fonts?.heading || "'Space Grotesk', sans-serif"};
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  margin: 1rem auto 2rem;
+  transition: all 0.3s ease;
+  justify-content: center;
+  box-shadow: 0 4px 10px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg, 
+      transparent, 
+      rgba(255, 255, 255, 0.2), 
+      transparent
+    );
+    transition: left 0.7s ease;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
+    
+    &::before {
+      left: 100%;
+    }
+  }
+
+  &:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 5px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+  }
+`;
+
+// Let's also update the ItemCard to better respond to theme changes
 const ItemCard = styled.div`
-  background: rgba(255, 255, 255, 0.05);
+  background: ${props => props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'};
   border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
   width: 100%;
   height: auto;
   display: flex;
   flex-direction: column;
   position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+
+  &:hover {
+    transform: translateY(-5px);
+    border-color: ${props => props.theme?.colors?.accent || '#800000'};
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+
+    .delete-button {
+      opacity: 1;
+    }
+  }
 `;
 
-// Then, update the DeleteButton styling:
+// Update the DeleteButton for better theme integration
 const DeleteButton = styled.button`
   position: absolute;
   top: -15px;
   right: 10px;
-  background: rgba(0, 0, 0, 0.5);
-  border: none;
+  background: ${props => props.theme?.colors?.background || 'rgba(0, 0, 0, 0.5)'};
+  border: 1px solid ${props => props.theme?.colors?.accent || '#800000'};
   border-radius: 50%;
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ff4444;
+  color: ${props => props.theme?.colors?.accent || '#ff4444'};
   cursor: pointer;
   z-index: 2;
   opacity: 0;
   transition: all 0.3s ease;
-  className: 'delete-button';
-
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  
   &:hover {
-    background: rgba(0, 0, 0, 0.8);
+    background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(0, 0, 0, 0.8)'};
     transform: scale(1.1);
+    color: #ff4444;
   }
 `;
 
-// Update ItemContent styling:
+// Update ItemImageContainer for better theme integration
+const ItemImageContainer = styled.div`
+  position: relative;
+  height: 250px;
+  width: 100%;
+  aspect-ratio: 4/3;
+  display: flex;
+  overflow: hidden;
+  background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
+
+  .image-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  .placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: ${props => props.theme?.colors?.text || '#fff'};
+    opacity: 0.5;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      opacity: 0.8;
+      background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(255, 255, 255, 0.05)'};
+    }
+    
+    span {
+      font-size: 0.9rem;
+      font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
+    }
+  }
+
+  .carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
+    border: 1px solid ${props => `${props.theme?.colors?.accent}40` || 'rgba(255, 255, 255, 0.2)'};
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${props => props.theme?.colors?.text || 'white'};
+    cursor: pointer;
+    z-index: 2;
+    transition: all 0.3s ease;
+    opacity: 0.7;
+
+    &:hover {
+      background: ${props => props.theme?.colors?.accent || 'rgba(0, 0, 0, 0.8)'};
+      opacity: 1;
+    }
+
+    &.left {
+      left: 10px;
+    }
+
+    &.right {
+      right: 10px;
+    }
+  }
+
+  .add-image {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
+    border: 1px solid ${props => `${props.theme?.colors?.accent}40` || 'rgba(255, 255, 255, 0.2)'};
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${props => props.theme?.colors?.text || 'white'};
+    cursor: pointer;
+    z-index: 2;
+    transition: all 0.3s ease;
+    opacity: 0.7;
+
+    &:hover {
+      background: ${props => props.theme?.colors?.accent || 'rgba(0, 0, 0, 0.8)'};
+      opacity: 1;
+    }
+  }
+`;
+
+// Update ItemContent for better theme integration
 const ItemContent = styled.div`
   padding: 1rem 1.5rem; 
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   flex: 1;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}70`};
 
   .editable-text {
     width: 100%;
@@ -71,15 +329,20 @@ const ItemContent = styled.div`
       width: 100%;
       background: transparent;
       border: none;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
       padding: 0.5rem 0;
-      color: ${props => props.theme?.colors?.text};
+      color: ${props => props.theme?.colors?.text || '#FFFFFF'};
       font-size: 1rem;
+      font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
       transition: all 0.3s ease;
-      text-align: left;  // Changed to left
+      text-align: left;
       
       &:focus {
-        border-bottom-color: ${props => props.theme?.colors?.accent};
+        border-bottom-color: ${props => props.theme?.colors?.accent || '#800000'};
+      }
+
+      &::placeholder {
+        color: ${props => `${props.theme?.colors?.text}90` || 'rgba(255, 255, 255, 0.5)'};
       }
     }
 
@@ -87,16 +350,21 @@ const ItemContent = styled.div`
       width: 100%;
       background: transparent;
       border: none;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
       padding: 0.5rem 0;
-      color: ${props => props.theme?.colors?.text};
+      color: ${props => props.theme?.colors?.text || '#FFFFFF'};
       font-size: 1rem;
+      font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
       transition: all 0.3s ease;
       resize: none;
-      text-align: left;  // Changed to left
+      text-align: left;
       
       &:focus {
-        border-bottom-color: ${props => props.theme?.colors?.accent};
+        border-bottom-color: ${props => props.theme?.colors?.accent || '#800000'};
+      }
+
+      &::placeholder {
+        color: ${props => `${props.theme?.colors?.text}90` || 'rgba(255, 255, 255, 0.5)'};
       }
     }
   }
@@ -134,101 +402,15 @@ const PageContainer = styled.div`
 `;
 
 const MainContent = styled.div`
-  max-width: ${props => props.theme?.styles?.containerWidth || DEFAULT_THEME.styles.containerWidth};
+  max-width: ${props => props.theme?.styles?.containerWidth || '1400px'};
   margin: 0 auto;
-  padding: 8rem 2rem 2rem; // Increased top padding to accommodate tabs
+  padding: 8rem 2rem 2rem;
   position: relative;
   z-index: 1;
 
   // Add gap between major sections
   > div {
     margin-bottom: 4rem;
-`;
-
-const ShopProfileSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  max-width: 800px;
-  margin: 2rem auto 4rem;  // Increased negative margin to move it up more
-  padding: 2rem;
-
-  .profile-image {
-    margin-bottom: 1rem;  // Reduced from 2rem
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    overflow: hidden;
-    background: rgba(0, 0, 0, 0.1);
-    
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-  }
-
-  .shop-name-container {
-    width: 100%;
-    margin: 0.5rem 0;  // Reduced from 1.5rem
-
-    input {
-      // Keep existing input styles unchanged
-      width: 100%;
-      text-align: center;
-      background: transparent;
-      border: none;
-      font-size: ${props => props.fontSize || '2.5rem'};
-      font-family: ${props => props.theme?.fonts?.heading};
-      background: ${props => `linear-gradient(45deg, ${props.theme?.colors?.primary}, ${props.theme?.colors?.accent})`};
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      outline: none;
-      padding: 0.5rem;
-
-      &:focus {
-        background: ${props => `linear-gradient(45deg, ${props.theme?.colors?.primary}, ${props.theme?.colors?.accent})`};
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-
-      &::placeholder {
-        background: ${props => `linear-gradient(45deg, ${props.theme?.colors?.primary}80, ${props.theme?.colors?.accent}80)`};
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-    }
-  }
-
-  .shop-description-container {
-    width: 100%;
-    margin-top: 0.25rem;  // Reduced from 1rem to be closer to name
-
-    textarea {
-      // Keep existing textarea styles unchanged
-      width: 100%;
-      text-align: center;
-      background: transparent;
-      border: none;
-      font-size: 1.1rem;
-      font-family: ${props => props.theme?.fonts?.body};
-      color: ${props => props.theme?.colors?.text};
-      opacity: 0.8;
-      outline: none;
-      padding: 0.5rem;
-      resize: none;
-      min-height: 60px;
-
-      &:focus {
-        opacity: 1;
-      }
-
-      &::placeholder {
-        color: ${props => props.theme?.colors?.text};
-        opacity: 0.5;
-      }
-    }
   }
 `;
 
@@ -259,91 +441,6 @@ const FontSizeControls = styled.div`
 
   &:hover {
     opacity: 1;
-  }
-`;
-
-const ItemImageContainer = styled.div`
-  position: relative;
-  height: 250px;
-  width: 100%;
-  aspect-ratio: 4/3;
-  display: flex;
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.1);
-
-  .image-container {
-    width: 100%;
-    height: 100%;
-    position: relative;
-  }
-
-  .placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    color: ${props => props.theme?.colors?.text || '#fff'};
-    opacity: 0.5;
-    cursor: pointer;
-    
-    span {
-      font-size: 0.9rem;
-    }
-  }
-
-  .carousel-arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(0, 0, 0, 0.5);
-    border: none;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    cursor: pointer;
-    z-index: 2;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: rgba(0, 0, 0, 0.8);
-    }
-
-    &.left {
-      left: 10px;
-    }
-
-    &.right {
-      right: 10px;
-    }
-  }
-
-  .add-image {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: rgba(0, 0, 0, 0.5);
-    border: none;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    cursor: pointer;
-    z-index: 2;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: rgba(0, 0, 0, 0.8);
-    }
   }
 `;
 
@@ -556,24 +653,6 @@ const ZipCodeInput = styled.input`
   &:focus {
     outline: none;
     border-bottom-color: ${props => props.theme?.colors?.accent};
-  }
-`;
-
-const AddItemButton = styled.button`
-  background: ${props => props.theme?.colors?.primary};
-  color: ${props => props.theme?.colors?.text};
-  border: none;
-  border-radius: 8px;
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  margin: 2rem auto;
-  transition: all 0.3s;
-
-  &:hover {
-    transform: translateY(-2px);
   }
 `;
 
@@ -961,6 +1040,11 @@ const ShopPage = () => {
             </div>
             </ShopProfileSection>
 
+            <AddItemButton onClick={handleAddItem} theme={shopData?.theme}>
+                <Plus size={20} />
+                Add Item
+              </AddItemButton>
+
             <ItemGrid>
               {shopData?.items?.map(item => (
                 <ItemCard key={item.id}>
@@ -1160,12 +1244,7 @@ const ShopPage = () => {
                     </ItemContent>
                 </ItemCard>
               ))}
-            </ItemGrid>
-
-              <AddItemButton onClick={handleAddItem} theme={shopData?.theme}>
-                <Plus size={20} />
-                Add Item
-              </AddItemButton>
+            </ItemGrid>              
             </>
           )}
 

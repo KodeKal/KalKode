@@ -12,7 +12,107 @@ import Pagination from '../components/common/Pagination';
 import { LocationFormat } from '../utils/locationUtils';
 import { db } from '../firebase/config';
 import { WELCOME_STYLES } from '../theme/welcomeStyles';
+import { getShopData } from '../firebase/firebaseService';
+import { useAuth } from '../contexts/AuthContext';
 
+const ProfileSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.5rem;
+`;
+
+const ProfileImage = styled.div`
+  width: 200px; /* Increased from 120px (3x larger) */
+  height: 189px; /* Increased from 120px (3x larger) */
+  border-radius: 50%;
+  overflow: hidden;
+  margin-bottom: 1.5rem; /* Increased margin for better spacing */
+  border: 6px solid ${props => props.theme?.colors?.accent || '#800000'}; /* Increased border width */
+  box-shadow: 0 0 30px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+  transition: all 0.3s ease;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  &:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 40px ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
+  }
+`;
+
+// Update the ShopName styled component
+const ShopName = styled.h2`
+  font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
+  font-size: 5.4rem; /* Increased from 1.8rem (3x larger) */
+  background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0 0 1rem 0;
+  transition: all 0.3s ease;
+  text-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  letter-spacing: 1px;
+`;
+
+const MotivationalMessage = styled.p`
+  font-size: 1.4rem;
+  line-height: 1.6;
+  max-width: 800px;
+  margin: 3rem auto 0; // Increased top margin to place it below the button
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'}; // Use text color for subtlety
+  font-weight: 400; // Lighter weight for sleeker appearance
+  font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"}; // Use body font for elegance
+  text-align: center;
+  padding: 1.5rem 2rem;
+  letter-spacing: 0.5px;
+  
+  /* Sleek, minimal styling */
+  position: relative;
+  
+  /* Add subtle quotes */
+  &::before, &::after {
+    content: '"';
+    font-family: ${props => props.theme?.fonts?.heading || "'Georgia', serif"};
+    font-size: 3rem;
+    position: absolute;
+    opacity: 0.2;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+  }
+  
+  &::before {
+    top: -1.5rem;
+    left: -1rem;
+  }
+  
+  &::after {
+    bottom: -2.5rem;
+    right: -1rem;
+  }
+  
+  /* Add subtle gradient bottom border */
+  border-bottom: 1px solid transparent;
+  background-image: ${props => `linear-gradient(90deg, transparent, ${props.theme?.colors?.accent || '#800000'}40, transparent)`};
+  background-position: bottom;
+  background-size: 100% 1px;
+  background-repeat: no-repeat;
+`;
+
+// Define motivational messages at the component level
+const MOTIVATIONAL_MESSAGES = [
+  "Build your vision, Elevate humanity.",
+  "Create greatness, Inspire progress.",
+  "Master your craft, Serve with passion.",
+  "Own your success, Empower those around you.",
+  "Rule with wisdom, Lead with heart.",
+  "Shape your future, Change lives along the way.",
+  "Rise above, Lift others higher.",
+  "Conquer your dreams, Build a better world.",
+  "Lead by example, Serve with strength.",
+  "Pursue greatness, Give back in abundance."
+];
 
 const PageContainer = styled.div.attrs({ className: 'page-container' })`
   min-height: 100vh;
@@ -21,6 +121,7 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
   position: relative;
   overflow: hidden;
 
+  /* Existing background effects remain unchanged */
   &::before {
     content: '';
     position: absolute;
@@ -53,17 +154,77 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
     background: ${props => props.theme?.colors?.accent || '#800000'};
     pointer-events: none;
     display: ${props => props.theme?.animations?.pingAnimation ? 'block' : 'none'};
+    z-index: 0; // Set a low z-index to ensure it's behind other content
   }
 
-  /* ... keyframes remain the same ... */
+  /* Updated ping animation to be 1/3 the size */
+  .ping::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 67px; // Reduced from 200px to about 1/3
+    height: 67px; // Reduced from 200px to about 1/3
+    border-radius: 50%;
+    background: transparent;
+    border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.6; // Slightly reduced opacity for background effect
+    animation: radarPing 3s ease-out forwards;
+  }
+  
+  .ping::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px; // Reduced from 120px to about 1/3
+    height: 40px; // Reduced from 120px to about 1/3
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid ${props => props.theme?.colors?.accent || '#800000'};
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.4; // Reduced opacity
+    animation: radarPing 2.5s ease-out 0.2s forwards;
+  }
+
+  // Make sure MainContent has a higher z-index
+  & > main {
+    position: relative;
+    z-index: 1; // Higher than ping z-index
+  }
+
+  @keyframes radarPing {
+    0% {
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 0.6;
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0;
+    }
+  }
+
+  /* Other keyframes remain the same */
+  @keyframes galaxySwirl {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.05; }
+    50% { opacity: 0.1; }
+  }
 `;
+
 
 const Header = styled.header`
   width: 100%;
   height: 80px;
   padding: 0 2rem;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr auto; // Logo, space, shop name
+  grid-gap: 2rem;
   align-items: center;
   background: ${props => props.theme?.colors?.headerBg || 'rgba(0, 0, 0, 0.9)'};
   backdrop-filter: blur(10px);
@@ -73,13 +234,77 @@ const Header = styled.header`
   z-index: 10;
 `;
 
+// Keep the Logo styled component
 const Logo = styled.div`
   color: ${props => props.theme?.colors?.accent || '#800000'};
-  font-family: ${props => props.theme?.fonts?.heading || "'Impact', 'Arial Black', sans-serif"};
+  font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
   font-size: 2rem;
   letter-spacing: 2px;
   transform: skew(-5deg);
+  cursor: pointer;
+  flex-shrink: 0; // Prevent logo from shrinking
 `;
+
+// Create a styled component for the shop name on right
+const ShopNameBadge = styled.div`
+  font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
+  font-size: 1.2rem; // Reduced size from 1.4rem
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  max-width: 150px; // Limit width to prevent overflow
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; // Add ellipsis for long names
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(0, 0, 0, 0.5); // Add subtle background
+  padding: 0.4rem 0.8rem; // Add padding for better spacing
+  justify-self: flex-end; // Position at the right edge of its grid area
+  margin-right: 3rem; // Move it left from the far right edge
+  
+  &:hover {
+    transform: translateY(-2px);
+    background: rgba(0, 0, 0, 0.7);
+  }
+`;
+
+// Update the BannerShopName component
+const BannerShopName = styled.div`
+  font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
+  font-size: 1.4rem;
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  margin-left: 1rem;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap; // Prevent line breaks
+  overflow: hidden; // Hide overflow
+  text-overflow: ellipsis; // Add ellipsis for overflow text
+  max-width: 200px; // Limit width
+  
+  &:hover {
+    transform: translateY(-2px);
+  }
+  
+  &::before {
+    content: '•';
+    margin-right: 0.5rem;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    flex-shrink: 0; // Prevent bullet from shrinking
+  }
+`;
+
+// Create a wrapper for the Header content
+const HeaderContent = styled.div`
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  justify-content: space-between; // Space between logo+shop name and any other elements
+`;
+
 
 // Update WelcomeSection
 const WelcomeSection = styled.section`
@@ -422,6 +647,7 @@ const StyleIndicator = styled.div`
 
 const WelcomePage = () => {
   const navigate = useNavigate(); // New
+  const [motivationalMessage, setMotivationalMessage] = useState("");
   const [activeTab, setActiveTab] = useState('featured');
   const [featuredItems, setFeaturedItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -443,6 +669,37 @@ const WelcomePage = () => {
   const [currentStyle, setCurrentStyle] = useState(null);
   const itemsPerPage = 6;
   const [isPinned, setIsPinned] = useState(false);
+  const { user, isAuthenticated } = useAuth();
+  const [shopData, setShopData] = useState(null);
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+  const [isMessageVisible, setIsMessageVisible] = useState(true);
+
+  useEffect(() => {
+    const fetchShopData = async () => {
+      if (user && user.uid) {
+        try {
+          const data = await getShopData(user.uid);
+          setShopData(data);
+        } catch (error) {
+          console.error('Error fetching shop data:', error);
+        }
+      }
+    };
+    
+    if (isAuthenticated) {
+      fetchShopData();
+    }
+  }, [user, isAuthenticated]);
+  
+  // Handle message rotation with fade transition
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Select a random message when component mounts (page loads)
+      const randomIndex = Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length);
+      setMotivationalMessage(MOTIVATIONAL_MESSAGES[randomIndex]);
+    }
+  }, [isAuthenticated]); 
+
   
   useEffect(() => {
     // Check if there's a pinned style in localStorage
@@ -945,60 +1202,74 @@ const WelcomePage = () => {
   return () => clearInterval(refreshInterval);
 }, [activeTab, currentPage]);
 
-  React.useEffect(() => {
-    const container = document.querySelector('.page-container');
-    if (!container) return; // Add this check
-  
-    const createPing = () => {
-      const ping = document.createElement('div');
-      ping.className = 'ping';
-      
-      ping.style.left = `${Math.random() * 100}%`;
-      ping.style.top = `${Math.random() * 100}%`;
-      
-      container.appendChild(ping);
-      
-      setTimeout(() => {
-        if (ping && ping.parentNode) { // Add this check
-          ping.remove();
-        }
-      }, 2000);
-    };
-  
-    const createPingGroup = (count) => {
-      for (let i = 0; i < count; i++) {
-        setTimeout(() => {
-          createPing();
-        }, i * 200);
+React.useEffect(() => {
+  const container = document.querySelector('.page-container');
+  if (!container) return;
+
+  const createPing = () => {
+    const ping = document.createElement('div');
+    ping.className = 'ping';
+    
+    ping.style.left = `${Math.random() * 100}%`;
+    ping.style.top = `${Math.random() * 100}%`;
+    ping.style.zIndex = '0'; // Ensure ping is in background
+    
+    container.appendChild(ping);
+    
+    setTimeout(() => {
+      if (ping && ping.parentNode) {
+        ping.remove();
       }
-    };
-  
-    const pingCounts = [10, 30, 20];
-    let currentIndex = 0;
-  
-    const interval = setInterval(() => {
-      const count = pingCounts[currentIndex];
-      createPingGroup(count);
-      currentIndex = (currentIndex + 1) % pingCounts.length;
     }, 3000);
+  };
+
   
-    // Cleanup function
-    return () => {
-      clearInterval(interval);
-      // Remove any remaining pings
-      const pings = container.getElementsByClassName('ping');
-      while (pings.length > 0) {
-        pings[0].remove();
-      }
-    };
-  }, []); // Empty dependency array
+  const createPingGroup = (count) => {
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        createPing();
+      }, i * 200);
+    }
+  };
+
+  const pingCounts = [10, 30, 20];
+  let currentIndex = 0;
+
+  const interval = setInterval(() => {
+    const count = pingCounts[currentIndex];
+    createPingGroup(count);
+    currentIndex = (currentIndex + 1) % pingCounts.length;
+  }, 3000);
+  
+  return () => {
+    clearInterval(interval);
+    const pings = container.getElementsByClassName('ping');
+    while (pings.length > 0) {
+      pings[0].remove();
+    }
+  };
+}, []); // Empty dependency array
 
   if (!currentStyle) return null;
   
   return (
     <PageContainer className="page-container" theme={currentStyle}>
       <Header theme={currentStyle}>
-        <Logo onClick={() => navigate('/')} theme={currentStyle}>KALKODE</Logo>       
+        <Logo onClick={() => navigate('/')} theme={currentStyle}>
+          KALKODE
+        </Logo>
+        
+        {isAuthenticated && shopData?.name && (
+          <ShopNameBadge
+            theme={currentStyle}
+            onClick={() => navigate('/shop/dashboard')}
+            title={`Go to ${shopData.name} Dashboard`} // More descriptive tooltip
+          >
+            {/* Optional: Add icon */}
+            {/* <Store size={14} style={{ marginRight: '6px' }} /> */}
+            {shopData.name}
+          </ShopNameBadge>
+        )}
       </Header>
 
       <StyleIndicator theme={currentStyle}>
@@ -1014,23 +1285,72 @@ const WelcomePage = () => {
       </StyleIndicator>
 
       <MainContent>
-        <WelcomeSection theme={currentStyle}>
-          <h1>Welcome to KalKode</h1>
-          <p>Join the underground marketplace where local creators thrive. </p>
-          <p>Build your empire and discover unique treasures.</p>
+      <WelcomeSection theme={currentStyle}>
+          {isAuthenticated && shopData ? (
+            // Logged-in user view
+            <>
+              <ProfileSection>
+                <ProfileImage>
+                  {shopData.profile ? (
+                    <img src={shopData.profile} alt={shopData.name || 'Shop Profile'} />
+                  ) : (
+                    <div style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      background: currentStyle?.colors?.accent || '#800000',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#fff',
+                      fontSize: '2rem'
+                    }}>
+                      {(shopData.name?.charAt(0) || user.email?.charAt(0) || 'S').toUpperCase()}
+                    </div>
+                  )}
+                </ProfileImage>
+                <ShopName>{shopData.name || 'My Shop'}</ShopName>
+              </ProfileSection>
+              
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
+                <ActionButton theme={currentStyle} onClick={() => navigate('/shop/dashboard')}>
+                  My Dashboard
+                </ActionButton>
+              </div>
+
+              <MotivationalMessage>
+                {motivationalMessage}
+              </MotivationalMessage>
+            </>
+          ) : (
+            // Non-logged in view (original)
+            <>
+              <h1>Welcome to KalKode</h1>
+              <p>Join the underground marketplace where local creators thrive. </p>
+              <p>Build your empire and discover unique treasures.</p>
+            </>
+          )}
+          
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
-          <ActionButton theme={currentStyle} onClick={handleOpenShop}>Open Up Shop</ActionButton>
-          <ActionButton 
-            theme={currentStyle}
-            onClick={handleLogin}
-            style={{ 
-              background: 'transparent',
-              border: `2px solid ${currentStyle.colors.accent}`,
-              color: currentStyle.colors.accent
-            }}
-          >
-            Sign In
-          </ActionButton>
+            {isAuthenticated ? (
+              <ActionButton theme={currentStyle} onClick={() => navigate('/shop/dashboard')}>
+                My Dashboard
+              </ActionButton>
+            ) : (
+              <>
+                <ActionButton theme={currentStyle} onClick={handleOpenShop}>Open Up Shop</ActionButton>
+                <ActionButton 
+                  theme={currentStyle}
+                  onClick={handleLogin}
+                  style={{ 
+                    background: 'transparent',
+                    border: `2px solid ${currentStyle.colors.accent}`,
+                    color: currentStyle.colors.accent
+                  }}
+                >
+                  Sign In
+                </ActionButton>
+              </>
+            )}
           </div>
         </WelcomeSection>
 
