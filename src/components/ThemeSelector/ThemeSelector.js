@@ -1,12 +1,11 @@
 // src/components/ThemeSelector/ThemeSelector.js
 import React from 'react';
 import styled from 'styled-components';
-import { THEME_VARIANTS, DEFAULT_THEME } from '../../theme/config/themes';  // Updated import path
+import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 
 const ThemeDropdown = styled.div`
   position: relative;
   display: inline-block;
-  margin-left: 2rem;
 `;
 
 const DropdownButton = styled.button`
@@ -23,57 +22,54 @@ const DropdownButton = styled.button`
 
 const DropdownContent = styled.div`
   position: absolute;
-  top: 100%;
-  left: 0;
-  width: 300px;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
   background: ${props => props.theme?.colors?.background || '#000000'};
   border: 1px solid ${props => props.theme?.colors?.accent || '#800000'};
   border-radius: 8px;
-  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
   padding: 1rem;
   z-index: 1000;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  max-width: 90vw;
 `;
 
 const ThemeOption = styled.div`
-  padding: 1rem;
-  border-radius: 6px;
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
-  gap: 1rem;
   align-items: center;
+  justify-content: center;
   transition: all 0.2s;
+  background: ${props => props.color};
+  border: 2px solid ${props => props.active ? 'white' : 'transparent'};
+  position: relative;
+  overflow: hidden;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
   }
 
-  .color-preview {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .color-swatch {
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
-  }
-
-  .theme-info {
-    flex: 1;
-    h4 {
-      margin: 0;
-      font-family: ${props => props.theme?.fonts?.heading};
-    }
-    p {
-      margin: 0;
-      font-size: 0.8rem;
-      opacity: 0.7;
-    }
+  .theme-number {
+    position: absolute;
+    bottom: 3px;
+    right: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 0 2px black;
   }
 `;
 
 const ThemeSelector = ({ 
-  currentTheme = DEFAULT_THEME, 
+  currentTheme, 
   onThemeSelect, 
   isAuthenticated = false,
   onApplyTheme = null 
@@ -88,32 +84,18 @@ const ThemeSelector = ({
 
       {isOpen && (
         <DropdownContent>
-          {Object.entries(THEME_VARIANTS).map(([id, theme]) => (
+          {Object.values(WELCOME_STYLES).map((theme) => (
             <ThemeOption 
-              key={id}
+              key={theme.id}
+              color={theme.colors.accent}
+              active={currentTheme.id === theme.id}
               onClick={() => {
-                onThemeSelect({
-                  ...DEFAULT_THEME,
-                  ...theme,
-                  id
-                });
+                onThemeSelect(theme);
                 setIsOpen(false);
               }}
+              title={`${theme.name} (Style ${theme.id})`}
             >
-              <div className="color-preview">
-                <div 
-                  className="color-swatch" 
-                  style={{ background: theme.colors.primary }} 
-                />
-                <div 
-                  className="color-swatch" 
-                  style={{ background: theme.colors.accent }} 
-                />
-              </div>
-              <div className="theme-info">
-                <h4>{theme.name}</h4>
-                <p>{theme.description}</p>
-              </div>
+              <div className="theme-number">{theme.id}</div>
             </ThemeOption>
           ))}
           {isAuthenticated && onApplyTheme && (

@@ -15,6 +15,7 @@ import { ChevronUp, ChevronDown, Plus, Minus, ChevronLeft, ChevronRight, X } fro
 import { Trash2 } from 'lucide-react';
 import AddressInput from '../../components/shop/AddressInput';
 import ThemeSelector from '../../components/ThemeSelector/ThemeSelector';
+import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 
 // First, update the ItemCard styling:
 const ItemCard = styled.div`
@@ -607,6 +608,7 @@ const ShopPage = () => {
   const [shopNameFontSize, setShopNameFontSize] = useState(2.5);
   const [uploading, setUploading] = useState({});
   const [tabPosition, setTabPosition] = useState('top');
+  const [currentTheme, setCurrentTheme] = useState(WELCOME_STYLES.STYLE_1);
 
   useEffect(() => {
     if (shopData?.layout?.tabPosition) {
@@ -807,6 +809,7 @@ const ShopPage = () => {
         setSaving(false);
       }
     };
+    
 
   const handleAddItem = () => {
     const newItem = {

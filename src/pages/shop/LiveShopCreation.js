@@ -22,6 +22,7 @@ import TabPositioner from './components/TabPositioner';
 import ThemeSelector from '../../components/ThemeSelector/ThemeSelector';
 import AddressInput from '../../components/shop/AddressInput';
 import { THEMES, DEFAULT_THEME } from '../../constants/themes';  // Update this import
+import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 
 // Theme Constants
 export const ELEMENTAL_THEMES = {
@@ -605,11 +606,11 @@ const LiveShopCreation = () => {
   // State
   const [currentStep, setCurrentStep] = useState(1);
   const [isPurchasing, setIsPurchasing] = useState(false);
-  const [selectedTheme, setSelectedTheme] = useState(THEMES.EARTH); // Start with Forest theme
   const [shopNamePosition, setShopNamePosition] = useState(SHOP_NAME_POSITIONS.LEFT);
   const [tabPosition, setTabPosition] = useState(TAB_POSITIONS.TOP);
   const [activeTab, setActiveTab] = useState('shop');
   const [shopNameFontSize, setShopNameFontSize] = useState(2.5);
+  const [selectedTheme, setSelectedTheme] = useState(WELCOME_STYLES.STYLE_1);
   
   
   const [shopData, setShopData] = useState({
@@ -638,18 +639,8 @@ const LiveShopCreation = () => {
   });
 
   // Theme Selection Handler
-  const handleThemeSelect = (themeId) => {
-    console.log('Theme selected:', themeId); // For debugging
-    
-    const themeData = ELEMENTAL_THEMES[themeId];
-    if (themeData) {
-      const newTheme = {
-        ...DEFAULT_THEME,
-        ...themeData,
-        id: themeId
-      };
-      setSelectedTheme(newTheme);
-    }
+  const handleThemeSelect = (theme) => {
+    setSelectedTheme(theme);
   };
 
   // Shop Data Handlers

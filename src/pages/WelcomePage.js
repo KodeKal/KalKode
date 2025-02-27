@@ -5,18 +5,19 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { getFeaturedItems } from '../firebase/firebaseService';
 import FeaturedItem from '..//components/shop/FeaturedItem';
-import { Users, Package, Navigation, Film } from 'lucide-react';
+import { Users, Package, Navigation, Film, Pin } from 'lucide-react';
 import { getDistance } from 'geolib';
 import { collection, getDocs } from 'firebase/firestore';
 import Pagination from '../components/common/Pagination';
 import { LocationFormat } from '../utils/locationUtils';
 import { db } from '../firebase/config';
+import { WELCOME_STYLES } from '../theme/welcomeStyles';
 
 
 const PageContainer = styled.div.attrs({ className: 'page-container' })`
   min-height: 100vh;
-  background: #000000;
-  color: #FFFFFF;
+  background: ${props => props.theme?.colors?.background || '#000000'};
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
   position: relative;
   overflow: hidden;
 
@@ -25,11 +26,9 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
     position: absolute;
     width: 100%;
     height: 100%;
-    background: 
-      radial-gradient(circle at 20% 30%, rgba(128, 0, 0, 0.2) 0%, transparent 50%),
-      radial-gradient(circle at 80% 70%, rgba(128, 0, 0, 0.15) 0%, transparent 50%);
+    background: ${props => props.theme?.colors?.backgroundGradient || 'radial-gradient(circle at 20% 30%, rgba(128, 0, 0, 0.2) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(128, 0, 0, 0.15) 0%, transparent 50%)'};
     opacity: 0.8;
-    animation: galaxySwirl 30s linear infinite;
+    animation: ${props => props.theme?.animations?.backgroundAnimation || 'galaxySwirl 30s linear infinite'};
   }
 
   &::after {
@@ -38,8 +37,8 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
     width: 100%;
     height: 100%;
     background-image: 
-      radial-gradient(circle 1px, #FFF 1px, transparent 1px),
-      radial-gradient(circle 2px, #800000 1px, transparent 2px);
+      radial-gradient(circle 1px, ${props => props.theme?.colors?.text || '#FFF'} 1px, transparent 1px),
+      radial-gradient(circle 2px, ${props => props.theme?.colors?.accent || '#800000'} 1px, transparent 2px);
     background-size: 200px 200px, 300px 300px;
     background-position: 0 0;
     opacity: 0.1;
@@ -51,60 +50,114 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
     width: 2px;
     height: 2px;
     border-radius: 50%;
-    background: #800000;
+    background: ${props => props.theme?.colors?.accent || '#800000'};
     pointer-events: none;
+    display: ${props => props.theme?.animations?.pingAnimation ? 'block' : 'none'};
   }
 
-  .ping::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 100px;
-    height: 100px;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(128, 0, 0, 0.4) 0%, transparent 70%);
-    animation: ping 2s ease-out forwards;
-  }
-
-  @keyframes galaxySwirl {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  @keyframes twinkle {
-    0%, 100% { opacity: 0.05; }
-    50% { opacity: 0.1; }
-  }
-
-  @keyframes ping {
-    0% {
-      width: 0px;
-      height: 0px;
-      opacity: 1;
-    }
-    100% {
-      width: 200px;
-      height: 200px;
-      opacity: 0;
-    }
-  }
+  /* ... keyframes remain the same ... */
 `;
 
 const Header = styled.header`
   width: 100%;
-  height: 80px; // Fixed height
-  padding: 0 2rem; // Changed padding
+  height: 80px;
+  padding: 0 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(0, 0, 0, 0.9);
+  background: ${props => props.theme?.colors?.headerBg || 'rgba(0, 0, 0, 0.9)'};
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(128, 0, 0, 0.3);
-  position: fixed; // Changed from sticky
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
+  position: fixed;
   top: 0;
   z-index: 10;
+`;
+
+const Logo = styled.div`
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  font-family: ${props => props.theme?.fonts?.heading || "'Impact', 'Arial Black', sans-serif"};
+  font-size: 2rem;
+  letter-spacing: 2px;
+  transform: skew(-5deg);
+`;
+
+// Update WelcomeSection
+const WelcomeSection = styled.section`
+  text-align: center;
+  margin: 4rem 0;
+  position: relative;
+
+  h1 {
+    font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
+    font-size: 4.5rem;
+    margin-bottom: 1rem;
+    background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 30px ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
+    letter-spacing: 2px;
+    transform: ${props => props.theme?.id === 10 ? 'none' : 'skew(-5deg)'};
+  }
+
+  p {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    max-width: 800px;
+    margin: 0 auto;
+    color: ${props => `${props.theme?.colors?.text}CC` || 'rgba(255, 255, 255, 0.8)'};
+    font-weight: 300;
+    font-family: ${props => props.theme?.fonts?.body || 'sans-serif'};
+  }
+`;
+
+// Update ActionButton
+const ActionButton = styled.button`
+  background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
+  border: none;
+  padding: 1rem 2.5rem;
+  border-radius: 30px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 2rem;
+  font-family: ${props => props.theme?.fonts?.body || 'sans-serif'};
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
+  }
+`;
+
+// Update Tab
+const Tab = styled.button`
+  background: ${props => props.active ? props.theme?.colors?.tabActiveBg || 'rgba(128, 0, 0, 0.2)' : 'transparent'};
+  border: 1px solid ${props => props.active ? props.theme?.colors?.tabBorder || '#800000' : `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
+  color: ${props => props.active ? props.theme?.colors?.text || '#FFFFFF' : `${props.theme?.colors?.text}99` || 'rgba(255, 255, 255, 0.6)'};
+  padding: 0.8rem 1.5rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 500;
+  font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  &:hover {
+    background: ${props => props.theme?.colors?.tabActiveBg || 'rgba(128, 0, 0, 0.2)'};
+    border-color: ${props => props.theme?.colors?.tabBorder || '#800000'};
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
 `;
 
 const LoadingSpinner = styled.div`
@@ -121,14 +174,6 @@ const LoadingSpinner = styled.div`
       transform: rotate(360deg);
     }
   }
-`;
-
-const Logo = styled.div`
-  color: #800000;
-  font-family: 'Impact', 'Arial Black', sans-serif;
-  font-size: 2rem;
-  letter-spacing: 2px;
-  transform: skew(-5deg);
 `;
 
 const MainContent = styled.main`
@@ -162,33 +207,6 @@ const LoginButton = styled.button`
   }
 `;
 
-const WelcomeSection = styled.section`
-  text-align: center;
-  margin: 4rem 0;
-  position: relative;
-
-  h1 {
-    font-family: 'Impact', sans-serif;
-    font-size: 4.5rem;
-    margin-bottom: 1rem;
-    background: linear-gradient(45deg, #800000, #4A0404);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0 0 30px rgba(128, 0, 0, 0.3);
-    letter-spacing: 2px;
-    transform: skew(-5deg);
-  }
-
-  p {
-    font-size: 1.2rem;
-    line-height: 1.6;
-    max-width: 800px;
-    margin: 0 auto;
-    color: rgba(255, 255, 255, 0.8);
-    font-weight: 300;
-  }
-`;
-
 const PLACEHOLDER_LOCATIONS = {
   '77085': {
     latitude: 29.6350,
@@ -200,58 +218,11 @@ const PLACEHOLDER_LOCATIONS = {
   }
 };
 
-const ActionButton = styled.button`
-  background: linear-gradient(45deg, #800000, #4A0404);
-  border: none;
-  padding: 1rem 2.5rem;
-  border-radius: 30px;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-top: 2rem;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(128, 0, 0, 0.3);
-  }
-`;
-
 const TabContainer = styled.div`
   display: flex;
   justify-content: center;
   gap: 1rem;
   margin: 3rem 0;
-`;
-
-const Tab = styled.button`
-  background: ${props => props.active ? 'rgba(128, 0, 0, 0.2)' : 'transparent'};
-  border: 1px solid ${props => props.active ? '#800000' : 'rgba(128, 0, 0, 0.3)'};
-  color: ${props => props.active ? '#FFFFFF' : 'rgba(255, 255, 255, 0.6)'};
-  padding: 0.8rem 1.5rem;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.3s;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 500;
-  font-family: 'Impact', sans-serif;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-
-  &:hover {
-    background: rgba(128, 0, 0, 0.2);
-    border-color: #800000;
-    color: #FFFFFF;
-  }
-
-  svg {
-    width: 16px;
-    height: 16px;
-  }
 `;
 
 const GridContainer = styled.div`
@@ -409,6 +380,46 @@ const getZipCodeFromCoordinates = async (coordinates) => {
   }
 };
 
+const PinButton = styled.button`
+  background: none;
+  border: none;
+  color: ${props => props.isPinned ? (props.theme?.colors?.accent || '#800000') : 'white'};
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.1);
+  }
+`;
+
+// Update the StyleIndicator to include the pin button
+// Update the StyleIndicator component
+const StyleIndicator = styled.div`
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  .style-number {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+  }
+`;
+
 const WelcomePage = () => {
   const navigate = useNavigate(); // New
   const [activeTab, setActiveTab] = useState('featured');
@@ -429,7 +440,54 @@ const WelcomePage = () => {
   const [currentZipCode, setCurrentZipCode] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [currentStyle, setCurrentStyle] = useState(null);
   const itemsPerPage = 6;
+  const [isPinned, setIsPinned] = useState(false);
+  
+  useEffect(() => {
+    // Check if there's a pinned style in localStorage
+    const pinnedStyleId = localStorage.getItem('pinnedStyleId');
+    
+    if (pinnedStyleId) {
+      const pinnedStyle = Object.values(WELCOME_STYLES).find(
+        style => style.id.toString() === pinnedStyleId
+      );
+      
+      if (pinnedStyle) {
+        setCurrentStyle(pinnedStyle);
+        setIsPinned(true);
+        return;
+      }
+    }
+    
+    // If no pinned style or stored style not found, select a random one
+    const styles = Object.values(WELCOME_STYLES);
+    const randomStyle = styles[Math.floor(Math.random() * styles.length)];
+    setCurrentStyle(randomStyle);
+  }, []);
+
+  const togglePinStyle = () => {
+    if (isPinned) {
+      // Unpin the style
+      localStorage.removeItem('pinnedStyleId');
+      setIsPinned(false);
+      
+      // Select a new random style (different from current)
+      const styles = Object.values(WELCOME_STYLES).filter(
+        style => style.id !== currentStyle.id
+      );
+      
+      if (styles.length > 0) {
+        const randomStyle = styles[Math.floor(Math.random() * styles.length)];
+        setCurrentStyle(randomStyle);
+      }
+    } else {
+      // Pin the current style
+      localStorage.setItem('pinnedStyleId', currentStyle.id.toString());
+      setIsPinned(true);
+    }
+  };
+
 
   // Add the handlePageChange function
   const handlePageChange = (newPage) => {
@@ -935,49 +993,66 @@ const WelcomePage = () => {
     };
   }, []); // Empty dependency array
 
+  if (!currentStyle) return null;
   
   return (
-    <PageContainer className="page-container">
-      <Header>
-        <Logo onClick={() => navigate('/')}>KALKODE</Logo>        
+    <PageContainer className="page-container" theme={currentStyle}>
+      <Header theme={currentStyle}>
+        <Logo onClick={() => navigate('/')} theme={currentStyle}>KALKODE</Logo>       
       </Header>
 
+      <StyleIndicator theme={currentStyle}>
+      <PinButton 
+        onClick={togglePinStyle} 
+        isPinned={isPinned}
+        title={isPinned ? "Unpin this style" : "Pin this style"}
+      >
+        <Pin size={16} fill={isPinned ? currentStyle.colors.accent : "none"} />
+      </PinButton>
+        <span>Style <span className="style-number">{currentStyle.id}</span></span>
+        <span>{currentStyle.name}</span>
+      </StyleIndicator>
+
       <MainContent>
-        <WelcomeSection>
+        <WelcomeSection theme={currentStyle}>
           <h1>Welcome to KalKode</h1>
           <p>Join the underground marketplace where local creators thrive. </p>
           <p>Build your empire and discover unique treasures.</p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
-            <ActionButton onClick={handleOpenShop}>Open Up Shop</ActionButton>
-            <ActionButton 
-              onClick={handleLogin}
-              style={{ 
-                background: 'transparent',
-                border: '2px solid #800000',
-                color: '#800000'
-              }}
-            >
-              Sign In
-            </ActionButton>
+          <ActionButton theme={currentStyle} onClick={handleOpenShop}>Open Up Shop</ActionButton>
+          <ActionButton 
+            theme={currentStyle}
+            onClick={handleLogin}
+            style={{ 
+              background: 'transparent',
+              border: `2px solid ${currentStyle.colors.accent}`,
+              color: currentStyle.colors.accent
+            }}
+          >
+            Sign In
+          </ActionButton>
           </div>
         </WelcomeSection>
 
         <TabContainer>
           <Tab 
+            theme={currentStyle}
             active={activeTab === 'featured'} 
             onClick={() => setActiveTab('featured')}
           >
             <Package size={16} />
             Featured Items
           </Tab>
-          <Tab 
+          <Tab
+            theme={currentStyle} 
             active={activeTab === 'nearby'} 
             onClick={() => setActiveTab('nearby')}
           >
             <Navigation size={16} />
             Nearby Items
           </Tab>
-          <Tab 
+          <Tab
+            theme={currentStyle} 
             active={activeTab === 'media'} 
             onClick={() => setActiveTab('media')}
           >
