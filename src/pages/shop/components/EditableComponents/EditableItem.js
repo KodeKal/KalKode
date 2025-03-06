@@ -211,12 +211,7 @@ const EditableItem = ({
 
   return (
     <ItemContainer theme={theme}>
-      <ItemActions>
-        <ActionButton delete onClick={onDelete}>
-          <Trash2 size={16} />
-        </ActionButton>
-      </ItemActions>
-
+      
       <ImageSection>
         <EditableImage
           value={item.images[item.currentImageIndex]}

@@ -678,6 +678,7 @@ const cleanDataForFirestore = (data) => {
   return data;
 };
 
+
 const ShopPage = () => {
   const navigate = useNavigate();
   const [shopData, setShopData] = useState(null); // Keep as null initially
@@ -689,6 +690,44 @@ const ShopPage = () => {
   const [tabPosition, setTabPosition] = useState('top');
   const [currentTheme, setCurrentTheme] = useState(WELCOME_STYLES.STYLE_1);
 
+  const handleDeleteItem = async (itemId) => {
+    if (!auth.currentUser) return;
+    
+    try {
+      setSaving(true);
+      
+      // Update the UI immediately
+      const filteredItems = shopData.items.filter(item => item.id !== itemId);
+      
+      // Update local state
+      setShopData(prev => ({
+        ...prev,
+        items: filteredItems
+      }));
+      
+      // Get reference to the shop document
+      const shopRef = doc(db, 'shops', auth.currentUser.uid);
+      
+      // Update Firestore directly without fetching first
+      await updateDoc(shopRef, {
+        items: filteredItems,
+        updatedAt: new Date().toISOString()
+      });
+      
+      console.log('Item successfully deleted:', itemId);
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      
+      // Revert the local state change if the update failed
+      const shopDoc = await getDoc(doc(db, 'shops', auth.currentUser.uid));
+      if (shopDoc.exists()) {
+        setShopData(shopDoc.data());
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+  
   useEffect(() => {
     if (shopData?.layout?.tabPosition) {
       setTabPosition(shopData.layout.tabPosition);
@@ -701,14 +740,20 @@ const ShopPage = () => {
         const shopDoc = await getDoc(doc(db, 'shops', userId));
         if (shopDoc.exists()) {
           const data = shopDoc.data();
+          
+          // Filter out deleted items
+          if (data.items) {
+            data.items = data.items.filter(item => !item.deleted);
+          }
+          
           setShopData(data);
         }
-        setIsReady(true); // Set ready after data is loaded
+        setIsReady(true);
       } catch (error) {
         console.error('Error loading shop data:', error);
-        setIsReady(true); // Still set ready even on error
+        setIsReady(true);
       }
-    };    
+    };
 
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (!user) {
@@ -1048,16 +1093,7 @@ const ShopPage = () => {
             <ItemGrid>
               {shopData?.items?.map(item => (
                 <ItemCard key={item.id}>
-                  <DeleteButton
-                    className="delete-button"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent event bubbling
-                      const updatedItems = shopData.items.filter(i => i.id !== item.id);
-                      saveShopData({ items: updatedItems });
-                    }}
-                  >
-                    <Trash2 size={16} />
-                  </DeleteButton>
+                  
                   <ItemImageContainer>
                     {uploading[item.id] && (
                       <UploadingOverlay>
@@ -1230,16 +1266,15 @@ const ShopPage = () => {
                         }}
                       />
                       <DeleteSection>
-                        <DeleteItemButton
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const updatedItems = shopData.items.filter(i => i.id !== item.id);
-                            saveShopData({ items: updatedItems });
-                          }}
-                        >
-                          <Trash2 size={16} />
-                          Remove Item
-                        </DeleteItemButton>
+                      <DeleteItemButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteItem(item.id);
+                        }}
+                      >
+                        <Trash2 size={16} />
+                        Remove Item
+                      </DeleteItemButton>
                       </DeleteSection>
                     </ItemContent>
                 </ItemCard>

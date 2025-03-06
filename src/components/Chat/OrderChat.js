@@ -1,8 +1,9 @@
 // src/components/Chat/OrderChat.js
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { X, Send, ShoppingCart, MessageCircle, ChevronRight } from 'lucide-react';
+import { X, Send, ShoppingCart, MessageCircle, ChevronRight, Check } from 'lucide-react';
 import { TransactionService } from '../../services/TransactionService';
+import { auth } from '../../firebase/config';
 
 const ChatDrawer = styled.div`
   position: fixed;
@@ -108,6 +109,47 @@ const Message = styled.div`
   }
 `;
 
+const ItemCard = styled.div`
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}50`};
+  border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
+  border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
+  margin-bottom: 1rem;
+  overflow: hidden;
+`;
+
+const ItemImage = styled.div`
+  height: 180px;
+  width: 100%;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
+const ItemDetails = styled.div`
+  padding: 1rem;
+  
+  h4 {
+    margin: 0 0 0.5rem 0;
+    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
+    color: ${props => props.theme?.colors?.text || 'white'};
+  }
+  
+  .price {
+    font-weight: bold;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    margin-bottom: 0.5rem;
+  }
+  
+  .description {
+    font-size: 0.9rem;
+    color: ${props => props.theme?.colors?.text || 'white'};
+    opacity: 0.8;
+  }
+`;
+
 const ChatInput = styled.div`
   display: flex;
   align-items: center;
@@ -148,16 +190,48 @@ const ChatInput = styled.div`
 const ActionSection = styled.div`
   padding: 1rem;
   display: flex;
+  gap: 0.5rem;
+`;
+
+const MessageButtons = styled.div`
+  padding: 0 1rem 1rem;
+  display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.5rem;
+`;
+
+const MessageButton = styled.button`
+  width: 100%;
+  padding: 1rem;
+  background: #1A1F36;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  font-size: 1rem;
+  
+  &:hover {
+    background: #272B3F;
+  }
 `;
 
 const ActionButton = styled.button`
-  width: 100%;
-  padding: 1rem;
-  background: ${props => props.theme?.colors?.accent || '#800000'};
-  color: white;
-  border: none;
+  flex: 1;
+  padding: 0.75rem;
+  background: ${props => props.primary ? 
+    props.theme?.colors?.accent || '#800000' : 
+    'transparent'
+  };
+  color: ${props => props.primary ? 
+    'white' : 
+    props.theme?.colors?.accent || '#800000'
+  };
+  border: ${props => props.primary ? 
+    'none' : 
+    `1px solid ${props.theme?.colors?.accent || '#800000'}`
+  };
   border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
@@ -169,7 +243,10 @@ const ActionButton = styled.button`
   
   &:hover {
     transform: translateY(-2px);
-    background: ${props => props.theme?.colors?.primary || '#600000'};
+    background: ${props => props.primary ? 
+      props.theme?.colors?.primary || '#600000' : 
+      `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'
+    };
   }
   
   &:disabled {
@@ -179,18 +256,37 @@ const ActionButton = styled.button`
   }
 `;
 
+const CloseConfirmation = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  
+  .emojis {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+  
+  p {
+    margin-bottom: 2rem;
+  }
+`;
+
 const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
   const [messages, setMessages] = useState([]);
-  const [messageText, setMessageText] = useState('');
-  const [showOrderButton, setShowOrderButton] = useState(true);
+  const [isOrderMode, setIsOrderMode] = useState(false);
+  const [closingChat, setClosingChat] = useState(false);
   const messagesEndRef = useRef(null);
   
   // Add welcome message when chat opens
   useEffect(() => {
     if (isOpen && messages.length === 0) {
+      // Only buyer view is available initially - shop owner doesn't see chat until payment
       setMessages([
         {
-          text: "Welcome! I'm interested in this item:",
+          text: `Order item?`,
           sender: 'system',
           item: item,
           timestamp: new Date(),
@@ -205,37 +301,10 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
   
-  const handleSendMessage = () => {
-    if (!messageText.trim()) return;
-    
-    setMessages([
-      ...messages,
-      {
-        text: messageText,
-        sender: 'user',
-        timestamp: new Date(),
-        type: 'text'
-      }
-    ]);
-    
-    setMessageText('');
-    
-    // Simulate shop response after a short delay
-    setTimeout(() => {
-      setMessages(prev => [
-        ...prev,
-        {
-          text: `Thanks for your interest in ${item.name}. How can I help you with this item?`,
-          sender: 'shop',
-          timestamp: new Date(),
-          type: 'text'
-        }
-      ]);
-    }, 1500);
-  };
+  // We don't need the handleSendMessage function as we're replacing the text field with buttons
   
   const handleOrder = () => {
-    setShowOrderButton(false);
+    setIsOrderMode(true);
     
     setMessages([
       ...messages,
@@ -247,23 +316,40 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
       }
     ]);
     
-    // Simulate shop response
+    // Add the proceed to payment button immediately
+    // Shop owner doesn't respond until payment is made
+  };
+
+  const handleCancelChat = () => {
+    setClosingChat(true);
+
+    // Auto close after 3 seconds
     setTimeout(() => {
-      setMessages(prev => [
-        ...prev,
-        {
-          text: `Great! Please proceed to checkout to complete your order.`,
-          sender: 'shop',
-          timestamp: new Date(),
-          type: 'text'
-        }
-      ]);
-    }, 1000);
+      onClose();
+    }, 3000);
   };
   
   const formatTime = (timestamp) => {
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
+  
+  if (closingChat) {
+    return (
+      <ChatDrawer isOpen={isOpen} theme={theme}>
+        <ChatHeader theme={theme}>
+          <h3>Chat</h3>
+          <CloseButton onClick={onClose} theme={theme}>
+            <X size={20} />
+          </CloseButton>
+        </ChatHeader>
+        
+        <CloseConfirmation>
+          <div className="emojis">👍 ✌️</div>
+          <p>Thanks for chatting! Have a great day.</p>
+        </CloseConfirmation>
+      </ChatDrawer>
+    );
+  }
   
   return (
     <ChatDrawer isOpen={isOpen} theme={theme}>
@@ -274,6 +360,21 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
         </CloseButton>
       </ChatHeader>
       
+      <ItemCard theme={theme}>
+        <ItemImage>
+          {item.images && item.images[0] && (
+            <img src={item.images[0]} alt={item.name} />
+          )}
+        </ItemImage>
+        <ItemDetails theme={theme}>
+          <h4>{item.name}</h4>
+          <div className="price">${parseFloat(item.price).toFixed(2)}</div>
+          {item.description && (
+            <div className="description">{item.description}</div>
+          )}
+        </ItemDetails>
+      </ItemCard>
+      
       <ChatMessages>
         {messages.map((msg, index) => (
           <Message 
@@ -281,7 +382,7 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
             sent={msg.sender === 'user'}
             theme={theme}
           >
-            {msg.type === 'item-inquiry' && (
+            {msg.type === 'item-inquiry' && msg.item && (
               <div className="item-preview">
                 {item.images && item.images[0] && (
                   <img src={item.images[0]} alt={item.name} />
@@ -300,40 +401,29 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
         <div ref={messagesEndRef} />
       </ChatMessages>
       
-      <ChatInput theme={theme}>
-        <input
-          type="text"
-          placeholder="Type a message..."
-          value={messageText}
-          onChange={(e) => setMessageText(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-        />
-        <button onClick={handleSendMessage}>
-          <Send size={20} />
-        </button>
-      </ChatInput>
-      
-      {showOrderButton && (
-        <ActionSection>
-          <ActionButton onClick={handleOrder} theme={theme}>
-            <ShoppingCart size={20} />
-            Order This Item
-          </ActionButton>
-        </ActionSection>
+      {!isOrderMode && !closingChat && (
+        <MessageButtons>
+          <MessageButton onClick={handleOrder}>
+            I'd like to order this item.
+          </MessageButton>
+          <MessageButton onClick={handleCancelChat}>
+            Cancel
+          </MessageButton>
+        </MessageButtons>
       )}
       
-      {!showOrderButton && (
+      {isOrderMode && (
         <ActionSection>
           <ActionButton 
+            primary
             onClick={() => {
-              // Redirect to BuyDialog or payment wall
+              // Here we would trigger the payment process
               onClose();
-              // Here you would trigger your payment process
             }} 
             theme={theme}
           >
             <ChevronRight size={20} />
-            Proceed to Checkout
+            Proceed to Payment
           </ActionButton>
         </ActionSection>
       )}

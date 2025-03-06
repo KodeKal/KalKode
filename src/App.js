@@ -19,6 +19,7 @@ import ShopDashboard from './pages/shop/ShopDashboard';
 import ProfilePage from './pages/shop/ProfilePage.js';
 import NotificationsPage from './pages/shop/NotificationsPage.js';
 import ShopPublicView from './pages/shop/shopPublicView.js';
+import TransactionsPage from './pages/transactions/Transactions';
 
 // Create a new component for the routes
 const AppRoutes = () => {
@@ -40,6 +41,11 @@ const AppRoutes = () => {
         <Route path="/shop/create/template" element={<LiveShopCreation />} />
         <Route path="/shop/:userId" element={<ShopPage />} />
         <Route path="/shop/:shopId/view" element={<ShopPublicView />} />
+        <Route path="/transactions" element={
+            <ProtectedRoute>
+              <TransactionsPage />
+            </ProtectedRoute>
+          } />
 
         {/* Protected Routes */}
         <Route path="/shop/dashboard" element={
