@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TempStoreProvider } from './contexts/TempStoreContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import NavMenu from './pages/shop/components/NavMenu';
@@ -23,9 +23,11 @@ import ShopPublicView from './pages/shop/shopPublicView.js';
 // Create a new component for the routes
 const AppRoutes = () => {
   const location = useLocation();
+  const { isAuthenticated } = useAuth(); // Make sure to import useAuth
   
-  const showNavMenu = ['/shop', '/notifications', '/profile'].some(
-    path => location.pathname.includes(path) && !location.pathname.includes('/create/template')
+  // Update this logic to determine when to show NavMenu
+  const showNavMenu = isAuthenticated && !['/auth', '/verify-email', '/shop/create/template'].some(
+    path => location.pathname === path || location.pathname.includes(path)
   );
 
   return (

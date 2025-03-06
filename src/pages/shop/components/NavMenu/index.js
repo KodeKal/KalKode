@@ -97,8 +97,8 @@ const NavMenu = ({ theme }) => {
   const menuItems = [
     { 
       icon: <Home size={20} />, 
-      label: 'Shop', 
-      path: `/shop/${auth.currentUser?.uid || ''}`
+      label: 'Home', 
+      path: '/'  // Changed from shop path to home path
     },
     { 
       icon: <LayoutDashboard size={20} />, 

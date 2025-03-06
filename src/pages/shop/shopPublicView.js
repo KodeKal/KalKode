@@ -1,123 +1,181 @@
-// src/pages/shop/ShopPublicView.js
+// In src/pages/shop/shopPublicView.js
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import styled, { ThemeProvider } from 'styled-components';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
-import { ShoppingCart, Heart, Share2, MessageCircle, Navigation, ChevronLeft } from 'lucide-react';
 import { DEFAULT_THEME } from '../../theme/config/themes';
+import BuyDialog from '../../components/Transaction/BuyDialog';
+import OrderChat from '../../components/Chat/OrderChat';
+import { 
+  ShoppingCart, 
+  Heart, 
+  MessageCircle, 
+  Navigation, 
+  ChevronLeft, 
+  ChevronRight, 
+  Search, 
+  X 
+} from 'lucide-react';
+import TabPositioner from './components/TabPositioner';
 
+// Reuse the same styled components as in ShopPage.js
 const PageContainer = styled.div`
   min-height: 100vh;
   background: ${props => props.theme?.colors?.background || DEFAULT_THEME.colors.background};
   color: ${props => props.theme?.colors?.text || DEFAULT_THEME.colors.text};
-`;
-
-const ShopHeader = styled.div`
-  padding-top: 80px;
-  background: ${props => props.theme?.colors?.background || DEFAULT_THEME.colors.background};
   position: relative;
+  overflow-x: hidden;
 `;
 
-const HeaderBanner = styled.div`
-  height: 200px;
-  background: ${props => `linear-gradient(45deg, ${props.theme?.colors?.primary || '#800000'}, ${props.theme?.colors?.secondary || '#4A0404'})`};
-  position: relative;
-`;
-
-const ShopInfoSection = styled.div`
-  max-width: 1200px;
+const MainContent = styled.div`
+  max-width: ${props => props.theme?.styles?.containerWidth || '1400px'};
   margin: 0 auto;
+  padding: 8rem 2rem 2rem;
+  position: relative;
+  z-index: 1;
+`;
+
+const ShopBanner = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: ${props => `${props.theme?.colors?.background || DEFAULT_THEME.colors.background}CC`};
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 0 2rem;
+  z-index: 100;
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent || DEFAULT_THEME.colors.accent}30`};
+`;
+
+const TabControlsContainer = styled.div`
+  position: fixed;
   display: flex;
-  align-items: flex-start;
-  margin-top: -60px;
-  
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: center;
+  align-items: center;
+  gap: 1rem;
+  z-index: 100;
+  top: 0.1rem;
+  left: 51%;
+  transform: translateX(-50%);
+`;
+
+const ShopLogoCorner = styled.div`
+  position: fixed;
+  top: 2rem;
+  left: 2rem;
+  z-index: 100;
+  cursor: pointer;
+`;
+
+const ShopLogo = styled.div`
+  color: ${props => props.theme?.colors?.accent || '#A00000'};
+  font-family: ${props => props.theme?.fonts?.heading || 'Impact, sans-serif'};
+  font-size: 2rem;
+  letter-spacing: 2px;
+  transform: skew(-5deg);
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+
+  &:hover {
+    opacity: 1;
   }
 `;
 
-const ProfileImage = styled.div`
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 4px solid ${props => props.theme?.colors?.background || DEFAULT_THEME.colors.background};
-  margin-right: 2rem;
-  flex-shrink: 0;
-  
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  @media (max-width: 768px) {
-    margin-right: 0;
-    margin-bottom: 1rem;
-  }
-`;
-
-const ShopDetails = styled.div`
-  flex: 1;
-  
-  h1 {
-    font-family: ${props => props.theme?.fonts?.heading || DEFAULT_THEME.fonts.heading};
-    font-size: 2.5rem;
-    margin: 0 0 0.5rem 0;
-    background: ${props => `linear-gradient(45deg, ${props.theme?.colors?.primary || '#800000'}, ${props.theme?.colors?.accent || '#800000'})`};
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  
-  p {
-    color: ${props => props.theme?.colors?.text || DEFAULT_THEME.colors.text};
-    font-family: ${props => props.theme?.fonts?.body || DEFAULT_THEME.fonts.body};
-    margin-bottom: 1rem;
-    max-width: 600px;
-  }
-  
-  @media (max-width: 768px) {
-    text-align: center;
-  }
-`;
-
-const ShopStats = styled.div`
+const BackButton = styled.button`
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  background: transparent;
+  border: 1px solid ${props => props.theme?.colors?.accent || '#800000'};
+  color: ${props => props.theme?.colors?.text || 'white'};
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
   display: flex;
-  gap: 2rem;
-  margin-top: 1rem;
-  
-  div {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: ${props => `${props.theme?.colors?.text}99` || 'rgba(255,255,255,0.6)'};
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+  }
+`;
+
+// Reuse the ShopProfileSection from ShopPage
+const ShopProfileSection = styled.section`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 800px;
+  margin: 2rem auto 4rem;
+  padding: 2rem;
+
+  .profile-image {
+    margin-bottom: 1rem;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.1);
+    border: 3px solid ${props => props.theme?.colors?.accent || '#800000'};
+    box-shadow: 0 0 20px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+    transition: all 0.3s ease;
     
-    strong {
-      color: ${props => props.theme?.colors?.text || DEFAULT_THEME.colors.text};
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
   }
-  
-  @media (max-width: 768px) {
-    justify-content: center;
+
+  .shop-name {
+    font-size: ${props => props.fontSize || '2.5rem'};
+    font-family: ${props => props.theme?.fonts?.heading || "'Space Grotesk', sans-serif"};
+    background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0.5rem 0;
+  }
+
+  .shop-description {
+    font-size: 1.1rem;
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+    opacity: 0.8;
+    font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
+    max-width: 600px;
+    margin: 0 auto;
   }
 `;
 
-const ContentSection = styled.div`
-  max-width: 1200px;
-  margin: 3rem auto;
-  padding: 0 2rem;
-`;
-
-const ItemsGrid = styled.div`
+// ItemGrid styled component
+const ItemGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 2rem;
-  margin: 2rem 0;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 3rem;
+  margin: 4rem 0;
 `;
 
+const ChatOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: ${props => props.isOpen ? 1 : 0};
+  pointer-events: ${props => props.isOpen ? 'auto' : 'none'};
+  transition: opacity 0.3s ease;
+`;
+
+// ItemCard styled component
 const ItemCard = styled.div`
   background: ${props => props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'};
   border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
@@ -135,11 +193,13 @@ const ItemCard = styled.div`
   }
 `;
 
-const ItemImage = styled.div`
-  height: 220px;
-  overflow: hidden;
+const ItemImageContainer = styled.div`
   position: relative;
-  
+  height: 250px;
+  width: 100%;
+  overflow: hidden;
+  background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
+
   img {
     width: 100%;
     height: 100%;
@@ -150,35 +210,69 @@ const ItemImage = styled.div`
   ${ItemCard}:hover & img {
     transform: scale(1.05);
   }
+  
+  .carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.5)'}90`};
+    border: 1px solid ${props => `${props.theme?.colors?.accent || 'rgba(255, 255, 255, 0.2)'}40`};
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${props => props.theme?.colors?.text || 'white'};
+    cursor: pointer;
+    opacity: 0.7;
+    transition: all 0.2s;
+    z-index: 2;
+
+    &:hover {
+      opacity: 1;
+      background: ${props => `${props.theme?.colors?.accent || 'rgba(0, 0, 0, 0.8)'}40`};
+    }
+
+    &.left {
+      left: 1rem;
+    }
+
+    &.right {
+      right: 1rem;
+    }
+  }
 `;
 
-const ItemDetails = styled.div`
+const ItemContent = styled.div`
   padding: 1.5rem;
   flex: 1;
   display: flex;
   flex-direction: column;
-`;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
 
-const ItemTitle = styled.h3`
-  font-family: ${props => props.theme?.fonts?.heading || DEFAULT_THEME.fonts.heading};
-  font-size: 1.2rem;
-  margin: 0 0 0.5rem 0;
-  color: ${props => props.theme?.colors?.text || DEFAULT_THEME.colors.text};
-`;
+  h3 {
+    font-size: 1.2rem;
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+    margin: 0 0 0.5rem 0;
+    font-family: ${props => props.theme?.fonts?.heading || "'Space Grotesk', sans-serif"};
+  }
 
-const ItemPrice = styled.div`
-  font-size: 1.4rem;
-  font-weight: bold;
-  color: ${props => props.theme?.colors?.accent || '#800000'};
-  margin-bottom: 0.5rem;
-`;
+  .price {
+    font-size: 1.1rem;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
 
-const ItemDescription = styled.p`
-  color: ${props => `${props.theme?.colors?.text}CC` || 'rgba(255,255,255,0.8)'};
-  font-size: 0.9rem;
-  line-height: 1.5;
-  margin-bottom: 1rem;
-  flex: 1;
+  .description {
+    color: ${props => `${props.theme?.colors?.text}CC` || 'rgba(255, 255, 255, 0.8)'};
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    flex: 1;
+    font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
+  }
 `;
 
 const ItemLocation = styled.div`
@@ -186,7 +280,7 @@ const ItemLocation = styled.div`
   align-items: center;
   gap: 0.5rem;
   font-size: 0.8rem;
-  color: ${props => `${props.theme?.colors?.text}99` || 'rgba(255,255,255,0.6)'};
+  color: ${props => `${props.theme?.colors?.text}99` || 'rgba(255, 255, 255, 0.6)'};
   margin-bottom: 1rem;
 `;
 
@@ -199,7 +293,7 @@ const ActionButtons = styled.div`
 const ActionButton = styled.button`
   flex: 1;
   padding: 0.75rem;
-  border-radius: 6px;
+  border-radius: ${props => props.theme?.styles?.borderRadius || '6px'};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -207,7 +301,8 @@ const ActionButton = styled.button`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  font-family: ${props => props.theme?.fonts?.body || DEFAULT_THEME.fonts.body};
+  position: relative; /* Add this */
+  z-index: 5; /* Add this */
   
   &.primary {
     background: ${props => props.theme?.colors?.accent || '#800000'};
@@ -230,107 +325,98 @@ const ActionButton = styled.button`
   }
 `;
 
-const FilterBar = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-`;
+// In src/pages/shop/shopPublicView.js
 
-const FilterSection = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-`;
-
-const FilterButton = styled.button`
-  background: ${props => props.active ? 
-    props.theme?.colors?.accent || '#800000' : 
-    'rgba(255, 255, 255, 0.05)'};
-  border: 1px solid ${props => props.active ? 
-    props.theme?.colors?.accent || '#800000' : 
-    'rgba(255, 255, 255, 0.1)'};
-  color: ${props => props.active ? 
-    'white' : 
-    props.theme?.colors?.text || DEFAULT_THEME.colors.text};
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  
-  &:hover {
-    border-color: ${props => props.theme?.colors?.accent || '#800000'};
-  }
+// Replace the existing SearchContainer and SearchInput with these:
+const SearchContainer = styled.div`
+  max-width: 600px;
+  margin: 2rem auto 3rem;
+  position: relative;
 `;
 
 const SearchInput = styled.input`
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  padding: 0.5rem 1rem;
-  color: ${props => props.theme?.colors?.text || DEFAULT_THEME.colors.text};
-  width: 250px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
+  padding: 0.75rem 0.5rem;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
   
   &:focus {
     outline: none;
-    border-color: ${props => props.theme?.colors?.accent || '#800000'};
+    border-bottom-width: 3px;
+    box-shadow: 0 6px 12px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.4)'};
   }
   
   &::placeholder {
-    color: ${props => `${props.theme?.colors?.text}80` || 'rgba(255,255,255,0.5)'};
+    color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.4)'};
+    font-style: italic;
   }
 `;
 
-const BackButton = styled.button`
+// Update the SearchIcon and ClearButton positions
+const SearchIcon = styled.div`
   position: absolute;
-  top: 95px;
-  left: 2rem;
-  background: rgba(0, 0, 0, 0.5);
+  right: 0.5rem;
+  bottom: 0.75rem;
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  opacity: 0.8;
+`;
+
+const ClearButton = styled.button`
+  position: absolute;
+  right: 2rem;
+  bottom: 0.75rem;
+  background: transparent;
   border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  cursor: pointer;
-  z-index: 2;
-  transition: all 0.2s;
+  opacity: 0.7;
   
   &:hover {
-    background: rgba(0, 0, 0, 0.7);
-    transform: translateX(-3px);
+    opacity: 1;
   }
 `;
 
 const EmptyStateMessage = styled.div`
   text-align: center;
   padding: 4rem 2rem;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}50`};
+  border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
   
   h3 {
     font-size: 1.5rem;
     margin-bottom: 1rem;
     color: ${props => props.theme?.colors?.accent || '#800000'};
+    font-family: ${props => props.theme?.fonts?.heading || "'Space Grotesk', sans-serif"};
   }
   
   p {
-    color: ${props => `${props.theme?.colors?.text}CC` || 'rgba(255,255,255,0.8)'};
+    color: ${props => `${props.theme?.colors?.text}CC` || 'rgba(255, 255, 255, 0.8)'};
+    font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
   }
 `;
 
+// The ShopPublicView component
 const ShopPublicView = () => {
   const { shopId } = useParams();
   const navigate = useNavigate();
   const [shopData, setShopData] = useState(null);
-  const [items, setItems] = useState([]);
+  const [activeTab, setActiveTab] = useState('shop');
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  
+  const [currentImageIndices, setCurrentImageIndices] = useState({});
+  const [chatOpen, setChatOpen] = useState(false);
+const [selectedChatItem, setSelectedChatItem] = useState(null);
 
   useEffect(() => {
     const fetchShopData = async () => {
@@ -338,7 +424,6 @@ const ShopPublicView = () => {
         setLoading(true);
         setError(null);
         
-        // Fetch shop details
         const shopRef = doc(db, 'shops', shopId);
         const shopSnap = await getDoc(shopRef);
         
@@ -351,10 +436,13 @@ const ShopPublicView = () => {
         const shop = shopSnap.data();
         setShopData(shop);
         
-        // Process items from the shop data
+        // Initialize current image indices for items
         if (shop.items && Array.isArray(shop.items)) {
-          const activeItems = shop.items.filter(item => !item.deleted);
-          setItems(activeItems);
+          const indices = {};
+          shop.items.forEach(item => {
+            indices[item.id] = item.currentImageIndex || 0;
+          });
+          setCurrentImageIndices(indices);
         }
         
         setLoading(false);
@@ -370,24 +458,44 @@ const ShopPublicView = () => {
     }
   }, [shopId]);
 
-  // Filter and search items
-  const filteredItems = items.filter(item => {
-    // Apply search filter
-    const matchesSearch = !searchTerm || 
+  const handleNextImage = (e, itemId) => {
+    e.stopPropagation();
+    const item = shopData.items.find(i => i.id === itemId);
+    if (item && item.images && item.images.filter(Boolean).length > 0) {
+      const validImages = item.images.filter(Boolean);
+      setCurrentImageIndices(prev => ({
+        ...prev,
+        [itemId]: (prev[itemId] + 1) % validImages.length
+      }));
+    }
+  };
+
+  const handlePrevImage = (e, itemId) => {
+    e.stopPropagation();
+    const item = shopData.items.find(i => i.id === itemId);
+    if (item && item.images && item.images.filter(Boolean).length > 0) {
+      const validImages = item.images.filter(Boolean);
+      setCurrentImageIndices(prev => ({
+        ...prev,
+        [itemId]: (prev[itemId] - 1 + validImages.length) % validImages.length
+      }));
+    }
+  };
+
+  // Filter items based on search term
+  const filteredItems = shopData?.items?.filter(item => 
+    !item.deleted && 
+    (searchTerm === '' || 
       (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    // Apply category filter
-    const matchesFilter = filter === 'all' || (item.category === filter);
-    
-    return matchesSearch && matchesFilter;
-  });
+      (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
+  ) || [];
 
   if (loading) {
     return (
       <PageContainer>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-          <div>Loading shop data...</div>
+          <div>Loading shop...</div>
         </div>
       </PageContainer>
     );
@@ -404,156 +512,241 @@ const ShopPublicView = () => {
     );
   }
 
-  if (!shopData) {
-    return null;
-  }
-
-  const handleOrderClick = (item) => {
-    // Placeholder for order functionality
-    alert(`Order placed for ${item.name}`);
-  };
-
-  const handleInquiryClick = (item) => {
-    // Placeholder for inquiry functionality
-    alert(`Inquiry sent for ${item.name}`);
-  };
-
   return (
-    <PageContainer theme={shopData.theme}>
-      <ShopHeader theme={shopData.theme}>
-        <HeaderBanner theme={shopData.theme} />
+    <ThemeProvider theme={shopData?.theme || DEFAULT_THEME}>
+      <PageContainer>
+        <ShopLogoCorner>
+          <ShopLogo>
+            {shopData?.name || 'SHOP'}
+          </ShopLogo>
+        </ShopLogoCorner>
+        
         <BackButton onClick={() => navigate('/')}>
-          <ChevronLeft size={20} />
+          <ChevronLeft size={16} />
+          Back to Discover
         </BackButton>
         
-        <ShopInfoSection>
-          <ProfileImage theme={shopData.theme}>
-            {shopData.profile ? (
-              <img src={shopData.profile} alt={shopData.name} />
-            ) : (
-              <div style={{
-                width: '100%',
-                height: '100%',
-                background: shopData.theme?.colors?.accent || '#800000',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: '2rem'
-              }}>
-                {shopData.name?.charAt(0) || 'S'}
-              </div>
-            )}
-          </ProfileImage>
-          
-          <ShopDetails theme={shopData.theme}>
-            <h1>{shopData.name}</h1>
-            <p>{shopData.description}</p>
-            
-            <ShopStats theme={shopData.theme}>
-              <div>
-                <span>Items:</span>
-                <strong>{items.length}</strong>
-              </div>
-              <div>
-                <span>Since:</span>
-                <strong>
-                  {shopData.createdAt ? new Date(shopData.createdAt).toLocaleDateString() : 'Unknown'}
-                </strong>
-              </div>
-            </ShopStats>
-          </ShopDetails>
-        </ShopInfoSection>
-      </ShopHeader>
-
-      <ContentSection>
-        <FilterBar>
-          <FilterSection>
-            <FilterButton 
-              active={filter === 'all'} 
-              onClick={() => setFilter('all')}
-              theme={shopData.theme}
-            >
-              All Items
-            </FilterButton>
-            
-            {/* Add more filter buttons based on categories if needed */}
-          </FilterSection>
-          
-          <SearchInput 
-            placeholder="Search items..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            theme={shopData.theme}
+        <TabControlsContainer>
+          <TabPositioner
+            position="top"
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            tabs={[
+              { id: 'home', label: 'Home' },
+              { id: 'community', label: 'Community' },
+              { id: 'shop', label: 'Shop' }
+            ]}
+            theme={shopData?.theme}
           />
-        </FilterBar>
-
-        {filteredItems.length > 0 ? (
-          <ItemsGrid>
-            {filteredItems.map((item) => (
-              <ItemCard key={item.id} theme={shopData.theme}>
-                <ItemImage>
-                  {item.images && item.images[0] ? (
-                    <img src={item.images[0]} alt={item.name} />
+        </TabControlsContainer>
+        
+        <MainContent>
+          {activeTab === 'shop' && (
+            <>
+              <ShopProfileSection fontSize={shopData?.layout?.nameSize || '2.5rem'}>
+                <div className="profile-image">
+                  {shopData?.profile ? (
+                    <img src={shopData.profile} alt={shopData.name || 'Shop'} />
                   ) : (
-                    <div style={{
-                      width: '100%',
-                      height: '100%',
-                      background: `${shopData.theme?.colors?.surface || 'rgba(0,0,0,0.2)'}`,
+                    <div style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      background: shopData?.theme?.colors?.accent || '#800000',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: shopData.theme?.colors?.text || '#fff'
+                      color: '#fff',
+                      fontSize: '2rem'
                     }}>
-                      No Image
+                      {shopData?.name?.charAt(0) || 'S'}
                     </div>
                   )}
-                </ItemImage>
-                
-                <ItemDetails>
-                  <ItemTitle theme={shopData.theme}>{item.name}</ItemTitle>
-                  <ItemPrice theme={shopData.theme}>${parseFloat(item.price).toFixed(2)}</ItemPrice>
-                  <ItemDescription theme={shopData.theme}>
-                    {item.description || 'No description available.'}
-                  </ItemDescription>
-                  
-                  {item.address && (
-                    <ItemLocation theme={shopData.theme}>
-                      <Navigation size={14} />
-                      {item.address}
-                    </ItemLocation>
+                </div>
+                <h1 className="shop-name">{shopData?.name || 'Shop Name'}</h1>
+                <p className="shop-description">{shopData?.description || 'No description available.'}</p>
+              </ShopProfileSection>
+              
+              <SearchContainer>
+                  <SearchInput 
+                    placeholder="Search items..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  {searchTerm ? (
+                    <ClearButton onClick={() => setSearchTerm('')}>
+                      <X size={18} />
+                    </ClearButton>
+                  ) : (
+                    <SearchIcon>
+                      <Search size={18} />
+                    </SearchIcon>
                   )}
-                  
-                  <ActionButtons>
-                    <ActionButton 
-                      className="secondary"
-                      onClick={() => handleInquiryClick(item)}
-                      theme={shopData.theme}
-                    >
-                      <MessageCircle size={16} />
-                      Inquire
-                    </ActionButton>
-                    <ActionButton 
-                      className="primary"
-                      onClick={() => handleOrderClick(item)}
-                      theme={shopData.theme}
-                    >
-                      <ShoppingCart size={16} />
-                      Order
-                    </ActionButton>
-                  </ActionButtons>
-                </ItemDetails>
-              </ItemCard>
-            ))}
-          </ItemsGrid>
-        ) : (
-          <EmptyStateMessage theme={shopData.theme}>
-            <h3>No items found</h3>
-            <p>This shop doesn't have any items matching your search criteria.</p>
-          </EmptyStateMessage>
+                </SearchContainer>
+              
+              {filteredItems.length > 0 ? (
+                <ItemGrid>
+                  {filteredItems.map((item) => {
+                    const validImages = item.images?.filter(Boolean) || [];
+                    const imageIndex = currentImageIndices[item.id] || 0;
+                    
+                    return (
+                      <ItemCard key={item.id}>
+                        <ItemImageContainer>
+                          {validImages.length > 0 ? (
+                            <img 
+                              src={validImages[imageIndex % validImages.length]} 
+                              alt={item.name} 
+                            />
+                          ) : (
+                            <div style={{
+                              width: '100%',
+                              height: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: shopData?.theme?.colors?.text || '#fff',
+                              opacity: 0.5
+                            }}>
+                              No Image Available
+                            </div>
+                          )}
+                          
+                          {validImages.length > 1 && (
+                            <>
+                              <button 
+                                className="carousel-arrow left"
+                                onClick={(e) => handlePrevImage(e, item.id)}
+                              >
+                                <ChevronLeft size={16} />
+                              </button>
+                              <button 
+                                className="carousel-arrow right"
+                                onClick={(e) => handleNextImage(e, item.id)}
+                              >
+                                <ChevronRight size={16} />
+                              </button>
+                            </>
+                          )}
+                        </ItemImageContainer>
+                        
+                        <ItemContent>
+                          <h3>{item.name}</h3>
+                          <div className="price">
+                            ${parseFloat(item.price || 0).toFixed(2)}
+                          </div>
+                          <div className="description">
+                            {item.description || 'No description available.'}
+                          </div>
+                          
+                          {item.address && (
+                            <ItemLocation>
+                              <Navigation size={14} />
+                              {item.address}
+                            </ItemLocation>
+                          )}
+                          
+                          <ActionButtons>
+                            <ActionButton className="secondary">
+                              <MessageCircle size={16} />
+                              Inquire
+                            </ActionButton>
+                            <ActionButton 
+                              className="primary"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedChatItem(item);
+                                setChatOpen(true);
+                              }}
+                            >
+                              <ShoppingCart size={16} />
+                              Order
+                            </ActionButton>
+                          </ActionButtons>                          
+                                                    
+                        </ItemContent>
+                      </ItemCard>
+                    );
+                  })}
+                </ItemGrid>
+              ) : (
+                <EmptyStateMessage>
+                  <h3>No Items Found</h3>
+                  <p>
+                    {searchTerm 
+                      ? `No items match your search for "${searchTerm}"`
+                      : "This shop doesn't have any items yet."}
+                  </p>
+                </EmptyStateMessage>
+              )}
+            </>
+          )}
+
+          {activeTab === 'home' && (
+            <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+              <h2 style={{ 
+                color: shopData?.theme?.colors?.accent || '#800000',
+                fontFamily: shopData?.theme?.fonts?.heading || "'Space Grotesk', sans-serif",
+                marginBottom: '1rem'
+              }}>
+                Welcome to our Shop
+              </h2>
+              <p style={{ 
+                maxWidth: '800px',
+                margin: '0 auto',
+                lineHeight: '1.6',
+                color: shopData?.theme?.colors?.text || '#FFFFFF',
+                fontFamily: shopData?.theme?.fonts?.body || "'Inter', sans-serif"
+              }}>
+                {shopData?.mission || 'Our mission is to provide quality products and excellent service to our customers.'}
+              </p>
+            </div>
+          )}
+
+          {activeTab === 'community' && (
+            <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+              <h2 style={{ 
+                color: shopData?.theme?.colors?.accent || '#800000',
+                fontFamily: shopData?.theme?.fonts?.heading || "'Space Grotesk', sans-serif",
+                marginBottom: '1rem'
+              }}>
+                Community
+              </h2>
+              <p style={{ 
+                maxWidth: '800px',
+                margin: '0 auto',
+                lineHeight: '1.6',
+                color: shopData?.theme?.colors?.text || '#FFFFFF',
+                fontFamily: shopData?.theme?.fonts?.body || "'Inter', sans-serif"
+              }}>
+                This is where community content will appear.
+              </p>
+            </div>
+          )}
+        </MainContent>
+        <ChatOverlay 
+            isOpen={chatOpen} 
+            onClick={() => {
+              setChatOpen(false);
+              setSelectedChatItem(null);
+            }}
+          />
+
+          {selectedChatItem && (
+            <OrderChat 
+              isOpen={chatOpen} 
+              onClose={() => {
+                setChatOpen(false);
+                setSelectedChatItem(null);
+              }} 
+              item={selectedChatItem}
+              shopId={shopId}
+              shopName={shopData?.name}
+              theme={shopData?.theme}
+            />
         )}
-      </ContentSection>
-    </PageContainer>
+      </PageContainer>
+    </ThemeProvider>
   );
 };
 

@@ -14,6 +14,7 @@ import { db } from '../firebase/config';
 import { WELCOME_STYLES } from '../theme/welcomeStyles';
 import { getShopData } from '../firebase/firebaseService';
 import { useAuth } from '../contexts/AuthContext';
+import NavMenu from './shop/components/NavMenu';
 
 const ProfileSection = styled.div`
   display: flex;
@@ -23,12 +24,12 @@ const ProfileSection = styled.div`
 `;
 
 const ProfileImage = styled.div`
-  width: 200px; /* Increased from 120px (3x larger) */
-  height: 189px; /* Increased from 120px (3x larger) */
+  width: 200px;
+  height: 189px;
   border-radius: 50%;
   overflow: hidden;
-  margin-bottom: 1.5rem; /* Increased margin for better spacing */
-  border: 6px solid ${props => props.theme?.colors?.accent || '#800000'}; /* Increased border width */
+  margin-bottom: 1.5rem;
+  border: 6px solid ${props => props.theme?.colors?.accent || '#800000'};
   box-shadow: 0 0 30px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
   transition: all 0.3s ease;
   
@@ -47,7 +48,7 @@ const ProfileImage = styled.div`
 // Update the ShopName styled component
 const ShopName = styled.h2`
   font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
-  font-size: 5.4rem; /* Increased from 1.8rem (3x larger) */
+  font-size: 5.4rem;
   background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -452,7 +453,7 @@ const TabContainer = styled.div`
 
 const GridContainer = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); // Reduce the minmax value from 300px to 250px
   gap: 2rem;
   margin-top: 2rem;
 `;
@@ -1258,7 +1259,7 @@ React.useEffect(() => {
         <Logo onClick={() => navigate('/')} theme={currentStyle}>
           KALKODE
         </Logo>
-        
+
         {isAuthenticated && shopData?.name && (
           <ShopNameBadge
             theme={currentStyle}
@@ -1290,7 +1291,7 @@ React.useEffect(() => {
             // Logged-in user view
             <>
               <ProfileSection>
-                <ProfileImage>
+                <ProfileImage theme={currentStyle}>
                   {shopData.profile ? (
                     <img src={shopData.profile} alt={shopData.name || 'Shop Profile'} />
                   ) : (
@@ -1308,16 +1309,10 @@ React.useEffect(() => {
                     </div>
                   )}
                 </ProfileImage>
-                <ShopName>{shopData.name || 'My Shop'}</ShopName>
-              </ProfileSection>
-              
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
-                <ActionButton theme={currentStyle} onClick={() => navigate('/shop/dashboard')}>
-                  My Dashboard
-                </ActionButton>
-              </div>
+                <ShopName theme={currentStyle}>{shopData.name || 'My Shop'}</ShopName>
+              </ProfileSection>         
 
-              <MotivationalMessage>
+              <MotivationalMessage theme={currentStyle}>
                 {motivationalMessage}
               </MotivationalMessage>
             </>
@@ -1438,6 +1433,7 @@ React.useEffect(() => {
                     location: item.formattedDistance
                   }}
                   showDistance
+                  theme={currentStyle}
                 />
               ))
             )}
@@ -1470,6 +1466,7 @@ React.useEffect(() => {
                 <FeaturedItem 
                   key={`${item.shopId}-${item.id}`} 
                   item={item}  // Pass the entire item as is
+                  theme={currentStyle}
                 />
               ))
             )}

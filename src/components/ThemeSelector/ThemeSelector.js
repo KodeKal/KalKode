@@ -1,5 +1,6 @@
-// src/components/ThemeSelector/ThemeSelector.js
-import React from 'react';
+// In src/components/ThemeSelector/ThemeSelector.js
+
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 
@@ -26,25 +27,35 @@ const DropdownContent = styled.div`
   left: 50%;
   transform: translateX(-50%);
   width: auto;
+  min-width: 380px;
+  max-width: 90vw;
   background: ${props => props.theme?.colors?.background || '#000000'};
   border: 1px solid ${props => props.theme?.colors?.accent || '#800000'};
   border-radius: 8px;
   margin-bottom: 0.5rem;
   padding: 1rem;
   z-index: 1000;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  justify-content: center;
-  max-width: 90vw;
+`;
+
+// New horizontal grid layout for theme options
+const ThemeGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
 `;
 
 const ThemeOption = styled.div`
-  width: 50px;
-  height: 50px;
+  width: 100%;
+  aspect-ratio: 1;
   border-radius: 8px;
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
@@ -52,12 +63,13 @@ const ThemeOption = styled.div`
   border: 2px solid ${props => props.active ? 'white' : 'transparent'};
   position: relative;
   overflow: hidden;
-
+  
   &:hover {
-    transform: scale(1.1);
+    transform: scale(1.05);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
   }
-
-  .theme-number {
+  
+  .style-number {
     position: absolute;
     bottom: 3px;
     right: 3px;
@@ -65,6 +77,37 @@ const ThemeOption = styled.div`
     font-weight: bold;
     color: white;
     text-shadow: 0 0 2px black;
+  }
+  
+  .style-name {
+    font-size: 10px;
+    color: white;
+    text-shadow: 0 0 3px black;
+    text-align: center;
+    position: absolute;
+    bottom: 5px;
+    left: 3px;
+    right: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+`;
+
+const ApplyButton = styled.button`
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: ${props => props.theme?.colors?.accent || '#800000'};
+  border: none;
+  border-radius: 4px;
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
   }
 `;
 
@@ -74,7 +117,7 @@ const ThemeSelector = ({
   isAuthenticated = false,
   onApplyTheme = null 
 }) => {
-  const [isOpen, setIsOpen] = React.useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <ThemeDropdown>
@@ -84,39 +127,36 @@ const ThemeSelector = ({
 
       {isOpen && (
         <DropdownContent>
-          {Object.values(WELCOME_STYLES).map((theme) => (
-            <ThemeOption 
-              key={theme.id}
-              color={theme.colors.accent}
-              active={currentTheme.id === theme.id}
-              onClick={() => {
-                onThemeSelect(theme);
-                setIsOpen(false);
-              }}
-              title={`${theme.name} (Style ${theme.id})`}
-            >
-              <div className="theme-number">{theme.id}</div>
-            </ThemeOption>
-          ))}
+          <ThemeGrid>
+            {Object.values(WELCOME_STYLES).map((theme) => (
+              <ThemeOption 
+                key={theme.id}
+                color={theme.colors.accent}
+                active={currentTheme.id === theme.id}
+                onClick={() => {
+                  onThemeSelect(theme);
+                  if (!isAuthenticated) {
+                    setIsOpen(false);
+                  }
+                }}
+                title={`${theme.name} (Style ${theme.id})`}
+              >
+                <div className="style-number">{theme.id}</div>
+                <div className="style-name">{theme.name}</div>
+              </ThemeOption>
+            ))}
+          </ThemeGrid>
+          
           {isAuthenticated && onApplyTheme && (
-            <button 
+            <ApplyButton 
               onClick={() => {
                 onApplyTheme(currentTheme);
                 setIsOpen(false);
               }}
-              style={{ 
-                width: '100%', 
-                marginTop: '1rem',
-                padding: '0.5rem',
-                background: currentTheme.colors.accent,
-                border: 'none',
-                borderRadius: '4px',
-                color: currentTheme.colors.text,
-                cursor: 'pointer'
-              }}
+              theme={currentTheme}
             >
               Apply Theme
-            </button>
+            </ApplyButton>
           )}
         </DropdownContent>
       )}

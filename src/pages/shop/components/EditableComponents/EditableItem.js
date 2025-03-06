@@ -143,13 +143,16 @@ const DeleteItemButton = styled.button`
 `;
 
 const EditableItem = ({
-  item,
+  item,  // This is already coming from props
   onChange,
   onDelete,
   theme
 }) => {
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [newTag, setNewTag] = useState('');
+  
+  // Remove this duplicate state declaration
+  // const [item, setItem] = useState({...}) - THIS IS THE PROBLEM
 
   const handleImageChange = (index, imageData) => {
     const newImages = [...item.images];
@@ -178,6 +181,13 @@ const EditableItem = ({
     onChange({
       ...item,
       description: newDescription
+    });
+  };
+
+  const handleQuantityChange = (e) => {
+    onChange({
+      ...item,
+      quantity: parseInt(e.target.value) || 0
     });
   };
 
@@ -243,6 +253,24 @@ const EditableItem = ({
           multiline
           theme={theme}
         />
+
+        <div className="quantity-field" style={{ marginTop: '1rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Quantity Available</label>
+          <input 
+            type="number" 
+            min="0" 
+            value={item.quantity || 1}
+            onChange={handleQuantityChange}
+            style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '4px',
+              padding: '0.5rem',
+              color: 'white',
+              width: '100%'
+            }}
+          />
+        </div>
 
         <TagsContainer>
           {(item.tags || []).map((tag, index) => (
