@@ -23,6 +23,7 @@ import { DEFAULT_THEME } from '../../theme/config/themes';
 import ThemeSelector from '../../components/ThemeSelector/ThemeSelector';
 import AddressInput from '../../components/shop/AddressInput';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
+import QuantitySelector from '../../components/shop/QuantitySelector';
 
 // Keep all existing styled components as they were
 const PageContainer = styled.div.attrs({ className: 'page-container' })`
@@ -182,7 +183,7 @@ const ShopProfileSection = styled.section`
   .shop-name-container {
     width: 100%;
     margin: 0.5rem 0;
-  
+
     input {
       width: 100%;
       text-align: center;
@@ -197,7 +198,7 @@ const ShopProfileSection = styled.section`
       /* -webkit-text-fill-color: transparent; */
       outline: none;
       padding: 0.5rem;
-  
+
       &:focus {
         /* Update focus state to use normal color */
         color: ${props => props.theme?.colors?.accent || '#800000'};
@@ -205,7 +206,7 @@ const ShopProfileSection = styled.section`
         /* -webkit-background-clip: text; */
         /* -webkit-text-fill-color: transparent; */
       }
-  
+
       &::placeholder {
         /* Make placeholder more visible */
         color: ${props => `${props.theme?.colors?.accent}80` || 'rgba(128, 0, 0, 0.5)'};
@@ -481,7 +482,8 @@ const LiveShopCreation = () => {
       currentImageIndex: 0,
       address: '',
       coordinates: null,
-      tags: []
+      tags: [],
+      quantity: 1  // Add this line
     }],
     layout: {
       namePosition: SHOP_NAME_POSITIONS.LEFT,
@@ -509,7 +511,8 @@ const LiveShopCreation = () => {
         currentImageIndex: 0,
         address: '',
         coordinates: null,
-        tags: []
+        tags: [],
+        quantity: 1 // Add this line
       }]
     }));
   };
@@ -707,6 +710,13 @@ const LiveShopCreation = () => {
                 placeholder="Item Description"
                 multiline
                 theme={selectedTheme}
+              />
+              <QuantitySelector 
+                value={parseInt(item.quantity) || 1}
+                onChange={(value) => handleItemUpdate(item.id, { quantity: value })}
+                theme={selectedTheme}
+                min={0}
+                max={9999}
               />
               <AddressInput
                 address={item.address || ''}

@@ -637,6 +637,43 @@ const [selectedChatItem, setSelectedChatItem] = useState(null);
                           <div className="description">
                             {item.description || 'No description available.'}
                           </div>
+
+                          <div style={{ 
+                              display: 'flex', 
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              marginBottom: '0.5rem'
+                            }}>
+                              <h3 style={{ margin: 0 }}>{item.name}</h3>
+
+                              {item.quantity !== undefined && parseInt(item.quantity) > 0 ? (
+                                <span style={{
+                                  background: `${shopData?.theme?.colors?.accent || '#800000'}30`,
+                                  color: shopData?.theme?.colors?.accent || '#800000',
+                                  padding: '2px 8px',
+                                  borderRadius: '12px',
+                                  fontSize: '0.85rem',
+                                  fontWeight: '500',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}>
+                                  x{item.quantity}
+                                </span>
+                              ) : (
+                                <span style={{
+                                  background: '#FF525230',
+                                  color: '#FF5252',
+                                  padding: '2px 8px',
+                                  borderRadius: '12px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '500',
+                                }}>
+                                  Sold Out
+                                </span>
+                              )}
+                            </div>
+
                           
                           {item.address && (
                             <ItemLocation>
@@ -664,7 +701,6 @@ const [selectedChatItem, setSelectedChatItem] = useState(null);
                             </ActionButton>
                           </ActionButtons>
                           
-                          // Add this at the end of the component's return statement
                           {selectedChatItem && (
                             <OrderChat 
                               isOpen={chatOpen} 

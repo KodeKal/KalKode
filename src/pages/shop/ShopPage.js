@@ -15,6 +15,7 @@ import { ChevronUp, ChevronDown, Plus, Minus, ChevronLeft, ChevronRight, X } fro
 import { Trash2 } from 'lucide-react';
 import AddressInput from '../../components/shop/AddressInput';
 import ThemeSelector from '../../components/ThemeSelector/ThemeSelector';
+import QuantitySelector from '../../components/shop/QuantitySelector';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 
 const ShopProfileSection = styled.div`
@@ -1245,6 +1246,14 @@ const ShopPage = () => {
                           theme={shopData?.theme}
                         />
                       </div>
+
+                      <QuantitySelector 
+                        value={parseInt(item.quantity) || 1}
+                        onChange={(value) => handleItemUpdate(item.id, { quantity: value })}
+                        theme={shopData?.theme}
+                        min={0}
+                        max={9999}
+                      />
 
                       <AddressInput
                         address={item.address || ''}

@@ -43,7 +43,8 @@ export const getFeaturedItems = async (limitCount = 6) => {
             ...item,
             shopId: doc.id,
             shopName: shopData.name || 'Unknown Shop',
-            shopTheme: shopData.theme || {}
+            shopTheme: shopData.theme || {},
+            quantity: item.quantity || 1
           }));
         allItems = [...allItems, ...shopItems];
       }
@@ -155,6 +156,7 @@ export const saveInitialShop = async (userId, data) => {
           status: 'active',
           address: item.address || '',
           coordinates: item.coordinates || null,
+          quantity: item.quantity || 1, // Add this line
           views: 0,
           likes: 0,
           deleted: false,
@@ -264,6 +266,7 @@ export const saveShopData = async (userId, data) => {
           name: item.name || '',
           price: item.price || '',
           description: item.description || '',
+          quantity: item.quantity || 1,
           currentImageIndex: item.currentImageIndex || 0,
           images: [] // Initialize empty, will be updated after upload
         })) || [],
@@ -298,9 +301,18 @@ export const saveShopData = async (userId, data) => {
         ...item,
         address: item.address || '',
         coordinates: item.coordinates || null,
-        // ... other item fields ...
+        quantity: item.quantity || 1, // Include quantity with default of 1
+        views: 0,
+        likes: 0,
+        status: 'active',
+        deleted: false,
+        createdAt: item.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        tags: item.tags || [],
+        searchTerms: item.name ? item.name.toLowerCase().split(' ') : []
       }));
 
+      
       // Try uploading item images
       if (Array.isArray(data.items)) {
         const processedItems = await Promise.all(data.items.map(async (item) => {
@@ -310,6 +322,7 @@ export const saveShopData = async (userId, data) => {
             price: item.price || '',
             description: item.description || '',
             currentImageIndex: item.currentImageIndex || 0,
+            quantity: item.quantity || 1,
             images: []
           };
         

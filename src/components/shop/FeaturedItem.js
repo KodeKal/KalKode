@@ -553,6 +553,31 @@ const FeaturedItem = ({ item, showDistance, theme }) => {
           >
             {item.shopName || 'Unknown Shop'}
           </div>
+          {item.quantity !== undefined && (
+            <div className="item-availability">
+              <span 
+                className="status-indicator" 
+                style={{ 
+                  display: 'inline-block',
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: parseInt(item.quantity) > 0 ? '#4CAF50' : '#FF5252',
+                  marginRight: '6px'
+                }}
+              ></span>
+              <span 
+                className="status-text"
+                style={{ 
+                  fontSize: '0.85rem',
+                  fontWeight: '500',
+                  color: parseInt(item.quantity) > 0 ? '#4CAF50' : '#FF5252' 
+                }}
+              >
+                {parseInt(item.quantity) > 0 ? 'In Stock' : 'Out of Stock'}
+              </span>
+            </div>
+          )}
           {item.location && (
             <LocationText theme={itemTheme}>
               <Navigation size={14} />
