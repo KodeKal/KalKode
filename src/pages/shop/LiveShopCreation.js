@@ -140,6 +140,17 @@ const ActionButton = styled.button`
   }
 `;
 
+const TAB_POSITIONS = {
+  TOP: 'top',
+  LEFT: 'left',
+  BOTTOM: 'bottom'
+};
+
+const SHOP_NAME_POSITIONS = {
+  LEFT: 'left',
+  CENTER: 'center'
+};
+
 const HiddenInput = styled.input`
   display: none;
 `;
@@ -171,7 +182,7 @@ const ShopProfileSection = styled.section`
   .shop-name-container {
     width: 100%;
     margin: 0.5rem 0;
-
+  
     input {
       width: 100%;
       text-align: center;
@@ -179,22 +190,28 @@ const ShopProfileSection = styled.section`
       border: none;
       font-size: ${props => props.fontSize || '2.5rem'};
       font-family: ${props => props.theme?.fonts?.heading};
-      background: ${props => `linear-gradient(45deg, ${props.theme?.colors?.primary}, ${props.theme?.colors?.accent})`};
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      /* Replace the background gradient with direct color */
+      color: ${props => props.theme?.colors?.accent || '#800000'};
+      /* Remove these two lines */
+      /* -webkit-background-clip: text; */
+      /* -webkit-text-fill-color: transparent; */
       outline: none;
       padding: 0.5rem;
-
+  
       &:focus {
-        background: ${props => `linear-gradient(45deg, ${props.theme?.colors?.primary}, ${props.theme?.colors?.accent})`};
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        /* Update focus state to use normal color */
+        color: ${props => props.theme?.colors?.accent || '#800000'};
+        /* Remove these if present */
+        /* -webkit-background-clip: text; */
+        /* -webkit-text-fill-color: transparent; */
       }
-
+  
       &::placeholder {
-        background: ${props => `linear-gradient(45deg, ${props.theme?.colors?.primary}80, ${props.theme?.colors?.accent}80)`};
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        /* Make placeholder more visible */
+        color: ${props => `${props.theme?.colors?.accent}80` || 'rgba(128, 0, 0, 0.5)'};
+        /* Remove these if present */
+        /* -webkit-background-clip: text; */
+        /* -webkit-text-fill-color: transparent; */
       }
     }
   }

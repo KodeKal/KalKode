@@ -24,18 +24,28 @@ export const TransactionService = {
         throw new Error('You must be logged in to make a purchase');
       }
       
-      // Get the item details
-      const itemRef = doc(db, 'shops', sellerId, 'items', itemId);
-      const itemSnap = await getDoc(itemRef);
+      // Get the shop document to find the item
+      const shopRef = doc(db, 'shops', sellerId);
+      const shopSnap = await getDoc(shopRef);
       
-      if (!itemSnap.exists()) {
+      if (!shopSnap.exists()) {
+        throw new Error('Shop not found');
+      }
+      
+      const shopData = shopSnap.data();
+      
+      // Find the item in the shop's items array
+      const itemIndex = shopData.items.findIndex(item => item.id === itemId);
+      
+      if (itemIndex === -1) {
         throw new Error('Item not found');
       }
       
-      const itemData = itemSnap.data();
+      const itemData = shopData.items[itemIndex];
       
       // Check quantity
-      if (itemData.quantity < 1) {
+      const currentQuantity = itemData.quantity || 0;
+      if (currentQuantity < 1) {
         throw new Error('This item is out of stock');
       }
       
@@ -47,7 +57,7 @@ export const TransactionService = {
         sellerId,
         buyerId: buyer.uid,
         buyerName: buyer.displayName || buyer.email,
-        sellerName: '', // We'll fetch this separately
+        sellerName: shopData.name || '',
         price: parseFloat(price),
         status: 'pending', // pending, confirmed, completed, cancelled, disputed
         meetupType, // 'inperson' or 'locker'
@@ -61,18 +71,19 @@ export const TransactionService = {
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
       };
       
-      // Get seller name
-      const sellerDoc = await getDoc(doc(db, 'users', sellerId));
-      if (sellerDoc.exists()) {
-        transaction.sellerName = sellerDoc.data().displayName || sellerDoc.data().email;
-      }
-      
       // Create the transaction
       const transactionRef = await addDoc(collection(db, 'transactions'), transaction);
       
       // Decrease item quantity
-      await updateDoc(itemRef, {
-        quantity: increment(-1)
+      const updatedItems = [...shopData.items];
+      updatedItems[itemIndex] = {
+        ...itemData,
+        quantity: currentQuantity - 1
+      };
+      
+      // Update the shop document with the new items array
+      await updateDoc(shopRef, {
+        items: updatedItems
       });
       
       // Create a chat for this transaction

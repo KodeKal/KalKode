@@ -662,8 +662,24 @@ const [selectedChatItem, setSelectedChatItem] = useState(null);
                               <ShoppingCart size={16} />
                               Order
                             </ActionButton>
-                          </ActionButtons>                          
-                                                    
+                          </ActionButtons>
+                          
+                          // Add this at the end of the component's return statement
+                          {selectedChatItem && (
+                            <OrderChat 
+                              isOpen={chatOpen} 
+                              onClose={() => {
+                                setChatOpen(false);
+                                setSelectedChatItem(null);
+                              }} 
+                              item={selectedChatItem}
+                              shopId={shopId}
+                              shopName={shopData?.name}
+                              theme={shopData?.theme}
+                            />
+                        )}
+
+                          
                         </ItemContent>
                       </ItemCard>
                     );
