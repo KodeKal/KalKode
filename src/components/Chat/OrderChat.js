@@ -1,9 +1,12 @@
 // src/components/Chat/OrderChat.js
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { X, Send, ShoppingCart, MessageCircle, ChevronRight, Check } from 'lucide-react';
+import { X, Send, ShoppingCart, MessageCircle, ChevronRight, Check, CreditCard, DollarSign } from 'lucide-react';
 import { TransactionService } from '../../services/TransactionService';
+import { PaymentService } from '../../services/PaymentService';
 import { auth } from '../../firebase/config';
+import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
 
 const ChatDrawer = styled.div`
   position: fixed;
@@ -106,6 +109,39 @@ const Message = styled.div`
         color: ${props => props.theme?.colors?.accent || '#800000'};
       }
     }
+  }
+`;
+
+const SystemMessage = styled(Message)`
+  background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.2)'};
+  align-self: center;
+  text-align: center;
+  font-style: italic;
+  max-width: 90%;
+  
+  &.status-message {
+    background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+    border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+    font-weight: 500;
+  }
+  
+  &.alert-message {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    color: #FFC107;
+  }
+  
+  &.success-message {
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    color: #4CAF50;
+  }
+  
+  &.error-message {
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    color: #F44336;
   }
 `;
 
@@ -274,16 +310,95 @@ const CloseConfirmation = styled.div`
   }
 `;
 
+const PaymentForm = styled.div`
+  margin: 1rem;
+  padding: 1rem;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
+  border-radius: 12px;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
+  
+  h4 {
+    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
+    margin: 0 0 1rem 0;
+    color: ${props => props.theme?.colors?.text || 'white'};
+  }
+  
+  .card-element {
+    padding: 1rem;
+    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.2)'}90`};
+    border-radius: 8px;
+    border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
+    margin-bottom: 1rem;
+  }
+  
+  .payment-info {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-bottom: 1rem;
+  }
+  
+  .error-message {
+    color: #F44336;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+  }
+`;
+
+const VerificationCodeForm = styled.div`
+  margin: 1rem;
+  padding: 1rem;
+  background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+  border-radius: 12px;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+  
+  h4 {
+    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
+    margin: 0 0 0.5rem 0;
+    color: ${props => props.theme?.colors?.text || 'white'};
+    font-size: 1rem;
+  }
+  
+  p {
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+  
+  .code {
+    text-align: center;
+    font-family: monospace;
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    margin: 1rem 0;
+    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.2)'}90`};
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px dashed ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.4)'};
+  }
+`;
+
+// The actual OrderChat component
 const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
+  const stripe = useStripe();
+  const elements = useElements();
   const [messages, setMessages] = useState([]);
-  const [isOrderMode, setIsOrderMode] = useState(false);
+  const [inputMessage, setInputMessage] = useState('');
+  const [transactionId, setTransactionId] = useState(null);
+  const [transactionCode, setTransactionCode] = useState(null);
+  const [status, setStatus] = useState('initial'); // initial, ordering, payment, awaiting_seller, confirmed, completed
   const [closingChat, setClosingChat] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState(null);
   const messagesEndRef = useRef(null);
+  
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
   
   // Add welcome message when chat opens
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      // Only buyer view is available initially - shop owner doesn't see chat until payment
       setMessages([
         {
           text: `Order item?`,
@@ -296,30 +411,155 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
     }
   }, [isOpen, item, messages.length]);
   
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-  
-  // We don't need the handleSendMessage function as we're replacing the text field with buttons
-  
-  const handleOrder = () => {
-    setIsOrderMode(true);
+  const handleSendMessage = () => {
+    if (!inputMessage.trim()) return;
     
+    // Add user message
     setMessages([
       ...messages,
       {
-        text: `I'd like to order this item.`,
+        text: inputMessage,
         sender: 'user',
         timestamp: new Date(),
-        type: 'order-request'
+        type: 'text'
       }
     ]);
     
-    // Add the proceed to payment button immediately
-    // Shop owner doesn't respond until payment is made
+    setInputMessage('');
   };
-
+  
+  const handleOrder = async () => {
+    try {
+      setLoading(true);
+      setStatus('ordering');
+      
+      // Add user message
+      setMessages(prev => [
+        ...prev,
+        {
+          text: `I'd like to order this item.`,
+          sender: 'user',
+          timestamp: new Date(),
+          type: 'order-request'
+        }
+      ]);
+      
+      // Create transaction
+      const result = await TransactionService.initiateTransaction(
+        item.id,
+        shopId,
+        item.price,
+        'inperson' // Default to in-person meetup
+      );
+      
+      setTransactionId(result.transactionId);
+      setTransactionCode(result.transactionCode);
+      
+      // Add system message
+      setMessages(prev => [
+        ...prev,
+        {
+          text: `Order initiated! Please proceed with payment to confirm your order.`,
+          sender: 'system',
+          timestamp: new Date(),
+          type: 'system',
+          messageClass: 'status-message'
+        }
+      ]);
+      
+      setStatus('payment');
+    } catch (error) {
+      console.error('Error creating order:', error);
+      
+      // Add error message
+      setMessages(prev => [
+        ...prev,
+        {
+          text: `Error: ${error.message || 'Failed to create order. Please try again.'}`,
+          sender: 'system',
+          timestamp: new Date(),
+          type: 'system',
+          messageClass: 'error-message'
+        }
+      ]);
+      
+      setStatus('initial');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handlePayment = async () => {
+    if (!stripe || !elements) {
+      setPaymentError('Stripe has not been properly initialized');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      setPaymentError(null);
+      
+      // Get card element
+      const cardElement = elements.getElement(CardElement);
+      
+      // Create payment method
+      const { error, paymentMethod } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement,
+      });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      // Process payment
+      await TransactionService.processPayment(transactionId, paymentMethod.id);
+      
+      // Add success message
+      setMessages(prev => [
+        ...prev,
+        {
+          text: `Payment successful! Your payment is securely held until you pick up the item. The seller has been notified of your order.`,
+          sender: 'system',
+          timestamp: new Date(),
+          type: 'system',
+          messageClass: 'success-message'
+        }
+      ]);
+      
+      // Show verification code
+      setMessages(prev => [
+        ...prev,
+        {
+          text: `Your verification code is: ${transactionCode}. Share this code with the seller when you pick up the item to release payment.`,
+          sender: 'system',
+          timestamp: new Date(),
+          type: 'verification-code',
+          code: transactionCode
+        }
+      ]);
+      
+      setStatus('awaiting_seller');
+    } catch (error) {
+      console.error('Payment error:', error);
+      setPaymentError(error.message);
+      
+      // Add error message
+      setMessages(prev => [
+        ...prev,
+        {
+          text: `Payment error: ${error.message}`,
+          sender: 'system',
+          timestamp: new Date(),
+          type: 'system',
+          messageClass: 'error-message'
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   const handleCancelChat = () => {
     setClosingChat(true);
 
@@ -376,32 +616,55 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
       </ItemCard>
       
       <ChatMessages>
-        {messages.map((msg, index) => (
-          <Message 
-            key={index} 
-            sent={msg.sender === 'user'}
-            theme={theme}
-          >
-            {msg.type === 'item-inquiry' && msg.item && (
-              <div className="item-preview">
-                {item.images && item.images[0] && (
-                  <img src={item.images[0]} alt={item.name} />
-                )}
-                <div className="item-details">
-                  <h4>{item.name}</h4>
-                  <div className="price">${parseFloat(item.price).toFixed(2)}</div>
-                </div>
-              </div>
-            )}
-            
-            <div>{msg.text}</div>
-            <div className="time">{formatTime(msg.timestamp)}</div>
-          </Message>
-        ))}
+        {messages.map((msg, index) => {
+          if (msg.type === 'item-inquiry') {
+            return (
+              <SystemMessage key={index} theme={theme}>
+                {msg.text}
+                <div className="time">{formatTime(msg.timestamp)}</div>
+              </SystemMessage>
+            );
+          }
+          
+          if (msg.type === 'system') {
+            return (
+              <SystemMessage 
+                key={index} 
+                theme={theme}
+                className={msg.messageClass}
+              >
+                {msg.text}
+                <div className="time">{formatTime(msg.timestamp)}</div>
+              </SystemMessage>
+            );
+          }
+          
+          if (msg.type === 'verification-code') {
+            return (
+              <VerificationCodeForm key={index} theme={theme}>
+                <h4>Verification Code</h4>
+                <p>Give this code to the seller when you pick up your item:</p>
+                <div className="code">{msg.code}</div>
+                <p>Keep this code private until the pickup is complete.</p>
+              </VerificationCodeForm>
+            );
+          }
+          
+          return (
+            <Message 
+              key={index} 
+              sent={msg.sender === 'user'}
+              theme={theme}
+            >
+              {msg.text}
+              <div className="time">{formatTime(msg.timestamp)}</div>
+            </Message>
+          );
+        })}
         <div ref={messagesEndRef} />
       </ChatMessages>
       
-      {!isOrderMode && !closingChat && (
+      {status === 'initial' && (
         <MessageButtons>
           <MessageButton onClick={handleOrder}>
             I'd like to order this item.
@@ -412,23 +675,78 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
         </MessageButtons>
       )}
       
-      {isOrderMode && (
-        <ActionSection>
+      {status === 'payment' && (
+        <PaymentForm theme={theme}>
+          <h4>Complete Your Payment</h4>
+          <div className="payment-info">
+            Your payment will be securely held until you receive the item and provide the verification code to the seller.
+          </div>
+          <div className="card-element">
+            <CardElement 
+              options={{
+                style: {
+                  base: {
+                    fontSize: '16px',
+                    color: theme?.colors?.text || '#FFFFFF',
+                    '::placeholder': {
+                      color: 'rgba(255, 255, 255, 0.5)',
+                    },
+                  },
+                  invalid: {
+                    color: '#F44336',
+                  },
+                },
+              }}
+            />
+          </div>
+          {paymentError && (
+            <div className="error-message">{paymentError}</div>
+          )}
           <ActionButton 
-            primary
-            onClick={() => {
-              // Here we would trigger the payment process
-              onClose();
-            }} 
+            primary 
+            onClick={handlePayment}
+            disabled={loading}
             theme={theme}
           >
-            <ChevronRight size={20} />
-            Proceed to Payment
+            <CreditCard size={18} />
+            {loading ? 'Processing...' : `Pay $${parseFloat(item.price).toFixed(2)}`}
           </ActionButton>
-        </ActionSection>
+        </PaymentForm>
+      )}
+      
+      {(status === 'awaiting_seller' || status === 'confirmed') && (
+        <ChatInput>
+          <input
+            type="text"
+            placeholder="Type a message..."
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+          />
+          <button onClick={handleSendMessage}>
+            <Send size={20} />
+          </button>
+        </ChatInput>
+      )}
+      
+      {status === 'completed' && (
+        <SystemMessage theme={theme} className="success-message">
+          Transaction completed successfully!
+        </SystemMessage>
       )}
     </ChatDrawer>
   );
 };
 
-export default OrderChat;
+// Wrap OrderChat with Stripe Elements
+const OrderChatWithStripe = (props) => {
+  const stripePromise = PaymentService.getStripePromise();
+  
+  return (
+    <Elements stripe={stripePromise}>
+      <OrderChat {...props} />
+    </Elements>
+  );
+};
+
+export default OrderChatWithStripe;
