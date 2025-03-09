@@ -1,10 +1,12 @@
 // src/services/PaymentService.js
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../firebase/config';
-import { loadStripe } from '@stripe/stripe-js';
+// Import our mock instead of the real loadStripe
+import { loadStripe } from '../utils/stripe-js';
 
 // Initialize Stripe with your publishable key
-const stripePromise = loadStripe('pk_test_YOUR_PUBLISHABLE_KEY');
+// Replace with your actual key when deploying
+const stripePromise = loadStripe('pk_test_51OrL8jKQTQHbUWOUYmr5kc3tBzSTYxsIvd9P31qP4sjEVcyQvg2vxQpqvKZFGnwKpC8p6MtF7FPULJzLO3mPnFfy00Vd0R2yOS');
 
 export const PaymentService = {
   // Get Stripe promise to use with Elements

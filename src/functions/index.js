@@ -6,6 +6,8 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 admin.initializeApp();
 const db = admin.firestore();
 
+export const functions = getFunctions(app);
+
 // Create a payment intent for a transaction
 exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
   // Verify authentication

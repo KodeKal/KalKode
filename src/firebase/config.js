@@ -1,18 +1,20 @@
-// src/firebase/config.js
+// src/firebase/config.js (Updated)
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getFunctions } from 'firebase/functions';
 
 // First, define your config
 const firebaseConfig = {
-    apiKey: "AIzaSyAMdHkSu5K95Gg2lRQw7OmgsI7EQCx3E9s",
-    authDomain: "kalkode-febcd.firebaseapp.com",
-    projectId: "kalkode-febcd",
-    storageBucket: "kalkode-febcd.firebasestorage.app",
-    messagingSenderId: "925389817906",
-    appId: "1:925389817906:web:61c4e1686e570098ccd42b",
-    measurementId: "G-T8C12GQF80"
+  apiKey: "AIzaSyDfQfvgNPUQPtSvJEgXkwWBxmBZgVkY5Wg",
+  authDomain: "kalkode-8b160.firebaseapp.com",
+  databaseURL: "https://kalkode-8b160-default-rtdb.firebaseio.com",
+  projectId: "kalkode-8b160",
+  storageBucket: "kalkode-8b160.firebasestorage.app",
+  messagingSenderId: "357593143871",
+  appId: "1:357593143871:web:8a6388d7f9e03fade1f68a",
+  measurementId: "G-3Z5HWMXRKW"
 };
 
 // Then initialize the app first
@@ -23,6 +25,7 @@ app.automaticDataCollectionEnabled = true;
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
+const functions = getFunctions(app);
 
 // Configure Google Provider
 const googleProvider = new GoogleAuthProvider();
@@ -38,4 +41,4 @@ auth.onAuthStateChanged((user) => {
 });
 
 // Export everything at the end
-export { auth, googleProvider, db, storage };
+export { auth, googleProvider, db, storage, functions, app };

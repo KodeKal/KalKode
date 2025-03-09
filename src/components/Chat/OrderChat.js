@@ -5,8 +5,9 @@ import { X, Send, ShoppingCart, MessageCircle, ChevronRight, Check, CreditCard, 
 import { TransactionService } from '../../services/TransactionService';
 import { PaymentService } from '../../services/PaymentService';
 import { auth } from '../../firebase/config';
-import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { Elements } from '@stripe/react-stripe-js';
+//import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+//import { Elements } from '@stripe/react-stripe-js';
+import { CardElement, useStripe, useElements, Elements } from '../Stripe/StripeComponent';
 
 const ChatDrawer = styled.div`
   position: fixed;
@@ -738,15 +739,14 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
   );
 };
 
-// Wrap OrderChat with Stripe Elements
 const OrderChatWithStripe = (props) => {
-  const stripePromise = PaymentService.getStripePromise();
+    const stripePromise = PaymentService.getStripePromise();
+    
+    return (
+      <Elements stripe={stripePromise}>
+        <OrderChat {...props} />
+      </Elements>
+    );
+  };
   
-  return (
-    <Elements stripe={stripePromise}>
-      <OrderChat {...props} />
-    </Elements>
-  );
-};
-
-export default OrderChatWithStripe;
+  export default OrderChatWithStripe;
