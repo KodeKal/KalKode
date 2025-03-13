@@ -1,6 +1,6 @@
-// src/pages/shop/components/NavMenu/index.js
+// In src/pages/shop/components/NavMenu/index.js
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { 
   Settings, 
@@ -10,11 +10,12 @@ import {
   Bell,
   Home,
   Layout,
-  MessageCircle // Added MessageCircle icon
+  MessageCircle
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { auth } from '../../../../firebase/config';
+import { auth, db } from '../../../../firebase/config';
 import { DEFAULT_THEME } from '../../../../theme/theme';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 
 const NavContainer = styled.div`
   position: fixed;
@@ -55,6 +56,7 @@ const NavButton = styled.button`
   cursor: pointer;
   width: auto;
   white-space: nowrap;
+  position: relative;
 
   .icon-container {
     display: flex;
@@ -69,11 +71,23 @@ const NavButton = styled.button`
     overflow: hidden;
     transition: none;
   }
+  
+  .notification-badge {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: ${props => props.theme?.colors?.accent || '#800000'};
+    display: ${props => props.hasNotification ? 'block' : 'none'};
+  }
 `;
 
 const NavMenu = ({ theme }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [unreadMessages, setUnreadMessages] = useState(false);
   const defaultTheme = {
     colors: {
       background: '#0B0B3B',
@@ -92,8 +106,37 @@ const NavMenu = ({ theme }) => {
       console.error('Error logging out:', error);
     }
   };
+  
+  // Check for unread messages
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    
+    const userId = auth.currentUser.uid;
+    
+    // Create a query to check for chats with unread messages
+    const chatsRef = collection(db, 'chats');
+    const q = query(
+      chatsRef,
+      where('participants', 'array-contains', userId)
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let hasUnread = false;
+      
+      snapshot.docs.forEach(doc => {
+        const chat = doc.data();
+        if (chat.unreadCount && chat.unreadCount[userId] && chat.unreadCount[userId] > 0) {
+          hasUnread = true;
+        }
+      });
+      
+      setUnreadMessages(hasUnread);
+    });
+    
+    return () => unsubscribe();
+  }, []);
 
-  // Updated menu items to include Messages
+  // Updated menu items with unread indicator
   const menuItems = [
     { 
       icon: <Home size={20} />, 
@@ -108,7 +151,8 @@ const NavMenu = ({ theme }) => {
     {
       icon: <MessageCircle size={20} />,
       label: 'Messages',
-      path: '/messages'
+      path: '/messages',
+      hasNotification: unreadMessages
     },
     { 
       icon: <Bell size={20} />, 
@@ -130,11 +174,13 @@ const NavMenu = ({ theme }) => {
           theme={theme}
           active={location.pathname === item.path || location.pathname.startsWith(item.path + '/')}
           onClick={() => navigate(item.path)}
+          hasNotification={item.hasNotification}
         >
           <div className="icon-container">
             {item.icon}
           </div>
           <span className="label">{item.label}</span>
+          {item.hasNotification && <div className="notification-badge"></div>}
         </NavButton>
       ))}
       
@@ -147,6 +193,5 @@ const NavMenu = ({ theme }) => {
     </NavContainer>
   );
 };
-
 
 export default NavMenu;

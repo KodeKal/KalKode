@@ -490,6 +490,8 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
     }
   };
   
+  // In src/components/Chat/OrderChat.js, fix the handlePayment method:
+
   const handlePayment = async () => {
     if (!stripe || !elements) {
       setPaymentError('Stripe has not been properly initialized');
@@ -513,8 +515,8 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
         throw new Error(error.message);
       }
       
-      // Process payment
-      await TransactionService.processPayment(transactionId, paymentMethod.id);
+      // Process payment using our mock implementation
+      await PaymentService.processPayment(transactionId, paymentMethod.id);
       
       // Add success message
       setMessages(prev => [
@@ -522,6 +524,7 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
         {
           text: `Payment successful! Your payment is securely held until you pick up the item. The seller has been notified of your order.`,
           sender: 'system',
+          senderName: 'System',
           timestamp: new Date(),
           type: 'system',
           messageClass: 'success-message'
@@ -529,16 +532,18 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
       ]);
       
       // Show verification code
-      setMessages(prev => [
-        ...prev,
-        {
-          text: `Your verification code is: ${transactionCode}. Share this code with the seller when you pick up the item to release payment.`,
-          sender: 'system',
-          timestamp: new Date(),
-          type: 'verification-code',
-          code: transactionCode
-        }
-      ]);
+      if (transactionCode) {
+        setMessages(prev => [
+          ...prev,
+          {
+            text: `Your verification code is: ${transactionCode}. Share this code with the seller when you pick up the item to release payment.`,
+            sender: 'system',
+            timestamp: new Date(),
+            type: 'verification-code',
+            code: transactionCode
+          }
+        ]);
+      }
       
       setStatus('awaiting_seller');
     } catch (error) {
@@ -551,6 +556,7 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
         {
           text: `Payment error: ${error.message}`,
           sender: 'system',
+          senderName: 'System',
           timestamp: new Date(),
           type: 'system',
           messageClass: 'error-message'
@@ -560,6 +566,7 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
       setLoading(false);
     }
   };
+  
   
   const handleCancelChat = () => {
     setClosingChat(true);

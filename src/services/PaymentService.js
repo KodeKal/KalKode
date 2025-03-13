@@ -1,6 +1,16 @@
 // src/services/PaymentService.js
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '../firebase/config';
+import { functions, db } from '../firebase/config';
+import { 
+  doc, 
+  getDoc, 
+  setDoc, 
+  updateDoc, 
+  collection, 
+  addDoc, 
+  serverTimestamp,
+  increment
+} from 'firebase/firestore';
 // Import our mock instead of the real loadStripe
 import { loadStripe } from '../utils/stripe-js';
 
@@ -80,6 +90,75 @@ export const PaymentService = {
       return response.data.url;
     } catch (error) {
       console.error('Error getting onboarding link:', error);
+      throw error;
+    }
+  },
+
+  processPayment: async (transactionId, paymentMethodId) => {
+    try {
+      console.log('Processing payment with mock Stripe:', { transactionId, paymentMethodId });
+      
+      // Get transaction reference
+      const transactionRef = doc(db, 'transactions', transactionId);
+      
+      // Create a mock payment intent success response
+      const mockPaymentResponse = {
+        id: `mock_payment_${Date.now()}`,
+        status: 'succeeded',
+        client_secret: `mock_secret_${Date.now()}`
+      };
+      
+      // Update transaction with the payment intent ID
+      await updateDoc(transactionRef, {
+        stripePaymentIntentId: mockPaymentResponse.id,
+        paymentStatus: 'succeeded',
+        status: 'awaiting_seller', // Update status to notify seller
+        updatedAt: serverTimestamp()
+      });
+      
+      // Add notification for the seller in Firestore
+      const transaction = (await getDoc(transactionRef)).data();
+      
+      // Create notification in chat
+      const chatRef = doc(db, 'chats', transactionId);
+      const chatDoc = await getDoc(chatRef);
+      
+      if (!chatDoc.exists()) {
+        // Create chat if it doesn't exist
+        await setDoc(chatRef, {
+          transactionId,
+          buyerId: transaction.buyerId,
+          sellerId: transaction.sellerId,
+          lastMessage: 'New payment received!',
+          lastMessageTime: serverTimestamp(),
+          participants: [transaction.buyerId, transaction.sellerId],
+          unreadCount: {
+            [transaction.buyerId]: 0,
+            [transaction.sellerId]: 1 // Notify seller with unread count
+          }
+        });
+      } else {
+        // Update existing chat
+        await updateDoc(chatRef, {
+          lastMessage: 'New payment received!',
+          lastMessageTime: serverTimestamp(),
+          [`unreadCount.${transaction.sellerId}`]: increment(1)
+        });
+      }
+      
+      // Add payment message to chat
+      await addDoc(collection(db, 'chats', transactionId, 'messages'), {
+        text: 'Payment processed successfully! Payment is secure and will be released to the seller when you provide the verification code upon pickup.',
+        sender: 'system',
+        senderName: 'System',
+        timestamp: serverTimestamp(),
+        type: 'system',
+        messageClass: 'success-message'
+      });
+      
+      return mockPaymentResponse;
+    } catch (error) {
+      console.error('Error processing mock payment:', error);
       throw error;
     }
   }

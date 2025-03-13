@@ -93,17 +93,20 @@ export const TransactionService = {
         items: updatedItems
       });
       
-      // Create a chat for this transaction
+      // Make sure to create a chat for this transaction
       await addDoc(collection(db, 'chats'), {
         transactionId: transactionRef.id,
         buyerId: buyer.uid,
         sellerId,
+        itemId: itemData.id,
+        itemName: itemData.name,
+        itemImage: itemData.images?.[0] || null,
         lastMessage: 'Transaction started',
         lastMessageTime: serverTimestamp(),
         participants: [buyer.uid, sellerId],
         unreadCount: {
           [buyer.uid]: 0,
-          [sellerId]: 1 // Notify seller
+          [sellerId]: 1 // Notify seller immediately
         }
       });
       
@@ -113,8 +116,11 @@ export const TransactionService = {
         sender: 'system',
         senderName: 'System',
         timestamp: serverTimestamp(),
-        type: 'system'
+        type: 'system',
+        messageClass: 'status-message'
       });
+      
+      console.log('Transaction initiated successfully:', transactionRef.id);
       
       return {
         transactionId: transactionRef.id,

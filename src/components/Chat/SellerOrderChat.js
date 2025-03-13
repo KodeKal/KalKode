@@ -561,7 +561,26 @@ const SellerOrderChat = ({ isOpen, onClose, transaction, theme }) => {
   const handleAcceptOrder = async () => {
     try {
       setLoading(true);
+      console.log('Accepting transaction:', transaction.id);
       await TransactionService.acceptTransaction(transaction.id);
+      
+      // Add a system message
+      await addDoc(collection(db, 'chats', transaction.id, 'messages'), {
+        text: 'Order accepted by seller. Please arrange for pickup.',
+        sender: 'system',
+        senderName: 'System',
+        timestamp: serverTimestamp(),
+        type: 'system',
+        messageClass: 'success-message'
+      });
+      
+      // Update unread count for buyer
+      await updateDoc(doc(db, 'chats', transaction.id), {
+        [`unreadCount.${transaction.buyerId}`]: increment(1),
+        lastMessage: 'Order accepted by seller',
+        lastMessageTime: serverTimestamp()
+      });
+      
       setShowMeetupForm(true);
     } catch (error) {
       console.error('Error accepting order:', error);
@@ -573,7 +592,26 @@ const SellerOrderChat = ({ isOpen, onClose, transaction, theme }) => {
   const handleRejectOrder = async () => {
     try {
       setLoading(true);
+      console.log('Rejecting transaction:', transaction.id);
       await TransactionService.rejectTransaction(transaction.id, 'Rejected by seller');
+      
+      // Add a system message
+      await addDoc(collection(db, 'chats', transaction.id, 'messages'), {
+        text: 'Order rejected by seller.',
+        sender: 'system',
+        senderName: 'System',
+        timestamp: serverTimestamp(),
+        type: 'system',
+        messageClass: 'error-message'
+      });
+      
+      // Update unread count for buyer
+      await updateDoc(doc(db, 'chats', transaction.id), {
+        [`unreadCount.${transaction.buyerId}`]: increment(1),
+        lastMessage: 'Order rejected by seller',
+        lastMessageTime: serverTimestamp()
+      });
+      
       onClose();
     } catch (error) {
       console.error('Error rejecting order:', error);
