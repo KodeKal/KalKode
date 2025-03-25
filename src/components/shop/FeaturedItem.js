@@ -307,7 +307,7 @@ const ZoomConnector = styled.div`
 `;
 
 // Update the FeaturedItem component
-const FeaturedItem = ({ item, showDistance, theme }) => {
+const FeaturedItem = ({ item, showDistance, theme, onClick  }) => {
   const [isZoomed, setIsZoomed] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [elementPosition, setElementPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
@@ -377,6 +377,7 @@ const FeaturedItem = ({ item, showDistance, theme }) => {
     e.stopPropagation();
     capturePosition();
     setIsZoomed(true);
+    if (onClick) onClick(); // Call the parent's onClick handler
   };
 
   // Handle Order button click
@@ -422,6 +423,7 @@ const FeaturedItem = ({ item, showDistance, theme }) => {
     };
   }, [isZoomed]);
 
+  // Inside the useEffect for isZoomed in FeaturedItem.js
   useEffect(() => {
     if (isZoomed) {
       // Save current scroll position
@@ -438,9 +440,16 @@ const FeaturedItem = ({ item, showDistance, theme }) => {
         document.body.style.top = '';
         document.body.style.width = '';
         window.scrollTo(0, scrollY);
+        
+        // Resume sliding if onClick prop exists
+        if (onClick) {
+          setTimeout(() => {
+            onClick(false); // Pass false to indicate that we're resuming
+          }, 300);
+        }
       };
     }
-  }, [isZoomed]);
+  }, [isZoomed, onClick]);
 
   // Calculate zoom box position
   // Calculate zoom box position

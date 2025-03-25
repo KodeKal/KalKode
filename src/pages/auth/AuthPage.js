@@ -208,6 +208,7 @@ const AuthPage = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { user } = useAuth();
   const [passwordStrength, setPasswordStrength] = useState({
     length: false,
     number: false,
@@ -229,7 +230,7 @@ const AuthPage = () => {
       const hasShop = await checkExistingShop(user.uid);
       
       if (hasShop) {
-        navigate('/shop/dashboard');
+        navigate(`/shop/${user.uid}`);
       } else {
         setError("You don't have a shop yet! Create one to get started.");
         // Stay on page and let user click the button themselves
@@ -281,7 +282,7 @@ const AuthPage = () => {
       const hasShop = await checkExistingShop(result.user.uid);
       
       if (hasShop) {
-        navigate('/shop/dashboard');
+        navigate(`/shop/${user.uid}`);
       } else {
         setError("You don't have a shop yet! Create one to get started.");
         // Don't automatically redirect - let user click the button

@@ -2,19 +2,16 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef  } from 'react';
 import { getFeaturedItems } from '../firebase/firebaseService';
 import FeaturedItem from '..//components/shop/FeaturedItem';
 import { Users, Package, Navigation, Film, Pin } from 'lucide-react';
 import { getDistance } from 'geolib';
 import { collection, getDocs } from 'firebase/firestore';
-import Pagination from '../components/common/Pagination';
-import { LocationFormat } from '../utils/locationUtils';
 import { db } from '../firebase/config';
 import { WELCOME_STYLES } from '../theme/welcomeStyles';
 import { getShopData } from '../firebase/firebaseService';
 import { useAuth } from '../contexts/AuthContext';
-import NavMenu from './shop/components/NavMenu';
 
 const ProfileSection = styled.div`
   display: flex;
@@ -267,45 +264,6 @@ const ShopNameBadge = styled.div`
     background: rgba(0, 0, 0, 0.7);
   }
 `;
-
-// Update the BannerShopName component
-const BannerShopName = styled.div`
-  font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
-  font-size: 1.4rem;
-  color: ${props => props.theme?.colors?.accent || '#800000'};
-  margin-left: 1rem;
-  letter-spacing: 1px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap; // Prevent line breaks
-  overflow: hidden; // Hide overflow
-  text-overflow: ellipsis; // Add ellipsis for overflow text
-  max-width: 200px; // Limit width
-  
-  &:hover {
-    transform: translateY(-2px);
-  }
-  
-  &::before {
-    content: '•';
-    margin-right: 0.5rem;
-    color: ${props => props.theme?.colors?.accent || '#800000'};
-    flex-shrink: 0; // Prevent bullet from shrinking
-  }
-`;
-
-// Create a wrapper for the Header content
-const HeaderContent = styled.div`
-  display: flex;
-  align-items: center;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  justify-content: space-between; // Space between logo+shop name and any other elements
-`;
-
 
 // Update WelcomeSection
 const WelcomeSection = styled.section`
@@ -583,28 +541,25 @@ const EmptyGridMessage = styled.div`
   }
 `;
 
-const getZipCodeFromCoordinates = async (coordinates) => {
-  if (!coordinates?.lat || !coordinates?.lng) return null;
-  
-  try {
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${coordinates.lat},${coordinates.lng}&key=AIzaSyAXi8mf4tBi2cajWajJB-jwBbctlikXMbo`
-    );
-    const data = await response.json();
-    
-    if (data.results && data.results[0]) {
-      // Find postal code from address components
-      const postalComponent = data.results[0].address_components.find(
-        component => component.types.includes('postal_code')
-      );
-      return postalComponent ? postalComponent.long_name : null;
-    }
-    return null;
-  } catch (error) {
-    console.error('Error getting ZIP code:', error);
-    return null;
-  }
-};
+// Add this to the styled components section in WelcomePage.js
+const SliderContainer = styled.div`
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  margin: 2rem 0;
+`;
+
+const Slider = styled.div`
+  display: flex;
+  width: fit-content;
+  transform: translateX(${props => props.position}px);
+  transition: transform ${props => props.isPaused ? '0s' : '0.5s ease'};
+`;
+
+const SlideItem = styled.div`
+  flex: 0 0 300px;
+  margin-right: 2rem;
+`;
 
 const PinButton = styled.button`
   background: none;
@@ -674,6 +629,10 @@ const WelcomePage = () => {
   const [shopData, setShopData] = useState(null);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [isMessageVisible, setIsMessageVisible] = useState(true);
+  const [isSliderPaused, setIsSliderPaused] = useState(false);
+  const [sliderPosition, setSliderPosition] = useState(0);
+  const sliderRef = useRef(null);
+  const sliderAnimationRef = useRef(null);
 
   useEffect(() => {
     const fetchShopData = async () => {
@@ -746,19 +705,90 @@ const WelcomePage = () => {
     }
   };
 
-
-  // Add the handlePageChange function
-  const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
-    loadFeaturedItems(newPage);
-    // Scroll to top of grid
-    const gridElement = document.querySelector('.featured-grid');
-    if (gridElement) {
-      gridElement.scrollIntoView({ behavior: 'smooth' });
+  const handleSliderMouseEnter = () => {
+    setIsSliderPaused(true);
+    if (sliderAnimationRef.current) {
+      cancelAnimationFrame(sliderAnimationRef.current);
     }
   };
+  
+  const handleSliderMouseLeave = () => {
+    setIsSliderPaused(false);
+    if (sliderAnimationRef.current) {
+      cancelAnimationFrame(sliderAnimationRef.current);
+      sliderAnimationRef.current = null;
+    }
+  };
+  
+  const handleSliderMouseMove = (e) => {
+    if (!isSliderPaused || !sliderRef.current) return;
+    
+    // Cancel any existing animation frame
+    if (sliderAnimationRef.current) {
+      cancelAnimationFrame(sliderAnimationRef.current);
+    }
+    
+    // Get container dimensions
+    const container = sliderRef.current.parentElement;
+    const containerRect = container.getBoundingClientRect();
+    const containerWidth = containerRect.width;
+    const sliderWidth = sliderRef.current.scrollWidth / 2; // Half because we duplicated the items
+    
+    // Calculate mouse position relative to container center
+    const containerCenter = containerRect.left + containerWidth / 2;
+    const mouseOffset = e.clientX - containerCenter;
+    
+    // Calculate how far from center (as a percentage)
+    const offsetPercentage = mouseOffset / (containerWidth / 2);
+    
+    // Set maximum slide speed (pixels per frame)
+    const maxSpeed = 5;
+    
+    // Animation function
+    const animateSlider = () => {
+      // Calculate slide speed based on mouse position
+      const slideSpeed = -offsetPercentage * maxSpeed;
+      
+      // Apply the slide
+      setSliderPosition(prevPosition => {
+        // Calculate new position
+        let newPosition = prevPosition + slideSpeed;
+        
+        // Loop the slider when it reaches the end
+        if (newPosition <= -sliderWidth) {
+          newPosition += sliderWidth;
+        } else if (newPosition > 0) {
+          newPosition -= sliderWidth;
+        }
+        
+        return newPosition;
+      });
+      
+      // Continue animation
+      sliderAnimationRef.current = requestAnimationFrame(animateSlider);
+    };
+    
+    // Start animation
+    sliderAnimationRef.current = requestAnimationFrame(animateSlider);
+  };
+  
+  const handleItemClick = () => {
+    setIsSliderPaused(true);
+    if (sliderAnimationRef.current) {
+      cancelAnimationFrame(sliderAnimationRef.current);
+    }
+  };
+  
+  // Clean up animation on unmount
+  useEffect(() => {
+    return () => {
+      if (sliderAnimationRef.current) {
+        cancelAnimationFrame(sliderAnimationRef.current);
+      }
+    };
+  }, []);
 
-  // Add location permission handling
+    // Add location permission handling
   const requestLocationPermission = () => {
     setError(null);
     
@@ -1025,178 +1055,33 @@ const WelcomePage = () => {
   };
 
   // In WelcomePage.js, update loadFeaturedItems
-  const loadFeaturedItems = async (page = 1) => {
+  // Update the loadFeaturedItems function to get 8 items
+  const loadFeaturedItems = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const shopsRef = collection(db, 'shops');
-      const snapshot = await getDocs(shopsRef);
-      const GOOGLE_MAPS_API_KEY = 'AIzaSyAXi8mf4tBi2cajWajJB-jwBbctlikXMbo';
-    
-      let allItems = [];
-      for (const doc of snapshot.docs) {
-        const shopData = doc.data();
-        if (shopData.items) {
-          const shopItems = await Promise.all(shopData.items
-            .filter(item => !item.deleted)
-            .map(async item => {
-              console.log('Processing item:', {
-                name: item.name,
-                address: item.address,
-                coordinates: item.coordinates
-              });
-          
-              // First parse coordinates from address if it's in coordinate format
-              let coordinates = item.coordinates;
-              let zipCode = null;
-          
-              if (item.address) {
-                const coordsMatch = item.address.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
-                if (coordsMatch) {
-                  coordinates = {
-                    lat: parseFloat(coordsMatch[1]),
-                    lng: parseFloat(coordsMatch[2])
-                  };
-                  console.log('Parsed coordinates from address:', coordinates);
-                }
-              }
-          
-              // Now try to get ZIP code if we have coordinates
-              if (coordinates?.lat && coordinates?.lng) {
-                try {
-                  console.log('Attempting to fetch ZIP for coordinates:', coordinates);
-                  const response = await fetch(
-                    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${coordinates.lat},${coordinates.lng}&key=${GOOGLE_MAPS_API_KEY}`
-                  );
-                  const data = await response.json();
-                  
-                  console.log('Geocoding API response:', data); // Add this to see the full response
-                  
-                  if (data.results && data.results[0]) {
-                    console.log('Address components:', data.results[0].address_components); // Add this to see components
-                    const postalComponent = data.results[0].address_components.find(
-                      component => component.types.includes('postal_code')
-                    );
-                    zipCode = postalComponent ? postalComponent.long_name : null;
-                    console.log('Successfully found ZIP code:', zipCode);
-                  } else {
-                    console.log('No results found in geocoding response');
-                  }
-                } catch (error) {
-                  console.warn('Error fetching ZIP from coordinates:', error);
-                  console.log('Full error details:', {
-                    message: error.message,
-                    coordinates: coordinates
-                  });
-                }
-              }
-                        
-              const processedItem = {
-                ...item,
-                shopId: doc.id,
-                shopName: shopData.name || 'Unknown Shop',
-                shopTheme: shopData.theme || {},
-                coordinates, // Add the parsed coordinates
-                zipCode
-              };
-          
-              console.log('Final processed item:', {
-                name: processedItem.name,
-                address: processedItem.address,
-                coordinates: processedItem.coordinates,
-                zipCode: processedItem.zipCode
-              });
-          
-              return processedItem;
-            }));
-          allItems = [...allItems, ...shopItems];
-        }
-      }
-    
-      // Filter by ZIP code if one is selected
-      if (currentZipCode) {
-        allItems = allItems.filter(item => item.zipCode === currentZipCode);
-      }
-    
-      // Sort by most recent first
-      allItems.sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-        return dateB - dateA;
-      });
-    
-      setTotalItems(allItems.length);
-    
-      // Calculate pagination and prepare items for display
-      const startIndex = (page - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
+      const items = await getFeaturedItems(8); // Changed from 6 to 8
+      setFeaturedItems(items);
+      setTotalItems(items.length);
       
-      const itemsToDisplay = await Promise.all(allItems.slice(startIndex, endIndex).map(async item => {
-        // Previous coordinate parsing code...
-      
-        let locationDisplay = undefined;
-        let coords = item.coordinates;
-        
-        if (coords?.lat && coords?.lng) {
-          try {
-            console.log(`Fetching location data for ${item.name}:`, coords);
-            
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?lat=${coords.lat}&lon=${coords.lng}&format=json`,
-              {
-                headers: {
-                  'Accept': 'application/json',
-                  'User-Agent': 'KalKode Marketplace'
-                }
-              }
-            );
-            
-            const data = await response.json();
-            console.log(`Nominatim response for ${item.name}:`, data);
-      
-            if (data.address?.postcode) {
-              locationDisplay = `ZIP: ${data.address.postcode}`;
-            } else {
-              locationDisplay = `${coords.lat.toFixed(4)}°N, ${coords.lng.toFixed(4)}°W`;
-            }
-          } catch (error) {
-            console.error(`Error getting location for ${item.name}:`, error);
-            locationDisplay = `${coords.lat.toFixed(4)}°N, ${coords.lng.toFixed(4)}°W`;
-          }
-        }
-      
-        console.log('Final item state:', {
-          name: item.name,
-          locationDisplay,
-          coords
-        });
-      
-        // Return with locationDisplay directly in the item
-        return {
-          ...item,
-          location: locationDisplay  // Set location directly
-        };
-      }));
-
-      setFeaturedItems(itemsToDisplay);
+      setLoading(false);
     } catch (error) {
       console.error('Error loading featured items:', error);
       setError('Failed to load featured items. Please try again later.');
-    } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
   if (activeTab === 'featured') {
-    loadFeaturedItems(currentPage);
+    loadFeaturedItems();
   }
   
   // Set up refresh interval
   const refreshInterval = setInterval(() => {
     if (activeTab === 'featured') {
-      loadFeaturedItems(currentPage);
+      loadFeaturedItems();
     }
   }, 300000); // 5 minutes
 
@@ -1263,8 +1148,8 @@ React.useEffect(() => {
         {isAuthenticated && shopData?.name && (
           <ShopNameBadge
             theme={currentStyle}
-            onClick={() => navigate('/shop/dashboard')}
-            title={`Go to ${shopData.name} Dashboard`} // More descriptive tooltip
+            onClick={() => navigate(`/shop/${user.uid}`)}
+            title={`Go to ${shopData.name}`} // More descriptive tooltip
           >
             {/* Optional: Add icon */}
             {/* <Store size={14} style={{ marginRight: '6px' }} /> */}
@@ -1444,48 +1329,39 @@ React.useEffect(() => {
       {/* Featured Items Tab */}
       {activeTab === 'featured' && (
         <>
-          <GridContainer className="featured-grid">
-            {error ? (
-              <div style={{ textAlign: 'center', gridColumn: '1/-1', color: '#ff4444' }}>
-                {error}
-              </div>
-            ) : loading ? (
-              <div style={{ textAlign: 'center', gridColumn: '1/-1' }}>
-                <LoadingSpinner />
-              </div>
-            ) : featuredItems.length === 0 ? (
-              <div style={{ 
-                textAlign: 'center', 
-                gridColumn: '1/-1',
-                color: 'rgba(255, 255, 255, 0.7)'
-              }}>
-                No items available yet. Be the first to add items!
-              </div>
-            ) : (
-              featuredItems.map(item => (
-                <FeaturedItem 
-                  key={`${item.shopId}-${item.id}`} 
-                  item={item}  // Pass the entire item as is
-                  theme={currentStyle}
-                />
-              ))
-            )}
-          </GridContainer>
-          
-          {!loading && featuredItems.length > 0 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={Math.ceil(totalItems / itemsPerPage)}
-              onPageChange={handlePageChange}
-              totalItems={totalItems}
-              itemsPerPage={itemsPerPage}
-              currentLocation={currentZipCode}
-              onClearLocation={() => {
-                setCurrentZipCode(null);
-                loadFeaturedItems(1);
-              }}
-            />
-          )}
+          <SliderContainer
+            onMouseEnter={handleSliderMouseEnter}
+            onMouseLeave={handleSliderMouseLeave}
+            onMouseMove={handleSliderMouseMove}
+          >
+            <Slider 
+              ref={sliderRef}
+              isPaused={isSliderPaused}
+              position={sliderPosition}
+            >
+              {/* First set of items */}
+              {featuredItems.map(item => (
+                <SlideItem key={`first-${item.shopId}-${item.id}`}>
+                  <FeaturedItem
+                    item={item}
+                    theme={currentStyle}
+                    onClick={handleItemClick}
+                  />
+                </SlideItem>
+              ))}
+
+              {/* Duplicate set for seamless infinite scroll */}
+              {featuredItems.map(item => (
+                <SlideItem key={`second-${item.shopId}-${item.id}`}>
+                  <FeaturedItem
+                    item={item}
+                    theme={currentStyle}
+                    onClick={handleItemClick}
+                  />
+                </SlideItem>
+              ))}
+            </Slider>
+          </SliderContainer>       
         </>
       )}
 

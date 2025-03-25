@@ -103,7 +103,7 @@ const LoginModal = ({ onClose, onCreateShop }) => {
       
       if (hasShop) {
         // If they have a shop, redirect to shop dashboard
-        navigate('/shop/dashboard');
+        navigate(`/shop/${userCredential.user.uid}`);
       } else {
         // If they don't have a shop, show the create shop button
         setError('No shop found. Would you like to create one?');

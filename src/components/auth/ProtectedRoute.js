@@ -45,7 +45,7 @@ const ProtectedRoute = ({ children, requireVerification = true }) => {
       saveShopData(user.uid, tempData)
         .then(() => {
           sessionStorage.removeItem('tempShopData');
-          navigate('/shop/dashboard', { replace: true });
+          navigate(`/shop/${user.uid}`, { replace: true });
         })
         .catch((err) => console.error('Error saving stored shop data:', err));
     }
