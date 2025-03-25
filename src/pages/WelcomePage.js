@@ -5,13 +5,28 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef  } from 'react';
 import { getFeaturedItems } from '../firebase/firebaseService';
 import FeaturedItem from '..//components/shop/FeaturedItem';
-import { Users, Package, Navigation, Film, Pin } from 'lucide-react';
+import { Users, Package, Navigation, Film, Pin, ChevronLeft, ChevronRight, X, MessageCircle, ShoppingCart } from 'lucide-react';
 import { getDistance } from 'geolib';
+import OrderChat from '../components/Chat/OrderChat'; // Import the OrderChat component
+
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { WELCOME_STYLES } from '../theme/welcomeStyles';
 import { getShopData } from '../firebase/firebaseService';
 import { useAuth } from '../contexts/AuthContext';
+
+const ChatOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: ${props => props.isOpen ? 1 : 0};
+  pointer-events: ${props => props.isOpen ? 'auto' : 'none'};
+  transition: opacity 0.3s ease;
+`;
 
 const ProfileSection = styled.div`
   display: flex;
@@ -544,16 +559,34 @@ const EmptyGridMessage = styled.div`
 // Add this to the styled components section in WelcomePage.js
 const SliderContainer = styled.div`
   width: 100%;
-  overflow: hidden;
+  overflow-x: auto; /* Enable horizontal scrolling */
   position: relative;
   margin: 2rem 0;
+  
+  /* Customize the scrollbar appearance */
+  &::-webkit-scrollbar {
+    height: 10px; /* Height of the scrollbar */
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
+    border-radius: 10px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: ${props => props.theme?.colors?.accent || '#800000'};
+    border-radius: 10px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${props => props.theme?.colors?.primary || '#600000'};
+  }
 `;
 
 const Slider = styled.div`
   display: flex;
   width: fit-content;
-  transform: translateX(${props => props.position}px);
-  transition: transform ${props => props.isPaused ? '0s' : '0.5s ease'};
+  /* Remove transform and transition since we'll use native scrolling */
 `;
 
 const SlideItem = styled.div`
@@ -601,6 +634,68 @@ const StyleIndicator = styled.div`
   }
 `;
 
+const ZoomOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.5)'}80`};
+  z-index: 10000; // Extremely high z-index to appear over everything
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const ScrollButton = styled.button`
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.7)'}90`};
+  color: ${props => props.theme?.colors?.text || 'white'};
+  border: 1px solid ${props => `${props.theme?.colors?.accent}40` || 'rgba(255, 255, 255, 0.2)'};
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  opacity: 0.7;
+  transition: opacity 0.3s, background 0.3s;
+  
+  &:hover {
+    opacity: 1;
+    background: ${props => props.theme?.colors?.accent || '#800000'};
+  }
+  
+  &.left {
+    left: 1rem;
+  }
+  
+  &.right {
+    right: 1rem;
+  }
+`;
+
+
+const ZoomContainer = styled.div`
+  position: relative;
+  z-index: 10001; // Even higher z-index than the overlay
+  border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
+  overflow: hidden;
+  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  background: ${props => props.theme?.colors?.surface || 'rgba(0, 0, 0, 0.8)'};
+  max-height: 90vh;
+  max-width: 90vw;
+  width: 500px;
+  transition: all 0.3s ease;
+`;
+
+
 const WelcomePage = () => {
   const navigate = useNavigate(); // New
   const [motivationalMessage, setMotivationalMessage] = useState("");
@@ -633,6 +728,30 @@ const WelcomePage = () => {
   const [sliderPosition, setSliderPosition] = useState(0);
   const sliderRef = useRef(null);
   const sliderAnimationRef = useRef(null);
+  const [zoomedItem, setZoomedItem] = useState(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [selectedChatItem, setSelectedChatItem] = useState(null);
+
+  // Add these to your SliderContainer
+  const handleScrollLeft = () => {
+    if (sliderRef.current) {
+      const container = sliderRef.current.parentElement;
+      container.scrollBy({
+        left: -600, // Adjust this value based on how far you want to scroll
+        behavior: 'smooth'
+      });
+    }
+  };
+  
+  const handleScrollRight = () => {
+    if (sliderRef.current) {
+      const container = sliderRef.current.parentElement;
+      container.scrollBy({
+        left: 600, // Adjust this value based on how far you want to scroll
+        behavior: 'smooth'
+      });
+    }
+  };
 
   useEffect(() => {
     const fetchShopData = async () => {
@@ -705,79 +824,47 @@ const WelcomePage = () => {
     }
   };
 
-  const handleSliderMouseEnter = () => {
-    setIsSliderPaused(true);
-    if (sliderAnimationRef.current) {
-      cancelAnimationFrame(sliderAnimationRef.current);
-    }
-  };
+  const handleItemClick = (item) => {
+  setZoomedItem(item);
+  // If you're using the slider, pause it
+  if (sliderAnimationRef.current) {
+    cancelAnimationFrame(sliderAnimationRef.current);
+  }
   
-  const handleSliderMouseLeave = () => {
-    setIsSliderPaused(false);
-    if (sliderAnimationRef.current) {
-      cancelAnimationFrame(sliderAnimationRef.current);
-      sliderAnimationRef.current = null;
-    }
-  };
+  // Save current scroll position to prevent background scrolling
+  const scrollY = window.scrollY;
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${scrollY}px`;
+  document.body.style.width = '100%';
+};
+
+// Add a handler to close the zoomed view
+const handleCloseZoom = () => {
+  setZoomedItem(null);
   
-  const handleSliderMouseMove = (e) => {
-    if (!isSliderPaused || !sliderRef.current) return;
-    
-    // Cancel any existing animation frame
-    if (sliderAnimationRef.current) {
-      cancelAnimationFrame(sliderAnimationRef.current);
-    }
-    
-    // Get container dimensions
-    const container = sliderRef.current.parentElement;
-    const containerRect = container.getBoundingClientRect();
-    const containerWidth = containerRect.width;
-    const sliderWidth = sliderRef.current.scrollWidth / 2; // Half because we duplicated the items
-    
-    // Calculate mouse position relative to container center
-    const containerCenter = containerRect.left + containerWidth / 2;
-    const mouseOffset = e.clientX - containerCenter;
-    
-    // Calculate how far from center (as a percentage)
-    const offsetPercentage = mouseOffset / (containerWidth / 2);
-    
-    // Set maximum slide speed (pixels per frame)
-    const maxSpeed = 5;
-    
-    // Animation function
-    const animateSlider = () => {
-      // Calculate slide speed based on mouse position
-      const slideSpeed = -offsetPercentage * maxSpeed;
-      
-      // Apply the slide
-      setSliderPosition(prevPosition => {
-        // Calculate new position
-        let newPosition = prevPosition + slideSpeed;
-        
-        // Loop the slider when it reaches the end
-        if (newPosition <= -sliderWidth) {
-          newPosition += sliderWidth;
-        } else if (newPosition > 0) {
-          newPosition -= sliderWidth;
-        }
-        
-        return newPosition;
-      });
-      
-      // Continue animation
-      sliderAnimationRef.current = requestAnimationFrame(animateSlider);
-    };
-    
-    // Start animation
-    sliderAnimationRef.current = requestAnimationFrame(animateSlider);
-  };
+  // Restore scrolling
+  const scrollY = parseFloat(document.body.style.top || '0') * -1;
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.width = '';
+  window.scrollTo(0, scrollY);
   
-  const handleItemClick = () => {
-    setIsSliderPaused(true);
-    if (sliderAnimationRef.current) {
-      cancelAnimationFrame(sliderAnimationRef.current);
-    }
-  };
+  // Resume slider if needed
+  if (sliderAnimationRef.current === null) {
+    // Start slider animation again
+  }
+};
+
+// Handle order and inquire actions
+const handleOrderClick = (item) => {
+  setSelectedChatItem(item);
+  setChatOpen(true);
+  setZoomedItem(null); // Close the zoom view
+};
+
+const handleInquireClick = () => {
+  alert('Inquiry feature coming soon!');
+};
   
   // Clean up animation on unmount
   useEffect(() => {
@@ -1138,6 +1225,7 @@ React.useEffect(() => {
 
   if (!currentStyle) return null;
   
+  
   return (
     <PageContainer className="page-container" theme={currentStyle}>
       <Header theme={currentStyle}>
@@ -1288,82 +1376,184 @@ React.useEffect(() => {
               Current Location
             </SearchButton>
           </AddressSearchContainer>
-
-          <GridContainer>
-            {error ? (
-              <EmptyGridMessage>
-                <h3>Oops!</h3>
-                <p>{error}</p>
-              </EmptyGridMessage>
-            ) : loading ? (
-              <div style={{ textAlign: 'center', gridColumn: '1/-1' }}>
-                <LoadingSpinner />
-              </div>
-            ) : !hasSearched ? (
-              <EmptyGridMessage>
-                <h3>Find Items Near You</h3>
-                <p>Enter your address or ZIP code to discover items in your area</p>
-              </EmptyGridMessage>
-            ) : nearbyItems.length === 0 ? (
-              <EmptyGridMessage>
-                <h3>No Items Found</h3>
-                <p>No items found in this location. Try searching a different area.</p>
-              </EmptyGridMessage>
-            ) : (
-              nearbyItems.map(item => (
-                <FeaturedItem 
-                  key={`${item.shopId}-${item.id}`} 
-                  item={{
-                    ...item,
-                    location: item.formattedDistance
-                  }}
-                  showDistance
-                  theme={currentStyle}
-                />
-              ))
-            )}
-          </GridContainer>
+          
+              <GridContainer>
+                {error ? (
+                  <EmptyGridMessage>
+                    <h3>Oops!</h3>
+                    <p>{error}</p>
+                  </EmptyGridMessage>
+                ) : loading ? (
+                  <div style={{ textAlign: 'center', gridColumn: '1/-1' }}>
+                    <LoadingSpinner />
+                  </div>
+                ) : !hasSearched ? (
+                  <EmptyGridMessage>
+                    <h3>Find Items Near You</h3>
+                    <p>Enter your address or ZIP code to discover items in your area</p>
+                  </EmptyGridMessage>
+                ) : nearbyItems.length === 0 ? (
+                  <EmptyGridMessage>
+                    <h3>No Items Found</h3>
+                    <p>No items found in this location. Try searching a different area.</p>
+                  </EmptyGridMessage>
+                ) : (              
+                      nearbyItems.map(item => (
+                            <FeaturedItem 
+                              key={`${item.shopId}-${item.id}`} 
+                              item={{
+                                ...item,
+                                location: item.formattedDistance
+                              }}
+                              showDistance
+                              theme={currentStyle}
+                            />
+                          ))
+                       
+                )}
+              </GridContainer>
         </>
       )}
 
       {/* Featured Items Tab */}
       {activeTab === 'featured' && (
-        <>
-          <SliderContainer
-            onMouseEnter={handleSliderMouseEnter}
-            onMouseLeave={handleSliderMouseLeave}
-            onMouseMove={handleSliderMouseMove}
-          >
-            <Slider 
-              ref={sliderRef}
-              isPaused={isSliderPaused}
-              position={sliderPosition}
-            >
-              {/* First set of items */}
-              {featuredItems.map(item => (
-                <SlideItem key={`first-${item.shopId}-${item.id}`}>
-                  <FeaturedItem
-                    item={item}
-                    theme={currentStyle}
-                    onClick={handleItemClick}
-                  />
-                </SlideItem>
-              ))}
-
-              {/* Duplicate set for seamless infinite scroll */}
-              {featuredItems.map(item => (
-                <SlideItem key={`second-${item.shopId}-${item.id}`}>
-                  <FeaturedItem
-                    item={item}
-                    theme={currentStyle}
-                    onClick={handleItemClick}
-                  />
-                </SlideItem>
-              ))}
-            </Slider>
-          </SliderContainer>       
-        </>
+        <SliderContainer theme={currentStyle}>                    
+          <Slider ref={sliderRef}>
+            {/* Just one set of items - no duplication needed with scrollbar */}
+            {featuredItems.map(item => (
+              <SlideItem key={`item-${item.shopId}-${item.id}`}>
+                <FeaturedItem
+                  item={item}
+                  theme={currentStyle}
+                  onItemClick={handleItemClick}
+                />
+              </SlideItem>
+            ))}
+          </Slider>
+        </SliderContainer>       
       )}
+
+      {/* Add the zoomed view overlay at the ROOT level of your return */}
+      {zoomedItem && (
+        <ZoomOverlay onClick={handleCloseZoom} theme={currentStyle}>
+          <ZoomContainer 
+            theme={currentStyle}
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+          >
+            <div style={{ position: 'relative', width: '100%' }}>
+              {/* Image section */}
+              <div style={{ padding: '1rem 1rem 0.5rem 1rem' }}>
+                <div style={{ 
+                  position: 'relative', 
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  aspectRatio: '4/3'
+                }}>
+                  <img 
+                    src={zoomedItem.images?.filter(Boolean)[0] || '/placeholder-image.jpg'} 
+                    alt={zoomedItem.name} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+
+                  {/* Image carousel controls can be added here if needed */}
+                </div>
+              </div>
+              
+              {/* Content section */}
+              <div style={{ padding: '0.5rem 1.5rem 1.5rem 1.5rem' }}>
+                <h3 style={{ 
+                  fontSize: '1.3rem', 
+                  margin: '0 0 0.5rem 0',
+                  fontFamily: currentStyle?.fonts?.heading || 'inherit'
+                }}>{zoomedItem.name}</h3>
+
+                <div style={{ 
+                  fontSize: '1.2rem', 
+                  fontWeight: 'bold',
+                  color: currentStyle?.colors?.accent || '#800000',
+                  marginBottom: '0.5rem'
+                }}>
+                  ${parseFloat(zoomedItem.price || 0).toFixed(2)}
+                </div>
+
+                <div style={{ 
+                  fontSize: '0.9rem', 
+                  opacity: 0.8,
+                  marginBottom: '1.5rem',
+                  maxHeight: '100px',
+                  overflow: 'auto'
+                }}>
+                  {zoomedItem.description || 'No description available.'}
+                </div>
+
+                {/* Action buttons */}
+                <div style={{ 
+                  display: 'flex',
+                  gap: '0.5rem'
+                }}>
+                  <ActionButton 
+                    className="secondary"
+                    onClick={handleInquireClick}
+                    theme={currentStyle}
+                  >
+                    <MessageCircle size={16} />
+                    Inquire
+                  </ActionButton>
+                  <ActionButton 
+                    className="primary"
+                    onClick={() => handleOrderClick(zoomedItem)}
+                    theme={currentStyle}
+                  >
+                    <ShoppingCart size={16} />
+                    Order
+                  </ActionButton>
+                </div>
+              </div>
+              
+              {/* Close button */}
+              <button 
+                onClick={handleCloseZoom}
+                style={{
+                  position: 'absolute',
+                  top: '0.5rem',
+                  right: '0.5rem',
+                  background: 'rgba(0, 0, 0, 0.5)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  cursor: 'pointer',
+                  zIndex: 10
+                }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </ZoomContainer>
+        </ZoomOverlay>
+      )}
+
+      {/* Chat Overlay and Component */}
+      <ChatOverlay 
+        isOpen={chatOpen} 
+        onClick={() => setChatOpen(false)}
+      />
+
+      {chatOpen && selectedChatItem && (
+        <OrderChat 
+          isOpen={chatOpen} 
+          onClose={() => setChatOpen(false)} 
+          item={selectedChatItem}
+          shopId={selectedChatItem.shopId}
+          shopName={selectedChatItem.shopName}
+          theme={currentStyle}
+        />
+      )}      
+        
 
       </MainContent>
     </PageContainer>

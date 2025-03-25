@@ -19,22 +19,11 @@ const ItemCard = styled.div`
   min-height: 390px;
   display: flex;
   flex-direction: column;
-  position: ${props => props.isExpanded ? 'fixed' : 'relative'};
-  z-index: ${props => props.isExpanded ? '100' : '1'};
-
-  /* Modified expansion style */
-  ${props => props.isExpanded && `
-    top: calc(${props.positionY}px - 20px); /* Slightly above the original */
-    left: calc(${props.positionX}px + ${props.width}px + 20px); /* To the right of the original */
-    width: calc(${props.width}px * 1.75); /* 1.75x original width */
-    height: calc(${props.height}px * 1.75); /* 1.75x original height */
-    transform-origin: top left;
-    background: ${props.theme?.colors?.surface || 'rgba(0, 0, 0, 0.4)'};
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  `}
+  position: relative;
+  z-index: 1;
   
   &:hover {
-    transform: ${props => props.isExpanded ? 'none' : 'translateY(-5px)'};
+    transform: translateY(-5px);
     border-color: ${props => props.theme?.colors?.accent || '#800000'};
     box-shadow: 0 5px 15px ${props => `${props.theme?.colors?.accent || 'rgba(128, 0, 0, 0.2)'}40`};
   }
@@ -63,17 +52,6 @@ const ChatOverlay = styled.div`
   opacity: ${props => props.isOpen ? 1 : 0};
   pointer-events: ${props => props.isOpen ? 'auto' : 'none'};
   transition: opacity 0.3s ease;
-`;
-
-const Overlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.5)'}80`}; // More transparent
-  z-index: 99;
-  backdrop-filter: blur(2px); // Reduced blur
 `;
 
 const ItemInfo = styled.div`
@@ -284,249 +262,90 @@ const ActionButton = styled.button`
 
 // Main component
 // Add these styled components
+// Update the ZoomContainer styled component with a higher z-index and better positioning
 const ZoomContainer = styled.div`
   position: fixed;
-  z-index: 200;
+  z-index: 10000; // Much higher z-index to appear over everything
   border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
   overflow: hidden;
   border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
   background: ${props => props.theme?.colors?.surface || 'rgba(0, 0, 0, 0.8)'};
-  // Add max height and max width constraints
-  max-height: 80vh;
+  max-height: 90vh; // Increase max height
   max-width: 90vw;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 500px;
+  height: auto;
+  transition: all 0.3s ease;
 `;
 
-const ZoomConnector = styled.div`
+// Also update the Overlay to have a higher z-index
+const Overlay = styled.div`
   position: fixed;
-  z-index: 199;
-  border: 1px solid ${props => props.theme?.colors?.accent || '#800000'};
-  pointer-events: none;
-  transform-origin: top left;
-  opacity: 0; // Hide the connector
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.5)'}80`};
+  z-index: 9999; // Higher z-index to appear over tabs but under the modal
+  backdrop-filter: blur(2px);
 `;
 
 // Update the FeaturedItem component
-const FeaturedItem = ({ item, showDistance, theme, onClick  }) => {
-  const [isZoomed, setIsZoomed] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [elementPosition, setElementPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const navigate = useNavigate();
-  const cardRef = React.useRef(null);
+  const FeaturedItem = ({ item, showDistance, theme, onItemClick }) => {
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const navigate = useNavigate();
+    const itemTheme = theme || item.shopTheme || {};
   
-  // Add state for chat functionality
-  const [chatOpen, setChatOpen] = useState(false);
-  
-  // Use either the passed theme, the item's shop theme, or the default
-  const itemTheme = theme || item.shopTheme || {};
-
-  // Handle capturing element position for zoom positioning
-  const capturePosition = () => {
-    if (cardRef.current) {
-      const rect = cardRef.current.getBoundingClientRect();
-      setElementPosition({
-        x: rect.left,
-        y: rect.top,
-        width: rect.width,
-        height: rect.height
-      });
-    }
-  };
-
-  const handleNextImage = (e) => {
-    e.stopPropagation();
-    
-    // Filter out null or undefined images
-    const validImages = item.images?.filter(Boolean) || [];
-    
-    if (validImages.length > 0) {
-      setCurrentImageIndex((prev) => (prev + 1) % validImages.length);
-    }
-  };
-  
-  const handlePrevImage = (e) => {
-    e.stopPropagation();
-    
-    // Filter out null or undefined images
-    const validImages = item.images?.filter(Boolean) || [];
-    
-    if (validImages.length > 0) {
-      setCurrentImageIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
-    }
-  };
-  
-  const getDisplayImage = () => {
-    // Filter out null or undefined images
-    const validImages = item.images?.filter(Boolean) || [];
-    
-    if (validImages.length > 0) {
-      return validImages[currentImageIndex % validImages.length];
-    }
-    return '/placeholder-image.jpg';
-  };
-
-  const formatPrice = (price) => {
-    try {
-      return parseFloat(price).toFixed(2);
-    } catch {
-      return '0.00';
-    }
-  };
-
-  const handleClick = (e) => {
-    e.stopPropagation();
-    capturePosition();
-    setIsZoomed(true);
-    if (onClick) onClick(); // Call the parent's onClick handler
-  };
-
-  // Handle Order button click
-  const handleOrderClick = (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setChatOpen(true);
-  };
-
-  // Handle Inquire button click
-  const handleInquireClick = (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    // You could implement a different chat mode or other functionality
-    alert('Inquiry feature coming soon!');
-  };
-
-  // Close zoom view when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (isZoomed && !event.target.closest(`.zoom-card-${item.id}`) && 
-          !event.target.closest(`.item-card-${item.id}`)) {
-        setIsZoomed(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isZoomed, item.id]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (isZoomed && cardRef.current) {
-        capturePosition();
+    const handleNextImage = (e) => {
+      e.stopPropagation();
+      const validImages = item.images?.filter(Boolean) || [];
+      if (validImages.length > 0) {
+        setCurrentImageIndex((prev) => (prev + 1) % validImages.length);
       }
     };
     
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
+    const handlePrevImage = (e) => {
+      e.stopPropagation();
+      const validImages = item.images?.filter(Boolean) || [];
+      if (validImages.length > 0) {
+        setCurrentImageIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
+      }
     };
-  }, [isZoomed]);
-
-  // Inside the useEffect for isZoomed in FeaturedItem.js
-  useEffect(() => {
-    if (isZoomed) {
-      // Save current scroll position
-      const scrollY = window.scrollY;
-      
-      // Prevent scrolling
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-      
-      return () => {
-        // Restore scrolling when zoom is closed
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.width = '';
-        window.scrollTo(0, scrollY);
-        
-        // Resume sliding if onClick prop exists
-        if (onClick) {
-          setTimeout(() => {
-            onClick(false); // Pass false to indicate that we're resuming
-          }, 300);
-        }
-      };
-    }
-  }, [isZoomed, onClick]);
-
-  // Calculate zoom box position
-  // Calculate zoom box position
-  const zoomBoxStyle = () => {
-    // Increase size by 75% from original
-    const zoomWidth = elementPosition.width * 1.75;
-    const zoomHeight = elementPosition.height * 1.75;
-
-    // Get viewport dimensions to ensure the zoom box stays within screen
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
-
-    // Center the zoom box over the original item
-    let top = elementPosition.y - (zoomHeight - elementPosition.height) / 2;
-    let left = elementPosition.x - (zoomWidth - elementPosition.width) / 2;
-
-    // Adjust if would go outside viewport
-    if (top < 10) {
-      top = 10;
-    } else if (top + zoomHeight > viewportHeight - 10) {
-      top = viewportHeight - zoomHeight - 10;
-    }
-
-    if (left < 10) {
-      left = 10;
-    } else if (left + zoomWidth > viewportWidth - 10) {
-      left = viewportWidth - zoomWidth - 10;
-    }
-
-    return {
-      width: zoomWidth,
-      height: zoomHeight,
-      top,
-      left,
+    
+    const getDisplayImage = () => {
+      const validImages = item.images?.filter(Boolean) || [];
+      if (validImages.length > 0) {
+        return validImages[currentImageIndex % validImages.length];
+      }
+      return '/placeholder-image.jpg';
     };
-  };
-
-  // Calculate connector line points
-  const connectorStyle = () => {
-    const zoom = zoomBoxStyle();
-    
-    // Determine if zoom box is above or below the original item
-    const isAbove = zoom.top < elementPosition.y;
-    
-    // Calculate connector position and dimensions
-    const connectorLength = Math.abs(isAbove ? 
-      elementPosition.y - (zoom.top + zoom.height) : 
-      zoom.top - (elementPosition.y + elementPosition.height));
-    
-    return {
-      width: '2px',
-      height: `${connectorLength}px`,
-      top: isAbove ? zoom.top + zoom.height : elementPosition.y + elementPosition.height,
-      left: elementPosition.x + elementPosition.width / 2,
-      transform: isAbove ? 'rotate(45deg)' : 'rotate(-45deg)',
-      transformOrigin: isAbove ? 'bottom' : 'top',
+  
+    const formatPrice = (price) => {
+      try {
+        return parseFloat(price).toFixed(2);
+      } catch {
+        return '0.00';
+      }
     };
-  };
-
-  return (
-    <>
-      
-      {isZoomed && <Overlay onClick={() => setIsZoomed(false)} theme={itemTheme} />}
-      
+  
+    const handleClick = (e) => {
+      e.stopPropagation();
+      // Instead of handling zoom here, we'll pass the item up to the parent
+      if (onItemClick) onItemClick(item);
+    };
+  
+    return (
       <ItemCard 
-        ref={cardRef}
-        onClick={isZoomed ? undefined : handleClick}
+        onClick={handleClick}
         theme={itemTheme}
         className={`item-card-${item.id}`}
       >
         <ImageSection theme={itemTheme}>
-          <img 
-            src={getDisplayImage()} 
-            alt={item.name} 
-          />
+          <img src={getDisplayImage()} alt={item.name} />
           
-          {/* Only show navigation arrows if there are MULTIPLE valid images */}
           {(item.images?.filter(Boolean).length > 1) && (
             <>
               <button className="carousel-arrow left" onClick={handlePrevImage}>
@@ -596,168 +415,7 @@ const FeaturedItem = ({ item, showDistance, theme, onClick  }) => {
         </ItemInfo>
       </ItemCard>
       
-      {/* Zoom Box and Connector Line */}
-      {isZoomed && (
-        <>
-          <ZoomConnector 
-            style={connectorStyle} 
-            theme={itemTheme} 
-          />
-          <ZoomContainer 
-            style={zoomBoxStyle()} 
-            theme={itemTheme}
-            className={`zoom-card-${item.id}`}
-          >
-            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-              {/* Top section with image */}
-              <div style={{ height: '60%', overflow: 'hidden' }}>
-                <img 
-                  src={getDisplayImage()} 
-                  alt={item.name} 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                
-                {(item.images?.filter(Boolean).length > 1) && (
-                  <>
-                    <button className="carousel-arrow left" onClick={handlePrevImage} style={{
-                      position: 'absolute',
-                      top: '30%',
-                      left: '1rem',
-                      transform: 'translateY(-50%)',
-                      background: 'rgba(0, 0, 0, 0.5)',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: '32px',
-                      height: '32px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      cursor: 'pointer'
-                    }}>
-                      <ChevronLeft size={18} />
-                    </button>
-                    <button className="carousel-arrow right" onClick={handleNextImage} style={{
-                      position: 'absolute',
-                      top: '30%',
-                      right: '1rem',
-                      transform: 'translateY(-50%)',
-                      background: 'rgba(0, 0, 0, 0.5)',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: '32px',
-                      height: '32px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      cursor: 'pointer'
-                    }}>
-                      <ChevronRight size={18} />
-                    </button>
-                  </>
-                )}
-              </div>
-              
-              {/* Bottom section with info and buttons */}
-              <div style={{ padding: '1rem', height: '40%', position: 'relative' }}>
-                <h3 style={{ 
-                  fontSize: '1.3rem', 
-                  margin: '0 0 0.5rem 0',
-                  fontFamily: itemTheme?.fonts?.heading || 'inherit'
-                }}>{item.name}</h3>
-                
-                <div style={{ 
-                  fontSize: '1.2rem', 
-                  fontWeight: 'bold',
-                  color: itemTheme?.colors?.accent || '#800000',
-                  marginBottom: '0.5rem'
-                }}>
-                  ${formatPrice(item.price)}
-                </div>
-                
-                <div style={{ 
-                  fontSize: '0.9rem', 
-                  opacity: 0.8,
-                  marginBottom: '0.5rem'
-                }}>
-                  {item.description?.slice(0, 80)}
-                  {item.description?.length > 80 ? '...' : ''}
-                </div>
-                
-                {/* Action buttons */}
-                <div style={{ 
-                  position: 'absolute', 
-                  bottom: '2.5rem', 
-                  left: '1rem', 
-                  right: '1rem',
-                  display: 'flex',
-                  gap: '0.5rem'
-                }}>
-                  <ActionButton 
-                    className="secondary"
-                    onClick={handleInquireClick}
-                    theme={itemTheme}
-                  >
-                    <MessageCircle size={16} />
-                    Inquire
-                  </ActionButton>
-                  <ActionButton 
-                    className="primary"
-                    onClick={handleOrderClick}
-                    theme={itemTheme}
-                  >
-                    <ShoppingCart size={16} />
-                    Order
-                  </ActionButton>
-                </div>
-                
-                {/* Close button */}
-                <button 
-                  onClick={() => setIsZoomed(false)} 
-                  style={{
-                    position: 'absolute',
-                    top: '0.5rem',
-                    right: '0.5rem',
-                    background: 'rgba(0, 0, 0, 0.5)',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '24px',
-                    height: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    cursor: 'pointer',
-                    zIndex: 10 /* Ensure it's on top of everything */
-                  }}
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
-          </ZoomContainer>
-        </>
-      )}
-      
-      {/* Chat Overlay and Component */}
-      <ChatOverlay 
-        isOpen={chatOpen} 
-        onClick={() => setChatOpen(false)}
-      />
-      
-      {chatOpen && (
-        <OrderChat 
-          isOpen={chatOpen} 
-          onClose={() => setChatOpen(false)} 
-          item={item}
-          shopId={item.shopId}
-          shopName={item.shopName}
-          theme={itemTheme}
-        />
-      )}
-    </>
-  );
+);      
 };
 
 export default FeaturedItem;
