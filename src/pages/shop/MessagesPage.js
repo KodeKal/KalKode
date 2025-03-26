@@ -5,31 +5,27 @@ import {
   MessageCircle, 
   Search, 
   X, 
-  ChevronRight, 
-  Calendar, 
-  DollarSign,
+  Trash2, 
+  Calendar,
+  User,
   Package,
-  Filter
+  DollarSign,
+  AlertTriangle,
+  Check,
+  Clock,
+  Send
 } from 'lucide-react';
-import { TransactionService } from '../../services/TransactionService';
+import { collection, query, where, orderBy, onSnapshot, getDocs, doc, updateDoc, deleteDoc, getDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase/config';
-import { 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
-  onSnapshot, 
-  limit, 
-  getDocs 
-} from 'firebase/firestore';
+import OrderChat from '../../components/Chat/OrderChat';
 import SellerOrderChat from '../../components/Chat/SellerOrderChat';
-import OrderChatWithStripe from '../../components/Chat/OrderChat';
 import { DEFAULT_THEME } from '../../theme/config/themes';
 
 const PageContainer = styled.div`
   min-height: 100vh;
   background: ${props => props.theme?.colors?.background || DEFAULT_THEME.colors.background};
   color: ${props => props.theme?.colors?.text || DEFAULT_THEME.colors.text};
+  padding-top: 80px; // Space for header
 `;
 
 const PageHeader = styled.div`
@@ -37,8 +33,10 @@ const PageHeader = styled.div`
   backdrop-filter: blur(10px);
   padding: 1.5rem 2rem;
   border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 10;
 `;
 
@@ -58,111 +56,27 @@ const HeaderContent = styled.div`
     gap: 0.75rem;
   }
   
-  .controls {
+  .header-stats {
     display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-`;
-
-const SearchContainer = styled.div`
-  position: relative;
-  width: 300px;
-  
-  input {
-    width: 100%;
-    padding: 0.75rem 1rem 0.75rem 2.5rem;
-    background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
-    border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
-    border-radius: 20px;
-    color: ${props => props.theme?.colors?.text || 'white'};
+    gap: 1.5rem;
     
-    &:focus {
-      outline: none;
-      border-color: ${props => props.theme?.colors?.accent || '#800000'};
-    }
-  }
-  
-  .search-icon {
-    position: absolute;
-    left: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.6)'};
-  }
-  
-  .clear-button {
-    position: absolute;
-    right: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    background: transparent;
-    border: none;
-    color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.6)'};
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    
-    &:hover {
-      color: ${props => props.theme?.colors?.text || 'white'};
-    }
-  }
-`;
-
-const FilterButton = styled.button`
-  background: transparent;
-  border: 1px solid ${props => `${props.theme?.colors?.accent}40` || 'rgba(255, 255, 255, 0.4)'};
-  color: ${props => props.theme?.colors?.text || 'white'};
-  padding: 0.75rem;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  
-  &:hover {
-    background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(255, 255, 255, 0.1)'};
-  }
-`;
-
-const FilterDropdown = styled.div`
-  position: absolute;
-  top: calc(100% + 0.5rem);
-  right: 0;
-  background: ${props => props.theme?.colors?.surface || 'rgba(0, 0, 0, 0.8)'};
-  border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
-  border-radius: 8px;
-  padding: 1rem;
-  width: 200px;
-  z-index: 10;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  
-  .filter-option {
-    margin-bottom: 1rem;
-    
-    label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-size: 0.9rem;
-    }
-    
-    select {
-      width: 100%;
-      padding: 0.5rem;
-      background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.8)'}90`};
-      border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
-      border-radius: 4px;
-      color: ${props => props.theme?.colors?.text || 'white'};
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
       
-      &:focus {
-        outline: none;
-        border-color: ${props => props.theme?.colors?.accent || '#800000'};
+      .value {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: ${props => props.theme?.colors?.accent || '#800000'};
       }
       
-      option {
-        background: ${props => props.theme?.colors?.background || 'rgba(0, 0, 0, 0.8)'};
+      .label {
+        font-size: 0.8rem;
+        opacity: 0.8;
       }
     }
   }
@@ -176,172 +90,420 @@ const MainContent = styled.div`
   gap: 2rem;
 `;
 
-const ChatList = styled.div`
+const ChatsList = styled.div`
   flex: 1;
   max-width: 400px;
-  border-right: 1px solid ${props => `${props.theme?.colors?.accent}10` || 'rgba(255, 255, 255, 0.1)'};
-  padding-right: 2rem;
-`;
-
-const ChatDetails = styled.div`
-  flex: 2;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
+  flex-direction: column;
+  gap: 1rem;
 `;
 
-const EmptyState = styled.div`
-  text-align: center;
-  color: ${props => `${props.theme?.colors?.text}80` || 'rgba(255, 255, 255, 0.8)'};
+const SearchInput = styled.div`
+  position: relative;
+  margin-bottom: 1rem;
   
-  .icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    opacity: 0.3;
-  }
-  
-  h3 {
-    margin-bottom: 0.5rem;
-  }
-  
-  p {
+  input {
+    width: 100%;
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
+    background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
+    border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
+    border-radius: 8px;
+    color: ${props => props.theme?.colors?.text || 'white'};
     font-size: 0.9rem;
-    max-width: 300px;
-    margin: 0 auto;
+    
+    &:focus {
+      outline: none;
+      border-color: ${props => props.theme?.colors?.accent || '#800000'};
+    }
+    
+    &::placeholder {
+      color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.6)'};
+    }
+  }
+  
+  .search-icon {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.6)'};
   }
 `;
 
-const ChatItem = styled.div`
-  padding: 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
+const ChatTabs = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+`;
+
+const ChatTab = styled.button`
+  flex: 1;
   background: ${props => props.active ? 
-    `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)' : 
-    'transparent'
+    `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)' : 
+    `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`
   };
   border: 1px solid ${props => props.active ? 
-    `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)' : 
+    props.theme?.colors?.accent || '#800000' : 
     'transparent'
   };
-  margin-bottom: 0.5rem;
-  position: relative;
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: ${props => props.theme?.colors?.text || 'white'};
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
   
   &:hover {
     background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
   }
+`;
+
+const ChatItem = styled.div`
+  display: flex;
+  gap: 1rem;
+  background: ${props => props.active ? 
+    `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)' : 
+    `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`
+  };
+  border: 1px solid ${props => props.active ? 
+    props.theme?.colors?.accent || '#800000' : 
+    'transparent'
+  };
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
   
-  .item-header {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 0.75rem;
+  &:hover {
+    border-color: ${props => props.theme?.colors?.accent || '#800000'};
     
-    .item-image {
-      width: 50px;
-      height: 50px;
-      border-radius: 6px;
+    .delete-btn {
+      opacity: 1;
+    }
+  }
+  
+  .chat-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+  
+  .chat-info {
+    flex: 1;
+    min-width: 0;
+    
+    .chat-name {
+      font-weight: bold;
+      margin-bottom: 0.25rem;
+      white-space: nowrap;
       overflow: hidden;
-      flex-shrink: 0;
-      
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
+      text-overflow: ellipsis;
     }
     
-    .item-info {
-      flex: 1;
+    .chat-preview {
+      font-size: 0.9rem;
+      opacity: 0.8;
+      white-space: nowrap;
       overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .chat-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
       
-      .item-name {
-        font-weight: 500;
-        margin-bottom: 0.25rem;
-        color: ${props => props.theme?.colors?.text || 'white'};
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      .chat-time {
+        opacity: 0.6;
       }
       
-      .item-price {
-        font-size: 0.9rem;
-        color: ${props => props.theme?.colors?.accent || '#800000'};
+      .chat-status {
+        padding: 0.2rem 0.5rem;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        
+        &.active {
+          background: rgba(76, 175, 80, 0.2);
+          color: #4CAF50;
+        }
+        
+        &.pending {
+          background: rgba(255, 152, 0, 0.2);
+          color: #FF9800;
+        }
+        
+        &.completed {
+          background: rgba(33, 150, 243, 0.2);
+          color: #2196F3;
+        }
       }
     }
   }
   
-  .item-details {
+  .unread-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: ${props => props.theme?.colors?.accent || '#800000'};
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1.5rem;
-    font-size: 0.8rem;
-    color: ${props => `${props.theme?.colors?.text}80` || 'rgba(255, 255, 255, 0.8)'};
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+  
+  .delete-btn {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 0.5rem;
+    background: transparent;
+    border: none;
+    color: #e74c3c;
+    opacity: 0;
+    transition: opacity 0.2s;
+    cursor: pointer;
+    padding: 0.25rem;
     
-    .detail {
+    &:hover {
+      transform: scale(1.2);
+    }
+  }
+`;
+
+const ChatDisplay = styled.div`
+  flex: 2;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
+  border-radius: 12px;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
+  display: flex;
+  flex-direction: column;
+  min-height: 600px;
+  max-height: 80vh;
+`;
+
+const EmptyState = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+  
+  .icon-container {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    
+    svg {
+      color: ${props => props.theme?.colors?.accent || '#800000'};
+      opacity: 0.8;
+    }
+  }
+  
+  h3 {
+    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
+    margin-bottom: 0.5rem;
+  }
+  
+  p {
+    max-width: 300px;
+    opacity: 0.8;
+    line-height: 1.5;
+  }
+`;
+
+const ChatHeader = styled.div`
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+  
+  .chat-user-details {
+    flex: 1;
+    
+    .chat-title {
+      font-weight: bold;
+      margin-bottom: 0.25rem;
+    }
+    
+    .chat-subtitle {
+      font-size: 0.9rem;
+      opacity: 0.8;
       display: flex;
       align-items: center;
-      gap: 0.25rem;
+      gap: 0.5rem;
     }
   }
   
-  .transaction-status {
-    display: inline-flex;
+  .transaction-details {
+    background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    display: flex;
     align-items: center;
-    gap: 0.25rem;
-    padding: 0.15rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
+    gap: 0.5rem;
+    cursor: pointer;
+    
+    &:hover {
+      background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+    }
+  }
+`;
+
+const ChatBody = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const Message = styled.div`
+  max-width: 70%;
+  padding: 1rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  position: relative;
+  
+  align-self: ${props => props.sent ? 'flex-end' : 'flex-start'};
+  background: ${props => props.sent ? 
+    props.theme?.colors?.accent || '#800000' : 
+    `${props.theme?.colors?.background || '#000'}80`
+  };
+  color: ${props => props.sent ? 'white' : props.theme?.colors?.text || 'white'};
+  
+  ${props => props.sent ? 
+    'border-bottom-right-radius: 4px;' : 
+    'border-bottom-left-radius: 4px;'
+  }
+  
+  &.system-message {
+    align-self: center;
+    background: transparent;
+    border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+    color: ${props => `${props.theme?.colors?.text}99` || 'rgba(255, 255, 255, 0.6)'};
+    font-style: italic;
+    text-align: center;
+    max-width: 90%;
+  }
+  
+  .time {
     position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
+    bottom: 0.3rem;
+    ${props => props.sent ? 'left: -3.5rem;' : 'right: -3.5rem;'}
+    font-size: 0.75rem;
+    opacity: 0.5;
+    white-space: nowrap;
+    color: ${props => props.theme?.colors?.text || 'white'};
+  }
+  
+  // Continue from where we left off...
+
+  .image-container {
+    max-width: 200px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 0.5rem;
     
-    &.pending {
-      background: rgba(255, 152, 0, 0.2);
-      color: #FF9800;
+    img {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
     }
+  }
+`;
+
+const ChatInput = styled.div`
+  padding: 1rem 1.5rem;
+  border-top: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  
+  input {
+    flex: 1;
+    background: ${props => `${props.theme?.colors?.background || '#000'}80`};
+    border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+    border-radius: 20px;
+    padding: 0.75rem 1.25rem;
+    color: ${props => props.theme?.colors?.text || 'white'};
     
-    &.awaiting_seller {
-      background: rgba(33, 150, 243, 0.2);
-      color: #2196F3;
-    }
-    
-    &.confirmed {
-      background: rgba(76, 175, 80, 0.2);
-      color: #4CAF50;
-    }
-    
-    &.completed {
-      background: rgba(76, 175, 80, 0.2);
-      color: #4CAF50;
-    }
-    
-    &.cancelled {
-      background: rgba(244, 67, 54, 0.2);
-      color: #F44336;
+    &:focus {
+      outline: none;
+      border-color: ${props => props.theme?.colors?.accent || '#800000'};
     }
   }
   
-  .unread-indicator {
-    position: absolute;
-    top: 50%;
-    right: 0.5rem;
-    transform: translateY(-50%);
-    width: 8px;
-    height: 8px;
+  button {
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: ${props => props.theme?.colors?.accent || '#800000'};
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    
+    &:hover {
+      transform: scale(1.05);
+    }
+    
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   }
 `;
 
 const NoChatsMessage = styled.div`
   text-align: center;
-  padding: 2rem;
-  color: ${props => `${props.theme?.colors?.text}80` || 'rgba(255, 255, 255, 0.8)'};
+  padding: 3rem 2rem;
   background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}50`};
-  border-radius: 8px;
+  border-radius: 12px;
   
   h3 {
     margin-bottom: 0.5rem;
@@ -349,128 +511,276 @@ const NoChatsMessage = styled.div`
   
   p {
     font-size: 0.9rem;
+    opacity: 0.8;
+    margin-bottom: 1.5rem;
   }
 `;
 
-// MessagesPage component
 const MessagesPage = () => {
-  const [transactions, setTransactions] = useState([]);
-  const [filteredTransactions, setFilteredTransactions] = useState([]);
-  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [roleFilter, setRoleFilter] = useState('all');
+  const [chats, setChats] = useState([]);
+  const [filteredChats, setFilteredChats] = useState([]);
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [stats, setStats] = useState({
+    active: 0,
+    completed: 0,
+    total: 0
+  });
   
-  // Load transactions with open chats
+  // Load user's chats from Firestore
   useEffect(() => {
-    const fetchTransactions = async () => {
-      if (!auth.currentUser) return;
-      
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Create query for chats where user is a participant
-        const chatsQuery = query(
-          collection(db, 'chats'),
-          where('participants', 'array-contains', auth.currentUser.uid),
-          orderBy('lastMessageTime', 'desc'),
-          limit(50)
-        );
-        
-        // Listen for chat changes
-        const unsubscribe = onSnapshot(chatsQuery, async (snapshot) => {
-          const chatItems = [];
-          
-          // Process chats and get related transaction data
-          for (const doc of snapshot.docs) {
-            const chatData = doc.data();
-            
-            // Get transaction details
-            try {
-              const transactionData = await TransactionService.getTransactionById(chatData.transactionId);
-              
-              // Determine if user is buyer or seller
-              const role = transactionData.buyerId === auth.currentUser.uid ? 'buyer' : 'seller';
-              
-              // Add chat with transaction data
-              chatItems.push({
-                id: doc.id,
-                ...chatData,
-                ...transactionData,
-                role,
-                unreadCount: chatData.unreadCount?.[auth.currentUser.uid] || 0
-              });
-            } catch (err) {
-              console.error(`Error fetching transaction ${chatData.transactionId}:`, err);
-            }
-          }
-          
-          setTransactions(chatItems);
-          applyFilters(chatItems, searchTerm, statusFilter, roleFilter);
-          setLoading(false);
-        });
-        
-        return () => unsubscribe();
-      } catch (err) {
-        console.error('Error loading transactions:', err);
-        setError('Failed to load messages');
-        setLoading(false);
-      }
-    };
+    if (!auth.currentUser) return;
     
-    fetchTransactions();
+    setLoading(true);
+    
+    const chatsRef = collection(db, 'chats');
+    const q = query(
+      chatsRef,
+      where('participants', 'array-contains', auth.currentUser.uid),
+      orderBy('lastMessageTime', 'desc')
+    );
+    
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const chatData = [];
+      
+      let activeCount = 0;
+      let completedCount = 0;
+      
+      // Process each chat
+      for (const doc of snapshot.docs) {
+        const chat = doc.data();
+        
+        // Get transaction details
+        let transaction = null;
+        if (chat.transactionId) {
+          try {
+            const transactionSnap = await getDoc(doc(db, 'transactions', chat.transactionId));
+            if (transactionSnap.exists()) {
+              transaction = {
+                id: transactionSnap.id,
+                ...transactionSnap.data()
+              };
+              
+              // Count based on status
+              if (transaction.status === 'completed') {
+                completedCount++;
+              } else {
+                activeCount++;
+              }
+            }
+          } catch (err) {
+            console.error(`Error fetching transaction for chat ${doc.id}:`, err);
+          }
+        }
+        
+        // Determine if user is buyer or seller
+        const isBuyer = chat.buyerId === auth.currentUser.uid;
+        const isSeller = chat.sellerId === auth.currentUser.uid;
+        
+        // Get other party's details
+        const otherPartyId = isBuyer ? chat.sellerId : chat.buyerId;
+        const otherPartyName = isBuyer ? chat.sellerName : chat.buyerName;
+        
+        // Add to chat data
+        chatData.push({
+          id: doc.id,
+          ...chat,
+          transaction,
+          isBuyer,
+          isSeller,
+          role: isBuyer ? 'buyer' : 'seller',
+          otherPartyId,
+          otherPartyName,
+          unreadCount: chat.unreadCount?.[auth.currentUser.uid] || 0
+        });
+      }
+      
+      // Update stats
+      setStats({
+        active: activeCount,
+        completed: completedCount,
+        total: chatData.length
+      });
+      
+      setChats(chatData);
+      applyFilters(chatData, searchTerm, activeTab);
+      setLoading(false);
+    });
+    
+    return () => unsubscribe();
   }, []);
   
   // Apply filters when they change
-  const applyFilters = (items, search, status, role) => {
-    let filtered = [...items];
+  useEffect(() => {
+    applyFilters(chats, searchTerm, activeTab);
+  }, [chats, searchTerm, activeTab]);
+  
+  // Load messages when a chat is selected
+  useEffect(() => {
+    if (!selectedChat) {
+      setMessages([]);
+      return;
+    }
+    
+    const messagesRef = collection(db, 'chats', selectedChat.id, 'messages');
+    const q = query(messagesRef, orderBy('timestamp', 'asc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const messageData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      setMessages(messageData);
+      
+      // Mark messages as read
+      if (selectedChat.unreadCount > 0) {
+        updateDoc(doc(db, 'chats', selectedChat.id), {
+          [`unreadCount.${auth.currentUser.uid}`]: 0
+        });
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [selectedChat]);
+  
+  // Filter chats based on search term and tab
+  const applyFilters = (allChats, search, tab) => {
+    let filtered = [...allChats];
     
     // Apply search filter
     if (search) {
       const searchLower = search.toLowerCase();
-      filtered = filtered.filter(item => 
-        (item.itemName?.toLowerCase().includes(searchLower)) ||
-        (item.buyerName?.toLowerCase().includes(searchLower)) ||
-        (item.sellerName?.toLowerCase().includes(searchLower))
+      filtered = filtered.filter(chat => 
+        (chat.itemName?.toLowerCase().includes(searchLower)) ||
+        (chat.otherPartyName?.toLowerCase().includes(searchLower))
       );
     }
     
-    // Apply status filter
-    if (status !== 'all') {
-      filtered = filtered.filter(item => item.status === status);
+    // Apply tab filter
+    if (tab === 'active') {
+      filtered = filtered.filter(chat => 
+        chat.transaction?.status !== 'completed' && 
+        chat.transaction?.status !== 'cancelled'
+      );
+    } else if (tab === 'completed') {
+      filtered = filtered.filter(chat => 
+        chat.transaction?.status === 'completed' || 
+        chat.transaction?.status === 'cancelled'
+      );
     }
     
-    // Apply role filter
-    if (role !== 'all') {
-      filtered = filtered.filter(item => item.role === role);
-    }
-    
-    setFilteredTransactions(filtered);
+    setFilteredChats(filtered);
   };
   
-  // Handle search and filter changes
-  useEffect(() => {
-    applyFilters(transactions, searchTerm, statusFilter, roleFilter);
-  }, [transactions, searchTerm, statusFilter, roleFilter]);
+  // Send a message
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || !selectedChat) return;
+    
+    try {
+      // Add message to Firestore
+      await addDoc(collection(db, 'chats', selectedChat.id, 'messages'), {
+        text: inputMessage.trim(),
+        sender: auth.currentUser.uid,
+        senderName: auth.currentUser.displayName || auth.currentUser.email,
+        timestamp: serverTimestamp(),
+        type: 'text'
+      });
+      
+      // Update chat with last message
+      const otherPartyId = selectedChat.isBuyer ? selectedChat.sellerId : selectedChat.buyerId;
+      
+      await updateDoc(doc(db, 'chats', selectedChat.id), {
+        lastMessage: inputMessage.trim(),
+        lastMessageTime: serverTimestamp(),
+        [`unreadCount.${otherPartyId}`]: (selectedChat.unreadCount?.[otherPartyId] || 0) + 1
+      });
+      
+      // Clear input
+      setInputMessage('');
+    } catch (err) {
+      console.error('Error sending message:', err);
+    }
+  };
   
-  const formatDate = (timestamp) => {
+  // Delete a chat (hide it for the current user)
+  const handleDeleteChat = async (chatId, e) => {
+    e.stopPropagation();
+    
+    if (!window.confirm('Are you sure you want to delete this conversation?')) return;
+    
+    try {
+      // Update Firestore
+      await updateDoc(doc(db, 'chats', chatId), {
+        [`hidden.${auth.currentUser.uid}`]: true
+      });
+      
+      // Immediately update the local state to remove this chat
+      setChats(prevChats => prevChats.filter(chat => chat.id !== chatId));
+      
+      // If the deleted chat was selected, deselect it
+      if (selectedChat?.id === chatId) {
+        setSelectedChat(null);
+      }
+    } catch (err) {
+      console.error('Error deleting chat:', err);
+    }
+  };
+  
+  // Format timestamp
+  const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
     
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString();
+    const now = new Date();
+    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return date.toLocaleDateString([], { weekday: 'short' });
+    } else {
+      return date.toLocaleDateString();
+    }
   };
   
-  const renderEmptyState = () => (
-    <EmptyState>
-      <div className="icon">💬</div>
-      <h3>No Message Selected</h3>
-      <p>Select a conversation from the list to view details</p>
-    </EmptyState>
-  );
+  // Show transaction status with icon
+  const getStatusDisplay = (status) => {
+    switch (status) {
+      case 'pending':
+        return (
+          <div className="chat-status pending">
+            <Clock size={12} /> Pending
+          </div>
+        );
+      case 'awaiting_seller':
+        return (
+          <div className="chat-status pending">
+            <AlertTriangle size={12} /> Awaiting
+          </div>
+        );
+      case 'confirmed':
+        return (
+          <div className="chat-status active">
+            <Check size={12} /> Active
+          </div>
+        );
+      case 'completed':
+        return (
+          <div className="chat-status completed">
+            <Check size={12} /> Completed
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
   
   return (
     <PageContainer>
@@ -481,168 +791,205 @@ const MessagesPage = () => {
             Messages
           </h1>
           
-          <div className="controls">
-            <SearchContainer>
-              <div className="search-icon">
-                <Search size={16} />
-              </div>
-              <input
-                type="text"
-                placeholder="Search messages..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              {searchTerm && (
-                <button className="clear-button" onClick={() => setSearchTerm('')}>
-                  <X size={16} />
-                </button>
-              )}
-            </SearchContainer>
-            
-            <div style={{ position: 'relative' }}>
-              <FilterButton onClick={() => setShowFilters(!showFilters)}>
-                <Filter size={16} />
-                Filters
-              </FilterButton>
-              
-              {showFilters && (
-                <FilterDropdown>
-                  <div className="filter-option">
-                    <label>Status</label>
-                    <select 
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                    >
-                      <option value="all">All Status</option>
-                      <option value="pending">Pending</option>
-                      <option value="awaiting_seller">Awaiting Seller</option>
-                      <option value="confirmed">Confirmed</option>
-                      <option value="completed">Completed</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </div>
-                  
-                  <div className="filter-option">
-                    <label>Role</label>
-                    <select 
-                      value={roleFilter}
-                      onChange={(e) => setRoleFilter(e.target.value)}
-                    >
-                      <option value="all">All Roles</option>
-                      <option value="buyer">As Buyer</option>
-                      <option value="seller">As Seller</option>
-                    </select>
-                  </div>
-                </FilterDropdown>
-              )}
+          <div className="header-stats">
+            <div className="stat">
+              <div className="value">{stats.active}</div>
+              <div className="label">Active</div>
+            </div>
+            <div className="stat">
+              <div className="value">{stats.completed}</div>
+              <div className="label">Completed</div>
+            </div>
+            <div className="stat">
+              <div className="value">{stats.total}</div>
+              <div className="label">Total</div>
             </div>
           </div>
         </HeaderContent>
       </PageHeader>
       
       <MainContent>
-        <ChatList>
+        <ChatsList>
+          <SearchInput>
+            <input
+              type="text"
+              placeholder="Search conversations..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <Search className="search-icon" size={16} />
+          </SearchInput>
+          
+          <ChatTabs>
+            <ChatTab 
+              active={activeTab === 'all'} 
+              onClick={() => setActiveTab('all')}
+            >
+              All
+            </ChatTab>
+            <ChatTab 
+              active={activeTab === 'active'} 
+              onClick={() => setActiveTab('active')}
+            >
+              Active
+            </ChatTab>
+            <ChatTab 
+              active={activeTab === 'completed'} 
+              onClick={() => setActiveTab('completed')}
+            >
+              Completed
+            </ChatTab>
+          </ChatTabs>
+          
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
-              Loading conversations...
-            </div>
-          ) : error ? (
-            <div style={{ color: '#F44336', padding: '1rem' }}>
-              {error}
-            </div>
-          ) : filteredTransactions.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem' }}>Loading conversations...</div>
+          ) : filteredChats.length === 0 ? (
             <NoChatsMessage>
               <h3>No conversations found</h3>
               <p>
-                {searchTerm || statusFilter !== 'all' || roleFilter !== 'all' ? 
-                  'Try adjusting your filters' : 
-                  'You have no active conversations yet'}
+                {searchTerm ? 
+                  `No results matching "${searchTerm}"` : 
+                  "You don't have any conversations yet"
+                }
               </p>
             </NoChatsMessage>
           ) : (
-            filteredTransactions.map(transaction => (
+            filteredChats.map(chat => (
               <ChatItem 
-                key={transaction.id}
-                active={selectedTransaction?.id === transaction.id}
-                onClick={() => setSelectedTransaction(transaction)}
+                key={chat.id}
+                active={selectedChat?.id === chat.id}
+                onClick={() => setSelectedChat(chat)}
               >
-                <div className="item-header">
-                  <div className="item-image">
-                    {transaction.itemImage ? (
-                      <img src={transaction.itemImage} alt={transaction.itemName} />
-                    ) : (
-                      <div style={{
-                        width: '100%',
-                        height: '100%',
-                        background: 'rgba(0, 0, 0, 0.2)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'rgba(255, 255, 255, 0.5)',
-                        fontSize: '0.8rem'
-                      }}>
-                        <Package size={16} />
-                      </div>
-                    )}
+                <div className="chat-image">
+                  {chat.itemImage ? (
+                    <img src={chat.itemImage} alt={chat.itemName} />
+                  ) : (
+                    <div style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      background: 'rgba(0, 0, 0, 0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center' 
+                    }}>
+                      <Package size={20} opacity={0.5} />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="chat-info">
+                  <div className="chat-name">
+                    {chat.itemName || "Untitled conversation"}
                   </div>
-                  <div className="item-info">
-                    <div className="item-name">{transaction.itemName}</div>
-                    <div className="item-price">${parseFloat(transaction.price).toFixed(2)}</div>
+                  <div className="chat-preview">
+                    {chat.otherPartyName || "Unknown user"}
+                  </div>
+                  
+                  <div className="chat-meta">
+                    <div className="chat-time">
+                      {formatTimestamp(chat.lastMessageTime)}
+                    </div>
+                    
+                    {chat.transaction && getStatusDisplay(chat.transaction.status)}
                   </div>
                 </div>
                 
-                <div className="item-details">
-                  <div className="detail">
-                    <Calendar size={12} />
-                    {formatDate(transaction.lastMessageTime || transaction.createdAt)}
+                {chat.unreadCount > 0 && (
+                  <div className="unread-badge">
+                    {chat.unreadCount}
                   </div>
-                  <div className="detail">
-                    <DollarSign size={12} />
-                    {transaction.role === 'buyer' ? 'Purchase' : 'Sale'}
-                  </div>
-                </div>
-                
-                <div className={`transaction-status ${transaction.status}`}>
-                  {transaction.status.replace('_', ' ')}
-                </div>
-                
-                {transaction.unreadCount > 0 && (
-                  <div className="unread-indicator" />
                 )}
+                
+                <button 
+                  className="delete-btn"
+                  onClick={(e) => handleDeleteChat(chat.id, e)}
+                >
+                  <Trash2 size={16} />
+                </button>
               </ChatItem>
             ))
           )}
-        </ChatList>
+        </ChatsList>
         
-        <ChatDetails>
-          {selectedTransaction ? (
-            selectedTransaction.role === 'seller' ? (
-              <SellerOrderChat 
-                isOpen={true}
-                onClose={() => setSelectedTransaction(null)}
-                transaction={selectedTransaction}
-                theme={DEFAULT_THEME}
-              />
-            ) : (
-              <OrderChatWithStripe
-                isOpen={true}
-                onClose={() => setSelectedTransaction(null)}
-                item={{
-                  id: selectedTransaction.itemId,
-                  name: selectedTransaction.itemName,
-                  price: selectedTransaction.price,
-                  images: [selectedTransaction.itemImage]
-                }}
-                shopId={selectedTransaction.sellerId}
-                shopName={selectedTransaction.sellerName}
-                theme={DEFAULT_THEME}
-                transactionId={selectedTransaction.id}
-              />
-            )
+        <ChatDisplay>
+          {selectedChat ? (
+            <>
+              <ChatHeader>
+                <div className="avatar">
+                  {selectedChat.isBuyer ? (
+                    <User size={24} />
+                  ) : (
+                    <Package size={24} />
+                  )}
+                  </div>
+                
+                <div className="chat-user-details">
+                  <div className="chat-title">
+                    {selectedChat.otherPartyName || "Unknown user"}
+                  </div>
+                  <div className="chat-subtitle">
+                    {selectedChat.isBuyer ? "Seller" : "Buyer"} • {selectedChat.itemName}
+                  </div>
+                </div>
+                
+                <div className="transaction-details">
+                  <DollarSign size={16} />
+                  ${parseFloat(selectedChat.transaction?.price || 0).toFixed(2)}
+                </div>
+              </ChatHeader>
+              
+              <ChatBody>
+                {messages.map(message => {
+                  const isSentByMe = message.sender === auth.currentUser.uid;
+                  const isSystem = message.sender === 'system';
+                  
+                  return (
+                    <Message
+                      key={message.id}
+                      sent={isSentByMe}
+                      className={isSystem ? 'system-message' : ''}
+                    >
+                      {message.text}
+                      
+                      {message.image && (
+                        <div className="image-container">
+                          <img src={message.image} alt="Shared" />
+                        </div>
+                      )}
+                      
+                      {message.timestamp && (
+                        <div className="time">
+                          {formatTimestamp(message.timestamp)}
+                        </div>
+                      )}
+                    </Message>
+                  );
+                })}
+              </ChatBody>
+              
+              <ChatInput>
+                <input 
+                  type="text" 
+                  placeholder="Type a message..." 
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                />
+                <button onClick={handleSendMessage} disabled={!inputMessage.trim()}>
+                  <Send size={18} />
+                </button>
+              </ChatInput>
+            </>
           ) : (
-            renderEmptyState()
+            <EmptyState>
+              <div className="icon-container">
+                <MessageCircle size={32} />
+              </div>
+              <h3>No conversation selected</h3>
+              <p>Select a conversation from the list to view messages</p>
+            </EmptyState>
           )}
-        </ChatDetails>
+        </ChatDisplay>
       </MainContent>
     </PageContainer>
   );

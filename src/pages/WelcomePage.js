@@ -634,6 +634,45 @@ const StyleIndicator = styled.div`
   }
 `;
 
+// Add these new styled components to your existing styled components
+
+const CategorySlidersSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  margin: 3rem 0;
+`;
+
+const CategoryHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  
+  h2 {
+    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
+    font-size: 1.8rem;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    margin: 0;
+  }
+  
+  .view-all {
+    font-size: 0.9rem;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    opacity: 0.8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      opacity: 1;
+      transform: translateX(3px);
+    }
+  }
+`;
+
 const ZoomOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -731,6 +770,72 @@ const WelcomePage = () => {
   const [zoomedItem, setZoomedItem] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedChatItem, setSelectedChatItem] = useState(null);
+  // New state for categorized items
+const [clothingItems, setClothingItems] = useState([]);
+const [electronicsItems, setElectronicsItems] = useState([]);
+const [collectiblesItems, setCollectiblesItems] = useState([]);
+
+  // Add a function to load categorized items
+  const loadCategorizedItems = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const allItems = await getFeaturedItems(24); // Get more items to categorize
+
+      // In a real scenario, items would have a 'category' field
+      // Here we're simulating by categorizing based on item names/descriptions
+
+      const clothing = [];
+      const electronics = [];
+      const collectibles = [];
+
+      allItems.forEach(item => {
+        const name = (item.name || '').toLowerCase();
+        const description = (item.description || '').toLowerCase();
+
+        // Simple keyword-based categorization
+        if (name.includes('shirt') || name.includes('pant') || 
+            name.includes('shoe') || name.includes('hat') ||
+            name.includes('jacket') || description.includes('wear') ||
+            description.includes('clothing')) {
+          clothing.push(item);
+        } else if (name.includes('phone') || name.includes('laptop') || 
+                   name.includes('computer') || name.includes('tv') ||
+                   name.includes('headphone') || description.includes('electronic') ||
+                   description.includes('device')) {
+          electronics.push(item);
+        } else if (name.includes('card') || name.includes('figure') || 
+                   name.includes('comic') || name.includes('vintage') ||
+                   name.includes('rare') || description.includes('collectible') ||
+                   description.includes('collection')) {
+          collectibles.push(item);
+        } else {
+          // For demo purposes, distribute remaining items to ensure each category has items
+          if (clothing.length <= electronics.length && clothing.length <= collectibles.length) {
+            clothing.push(item);
+          } else if (electronics.length <= collectibles.length) {
+            electronics.push(item);
+          } else {
+            collectibles.push(item);
+          }
+        }
+      });
+
+      setClothingItems(clothing.slice(0, 8));
+      setElectronicsItems(electronics.slice(0, 8));
+      setCollectiblesItems(collectibles.slice(0, 8));
+      setFeaturedItems(allItems.slice(0, 8));
+      setTotalItems(allItems.length);
+
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading categorized items:', error);
+      setError('Failed to load items. Please try again later.');
+      setLoading(false);
+    }
+  };
+  
 
   // Add these to your SliderContainer
   const handleScrollLeft = () => {
@@ -1162,13 +1267,13 @@ const handleInquireClick = () => {
 
   useEffect(() => {
   if (activeTab === 'featured') {
-    loadFeaturedItems();
+    loadCategorizedItems();
   }
   
   // Set up refresh interval
   const refreshInterval = setInterval(() => {
     if (activeTab === 'featured') {
-      loadFeaturedItems();
+      loadCategorizedItems();
     }
   }, 300000); // 5 minutes
 
@@ -1376,7 +1481,7 @@ React.useEffect(() => {
               Current Location
             </SearchButton>
           </AddressSearchContainer>
-          
+
               <GridContainer>
                 {error ? (
                   <EmptyGridMessage>
@@ -1416,22 +1521,173 @@ React.useEffect(() => {
       )}
 
       {/* Featured Items Tab */}
-      {activeTab === 'featured' && (
-        <SliderContainer theme={currentStyle}>                    
-          <Slider ref={sliderRef}>
-            {/* Just one set of items - no duplication needed with scrollbar */}
-            {featuredItems.map(item => (
-              <SlideItem key={`item-${item.shopId}-${item.id}`}>
-                <FeaturedItem
-                  item={item}
-                  theme={currentStyle}
-                  onItemClick={handleItemClick}
-                />
-              </SlideItem>
-            ))}
-          </Slider>
-        </SliderContainer>       
-      )}
+        {activeTab === 'featured' && (
+          <CategorySlidersSection>
+            {/* First slider - Featured Items */}
+            <div>
+              <CategoryHeader theme={currentStyle}>
+                <h2>Featured Items</h2>
+                <div className="view-all">
+                  View All <ChevronRight size={16} />
+                </div>
+              </CategoryHeader>
+
+              <SliderContainer theme={currentStyle}>
+                <ScrollButton className="left" onClick={handleScrollLeft} theme={currentStyle}>
+                  <ChevronLeft size={16} />
+                </ScrollButton>
+
+                <Slider ref={sliderRef}>
+                  {featuredItems.map(item => (
+                    <SlideItem key={`item-${item.shopId}-${item.id}`}>
+                      <FeaturedItem
+                        item={item}
+                        theme={currentStyle}
+                        onItemClick={handleItemClick}
+                      />
+                    </SlideItem>
+                  ))}
+                </Slider>
+                
+                <ScrollButton className="right" onClick={handleScrollRight} theme={currentStyle}>
+                  <ChevronRight size={16} />
+                </ScrollButton>
+              </SliderContainer>
+            </div>
+                
+            {/* Second slider - Clothing & Accessories */}
+            <div>
+              <CategoryHeader theme={currentStyle}>
+                <h2>Clothing & Accessories</h2>
+                <div className="view-all">
+                  View All <ChevronRight size={16} />
+                </div>
+              </CategoryHeader>
+                
+              <SliderContainer theme={currentStyle}>
+                <ScrollButton className="left" onClick={(e) => {
+                  const container = e.target.closest('.slider-container').querySelector('.slider');
+                  container.scrollBy({
+                    left: -600,
+                    behavior: 'smooth'
+                  });
+                }} theme={currentStyle}>
+                  <ChevronLeft size={16} />
+                </ScrollButton>
+
+                <Slider className="slider">
+                  {clothingItems.map(item => (
+                    <SlideItem key={`clothing-${item.shopId}-${item.id}`}>
+                      <FeaturedItem
+                        item={item}
+                        theme={currentStyle}
+                        onItemClick={handleItemClick}
+                      />
+                    </SlideItem>
+                  ))}
+                </Slider>
+                
+                <ScrollButton className="right" onClick={(e) => {
+                  const container = e.target.closest('.slider-container').querySelector('.slider');
+                  container.scrollBy({
+                    left: 600,
+                    behavior: 'smooth'
+                  });
+                }} theme={currentStyle}>
+                  <ChevronRight size={16} />
+                </ScrollButton>
+              </SliderContainer>
+            </div>
+              
+            {/* Third slider - Electronics & Tech */}
+            <div>
+              <CategoryHeader theme={currentStyle}>
+                <h2>Electronics & Tech</h2>
+                <div className="view-all">
+                  View All <ChevronRight size={16} />
+                </div>
+              </CategoryHeader>
+              
+              <SliderContainer theme={currentStyle}>
+                <ScrollButton className="left" onClick={(e) => {
+                  const container = e.target.closest('.slider-container').querySelector('.slider');
+                  container.scrollBy({
+                    left: -600,
+                    behavior: 'smooth'
+                  });
+                }} theme={currentStyle}>
+                  <ChevronLeft size={16} />
+                </ScrollButton>
+
+                <Slider className="slider">
+                  {electronicsItems.map(item => (
+                    <SlideItem key={`electronics-${item.shopId}-${item.id}`}>
+                      <FeaturedItem
+                        item={item}
+                        theme={currentStyle}
+                        onItemClick={handleItemClick}
+                      />
+                    </SlideItem>
+                  ))}
+                </Slider>
+                
+                <ScrollButton className="right" onClick={(e) => {
+                  const container = e.target.closest('.slider-container').querySelector('.slider');
+                  container.scrollBy({
+                    left: 600,
+                    behavior: 'smooth'
+                  });
+                }} theme={currentStyle}>
+                  <ChevronRight size={16} />
+                </ScrollButton>
+              </SliderContainer>
+            </div>
+              
+            {/* Fourth slider - Collectibles & Rarities */}
+            <div>
+              <CategoryHeader theme={currentStyle}>
+                <h2>Collectibles & Rarities</h2>
+                <div className="view-all">
+                  View All <ChevronRight size={16} />
+                </div>
+              </CategoryHeader>
+              
+              <SliderContainer theme={currentStyle} className="slider-container">
+                <ScrollButton className="left" onClick={(e) => {
+                  const container = e.target.closest('.slider-container').querySelector('.slider');
+                  container.scrollBy({
+                    left: -600,
+                    behavior: 'smooth'
+                  });
+                }} theme={currentStyle}>
+                  <ChevronLeft size={16} />
+                </ScrollButton>
+
+                <Slider className="slider">
+                  {collectiblesItems.map(item => (
+                    <SlideItem key={`collectibles-${item.shopId}-${item.id}`}>
+                      <FeaturedItem
+                        item={item}
+                        theme={currentStyle}
+                        onItemClick={handleItemClick}
+                      />
+                    </SlideItem>
+                  ))}
+                </Slider>
+                
+                <ScrollButton className="right" onClick={(e) => {
+                  const container = e.target.closest('.slider-container').querySelector('.slider');
+                  container.scrollBy({
+                    left: 600,
+                    behavior: 'smooth'
+                  });
+                }} theme={currentStyle}>
+                  <ChevronRight size={16} />
+                </ScrollButton>
+              </SliderContainer>
+            </div>
+          </CategorySlidersSection>
+        )}
 
       {/* Add the zoomed view overlay at the ROOT level of your return */}
       {zoomedItem && (

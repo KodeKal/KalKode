@@ -21,12 +21,16 @@ import NotificationsPage from './pages/shop/NotificationsPage.js';
 import ShopPublicView from './pages/shop/shopPublicView.js';
 import TransactionsPage from './pages/transactions/Transactions';
 
-// Create a new component for the routes
+// In src/App.js, update the Routes section
+
+// Add the import at the top
+import MessagesPage from './pages/shop/MessagesPage';
+
+// Then update the Routes component to include MessagesPage
 const AppRoutes = () => {
   const location = useLocation();
-  const { isAuthenticated } = useAuth(); // Make sure to import useAuth
+  const { isAuthenticated } = useAuth();
   
-  // Update this logic to determine when to show NavMenu
   const showNavMenu = isAuthenticated && !['/auth', '/verify-email', '/shop/create/template'].some(
     path => location.pathname === path || location.pathname.includes(path)
   );
@@ -46,6 +50,13 @@ const AppRoutes = () => {
               <TransactionsPage />
             </ProtectedRoute>
           } />
+
+        {/* Messages Page */}
+        <Route path="/messages" element={
+          <ProtectedRoute>
+            <MessagesPage />
+          </ProtectedRoute>
+        } />
 
         {/* Protected Routes */}
         <Route path="/shop/dashboard" element={

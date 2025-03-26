@@ -18,7 +18,18 @@ import {
 } from 'lucide-react';
 import { TransactionService } from '../../services/TransactionService';
 import { auth, db, storage } from '../../firebase/config';
-import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { 
+    collection, 
+    addDoc, 
+    query, 
+    orderBy, 
+    onSnapshot, 
+    serverTimestamp,
+    doc,
+    getDoc,
+    updateDoc,
+    increment 
+  } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const ChatDrawer = styled.div`
