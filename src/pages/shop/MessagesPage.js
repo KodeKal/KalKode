@@ -1,6 +1,6 @@
-// src/pages/messages/MessagesPage.js
-import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+// src/pages/shop/MessagesPage.js
+import React, { useState, useEffect, useRef } from 'react';
+import styled, { ThemeProvider } from 'styled-components';
 import { 
   MessageCircle, 
   Search, 
@@ -13,13 +13,26 @@ import {
   AlertTriangle,
   Check,
   Clock,
-  Send
+  Send,
+  Phone,
+  Mail,
+  Share2,
+  Bell,
+  Image,
+  Link,
+  RefreshCw,
+  MoreVertical,
+  FileText
 } from 'lucide-react';
-import { collection, query, where, orderBy, onSnapshot, getDocs, doc, updateDoc, deleteDoc, getDoc, serverTimestamp, addDoc } from 'firebase/firestore';
-import { db, auth } from '../../firebase/config';
+import { collection, query, where, orderBy, onSnapshot, getDocs, 
+  doc, updateDoc, deleteDoc, getDoc, serverTimestamp, addDoc, 
+  increment, Timestamp, limit } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, auth, storage } from '../../firebase/config';
 import OrderChat from '../../components/Chat/OrderChat';
 import SellerOrderChat from '../../components/Chat/SellerOrderChat';
 import { DEFAULT_THEME } from '../../theme/config/themes';
+import { formatDistance } from 'date-fns';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -54,6 +67,10 @@ const HeaderContent = styled.div`
     display: flex;
     align-items: center;
     gap: 0.75rem;
+
+    svg {
+      color: ${props => props.theme?.colors?.accent || '#800000'};
+    }
   }
   
   .header-stats {
@@ -67,6 +84,12 @@ const HeaderContent = styled.div`
       background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
       padding: 0.75rem 1.25rem;
       border-radius: 8px;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
       
       .value {
         font-size: 1.2rem;
@@ -88,32 +111,57 @@ const MainContent = styled.div`
   padding: 2rem;
   display: flex;
   gap: 2rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
 `;
 
+// Continue from the ChatsList styled component
 const ChatsList = styled.div`
   flex: 1;
   max-width: 400px;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  height: calc(100vh - 200px);
+  overflow-y: auto;
+  padding-right: 1rem;
+
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: ${props => `${props.theme?.colors?.accent}50` || 'rgba(128, 0, 0, 0.5)'};
+    border-radius: 10px;
+  }
 `;
 
 const SearchInput = styled.div`
   position: relative;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   
   input {
     width: 100%;
-    padding: 0.75rem 2.5rem 0.75rem 1rem;
+    padding: 0.75rem 3rem 0.75rem 1rem;
     background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
     border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
-    border-radius: 8px;
-    color: ${props => props.theme?.colors?.text || 'white'};
+    border-radius: 12px;
+    color: ${props => props.theme?.colors?.text || 'blue'};
     font-size: 0.9rem;
+    transition: all 0.3s ease;
     
     &:focus {
       outline: none;
       border-color: ${props => props.theme?.colors?.accent || '#800000'};
+      box-shadow: 0 0 0 2px ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
     }
     
     &::placeholder {
@@ -128,16 +176,43 @@ const SearchInput = styled.div`
     transform: translateY(-50%);
     color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.6)'};
   }
+
+  .clear-button {
+    position: absolute;
+    right: 2.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.6)'};
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    
+    &:hover {
+      opacity: 1;
+    }
+  }
 `;
 
 const ChatTabs = styled.div`
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+  overflow-x: auto;
+  scrollbar-width: none;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 const ChatTab = styled.button`
-  flex: 1;
   background: ${props => props.active ? 
     `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)' : 
     `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`
@@ -147,14 +222,19 @@ const ChatTab = styled.button`
     'transparent'
   };
   border-radius: 8px;
-  padding: 0.75rem;
-  color: ${props => props.theme?.colors?.text || 'white'};
+  padding: 0.75rem 1rem;
+  color: ${props => props.active ? 
+    props.theme?.colors?.accent || '#800000' : 
+    props.theme?.colors?.text || 'blue'
+  };
   font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
   
   &:hover {
     background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+    transform: translateY(-2px);
   }
 `;
 
@@ -169,26 +249,31 @@ const ChatItem = styled.div`
     props.theme?.colors?.accent || '#800000' : 
     'transparent'
   };
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 1rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   position: relative;
+  overflow: hidden;
   
   &:hover {
+    transform: translateY(-2px);
     border-color: ${props => props.theme?.colors?.accent || '#800000'};
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     
     .delete-btn {
       opacity: 1;
+      transform: translateX(0);
     }
   }
   
   .chat-image {
-    width: 50px;
-    height: 50px;
+    width: 56px;
+    height: 56px;
     border-radius: 8px;
     overflow: hidden;
     flex-shrink: 0;
+    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.3)'}90`};
     
     img {
       width: 100%;
@@ -207,6 +292,10 @@ const ChatItem = styled.div`
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      color: ${props => props.active ? 
+        props.theme?.colors?.accent || '#800000' : 
+        props.theme?.colors?.text || 'blue'
+      };
     }
     
     .chat-preview {
@@ -249,16 +338,26 @@ const ChatItem = styled.div`
           background: rgba(33, 150, 243, 0.2);
           color: #2196F3;
         }
+
+        &.confirmed {
+          background: rgba(156, 39, 176, 0.2);
+          color: #9C27B0;
+        }
+
+        &.awaiting_seller {
+          background: rgba(255, 87, 34, 0.2);
+          color: #FF5722;
+        }
       }
     }
   }
   
   .unread-badge {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
+    top: 0.75rem;
+    right: 0.75rem;
     background: ${props => props.theme?.colors?.accent || '#800000'};
-    color: white;
+    color: blue;
     width: 20px;
     height: 20px;
     border-radius: 50%;
@@ -267,6 +366,7 @@ const ChatItem = styled.div`
     justify-content: center;
     font-size: 0.75rem;
     font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   }
   
   .delete-btn {
@@ -277,12 +377,13 @@ const ChatItem = styled.div`
     border: none;
     color: #e74c3c;
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: all 0.3s ease;
     cursor: pointer;
     padding: 0.25rem;
+    transform: translateX(10px);
     
     &:hover {
-      transform: scale(1.2);
+      transform: scale(1.2) translateX(0);
     }
   }
 `;
@@ -296,6 +397,9 @@ const ChatDisplay = styled.div`
   flex-direction: column;
   min-height: 600px;
   max-height: 80vh;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 5px 30px rgba(0, 0, 0, 0.1);
 `;
 
 const EmptyState = styled.div`
@@ -326,21 +430,48 @@ const EmptyState = styled.div`
   h3 {
     font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
     margin-bottom: 0.5rem;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
   }
   
   p {
     max-width: 300px;
     opacity: 0.8;
     line-height: 1.5;
+    margin-bottom: 2rem;
+  }
+
+  .action-btn {
+    background: ${props => props.theme?.colors?.accent || '#800000'};
+    color: blue;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
   }
 `;
 
 const ChatHeader = styled.div`
-  padding: 1rem 1.5rem;
+  padding: 1.2rem 1.5rem;
   border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: space-between;
+  
+  .left-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
   
   .avatar {
     width: 40px;
@@ -348,6 +479,11 @@ const ChatHeader = styled.div`
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
+    background: ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${props => props.theme?.colors?.text || 'blue'};
     
     img {
       width: 100%;
@@ -362,6 +498,9 @@ const ChatHeader = styled.div`
     .chat-title {
       font-weight: bold;
       margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
     
     .chat-subtitle {
@@ -382,9 +521,35 @@ const ChatHeader = styled.div`
     align-items: center;
     gap: 0.5rem;
     cursor: pointer;
+    transition: all 0.3s ease;
     
     &:hover {
       background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+      transform: translateY(-2px);
+    }
+  }
+
+  .actions-menu {
+    display: flex;
+    gap: 0.75rem;
+
+    button {
+      background: transparent;
+      border: none;
+      color: ${props => props.theme?.colors?.text || 'blue'};
+      opacity: 0.7;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: all 0.3s ease;
+      padding: 0.5rem;
+      border-radius: 50%;
+      
+      &:hover {
+        opacity: 1;
+        background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
+        transform: translateY(-2px);
+      }
     }
   }
 `;
@@ -396,6 +561,48 @@ const ChatBody = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.2)'}50`};
+
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: ${props => `${props.theme?.colors?.accent}50` || 'rgba(128, 0, 0, 0.5)'};
+    border-radius: 10px;
+  }
+`;
+
+const DateSeparator = styled.div`
+  width: 100%;
+  text-align: center;
+  margin: 1rem 0;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    right: 0;
+    height: 1px;
+    background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+    z-index: 1;
+  }
+  
+  span {
+    background: ${props => props.theme?.colors?.background || 'rgba(0, 0, 0, 0.2)'};
+    padding: 0 1rem;
+    position: relative;
+    z-index: 2;
+    font-size: 0.8rem;
+    opacity: 0.7;
+  }
 `;
 
 const Message = styled.div`
@@ -409,9 +616,10 @@ const Message = styled.div`
   align-self: ${props => props.sent ? 'flex-end' : 'flex-start'};
   background: ${props => props.sent ? 
     props.theme?.colors?.accent || '#800000' : 
-    `${props.theme?.colors?.background || '#000'}80`
+    `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`
   };
-  color: ${props => props.sent ? 'white' : props.theme?.colors?.text || 'white'};
+  color: ${props => props.sent ? 'blue' : props.theme?.colors?.text || 'blue'};
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   
   ${props => props.sent ? 
     'border-bottom-right-radius: 4px;' : 
@@ -435,10 +643,15 @@ const Message = styled.div`
     font-size: 0.75rem;
     opacity: 0.5;
     white-space: nowrap;
-    color: ${props => props.theme?.colors?.text || 'white'};
+    color: ${props => props.theme?.colors?.text || 'blue'};
   }
   
-  // Continue from where we left off...
+  .message-time {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    opacity: 0.6;
+    text-align: right;
+  }
 
   .image-container {
     max-width: 200px;
@@ -450,6 +663,12 @@ const Message = styled.div`
       width: 100%;
       height: auto;
       object-fit: cover;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        transform: scale(1.05);
+      }
     }
   }
 `;
@@ -460,41 +679,79 @@ const ChatInput = styled.div`
   display: flex;
   align-items: center;
   gap: 1rem;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
+  
+  .input-container {
+    flex: 1;
+    position: relative;
+  }
   
   input {
-    flex: 1;
+    width: 100%;
     background: ${props => `${props.theme?.colors?.background || '#000'}80`};
     border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
     border-radius: 20px;
-    padding: 0.75rem 1.25rem;
-    color: ${props => props.theme?.colors?.text || 'white'};
+    padding: 0.75rem 3rem 0.75rem 1.25rem;
+    color: ${props => props.theme?.colors?.text || 'blue'};
+    transition: all 0.3s ease;
     
     &:focus {
       outline: none;
       border-color: ${props => props.theme?.colors?.accent || '#800000'};
+      box-shadow: 0 0 0 2px ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+    }
+
+    &::placeholder {
+      color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.6)'};
     }
   }
   
-  button {
-    width: 40px;
-    height: 40px;
+  .send-button {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: ${props => props.theme?.colors?.accent || '#800000'};
-    color: white;
+    color: blue;
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
     
     &:hover {
-      transform: scale(1.05);
+      transform: translateY(-50%) scale(1.05);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     }
     
     &:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+      transform: translateY(-50%) scale(1);
+      box-shadow: none;
+    }
+  }
+  
+  .attachment-button {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    border: 1px solid ${props => props.theme?.colors?.accent || '#800000'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+      transform: translateY(-2px);
     }
   }
 `;
@@ -504,34 +761,228 @@ const NoChatsMessage = styled.div`
   padding: 3rem 2rem;
   background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}50`};
   border-radius: 12px;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
   
   h3 {
     margin-bottom: 0.5rem;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
   }
   
   p {
     font-size: 0.9rem;
     opacity: 0.8;
     margin-bottom: 1.5rem;
+    max-width: 300px;
+    margin: 0 auto 1.5rem;
+  }
+
+  .browse-button {
+    background: ${props => props.theme?.colors?.accent || '#800000'};
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
   }
 `;
 
+// Notification Modal
+const NotificationModal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: ${props => props.isOpen ? 1 : 0};
+  visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
+  transition: all 0.3s ease;
+`;
+
+const ModalContent = styled.div`
+  background: ${props => props.theme?.colors?.surface || 'rgba(30, 30, 30, 0.95)'};
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+  
+  h2 {
+    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
+    margin-bottom: 1.5rem;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    color: ${props => props.theme?.colors?.text || 'white'};
+    opacity: 0.7;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+  }
+`;
+
+const NotificationForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    
+    label {
+      font-size: 0.9rem;
+      opacity: 0.8;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    input, textarea {
+      padding: 0.75rem 1rem;
+      background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.3)'}90`};
+      border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+      border-radius: 8px;
+      color: ${props => props.theme?.colors?.text || 'white'};
+      font-family: inherit;
+      
+      &:focus {
+        outline: none;
+        border-color: ${props => props.theme?.colors?.accent || '#800000'};
+      }
+    }
+    
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .preview {
+      margin-top: 0.5rem;
+      padding: 1rem;
+      background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.3)'}90`};
+      border: 1px dashed ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.4)'};
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+  }
+  
+  .action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+    
+    button {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      
+      &:hover {
+        transform: translateY(-2px);
+      }
+      
+      &.cancel {
+        background: transparent;
+        border: 1px solid ${props => props.theme?.colors?.accent || '#800000'};
+        color: ${props => props.theme?.colors?.accent || '#800000'};
+        
+        &:hover {
+          background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+        }
+      }
+      
+      &.send {
+        background: ${props => props.theme?.colors?.accent || '#800000'};
+        border: none;
+        color: blue;
+        
+        &:hover {
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
+      }
+    }
+  }
+`;
+
+// Main component
 const MessagesPage = () => {
+  const [transactions, setTransactions] = useState([]);
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [chats, setChats] = useState([]);
   const [filteredChats, setFilteredChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     active: 0,
     completed: 0,
     total: 0
   });
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [notificationModalOpen, setNotificationModalOpen] = useState(false);
+  const [notificationForm, setNotificationForm] = useState({
+    phoneNumber: '',
+    message: '',
+    linkText: '',
+    chatId: ''
+  });
+  const [sending, setSending] = useState(false);
   
-  // Load user's chats from Firestore
+  const fileInputRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  
+  // Fetch user's chats from Firestore
   useEffect(() => {
     if (!auth.currentUser) return;
     
@@ -554,7 +1005,12 @@ const MessagesPage = () => {
       for (const doc of snapshot.docs) {
         const chat = doc.data();
         
-        // Get transaction details
+        // Skip hidden chats
+        if (chat.hidden && chat.hidden[auth.currentUser.uid]) {
+          continue;
+        }
+        
+        // Get transaction details if available
         let transaction = null;
         if (chat.transactionId) {
           try {
@@ -632,10 +1088,29 @@ const MessagesPage = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const messageData = snapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
+        timestamp: doc.data().timestamp
       }));
       
-      setMessages(messageData);
+      // Group messages by date
+      const groupedMessages = [];
+      let currentDate = null;
+      
+      messageData.forEach(msg => {
+        const msgDate = msg.timestamp ? new Date(msg.timestamp.toDate().setHours(0, 0, 0, 0)) : null;
+        
+        if (msgDate && (!currentDate || msgDate.getTime() !== currentDate.getTime())) {
+          currentDate = msgDate;
+          groupedMessages.push({
+            type: 'date',
+            date: currentDate
+          });
+        }
+        
+        groupedMessages.push(msg);
+      });
+      
+      setMessages(groupedMessages);
       
       // Mark messages as read
       if (selectedChat.unreadCount > 0) {
@@ -648,7 +1123,14 @@ const MessagesPage = () => {
     return () => unsubscribe();
   }, [selectedChat]);
   
-  // Filter chats based on search term and tab
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+  
+  // Function to apply filters to chats
   const applyFilters = (allChats, search, tab) => {
     let filtered = [...allChats];
     
@@ -657,7 +1139,8 @@ const MessagesPage = () => {
       const searchLower = search.toLowerCase();
       filtered = filtered.filter(chat => 
         (chat.itemName?.toLowerCase().includes(searchLower)) ||
-        (chat.otherPartyName?.toLowerCase().includes(searchLower))
+        (chat.otherPartyName?.toLowerCase().includes(searchLower)) ||
+        (chat.lastMessage?.toLowerCase().includes(searchLower))
       );
     }
     
@@ -672,6 +1155,12 @@ const MessagesPage = () => {
         chat.transaction?.status === 'completed' || 
         chat.transaction?.status === 'cancelled'
       );
+    } else if (tab === 'unread') {
+      filtered = filtered.filter(chat => chat.unreadCount > 0);
+    } else if (tab === 'buying') {
+      filtered = filtered.filter(chat => chat.role === 'buyer');
+    } else if (tab === 'selling') {
+      filtered = filtered.filter(chat => chat.role === 'seller');
     }
     
     setFilteredChats(filtered);
@@ -697,13 +1186,54 @@ const MessagesPage = () => {
       await updateDoc(doc(db, 'chats', selectedChat.id), {
         lastMessage: inputMessage.trim(),
         lastMessageTime: serverTimestamp(),
-        [`unreadCount.${otherPartyId}`]: (selectedChat.unreadCount?.[otherPartyId] || 0) + 1
+        [`unreadCount.${otherPartyId}`]: increment(1)
       });
       
       // Clear input
       setInputMessage('');
     } catch (err) {
       console.error('Error sending message:', err);
+      setError('Failed to send message. Please try again.');
+    }
+  };
+  
+  // Upload and send image
+  const handleUploadImage = async (file) => {
+    if (!file || !selectedChat) return;
+    
+    try {
+      setUploadingFile(true);
+      
+      // Upload to Firebase Storage
+      const storageRef = ref(storage, `chats/${selectedChat.id}/images/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      
+      // Get download URL
+      const imageUrl = await getDownloadURL(storageRef);
+      
+      // Add message to chat
+      await addDoc(collection(db, 'chats', selectedChat.id, 'messages'), {
+        image: imageUrl,
+        sender: auth.currentUser.uid,
+        senderName: auth.currentUser.displayName || auth.currentUser.email,
+        timestamp: serverTimestamp(),
+        type: 'image'
+      });
+      
+      // Update chat metadata
+      const otherPartyId = selectedChat.isBuyer ? selectedChat.sellerId : selectedChat.buyerId;
+      
+      await updateDoc(doc(db, 'chats', selectedChat.id), {
+        lastMessage: '📷 Image',
+        lastMessageTime: serverTimestamp(),
+        [`unreadCount.${otherPartyId}`]: increment(1)
+      });
+      
+      setUploadingFile(false);
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      setError('Failed to upload image. Please try again.');
+      setUploadingFile(false);
     }
   };
   
@@ -728,14 +1258,81 @@ const MessagesPage = () => {
       }
     } catch (err) {
       console.error('Error deleting chat:', err);
+      setError('Failed to delete chat. Please try again.');
     }
   };
   
-  // Format timestamp
+  // Send a notification SMS
+  const handleSendNotification = async (e) => {
+    e.preventDefault();
+    
+    if (!notificationForm.phoneNumber || !notificationForm.message) {
+      setError('Please fill out all required fields');
+      return;
+    }
+    
+    try {
+      setSending(true);
+      
+      // In a real implementation, you would call a Cloud Function to send SMS
+      // For demo purposes, we'll just log and simulate success
+      console.log('Sending notification:', notificationForm);
+      
+      // Add a notification record to Firestore
+      await addDoc(collection(db, 'notifications'), {
+        to: notificationForm.phoneNumber,
+        message: notificationForm.message,
+        chatId: notificationForm.chatId || selectedChat?.id,
+        sentBy: auth.currentUser.uid,
+        sentAt: serverTimestamp(),
+        status: 'sent'
+      });
+      
+      // Add system message to chat
+      if (notificationForm.chatId || selectedChat?.id) {
+        const chatId = notificationForm.chatId || selectedChat.id;
+        await addDoc(collection(db, 'chats', chatId, 'messages'), {
+          text: `Notification sent to ${notificationForm.phoneNumber}`,
+          sender: 'system',
+          senderName: 'System',
+          timestamp: serverTimestamp(),
+          type: 'system'
+        });
+      }
+      
+      // Reset form and close modal
+      setNotificationForm({
+        phoneNumber: '',
+        message: '',
+        linkText: '',
+        chatId: ''
+      });
+      
+      setNotificationModalOpen(false);
+      setSending(false);
+      
+      // Show success message
+      alert('Notification sent successfully!');
+    } catch (err) {
+      console.error('Error sending notification:', err);
+      setError('Failed to send notification. Please try again.');
+      setSending(false);
+    }
+  };
+  
+  // Format timestamp for display
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
     
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    let date;
+    if (timestamp.toDate) {
+      date = timestamp.toDate();
+    } else if (timestamp instanceof Date) {
+      date = timestamp;
+    } else {
+      date = new Date(timestamp);
+    }
+    
     const now = new Date();
     const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
     
@@ -750,6 +1347,27 @@ const MessagesPage = () => {
     }
   };
   
+  // Format date for date separators
+  const formatDate = (date) => {
+    if (!date) return '';
+    
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (date.toDateString() === now.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString([], { 
+        weekday: 'long', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }
+  };
+  
   // Show transaction status with icon
   const getStatusDisplay = (status) => {
     switch (status) {
@@ -761,13 +1379,13 @@ const MessagesPage = () => {
         );
       case 'awaiting_seller':
         return (
-          <div className="chat-status pending">
+          <div className="chat-status awaiting_seller">
             <AlertTriangle size={12} /> Awaiting
           </div>
         );
       case 'confirmed':
         return (
-          <div className="chat-status active">
+          <div className="chat-status confirmed">
             <Check size={12} /> Active
           </div>
         );
@@ -780,6 +1398,28 @@ const MessagesPage = () => {
       default:
         return null;
     }
+  };
+  
+  // Generate notification message preview
+  const generateMessagePreview = () => {
+    const chatName = selectedChat?.itemName || 'your order';
+    const otherParty = selectedChat?.otherPartyName || 'a customer';
+    const linkText = notificationForm.linkText || chatName;
+    
+    let baseMessage = notificationForm.message;
+    if (!baseMessage) {
+      // Generate default message based on role
+      if (selectedChat?.isSeller) {
+        baseMessage = `You have a new order for ${chatName} from ${otherParty}. Click the link to respond:`;
+      } else {
+        baseMessage = `Your order for ${chatName} has been updated. Click the link to view:`;
+      }
+    }
+    
+    // Here we would construct the actual URL in a real implementation
+    const chatUrl = `https://yourdomain.com/messages?chat=${selectedChat?.id || 'CHAT_ID'}`;
+    
+    return `${baseMessage} ${linkText} (${chatUrl})`;
   };
   
   return (
@@ -817,6 +1457,14 @@ const MessagesPage = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+            {searchTerm && (
+              <button 
+                className="clear-button"
+                onClick={() => setSearchTerm('')}
+              >
+                <X size={16} />
+              </button>
+            )}
             <Search className="search-icon" size={16} />
           </SearchInput>
           
@@ -828,10 +1476,28 @@ const MessagesPage = () => {
               All
             </ChatTab>
             <ChatTab 
+              active={activeTab === 'unread'} 
+              onClick={() => setActiveTab('unread')}
+            >
+              Unread
+            </ChatTab>
+            <ChatTab 
               active={activeTab === 'active'} 
               onClick={() => setActiveTab('active')}
             >
               Active
+            </ChatTab>
+            <ChatTab 
+              active={activeTab === 'buying'} 
+              onClick={() => setActiveTab('buying')}
+            >
+              Buying
+            </ChatTab>
+            <ChatTab 
+              active={activeTab === 'selling'} 
+              onClick={() => setActiveTab('selling')}
+            >
+              Selling
             </ChatTab>
             <ChatTab 
               active={activeTab === 'completed'} 
@@ -842,16 +1508,63 @@ const MessagesPage = () => {
           </ChatTabs>
           
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '2rem' }}>Loading conversations...</div>
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+              <div style={{ 
+                width: '40px', 
+                height: '40px', 
+                margin: '0 auto', 
+                border: '3px solid rgba(128, 0, 0, 0.1)', 
+                borderRadius: '50%', 
+                borderTopColor: '#800000', 
+                animation: 'spin 1s linear infinite' 
+              }}></div>
+              <p style={{ marginTop: '1rem', opacity: 0.7 }}>Loading conversations...</p>
+            </div>
+          ) : error ? (
+            <div style={{ 
+              color: '#ff4444', 
+              padding: '1rem', 
+              background: 'rgba(255, 68, 68, 0.1)',
+              borderRadius: '8px',
+              textAlign: 'center',
+              margin: '1rem 0'
+            }}>
+              {error}
+              <button 
+                onClick={() => setError(null)} 
+                style={{ 
+                  display: 'block', 
+                  margin: '0.5rem auto',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#ff4444',
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
+                }}
+              >
+                Dismiss
+              </button>
+            </div>
           ) : filteredChats.length === 0 ? (
             <NoChatsMessage>
               <h3>No conversations found</h3>
               <p>
                 {searchTerm ? 
                   `No results matching "${searchTerm}"` : 
+                  activeTab !== 'all' ?
+                  `You don't have any ${activeTab} conversations` :
                   "You don't have any conversations yet"
                 }
               </p>
+              {activeTab === 'all' && !searchTerm && (
+                <button 
+                  className="browse-button"
+                  onClick={() => window.location.href = '/'}
+                >
+                  <Package size={16} />
+                  Browse Items
+                </button>
+              )}
             </NoChatsMessage>
           ) : (
             filteredChats.map(chat => (
@@ -867,7 +1580,6 @@ const MessagesPage = () => {
                     <div style={{ 
                       width: '100%', 
                       height: '100%', 
-                      background: 'rgba(0, 0, 0, 0.2)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center' 
@@ -915,69 +1627,132 @@ const MessagesPage = () => {
           {selectedChat ? (
             <>
               <ChatHeader>
-                <div className="avatar">
-                  {selectedChat.isBuyer ? (
-                    <User size={24} />
-                  ) : (
-                    <Package size={24} />
-                  )}
+                <div className="left-section">
+                  <div className="avatar">
+                    {selectedChat.isBuyer ? (
+                      <User size={20} />
+                    ) : (
+                      <Package size={20} />
+                    )}
                   </div>
-                
-                <div className="chat-user-details">
-                  <div className="chat-title">
-                    {selectedChat.otherPartyName || "Unknown user"}
-                  </div>
-                  <div className="chat-subtitle">
-                    {selectedChat.isBuyer ? "Seller" : "Buyer"} • {selectedChat.itemName}
+                  
+                  <div className="chat-user-details">
+                    <div className="chat-title">
+                      {selectedChat.otherPartyName || "Unknown user"}
+                      {selectedChat.transaction && getStatusDisplay(selectedChat.transaction.status)}
+                    </div>
+                    <div className="chat-subtitle">
+                      {selectedChat.isBuyer ? "Seller" : "Buyer"} • {selectedChat.itemName}
+                    </div>
                   </div>
                 </div>
                 
-                <div className="transaction-details">
-                  <DollarSign size={16} />
-                  ${parseFloat(selectedChat.transaction?.price || 0).toFixed(2)}
+                <div className="actions-menu">
+                  <button 
+                    onClick={() => setNotificationModalOpen(true)}
+                    title="Send SMS Notification"
+                  >
+                    <Bell size={20} />
+                  </button>
+                  
+                  <div className="transaction-details">
+                    <DollarSign size={16} />
+                    ${parseFloat(selectedChat.transaction?.price || 0).toFixed(2)}
+                  </div>
                 </div>
               </ChatHeader>
               
               <ChatBody>
-                {messages.map(message => {
-                  const isSentByMe = message.sender === auth.currentUser.uid;
-                  const isSystem = message.sender === 'system';
-                  
-                  return (
-                    <Message
-                      key={message.id}
-                      sent={isSentByMe}
-                      className={isSystem ? 'system-message' : ''}
-                    >
-                      {message.text}
-                      
-                      {message.image && (
-                        <div className="image-container">
-                          <img src={message.image} alt="Shared" />
-                        </div>
-                      )}
-                      
-                      {message.timestamp && (
-                        <div className="time">
-                          {formatTimestamp(message.timestamp)}
-                        </div>
-                      )}
-                    </Message>
-                  );
-                })}
+                {messages.length === 0 ? (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '2rem', 
+                    opacity: 0.7,
+                    fontStyle: 'italic'
+                  }}>
+                    No messages yet. Start the conversation!
+                  </div>
+                ) : (
+                  messages.map((message, index) => {
+                    if (message.type === 'date') {
+                      return (
+                        <DateSeparator key={`date-${index}`}>
+                          <span>{formatDate(message.date)}</span>
+                        </DateSeparator>
+                      );
+                    }
+                    
+                    const isSentByMe = message.sender === auth.currentUser.uid;
+                    const isSystem = message.sender === 'system';
+                    
+                    return (
+                      <Message
+                        key={message.id}
+                        sent={isSentByMe}
+                        className={isSystem ? 'system-message' : ''}
+                      >
+                        {message.text && <div>{message.text}</div>}
+                        
+                        {message.image && (
+                          <div className="image-container">
+                            <img 
+                              src={message.image} 
+                              alt="Shared" 
+                              onClick={() => window.open(message.image, '_blank')}
+                            />
+                          </div>
+                        )}
+                        
+                        {message.timestamp && (
+                          <div className="message-time">
+                            {formatTimestamp(message.timestamp)}
+                          </div>
+                        )}
+                      </Message>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
               </ChatBody>
               
               <ChatInput>
-                <input 
-                  type="text" 
-                  placeholder="Type a message..." 
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                />
-                <button onClick={handleSendMessage} disabled={!inputMessage.trim()}>
-                  <Send size={18} />
+                <div className="input-container">
+                  <input 
+                    type="text" 
+                    placeholder="Type a message..." 
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  />
+                  <button 
+                    className="send-button" 
+                    onClick={handleSendMessage} 
+                    disabled={!inputMessage.trim() || uploadingFile}
+                  >
+                    <Send size={16} />
+                  </button>
+                </div>
+                
+                <button 
+                  className="attachment-button"
+                  onClick={() => fileInputRef.current.click()}
+                  disabled={uploadingFile}
+                >
+                  <Image size={20} />
                 </button>
+                
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      handleUploadImage(e.target.files[0]);
+                      e.target.value = '';
+                    }
+                  }}
+                />
               </ChatInput>
             </>
           ) : (
@@ -987,10 +1762,112 @@ const MessagesPage = () => {
               </div>
               <h3>No conversation selected</h3>
               <p>Select a conversation from the list to view messages</p>
+              <button className="action-btn" onClick={() => window.location.href = '/'}>
+                <Package size={16} />
+                Browse Items
+              </button>
             </EmptyState>
           )}
         </ChatDisplay>
       </MainContent>
+      
+      {/* Notification Modal */}
+      <NotificationModal isOpen={notificationModalOpen}>
+        <ModalContent>
+          <h2>
+            <Bell size={24} />
+            Send SMS Notification
+          </h2>
+          
+          <button 
+            className="close-button"
+            onClick={() => setNotificationModalOpen(false)}
+          >
+            <X size={24} />
+          </button>
+          
+          <NotificationForm onSubmit={handleSendNotification}>
+            <div className="form-group">
+              <label>
+                <Phone size={16} />
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                placeholder="+1 (555) 123-4567"
+                value={notificationForm.phoneNumber}
+                onChange={(e) => setNotificationForm({
+                  ...notificationForm,
+                  phoneNumber: e.target.value
+                })}
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>
+                <MessageCircle size={16} />
+                Notification Message
+              </label>
+              <textarea
+                placeholder="Enter your message here..."
+                value={notificationForm.message}
+                onChange={(e) => setNotificationForm({
+                  ...notificationForm,
+                  message: e.target.value
+                })}
+                required
+              ></textarea>
+            </div>
+            
+            <div className="form-group">
+              <label>
+                <Link size={16} />
+                Link Text (Optional)
+              </label>
+              <input
+                type="text"
+                placeholder="Click here to view"
+                value={notificationForm.linkText}
+                onChange={(e) => setNotificationForm({
+                  ...notificationForm,
+                  linkText: e.target.value
+                })}
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>
+                <FileText size={16} />
+                Message Preview
+              </label>
+              <div className="preview">
+                {generateMessagePreview()}
+              </div>
+            </div>
+            
+            <div className="action-buttons">
+              <button 
+                type="button" 
+                className="cancel"
+                onClick={() => setNotificationModalOpen(false)}
+              >
+                <X size={16} />
+                Cancel
+              </button>
+              
+              <button 
+                type="submit" 
+                className="send"
+                disabled={!notificationForm.phoneNumber || !notificationForm.message || sending}
+              >
+                <Send size={16} />
+                {sending ? 'Sending...' : 'Send Notification'}
+              </button>
+            </div>
+          </NotificationForm>
+        </ModalContent>
+      </NotificationModal>
     </PageContainer>
   );
 };

@@ -21,12 +21,10 @@ import NotificationsPage from './pages/shop/NotificationsPage.js';
 import ShopPublicView from './pages/shop/shopPublicView.js';
 import TransactionsPage from './pages/transactions/Transactions';
 
-// In src/App.js, update the Routes section
-
-// Add the import at the top
+// Update in src/App.js to add the notification routes
 import MessagesPage from './pages/shop/MessagesPage';
 
-// Then update the Routes component to include MessagesPage
+// Then update the Routes component to ensure these routes are properly included
 const AppRoutes = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
@@ -58,6 +56,13 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
 
+        {/* Notifications Page */}
+        <Route path="/notifications" element={
+          <ProtectedRoute>
+            <NotificationsPage />
+          </ProtectedRoute>
+        } />
+
         {/* Protected Routes */}
         <Route path="/shop/dashboard" element={
           <ProtectedRoute>
@@ -74,12 +79,6 @@ const AppRoutes = () => {
         <Route path="/profile" element={
           <ProtectedRoute>
             <ProfilePage />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/notifications" element={
-          <ProtectedRoute>
-            <NotificationsPage />
           </ProtectedRoute>
         } />
       </Routes>
