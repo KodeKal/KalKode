@@ -34,100 +34,96 @@ import SellerOrderChat from '../../components/Chat/SellerOrderChat';
 import { DEFAULT_THEME } from '../../theme/config/themes';
 import { formatDistance } from 'date-fns';
 
+// Update PageContainer to fix the overall container
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: ${props => props.theme?.colors?.background || DEFAULT_THEME.colors.background};
-  color: ${props => props.theme?.colors?.text || DEFAULT_THEME.colors.text};
-  padding-top: 80px; // Space for header
+  background: linear-gradient(to bottom, #0B0B3B, #1A1A4C);
+  color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; // Prevent page scrolling
 `;
 
+// Update PageHeader to be fixed and ensure proper z-index
 const PageHeader = styled.div`
-  background: ${props => `${props.theme?.colors?.background || DEFAULT_THEME.colors.background}90`};
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(10px);
   padding: 1.5rem 2rem;
-  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
+  border-bottom: 1px solid rgba(128, 0, 0, 0.3);
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 10;
+  z-index: 20; // Higher z-index to stay on top
+  height: 80px; // Fixed height for calculations
 `;
 
-const HeaderContent = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  
-  h1 {
-    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
-    font-size: 2rem;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-
-    svg {
-      color: ${props => props.theme?.colors?.accent || '#800000'};
-    }
-  }
-  
-  .header-stats {
-    display: flex;
-    gap: 1.5rem;
-    
-    .stat {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
-      padding: 0.75rem 1.25rem;
-      border-radius: 8px;
-      transition: all 0.3s ease;
-      
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-      }
-      
-      .value {
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: ${props => props.theme?.colors?.accent || '#800000'};
-      }
-      
-      .label {
-        font-size: 0.8rem;
-        opacity: 0.8;
-      }
-    }
-  }
-`;
-
+// Update MainContent to position columns 3 inches down from header
 const MainContent = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+  position: fixed;
+  top: calc(80px + 5rem); // Header height + 5rem (about 2 inches more than before)
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
-  gap: 2rem;
-
+  padding: 0 1rem;
+  
   @media (max-width: 768px) {
     flex-direction: column;
   }
 `;
 
-// Continue from the ChatsList styled component
+// Center the columns within the available space
+const ContentWrapper = styled.div`
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  height: 100%;
+`;
+
+// Update ChatsList with appropriate sizing and positioning
 const ChatsList = styled.div`
-  flex: 1;
-  max-width: 400px;
+  position: relative;
+  width: 350px;
+  height: 100%; // Reduce to 70% height
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  height: calc(100vh - 200px);
-  overflow-y: auto;
-  padding-right: 1rem;
+`;
 
+const ChatDisplay = styled.div`
+  flex: 0 0 auto; // Don't allow it to grow or shrink
+  width: calc(69% - 3rem); // Reduce width by about 4 inches
+  margin-left: 3rem; // Keep current spacing from chat list
+  margin-top: -1rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 10px;
+  border: 1px solid rgba(128, 0, 0, 0.3);
+  overflow: hidden;
+  box-shadow: 0 5px 30px rgba(0, 0, 0, 0.2);
+`;
+
+// Fix ChatsListHeader to keep it at the top of the chat list
+const ChatsListHeader = styled.div`
+  position: sticky;
+  top: 2;
+  z-index: 10;
+  padding-bottom: 1rem;
+`;
+
+// Make ChatItemsContainer take remaining height with scrolling
+const ChatItemsContainer = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-right: 4rem;
+  margin-left: -.35rem; /* Move items to the left by 1 inch */
+  
   /* Custom scrollbar */
   &::-webkit-scrollbar {
     width: 6px;
@@ -139,33 +135,115 @@ const ChatsList = styled.div`
   }
   
   &::-webkit-scrollbar-thumb {
-    background: ${props => `${props.theme?.colors?.accent}50` || 'rgba(128, 0, 0, 0.5)'};
+    background: rgba(128, 0, 0, 0.5);
     border-radius: 10px;
+  }
+`;
+
+// Ensure ChatBody takes up remaining space and scrolls
+const ChatBody = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(128, 0, 0, 0.5);
+    border-radius: 10px;
+  }
+`;
+
+const HeaderContent = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  h1 {
+    font-size: 1.8rem;
+    background: linear-gradient(45deg, #800000, #4A0404);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    svg {
+      color: #800000;
+    }
+  }
+  
+  .header-stats {
+    display: flex;
+    gap: 1.5rem;
+    
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(128, 0, 0, 0.3);
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+      
+      .value {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #FFFFFF;
+      }
+      
+      .label {
+        font-size: 0.8rem;
+        opacity: 0.8;
+      }
+    }
   }
 `;
 
 const SearchInput = styled.div`
   position: relative;
   margin-bottom: 1.5rem;
+  width: calc(100% + -.1rem); /* Adjusted width */
   
   input {
-    width: 100%;
+    width: 83%;
+    height: 80%; /* Adjusted width */
+
     padding: 0.75rem 3rem 0.75rem 1rem;
-    background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
-    border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(128, 0, 0, 0.3);
     border-radius: 12px;
-    color: ${props => props.theme?.colors?.text || 'blue'};
+    color: #FFFFFF;
     font-size: 0.9rem;
     transition: all 0.3s ease;
     
     &:focus {
       outline: none;
-      border-color: ${props => props.theme?.colors?.accent || '#800000'};
-      box-shadow: 0 0 0 2px ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+      border-color: #800000;
+      box-shadow: 0 0 0 2px rgba(128, 0, 0, 0.3);
     }
     
     &::placeholder {
-      color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.6)'};
+      color: rgba(255, 255, 255, 0.6);
     }
   }
   
@@ -174,7 +252,7 @@ const SearchInput = styled.div`
     right: 1rem;
     top: 50%;
     transform: translateY(-50%);
-    color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.6)'};
+    color: rgba(255, 255, 255, 0.6);
   }
 
   .clear-button {
@@ -184,7 +262,7 @@ const SearchInput = styled.div`
     transform: translateY(-50%);
     background: transparent;
     border: none;
-    color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.6)'};
+    color: rgba(255, 255, 255, 0.6);
     cursor: pointer;
     padding: 0.25rem;
     display: flex;
@@ -201,10 +279,13 @@ const SearchInput = styled.div`
 const ChatTabs = styled.div`
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+  border-bottom: 1px solid rgba(128, 0, 0, 0.3);
   overflow-x: auto;
+  width: calc(100% + 2.5rem); /* Adjusted width */
+  position: sticky;
+  top: 70px; // Just below the search input
+  z-index: 5;
   scrollbar-width: none;
   
   &::-webkit-scrollbar {
@@ -214,18 +295,18 @@ const ChatTabs = styled.div`
 
 const ChatTab = styled.button`
   background: ${props => props.active ? 
-    `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)' : 
-    `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`
+    'rgba(128, 0, 0, 0.4)' : 
+    'rgba(0, 0, 0, 0.4)'
   };
   border: 1px solid ${props => props.active ? 
-    props.theme?.colors?.accent || '#800000' : 
-    'transparent'
+    '#800000' : 
+    'rgba(128, 0, 0, 0.3)'
   };
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  padding: 0.88rem .3rem;
   color: ${props => props.active ? 
-    props.theme?.colors?.accent || '#800000' : 
-    props.theme?.colors?.text || 'blue'
+    '#FFFFFF' : 
+    'rgba(255, 255, 255, 0.7)'
   };
   font-size: 0.9rem;
   cursor: pointer;
@@ -233,7 +314,7 @@ const ChatTab = styled.button`
   flex-shrink: 0;
   
   &:hover {
-    background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+    background: rgba(128, 0, 0, 0.2);
     transform: translateY(-2px);
   }
 `;
@@ -242,12 +323,12 @@ const ChatItem = styled.div`
   display: flex;
   gap: 1rem;
   background: ${props => props.active ? 
-    `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)' : 
-    `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`
+    'rgba(128, 0, 0, 0.3)' : 
+    'rgba(0, 0, 0, 0.4)'
   };
-  border: 1px solid ${props => props.active ? 
-    props.theme?.colors?.accent || '#800000' : 
-    'transparent'
+  border: 2px solid ${props => props.active ? 
+    '#800000' : 
+    'rgba(128, 0, 0, 0.3)'
   };
   border-radius: 12px;
   padding: 1rem;
@@ -255,11 +336,13 @@ const ChatItem = styled.div`
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  max-height: none;
+  width: calc(100% + 1.7rem); /* Adjusted width */
   
   &:hover {
-    transform: translateY(-2px);
-    border-color: ${props => props.theme?.colors?.accent || '#800000'};
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transform: translateY(-0px);
+    border-color: #800000;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     
     .delete-btn {
       opacity: 1;
@@ -273,7 +356,7 @@ const ChatItem = styled.div`
     border-radius: 8px;
     overflow: hidden;
     flex-shrink: 0;
-    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.3)'}90`};
+    background: rgba(0, 0, 0, 0.6);
     
     img {
       width: 100%;
@@ -293,8 +376,8 @@ const ChatItem = styled.div`
       overflow: hidden;
       text-overflow: ellipsis;
       color: ${props => props.active ? 
-        props.theme?.colors?.accent || '#800000' : 
-        props.theme?.colors?.text || 'blue'
+        '#FFFFFF' : 
+        'rgba(255, 255, 255, 0.9)'
       };
     }
     
@@ -356,8 +439,8 @@ const ChatItem = styled.div`
     position: absolute;
     top: 0.75rem;
     right: 0.75rem;
-    background: ${props => props.theme?.colors?.accent || '#800000'};
-    color: blue;
+    background: #800000;
+    color: white;
     width: 20px;
     height: 20px;
     border-radius: 50%;
@@ -388,20 +471,6 @@ const ChatItem = styled.div`
   }
 `;
 
-const ChatDisplay = styled.div`
-  flex: 2;
-  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
-  border-radius: 12px;
-  border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
-  display: flex;
-  flex-direction: column;
-  min-height: 600px;
-  max-height: 80vh;
-  overflow: hidden;
-  position: relative;
-  box-shadow: 0 5px 30px rgba(0, 0, 0, 0.1);
-`;
-
 const EmptyState = styled.div`
   flex: 1;
   display: flex;
@@ -415,22 +484,21 @@ const EmptyState = styled.div`
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+    background: rgba(128, 0, 0, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 1.5rem;
     
     svg {
-      color: ${props => props.theme?.colors?.accent || '#800000'};
+      color: #800000;
       opacity: 0.8;
     }
   }
   
   h3 {
-    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
     margin-bottom: 0.5rem;
-    color: ${props => props.theme?.colors?.accent || '#800000'};
+    color: #800000;
   }
   
   p {
@@ -441,8 +509,8 @@ const EmptyState = styled.div`
   }
 
   .action-btn {
-    background: ${props => props.theme?.colors?.accent || '#800000'};
-    color: blue;
+    background: linear-gradient(45deg, #800000, #4A0404);
+    color: white;
     border: none;
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
@@ -462,10 +530,11 @@ const EmptyState = styled.div`
 
 const ChatHeader = styled.div`
   padding: 1.2rem 1.5rem;
-  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
+  border-bottom: 1px solid rgba(128, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background: rgba(0, 0, 0, 0.4);
   
   .left-section {
     display: flex;
@@ -479,11 +548,11 @@ const ChatHeader = styled.div`
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
-    background: ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+    background: rgba(128, 0, 0, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: ${props => props.theme?.colors?.text || 'blue'};
+    color: #FFFFFF;
     
     img {
       width: 100%;
@@ -513,7 +582,7 @@ const ChatHeader = styled.div`
   }
   
   .transaction-details {
-    background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+    background: rgba(128, 0, 0, 0.2);
     padding: 0.5rem 1rem;
     border-radius: 20px;
     font-size: 0.9rem;
@@ -522,9 +591,10 @@ const ChatHeader = styled.div`
     gap: 0.5rem;
     cursor: pointer;
     transition: all 0.3s ease;
+    border: 1px solid rgba(128, 0, 0, 0.3);
     
     &:hover {
-      background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+      background: rgba(128, 0, 0, 0.3);
       transform: translateY(-2px);
     }
   }
@@ -536,7 +606,7 @@ const ChatHeader = styled.div`
     button {
       background: transparent;
       border: none;
-      color: ${props => props.theme?.colors?.text || 'blue'};
+      color: #FFFFFF;
       opacity: 0.7;
       cursor: pointer;
       display: flex;
@@ -547,34 +617,10 @@ const ChatHeader = styled.div`
       
       &:hover {
         opacity: 1;
-        background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
+        background: rgba(255, 255, 255, 0.05);
         transform: translateY(-2px);
       }
     }
-  }
-`;
-
-const ChatBody = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.2)'}50`};
-
-  /* Custom scrollbar */
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  
-  &::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background: ${props => `${props.theme?.colors?.accent}50` || 'rgba(128, 0, 0, 0.5)'};
-    border-radius: 10px;
   }
 `;
 
@@ -591,12 +637,12 @@ const DateSeparator = styled.div`
     top: 50%;
     right: 0;
     height: 1px;
-    background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+    background: rgba(128, 0, 0, 0.3);
     z-index: 1;
   }
   
   span {
-    background: ${props => props.theme?.colors?.background || 'rgba(0, 0, 0, 0.2)'};
+    background: rgba(0, 0, 0, 0.4);
     padding: 0 1rem;
     position: relative;
     z-index: 2;
@@ -615,10 +661,10 @@ const Message = styled.div`
   
   align-self: ${props => props.sent ? 'flex-end' : 'flex-start'};
   background: ${props => props.sent ? 
-    props.theme?.colors?.accent || '#800000' : 
-    `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`
+    'linear-gradient(45deg, #800000, #4A0404)' : 
+    'rgba(0, 0, 0, 0.4)'
   };
-  color: ${props => props.sent ? 'blue' : props.theme?.colors?.text || 'blue'};
+  color: ${props => props.sent ? 'white' : '#FFFFFF'};
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   
   ${props => props.sent ? 
@@ -629,8 +675,8 @@ const Message = styled.div`
   &.system-message {
     align-self: center;
     background: transparent;
-    border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
-    color: ${props => `${props.theme?.colors?.text}99` || 'rgba(255, 255, 255, 0.6)'};
+    border: 1px solid rgba(128, 0, 0, 0.3);
+    color: rgba(255, 255, 255, 0.6);
     font-style: italic;
     text-align: center;
     max-width: 90%;
@@ -643,7 +689,7 @@ const Message = styled.div`
     font-size: 0.75rem;
     opacity: 0.5;
     white-space: nowrap;
-    color: ${props => props.theme?.colors?.text || 'blue'};
+    color: #FFFFFF;
   }
   
   .message-time {
@@ -675,11 +721,11 @@ const Message = styled.div`
 
 const ChatInput = styled.div`
   padding: 1rem 1.5rem;
-  border-top: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
+  border-top: 1px solid rgba(128, 0, 0, 0.3);
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
+  background: rgba(0, 0, 0, 0.4);
   
   .input-container {
     flex: 1;
@@ -688,21 +734,21 @@ const ChatInput = styled.div`
   
   input {
     width: 100%;
-    background: ${props => `${props.theme?.colors?.background || '#000'}80`};
-    border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(128, 0, 0, 0.3);
     border-radius: 20px;
     padding: 0.75rem 3rem 0.75rem 1.25rem;
-    color: ${props => props.theme?.colors?.text || 'blue'};
+    color: #FFFFFF;
     transition: all 0.3s ease;
     
     &:focus {
       outline: none;
-      border-color: ${props => props.theme?.colors?.accent || '#800000'};
-      box-shadow: 0 0 0 2px ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+      border-color: #800000;
+      box-shadow: 0 0 0 2px rgba(128, 0, 0, 0.3);
     }
 
     &::placeholder {
-      color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.6)'};
+      color: rgba(255, 255, 255, 0.6);
     }
   }
   
@@ -714,8 +760,8 @@ const ChatInput = styled.div`
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: ${props => props.theme?.colors?.accent || '#800000'};
-    color: blue;
+    background: linear-gradient(45deg, #800000, #4A0404);
+    color: white;
     border: none;
     display: flex;
     align-items: center;
@@ -741,8 +787,8 @@ const ChatInput = styled.div`
     height: 36px;
     border-radius: 50%;
     background: transparent;
-    color: ${props => props.theme?.colors?.accent || '#800000'};
-    border: 1px solid ${props => props.theme?.colors?.accent || '#800000'};
+    color: #800000;
+    border: 1px solid #800000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -750,7 +796,7 @@ const ChatInput = styled.div`
     transition: all 0.3s ease;
     
     &:hover {
-      background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+      background: rgba(128, 0, 0, 0.1);
       transform: translateY(-2px);
     }
   }
@@ -758,26 +804,26 @@ const ChatInput = styled.div`
 
 const NoChatsMessage = styled.div`
   text-align: center;
-  padding: 3rem 2rem;
-  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}50`};
+  padding: 5rem 5rem;
+  background: rgba(0, 0, 0, 0.4);
   border-radius: 12px;
-  border: 1px solid ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+  border: 1px solid rgba(128, 0, 0, 0.3);
   
   h3 {
     margin-bottom: 0.5rem;
-    color: ${props => props.theme?.colors?.accent || '#800000'};
+    color: #800000;
   }
   
   p {
     font-size: 0.9rem;
     opacity: 0.8;
     margin-bottom: 1.5rem;
-    max-width: 300px;
+    max-width: 500px;
     margin: 0 auto 1.5rem;
   }
 
   .browse-button {
-    background: ${props => props.theme?.colors?.accent || '#800000'};
+    background: linear-gradient(45deg, #800000, #4A0404);
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
@@ -815,7 +861,7 @@ const NotificationModal = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background: ${props => props.theme?.colors?.surface || 'rgba(30, 30, 30, 0.95)'};
+  background: rgba(0, 0, 0, 0.9);
   border-radius: 12px;
   padding: 2rem;
   width: 90%;
@@ -823,12 +869,11 @@ const ModalContent = styled.div`
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+  border: 1px solid rgba(128, 0, 0, 0.3);
   
   h2 {
-    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
     margin-bottom: 1.5rem;
-    color: ${props => props.theme?.colors?.accent || '#800000'};
+    color: #800000;
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -840,7 +885,7 @@ const ModalContent = styled.div`
     right: 1rem;
     background: transparent;
     border: none;
-    color: ${props => props.theme?.colors?.text || 'white'};
+    color: #FFFFFF;
     opacity: 0.7;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -872,15 +917,15 @@ const NotificationForm = styled.form`
     
     input, textarea {
       padding: 0.75rem 1rem;
-      background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.3)'}90`};
-      border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(128, 0, 0, 0.3);
       border-radius: 8px;
-      color: ${props => props.theme?.colors?.text || 'white'};
+      color: #FFFFFF;
       font-family: inherit;
       
       &:focus {
         outline: none;
-        border-color: ${props => props.theme?.colors?.accent || '#800000'};
+        border-color: #800000;
       }
     }
     
@@ -892,8 +937,8 @@ const NotificationForm = styled.form`
     .preview {
       margin-top: 0.5rem;
       padding: 1rem;
-      background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.3)'}90`};
-      border: 1px dashed ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.4)'};
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px dashed rgba(128, 0, 0, 0.4);
       border-radius: 8px;
       font-family: monospace;
       font-size: 0.9rem;
@@ -924,18 +969,18 @@ const NotificationForm = styled.form`
       
       &.cancel {
         background: transparent;
-        border: 1px solid ${props => props.theme?.colors?.accent || '#800000'};
-        color: ${props => props.theme?.colors?.accent || '#800000'};
+        border: 1px solid #800000;
+        color: #800000;
         
         &:hover {
-          background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+          background: rgba(128, 0, 0, 0.1);
         }
       }
       
       &.send {
-        background: ${props => props.theme?.colors?.accent || '#800000'};
+        background: linear-gradient(45deg, #800000, #4A0404);
         border: none;
-        color: blue;
+        color: white;
         
         &:hover {
           box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
@@ -954,6 +999,7 @@ const NotificationForm = styled.form`
 
 // Main component
 const MessagesPage = () => {
+  // Component logic remains the same
   const [transactions, setTransactions] = useState([]);
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -964,6 +1010,7 @@ const MessagesPage = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
+  // Continue from where we left off
   const [stats, setStats] = useState({
     active: 0,
     completed: 0,
@@ -1450,177 +1497,181 @@ const MessagesPage = () => {
       
       <MainContent>
         <ChatsList>
-          <SearchInput>
-            <input
-              type="text"
-              placeholder="Search conversations..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            {searchTerm && (
-              <button 
-                className="clear-button"
-                onClick={() => setSearchTerm('')}
+          <ChatsListHeader>
+            <ChatTabs>
+              <ChatTab 
+                active={activeTab === 'all'} 
+                onClick={() => setActiveTab('all')}
               >
-                <X size={16} />
-              </button>
-            )}
+                All
+              </ChatTab>
+              <ChatTab 
+                active={activeTab === 'unread'} 
+                onClick={() => setActiveTab('unread')}
+              >
+                Unread
+              </ChatTab>
+              <ChatTab 
+                active={activeTab === 'active'} 
+                onClick={() => setActiveTab('active')}
+              >
+                Active
+              </ChatTab>
+              <ChatTab 
+                active={activeTab === 'buying'} 
+                onClick={() => setActiveTab('buying')}
+              >
+                Buying
+              </ChatTab>
+              <ChatTab 
+                active={activeTab === 'selling'} 
+                onClick={() => setActiveTab('selling')}
+              >
+                Selling
+              </ChatTab>
+              <ChatTab 
+                active={activeTab === 'completed'} 
+                onClick={() => setActiveTab('completed')}
+              >
+                Completed
+              </ChatTab>
+            </ChatTabs>
+
+            <SearchInput>
             <Search className="search-icon" size={16} />
-          </SearchInput>
-          
-          <ChatTabs>
-            <ChatTab 
-              active={activeTab === 'all'} 
-              onClick={() => setActiveTab('all')}
-            >
-              All
-            </ChatTab>
-            <ChatTab 
-              active={activeTab === 'unread'} 
-              onClick={() => setActiveTab('unread')}
-            >
-              Unread
-            </ChatTab>
-            <ChatTab 
-              active={activeTab === 'active'} 
-              onClick={() => setActiveTab('active')}
-            >
-              Active
-            </ChatTab>
-            <ChatTab 
-              active={activeTab === 'buying'} 
-              onClick={() => setActiveTab('buying')}
-            >
-              Buying
-            </ChatTab>
-            <ChatTab 
-              active={activeTab === 'selling'} 
-              onClick={() => setActiveTab('selling')}
-            >
-              Selling
-            </ChatTab>
-            <ChatTab 
-              active={activeTab === 'completed'} 
-              onClick={() => setActiveTab('completed')}
-            >
-              Completed
-            </ChatTab>
-          </ChatTabs>
-          
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
-              <div style={{ 
-                width: '40px', 
-                height: '40px', 
-                margin: '0 auto', 
-                border: '3px solid rgba(128, 0, 0, 0.1)', 
-                borderRadius: '50%', 
-                borderTopColor: '#800000', 
-                animation: 'spin 1s linear infinite' 
-              }}></div>
-              <p style={{ marginTop: '1rem', opacity: 0.7 }}>Loading conversations...</p>
-            </div>
-          ) : error ? (
-            <div style={{ 
-              color: '#ff4444', 
-              padding: '1rem', 
-              background: 'rgba(255, 68, 68, 0.1)',
-              borderRadius: '8px',
-              textAlign: 'center',
-              margin: '1rem 0'
-            }}>
-              {error}
-              <button 
-                onClick={() => setError(null)} 
-                style={{ 
-                  display: 'block', 
-                  margin: '0.5rem auto',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#ff4444',
-                  cursor: 'pointer',
-                  textDecoration: 'underline'
-                }}
-              >
-                Dismiss
-              </button>
-            </div>
-          ) : filteredChats.length === 0 ? (
-            <NoChatsMessage>
-              <h3>No conversations found</h3>
-              <p>
-                {searchTerm ? 
-                  `No results matching "${searchTerm}"` : 
-                  activeTab !== 'all' ?
-                  `You don't have any ${activeTab} conversations` :
-                  "You don't have any conversations yet"
-                }
-              </p>
-              {activeTab === 'all' && !searchTerm && (
+            <input
+                type="text"
+                placeholder="Search conversations..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
                 <button 
-                  className="browse-button"
-                  onClick={() => window.location.href = '/'}
+                  className="clear-button"
+                  onClick={() => setSearchTerm('')}
                 >
-                  <Package size={16} />
-                  Browse Items
+                  <X size={16} />
                 </button>
               )}
-            </NoChatsMessage>
-          ) : (
-            filteredChats.map(chat => (
-              <ChatItem 
-                key={chat.id}
-                active={selectedChat?.id === chat.id}
-                onClick={() => setSelectedChat(chat)}
-              >
-                <div className="chat-image">
-                  {chat.itemImage ? (
-                    <img src={chat.itemImage} alt={chat.itemName} />
-                  ) : (
-                    <div style={{ 
-                      width: '100%', 
-                      height: '100%', 
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center' 
-                    }}>
-                      <Package size={20} opacity={0.5} />
-                    </div>
-                  )}
-                </div>
-                
-                <div className="chat-info">
-                  <div className="chat-name">
-                    {chat.itemName || "Untitled conversation"}
-                  </div>
-                  <div className="chat-preview">
-                    {chat.otherPartyName || "Unknown user"}
+            </SearchInput>
+          </ChatsListHeader>
+            
+          <ChatItemsContainer>
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '2rem' }}>
+                <div style={{ 
+                  width: '40px', 
+                  height: '40px', 
+                  margin: '0 auto', 
+                  border: '3px solid rgba(128, 0, 0, 0.1)', 
+                  borderRadius: '50%', 
+                  borderTopColor: '#800000', 
+                  animation: 'spin 1s linear infinite' 
+                }}></div>
+                <p style={{ marginTop: '1rem', opacity: 0.7 }}>Loading conversations...</p>
+              </div>
+            ) : error ? (
+              <div style={{ 
+                color: '#ff4444', 
+                padding: '1rem', 
+                background: 'rgba(255, 68, 68, 0.1)',
+                borderRadius: '8px',
+                textAlign: 'center',
+                margin: '1rem 0'
+              }}>
+                {error}
+                <button 
+                  onClick={() => setError(null)} 
+                  style={{ 
+                    display: 'block', 
+                    margin: '0.5rem auto',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#ff4444',
+                    cursor: 'pointer',
+                    textDecoration: 'underline'
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            ) : filteredChats.length === 0 ? (
+              <NoChatsMessage>
+                <h3>No conversations found</h3>
+                <p>
+                  {searchTerm ? 
+                    `No results matching "${searchTerm}"` : 
+                    activeTab !== 'all' ?
+                    `You don't have any ${activeTab} conversations` :
+                    "You don't have any conversations yet"
+                  }
+                </p>
+                {activeTab === 'all' && !searchTerm && (
+                  <button 
+                    className="browse-button"
+                    onClick={() => window.location.href = '/'}
+                  >
+                    <Package size={16} />
+                    Browse Items
+                  </button>
+                )}
+              </NoChatsMessage>
+            ) : (
+              filteredChats.map(chat => (
+                <ChatItem 
+                  key={chat.id}
+                  active={selectedChat?.id === chat.id}
+                  onClick={() => setSelectedChat(chat)}
+                >
+                  <div className="chat-image">
+                    {chat.itemImage ? (
+                      <img src={chat.itemImage} alt={chat.itemName} />
+                    ) : (
+                      <div style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center' 
+                      }}>
+                        <Package size={20} opacity={0.5} />
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="chat-meta">
-                    <div className="chat-time">
-                      {formatTimestamp(chat.lastMessageTime)}
+                  <div className="chat-info">
+                    <div className="chat-name">
+                      {chat.itemName || "Untitled conversation"}
+                    </div>
+                    <div className="chat-preview">
+                      {chat.otherPartyName || "Unknown user"}
                     </div>
                     
-                    {chat.transaction && getStatusDisplay(chat.transaction.status)}
+                    <div className="chat-meta">
+                      <div className="chat-time">
+                        {formatTimestamp(chat.lastMessageTime)}
+                      </div>
+                      
+                      {chat.transaction && getStatusDisplay(chat.transaction.status)}
+                    </div>
                   </div>
-                </div>
-                
-                {chat.unreadCount > 0 && (
-                  <div className="unread-badge">
-                    {chat.unreadCount}
-                  </div>
-                )}
-                
-                <button 
-                  className="delete-btn"
-                  onClick={(e) => handleDeleteChat(chat.id, e)}
-                >
-                  <Trash2 size={16} />
-                </button>
-              </ChatItem>
-            ))
-          )}
+                  
+                  {chat.unreadCount > 0 && (
+                    <div className="unread-badge">
+                      {chat.unreadCount}
+                    </div>
+                  )}
+                  
+                  <button 
+                    className="delete-btn"
+                    onClick={(e) => handleDeleteChat(chat.id, e)}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </ChatItem>
+              ))
+            )}
+          </ChatItemsContainer>
         </ChatsList>
         
         <ChatDisplay>
