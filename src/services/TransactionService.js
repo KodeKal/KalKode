@@ -8,6 +8,7 @@ import {
   doc, 
   getDoc, 
   serverTimestamp,
+  setDoc,
   increment,
   query,
   where,
@@ -19,42 +20,44 @@ import { PaymentService } from './PaymentService';
 
 export const TransactionService = {
   // Initiate a transaction when buyer clicks "Order"
+  // Update in src/services/TransactionService.js
+
   initiateTransaction: async (itemId, sellerId, price, meetupType) => {
     try {
       const buyer = auth.currentUser;
-      
+
       if (!buyer) {
         throw new Error('You must be logged in to make a purchase');
       }
-      
+
       // Get the shop document to find the item
       const shopRef = doc(db, 'shops', sellerId);
       const shopSnap = await getDoc(shopRef);
-      
+
       if (!shopSnap.exists()) {
         throw new Error('Shop not found');
       }
-      
+
       const shopData = shopSnap.data();
-      
+
       // Find the item in the shop's items array
       const itemIndex = shopData.items.findIndex(item => item.id === itemId);
-      
+
       if (itemIndex === -1) {
         throw new Error('Item not found');
       }
-      
+
       const itemData = shopData.items[itemIndex];
-      
+
       // Check quantity
       const currentQuantity = itemData.quantity || 0;
       if (currentQuantity < 1) {
         throw new Error('This item is out of stock');
       }
-      
+
       // Generate transaction code
       const transactionCode = generateTransactionCode();
-      
+
       // Create a new transaction
       const transaction = {
         itemId,
@@ -62,68 +65,76 @@ export const TransactionService = {
         itemImage: itemData.images?.[0] || null,
         price: parseFloat(price),
         sellerId,
+        sellerName: shopData.name || '',
         buyerId: buyer.uid,
         buyerName: buyer.displayName || buyer.email,
-        sellerName: shopData.name || '',
-        status: 'pending', // pending, confirmed, completed, cancelled, disputed
-        paymentStatus: 'pending', // pending, awaiting_payment, succeeded, cancelled
-        meetupType, // 'inperson' or 'locker'
+        status: 'pending',
+        paymentStatus: 'pending',
+        meetupType,
         meetupDetails: null,
-        locationVerified: false,
-        photoEvidence: null,
         transactionCode,
-        lockerCode: meetupType === 'locker' ? generateLockerCode() : null,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+        updatedAt: serverTimestamp()
       };
-      
-      // Create the transaction
+
+      // Create the transaction first
       const transactionRef = await addDoc(collection(db, 'transactions'), transaction);
-      
+      const transactionId = transactionRef.id;
+
+      // Now check if a chat already exists for this transaction
+      const chatsRef = collection(db, 'chats');
+      const q = query(chatsRef, where('transactionId', '==', transactionId));
+      const existingChats = await getDocs(q);
+
+      // If no chat exists, create one (and ONLY one)
+      if (existingChats.empty) {
+        // Create a single chat document with both participants
+        const chatDoc = {
+          transactionId,
+          itemId: itemData.id,
+          itemName: itemData.name,
+          itemImage: itemData.images?.[0] || null,
+          buyerId: buyer.uid,
+          buyerName: buyer.displayName || buyer.email,
+          sellerId,
+          sellerName: shopData.name || '',
+          participants: [buyer.uid, sellerId], // Include both participants
+          lastMessage: 'Transaction initiated',
+          lastMessageTime: serverTimestamp(),
+          unreadCount: {
+            [buyer.uid]: 0,
+            [sellerId]: 1 // Notify seller immediately
+          }
+        };
+
+        // Create the chat using the transaction ID as the chat ID to ensure uniqueness
+        await setDoc(doc(db, 'chats', transactionId), chatDoc);
+
+        // Add welcome message to the chat
+        await addDoc(collection(db, 'chats', transactionId, 'messages'), {
+          text: `Transaction started for ${itemData.name}. Please complete payment to confirm your order.`,
+          sender: 'system',
+          senderName: 'System',
+          timestamp: serverTimestamp(),
+          type: 'system',
+          messageClass: 'status-message'
+        });
+      }
+
       // Decrease item quantity
       const updatedItems = [...shopData.items];
       updatedItems[itemIndex] = {
         ...itemData,
         quantity: currentQuantity - 1
       };
-      
+
       // Update the shop document with the new items array
       await updateDoc(shopRef, {
         items: updatedItems
       });
-      
-      // Make sure to create a chat for this transaction
-      await addDoc(collection(db, 'chats'), {
-        transactionId: transactionRef.id,
-        buyerId: buyer.uid,
-        sellerId,
-        itemId: itemData.id,
-        itemName: itemData.name,
-        itemImage: itemData.images?.[0] || null,
-        lastMessage: 'Transaction started',
-        lastMessageTime: serverTimestamp(),
-        participants: [buyer.uid, sellerId],
-        unreadCount: {
-          [buyer.uid]: 0,
-          [sellerId]: 1 // Notify seller immediately
-        }
-      });
-      
-      // Add welcome message to chat
-      await addDoc(collection(db, 'chats', transactionRef.id, 'messages'), {
-        text: `Transaction started for ${itemData.name}. Please complete payment to confirm your order.`,
-        sender: 'system',
-        senderName: 'System',
-        timestamp: serverTimestamp(),
-        type: 'system',
-        messageClass: 'status-message'
-      });
-      
-      console.log('Transaction initiated successfully:', transactionRef.id);
-      
+
       return {
-        transactionId: transactionRef.id,
+        transactionId,
         transactionCode
       };
     } catch (error) {
@@ -132,6 +143,132 @@ export const TransactionService = {
     }
   },
   
+  verifyPickupLocation: async (transactionId, buyerLocation) => {
+    try {
+      const transactionDoc = await getDoc(doc(db, 'transactions', transactionId));
+      if (!transactionDoc.exists()) {
+        throw new Error('Transaction not found');
+      }
+      
+      const transaction = transactionDoc.data();
+      
+      // Check if buyer is within range of the pickup location
+      if (transaction.meetupDetails && 
+          transaction.meetupDetails.latitude && 
+          transaction.meetupDetails.longitude) {
+        
+        const distance = calculateDistance(
+          buyerLocation.latitude,
+          buyerLocation.longitude,
+          transaction.meetupDetails.latitude,
+          transaction.meetupDetails.longitude
+        );
+        
+        // If within 100 meters, mark as at location
+        const isAtLocation = distance <= 0.1; // 100 meters
+        
+        if (isAtLocation) {
+          // Update transaction
+          await updateDoc(doc(db, 'transactions', transactionId), {
+            buyerAtLocation: true,
+            updatedAt: serverTimestamp()
+          });
+          
+          // Add message to chat
+          await addDoc(collection(db, 'chats', transactionId, 'messages'), {
+            text: 'Buyer has arrived at the pickup location',
+            sender: 'system',
+            senderName: 'System',
+            timestamp: serverTimestamp(),
+            type: 'system',
+            messageClass: 'status-message'
+          });
+        }
+        
+        return {
+          isAtLocation,
+          distance: distance * 1000 // Convert to meters
+        };
+      }
+      
+      return {
+        isAtLocation: false,
+        distance: null
+      };
+    } catch (error) {
+      console.error('Error verifying pickup location:', error);
+      throw error;
+    }
+  },
+  
+  // Add function to generate a QR code for verification
+  generateVerificationQRCode: async (transactionId) => {
+    try {
+      const transactionDoc = await getDoc(doc(db, 'transactions', transactionId));
+      if (!transactionDoc.exists()) {
+        throw new Error('Transaction not found');
+      }
+      
+      const transaction = transactionDoc.data();
+      
+      // For a real implementation, we would generate a QR code using a library
+      // or service. For now, we'll just return the transaction code.
+      return {
+        transactionCode: transaction.transactionCode,
+        // In a real implementation, we'd return a data URL or similar
+        qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?data=${transaction.transactionCode}&size=150x150`
+      };
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      throw error;
+    }
+  },
+
+  // Add to src/services/TransactionService.js
+
+completePickupTransaction: async (transactionId, verificationCode) => {
+  try {
+    const transactionRef = doc(db, 'transactions', transactionId);
+    const transactionSnap = await getDoc(transactionRef);
+    
+    if (!transactionSnap.exists()) {
+      throw new Error('Transaction not found');
+    }
+    
+    const transaction = transactionSnap.data();
+    
+    // Verify code
+    if (transaction.transactionCode !== verificationCode) {
+      throw new Error('Invalid verification code');
+    }
+    
+    // Release payment (in a real implementation, this would call a Cloud Function)
+    // For demo purposes, we'll just update the transaction status
+    await updateDoc(transactionRef, {
+      status: 'completed',
+      completedAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    
+    // Add system message to chat
+    await addDoc(collection(db, 'chats', transactionId, 'messages'), {
+      text: 'Transaction completed successfully! Payment has been released to the seller.',
+      sender: 'system',
+      senderName: 'System',
+      timestamp: serverTimestamp(),
+      type: 'system',
+      messageClass: 'success-message'
+    });
+    
+    return {
+      success: true,
+      message: 'Transaction completed successfully'
+    };
+  } catch (error) {
+    console.error('Error completing transaction:', error);
+    throw error;
+  }
+},
   // Process payment for a transaction
   processPayment: async (transactionId, paymentMethodId) => {
     try {
@@ -203,19 +340,47 @@ export const TransactionService = {
         throw new Error('You are not authorized to accept this transaction');
       }
       
-      // Update transaction status
+      // Get the shop data to find the item location
+      const shopRef = doc(db, 'shops', seller.uid);
+      const shopSnap = await getDoc(shopRef);
+      
+      if (!shopSnap.exists()) {
+        throw new Error('Shop not found');
+      }
+      
+      const shopData = shopSnap.data();
+      const item = shopData.items.find(i => i.id === transaction.itemId);
+      
+      // Get location from item
+      const itemLocation = {
+        address: item?.address || 'Location not specified',
+        coordinates: item?.coordinates || null,
+        timestamp: serverTimestamp()
+      };
+      
+      // Update transaction status and set location
       await updateDoc(transactionRef, {
         status: 'confirmed',
+        meetupDetails: itemLocation,
         updatedAt: serverTimestamp()
       });
       
       // Add system message to chat
       await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-        text: 'Seller has accepted the order. Arrange for pickup to complete the transaction.',
+        text: 'Seller has accepted the order. See pickup location details below.',
         sender: 'system',
         senderName: 'System',
         timestamp: serverTimestamp(),
         type: 'system'
+      });
+      
+      // Add location message to chat
+      await addDoc(collection(db, 'chats', transactionId, 'messages'), {
+        location: itemLocation,
+        sender: seller.uid,
+        senderName: shopData.name || seller.displayName || seller.email,
+        timestamp: serverTimestamp(),
+        type: 'location'
       });
       
       return true;

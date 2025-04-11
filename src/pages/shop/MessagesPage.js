@@ -1,6 +1,9 @@
 // src/pages/shop/MessagesPage.js
 import React, { useState, useEffect, useRef } from 'react';
 import styled, { ThemeProvider } from 'styled-components';
+import { MapPin, ThumbsUp, ThumbsDown, Camera } from 'lucide-react';
+import { TransactionService } from '../../services/TransactionService';
+import PickupLocationMap from '../../components/Transaction/PickupLocationMap';
 import { 
   MessageCircle, 
   Search, 
@@ -842,6 +845,113 @@ const NoChatsMessage = styled.div`
   }
 `;
 
+// Now add this component to render transaction actions
+const TransactionPanel = styled.div`
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 12px;
+  background: ${props => props.status === 'confirmed' ? 
+    'rgba(76, 175, 80, 0.1)' : 
+    props.status === 'awaiting_seller' ?
+    'rgba(33, 150, 243, 0.1)' :
+    'rgba(255, 152, 0, 0.1)'
+  };
+  border: 1px solid ${props => props.status === 'confirmed' ?
+    'rgba(76, 175, 80, 0.3)' :
+    props.status === 'awaiting_seller' ?
+    'rgba(33, 150, 243, 0.3)' :
+    'rgba(255, 152, 0, 0.3)'
+  };
+`;
+
+const TransactionButton = styled.button`
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  margin-top: 1rem;
+  font-weight: 500;
+  
+  &.primary {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    
+    &:hover {
+      background: #3e8e41;
+    }
+  }
+  
+  &.secondary {
+    background: transparent;
+    border: 1px solid #4CAF50;
+    color: #4CAF50;
+    
+    &:hover {
+      background: rgba(76, 175, 80, 0.1);
+    }
+  }
+  
+  &.danger {
+    background: #F44336;
+    color: white;
+    border: none;
+    
+    &:hover {
+      background: #d32f2f;
+    }
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const CodeVerificationForm = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+  
+  .input-row {
+    display: flex;
+    gap: 0.5rem;
+    
+    input {
+      flex: 1;
+      padding: 0.75rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(0, 0, 0, 0.2);
+      color: white;
+      font-family: monospace;
+      font-size: 1.1rem;
+      letter-spacing: 2px;
+    }
+    
+    button {
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(0, 0, 0, 0.3);
+      color: white;
+      cursor: pointer;
+      
+      &:hover {
+        background: rgba(0, 0, 0, 0.4);
+      }
+    }
+  }
+  
+  .error {
+    color: #F44336;
+    font-size: 0.9rem;
+  }
+`;
+
 // Notification Modal
 const NotificationModal = styled.div`
   position: fixed;
@@ -1001,6 +1111,11 @@ const NotificationForm = styled.form`
 const MessagesPage = () => {
   // Component logic remains the same
   const [transactions, setTransactions] = useState([]);
+  const [transactionDetails, setTransactionDetails] = useState(null);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [verificationError, setVerificationError] = useState(null);
+  const [showScanner, setShowScanner] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -1029,146 +1144,420 @@ const MessagesPage = () => {
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   
-  // Fetch user's chats from Firestore
   useEffect(() => {
-    if (!auth.currentUser) return;
-    
-    setLoading(true);
-    
-    const chatsRef = collection(db, 'chats');
-    const q = query(
-      chatsRef,
-      where('participants', 'array-contains', auth.currentUser.uid),
-      orderBy('lastMessageTime', 'desc')
-    );
-    
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const chatData = [];
-      
-      let activeCount = 0;
-      let completedCount = 0;
-      
-      // Process each chat
-      for (const doc of snapshot.docs) {
-        const chat = doc.data();
-        
-        // Skip hidden chats
-        if (chat.hidden && chat.hidden[auth.currentUser.uid]) {
-          continue;
+    const fetchTransactionDetails = async () => {
+      if (selectedChat?.transactionId) {
+        try {
+          const transaction = await TransactionService.getTransactionById(selectedChat.transactionId);
+          setTransactionDetails(transaction);
+        } catch (error) {
+          console.error('Error fetching transaction:', error);
         }
-        
-        // Get transaction details if available
-        let transaction = null;
-        if (chat.transactionId) {
-          try {
-            const transactionSnap = await getDoc(doc(db, 'transactions', chat.transactionId));
-            if (transactionSnap.exists()) {
-              transaction = {
-                id: transactionSnap.id,
-                ...transactionSnap.data()
-              };
-              
-              // Count based on status
-              if (transaction.status === 'completed') {
-                completedCount++;
-              } else {
-                activeCount++;
-              }
-            }
-          } catch (err) {
-            console.error(`Error fetching transaction for chat ${doc.id}:`, err);
-          }
-        }
-        
-        // Determine if user is buyer or seller
-        const isBuyer = chat.buyerId === auth.currentUser.uid;
-        const isSeller = chat.sellerId === auth.currentUser.uid;
-        
-        // Get other party's details
-        const otherPartyId = isBuyer ? chat.sellerId : chat.buyerId;
-        const otherPartyName = isBuyer ? chat.sellerName : chat.buyerName;
-        
-        // Add to chat data
-        chatData.push({
-          id: doc.id,
-          ...chat,
-          transaction,
-          isBuyer,
-          isSeller,
-          role: isBuyer ? 'buyer' : 'seller',
-          otherPartyId,
-          otherPartyName,
-          unreadCount: chat.unreadCount?.[auth.currentUser.uid] || 0
-        });
+      } else {
+        setTransactionDetails(null);
       }
-      
-      // Update stats
-      setStats({
-        active: activeCount,
-        completed: completedCount,
-        total: chatData.length
-      });
-      
-      setChats(chatData);
-      applyFilters(chatData, searchTerm, activeTab);
+    };
+    
+    fetchTransactionDetails();
+  }, [selectedChat?.transactionId]); 
+  
+  // Add these functions to handle transaction actions
+  const handleAcceptOrder = async () => {
+    if (!transactionDetails) return;
+    
+    try {
+      setLoading(true);
+      await TransactionService.acceptTransaction(transactionDetails.id);
+      // Refresh transaction details
+      const updated = await TransactionService.getTransactionById(transactionDetails.id);
+      setTransactionDetails(updated);
+    } catch (error) {
+      console.error('Error accepting order:', error);
+      setError('Failed to accept order. Please try again.');
+    } finally {
       setLoading(false);
+    }
+  };
+  
+  const handleRejectOrder = async () => {
+    if (!transactionDetails) return;
+    
+    try {
+      setLoading(true);
+      await TransactionService.rejectTransaction(transactionDetails.id, 'Rejected by seller');
+      // Refresh transaction details
+      const updated = await TransactionService.getTransactionById(transactionDetails.id);
+      setTransactionDetails(updated);
+    } catch (error) {
+      console.error('Error rejecting order:', error);
+      setError('Failed to reject order. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleVerifyCode = async () => {
+    if (!transactionDetails || !verificationCode) return;
+    
+    try {
+      setVerifying(true);
+      setVerificationError(null);
+      
+      await TransactionService.completeTransaction(transactionDetails.id, verificationCode);
+      
+      // Refresh transaction details
+      const updated = await TransactionService.getTransactionById(transactionDetails.id);
+      setTransactionDetails(updated);
+      setVerificationCode('');
+    } catch (error) {
+      console.error('Error verifying code:', error);
+      setVerificationError(error.message || 'Invalid verification code');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  // Add our transaction panel renderer
+const renderTransactionPanel = () => {
+  if (!transactionDetails) return null;
+  
+  const isSeller = transactionDetails.sellerId === auth.currentUser?.uid;
+  const isBuyer = transactionDetails.buyerId === auth.currentUser?.uid;
+  
+  switch (transactionDetails.status) {
+    case 'awaiting_seller':
+      if (isSeller) {
+        return (
+          <TransactionPanel status={transactionDetails.status}>
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <Package size={18} /> New Order Request
+            </h4>
+            <p>{transactionDetails.buyerName} wants to purchase {transactionDetails.itemName}</p>
+            <div style={{ fontSize: '1.2rem', color: '#800000', fontWeight: 'bold', margin: '0.5rem 0' }}>
+              ${parseFloat(transactionDetails.price).toFixed(2)}
+            </div>
+            
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+              <TransactionButton className="danger" onClick={handleRejectOrder}>
+                <ThumbsDown size={16} /> Decline
+              </TransactionButton>
+              <TransactionButton className="primary" onClick={handleAcceptOrder}>
+                <ThumbsUp size={16} /> Accept
+              </TransactionButton>
+            </div>
+          </TransactionPanel>
+        );
+      } else if (isBuyer) {
+        return (
+          <TransactionPanel status={transactionDetails.status}>
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <Clock size={18} /> Awaiting Seller
+            </h4>
+            <p>Your order has been placed. Waiting for seller to accept.</p>
+          </TransactionPanel>
+        );
+      }
+      break;
+      
+    case 'confirmed':
+      if (isSeller) {
+        return (
+          <TransactionPanel status={transactionDetails.status}>
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <Check size={18} /> Order Confirmed
+            </h4>
+            <p>You've accepted this order. When the buyer arrives, verify their code to complete the transaction.</p>
+            
+            {transactionDetails.buyerAtLocation && (
+              <>
+                <p style={{ color: '#4CAF50', margin: '0.5rem 0' }}>
+                  Buyer has arrived at the pickup location
+                </p>
+                
+                <CodeVerificationForm>
+                  <div className="input-row">
+                    <input 
+                      type="text" 
+                      placeholder="Enter verification code"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.toUpperCase())}
+                    />
+                    <button onClick={() => setShowScanner(true)}>
+                      <Camera size={20} />
+                    </button>
+                  </div>
+                  
+                  {verificationError && (
+                    <div className="error">{verificationError}</div>
+                  )}
+                  
+                  <TransactionButton className="primary" onClick={handleVerifyCode} disabled={verifying || !verificationCode}>
+                    <Check size={16} /> Verify Code
+                  </TransactionButton>
+                </CodeVerificationForm>
+              </>
+            )}
+          </TransactionPanel>
+        );
+      } else if (isBuyer) {
+        return (
+          <TransactionPanel status={transactionDetails.status}>
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <Check size={18} /> Order Confirmed
+            </h4>
+            <p>Your order has been confirmed. The pickup location is shown in the chat.</p>
+            
+            {!transactionDetails.buyerAtLocation && (
+              <TransactionButton className="primary" onClick={handleArriveAtLocation}>
+                <MapPin size={16} /> I've Arrived at Pickup Location
+              </TransactionButton>
+            )}
+            
+            {transactionDetails.buyerAtLocation && (
+              <div style={{ marginTop: '1rem' }}>
+                <h5>Your Verification Code:</h5>
+                <div style={{ 
+                  padding: '0.75rem', 
+                  background: 'rgba(0, 0, 0, 0.2)', 
+                  borderRadius: '6px',
+                  fontFamily: 'monospace',
+                  fontSize: '1.2rem',
+                  textAlign: 'center',
+                  letterSpacing: '2px',
+                  marginTop: '0.5rem'
+                }}>
+                  {transactionDetails.transactionCode}
+                </div>
+                <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                  Show this code to the seller to complete the transaction
+                </p>
+              </div>
+            )}
+          </TransactionPanel>
+        );
+      }
+      break;
+      
+    case 'completed':
+      return (
+        <TransactionPanel status="confirmed">
+          <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <Check size={18} /> Transaction Completed
+          </h4>
+          <p>This transaction has been successfully completed.</p>
+        </TransactionPanel>
+      );
+      
+    default:
+      return null;
+  }
+  
+  return null;
+};
+
+const sendSystemMessage = async (text) => {
+  if (!selectedChat) return;
+  
+  try {
+    // Add message to Firestore
+    await addDoc(collection(db, 'chats', selectedChat.id, 'messages'), {
+      text,
+      sender: auth.currentUser.uid,
+      senderName: auth.currentUser.displayName || auth.currentUser.email,
+      timestamp: serverTimestamp(),
+      type: 'text'
     });
     
-    return () => unsubscribe();
-  }, []);
+    // Update chat with last message
+    const otherPartyId = selectedChat.isBuyer ? selectedChat.sellerId : selectedChat.buyerId;
+    
+    await updateDoc(doc(db, 'chats', selectedChat.id), {
+      lastMessage: text,
+      lastMessageTime: serverTimestamp(),
+      [`unreadCount.${otherPartyId}`]: increment(1)
+    });
+  } catch (err) {
+    console.error('Error sending message:', err);
+    setError('Failed to send message. Please try again.');
+  }
+};
+
   
-  // Apply filters when they change
-  useEffect(() => {
-    applyFilters(chats, searchTerm, activeTab);
-  }, [chats, searchTerm, activeTab]);
-  
-  // Load messages when a chat is selected
-  useEffect(() => {
-    if (!selectedChat) {
-      setMessages([]);
-      return;
+  const handleArriveAtLocation = async () => {
+    if (!transactionDetails) return;
+    
+    try {
+      // Get current location
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const location = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          };
+          
+          await TransactionService.verifyPickupLocation(transactionDetails.id, location);
+          
+          // Send arrival message
+          await sendSystemMessage("I've arrived at the pickup location");
+          
+          // Refresh transaction details
+          const updated = await TransactionService.getTransactionById(transactionDetails.id);
+          setTransactionDetails(updated);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          setError('Unable to get your location. Please enable location services.');
+        }
+      );
+    } catch (error) {
+      console.error('Error marking arrival:', error);
     }
+  };
+  
+// First, update the loadTransactions effect
+useEffect(() => {
+  if (!selectedChat) return;
+  
+  const messagesRef = collection(db, 'chats', selectedChat.id, 'messages');
+  const q = query(messagesRef, orderBy('timestamp', 'asc'));
+  
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const messageData = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      timestamp: doc.data().timestamp
+    }));
     
-    const messagesRef = collection(db, 'chats', selectedChat.id, 'messages');
-    const q = query(messagesRef, orderBy('timestamp', 'asc'));
+    setMessages(messageData);
     
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const messageData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp
-      }));
-      
-      // Group messages by date
-      const groupedMessages = [];
-      let currentDate = null;
-      
-      messageData.forEach(msg => {
-        const msgDate = msg.timestamp ? new Date(msg.timestamp.toDate().setHours(0, 0, 0, 0)) : null;
-        
-        if (msgDate && (!currentDate || msgDate.getTime() !== currentDate.getTime())) {
-          currentDate = msgDate;
-          groupedMessages.push({
-            type: 'date',
-            date: currentDate
+    // Mark messages as read
+    if (selectedChat.unreadCount > 0) {
+      updateDoc(doc(db, 'chats', selectedChat.id), {
+        [`unreadCount.${auth.currentUser.uid}`]: 0
+      });
+    }
+  });
+  
+  // Determine the role of the current user
+  if (selectedChat.transactionId) {
+    const currentUserId = auth.currentUser?.uid;
+    const isBuyer = selectedChat.buyerId === currentUserId;
+    const isSeller = selectedChat.sellerId === currentUserId;
+    
+    // Update the selected chat with role information
+    setSelectedChat(prev => ({
+      ...prev,
+      isBuyer,
+      isSeller,
+      role: isBuyer ? 'buyer' : isSeller ? 'seller' : null
+    }));
+    
+    // Fetch the transaction details
+    const fetchTransaction = async () => {
+      try {
+        const transactionDoc = await getDoc(doc(db, 'transactions', selectedChat.transactionId));
+        if (transactionDoc.exists()) {
+          setTransactionDetails({
+            id: transactionDoc.id,
+            ...transactionDoc.data()
           });
         }
-        
-        groupedMessages.push(msg);
-      });
-      
-      setMessages(groupedMessages);
-      
-      // Mark messages as read
-      if (selectedChat.unreadCount > 0) {
-        updateDoc(doc(db, 'chats', selectedChat.id), {
-          [`unreadCount.${auth.currentUser.uid}`]: 0
-        });
+      } catch (error) {
+        console.error('Error fetching transaction:', error);
       }
-    });
+    };
     
-    return () => unsubscribe();
-  }, [selectedChat]);
+    fetchTransaction();
+  }
+  
+  return () => unsubscribe();
+}, [selectedChat?.id, auth.currentUser?.uid]);
+
+// Then update the chat loading effect to properly set the roles
+useEffect(() => {
+  if (!auth.currentUser) return;
+  
+  setLoading(true);
+  
+  const chatsRef = collection(db, 'chats');
+  const q = query(
+    chatsRef,
+    where('participants', 'array-contains', auth.currentUser.uid),
+    orderBy('lastMessageTime', 'desc')
+  );
+  
+  const unsubscribe = onSnapshot(q, async (snapshot) => {
+    const chatData = [];
+    
+    // Process each chat
+    for (const doc of snapshot.docs) {
+      const chat = doc.data();
+      
+      // Skip hidden chats
+      if (chat.hidden && chat.hidden[auth.currentUser.uid]) {
+        continue;
+      }
+      
+      // Determine if user is buyer or seller
+      const isBuyer = chat.buyerId === auth.currentUser.uid;
+      const isSeller = chat.sellerId === auth.currentUser.uid;
+      
+      // Add to chat data with role information
+      chatData.push({
+        id: doc.id,
+        ...chat,
+        isBuyer,
+        isSeller,
+        role: isBuyer ? 'buyer' : 'seller',
+        otherPartyId: isBuyer ? chat.sellerId : chat.buyerId,
+        otherPartyName: isBuyer ? chat.sellerName : chat.buyerName,
+        unreadCount: chat.unreadCount?.[auth.currentUser.uid] || 0
+      });
+    }
+    
+    setChats(chatData); // Add this line back
+    setLoading(false); // Add this line back
+  });
+  
+  return () => unsubscribe();
+}, [auth.currentUser]);
+
+useEffect(() => {
+  if (chats.length > 0) {
+    let filtered = [...chats];
+    
+    // Apply search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(chat => 
+        (chat.itemName?.toLowerCase().includes(searchLower)) ||
+        (chat.otherPartyName?.toLowerCase().includes(searchLower)) ||
+        (chat.lastMessage?.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    // Apply tab filter
+    if (activeTab === 'active') {
+      filtered = filtered.filter(chat => 
+        chat.transaction?.status !== 'completed' && 
+        chat.transaction?.status !== 'cancelled'
+      );
+    } else if (activeTab === 'completed') {
+      filtered = filtered.filter(chat => 
+        chat.transaction?.status === 'completed' || 
+        chat.transaction?.status === 'cancelled'
+      );
+    } else if (activeTab === 'unread') {
+      filtered = filtered.filter(chat => chat.unreadCount > 0);
+    } else if (activeTab === 'buying') {
+      filtered = filtered.filter(chat => chat.role === 'buyer');
+    } else if (activeTab === 'selling') {
+      filtered = filtered.filter(chat => chat.role === 'seller');
+    }
+    
+    setFilteredChats(filtered);
+  }
+}, [chats, searchTerm, activeTab]);
   
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -1211,6 +1600,7 @@ const MessagesPage = () => {
     }
     
     setFilteredChats(filtered);
+    setLoading(false);
   };
   
   // Send a message
@@ -1714,6 +2104,7 @@ const MessagesPage = () => {
               </ChatHeader>
               
               <ChatBody>
+              {selectedChat?.transactionId && renderTransactionPanel()}
                 {messages.length === 0 ? (
                   <div style={{ 
                     textAlign: 'center', 

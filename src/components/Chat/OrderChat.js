@@ -1,13 +1,14 @@
 // src/components/Chat/OrderChat.js
-import React, { useState, useEffect, useRef } from 'react';
+import React, { Navigation, useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { X, Send, ShoppingCart, MessageCircle, ChevronRight, Check, CreditCard, DollarSign } from 'lucide-react';
+import { X, Send, ShoppingCart, MessageCircle, ChevronRight, Check, CreditCard, Clock } from 'lucide-react';
 import { TransactionService } from '../../services/TransactionService';
 import { PaymentService } from '../../services/PaymentService';
 import { auth } from '../../firebase/config';
 //import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 //import { Elements } from '@stripe/react-stripe-js';
 import { CardElement, useStripe, useElements, Elements } from '../Stripe/StripeComponent';
+import PickupLocationMap from '../Transaction/PickupLocationMap';
 
 const ChatDrawer = styled.div`
   position: fixed;
@@ -311,6 +312,77 @@ const CloseConfirmation = styled.div`
   }
 `;
 
+const TransactionFlow = styled.div`
+  padding: 1rem;
+  background: ${props => props.status === 'confirmed' ? 
+    'rgba(76, 175, 80, 0.1)' : 
+    props.status === 'awaiting_seller' ?
+    'rgba(33, 150, 243, 0.1)' :
+    'rgba(255, 152, 0, 0.1)'
+  };
+  border: 1px solid ${props => props.status === 'confirmed' ?
+    'rgba(76, 175, 80, 0.3)' :
+    props.status === 'awaiting_seller' ?
+    'rgba(33, 150, 243, 0.3)' :
+    'rgba(255, 152, 0, 0.3)'
+  };
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    color: ${props => props.status === 'confirmed' ?
+      '#4CAF50' :
+      props.status === 'awaiting_seller' ?
+      '#2196F3' :
+      '#FF9800'
+    };
+    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
+  }
+  
+  .status-message {
+    margin-bottom: 1rem;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+`;
+
+const StatusButton = styled.button`
+  padding: 0.75rem 1.5rem;
+  background: ${props => props.primary ? 
+    props.theme?.colors?.accent || '#800000' : 
+    'rgba(255, 255, 255, 0.05)'
+  };
+  color: ${props => props.primary ? 
+    'white' : 
+    props.theme?.colors?.text || 'white'
+  };
+  border: 1px solid ${props => props.primary ? 
+    'transparent' : 
+    props.theme?.colors?.accent || '#800000'
+  };
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  
+  &:hover {
+    transform: translateY(-2px);
+    background: ${props => props.primary ? 
+      props.theme?.colors?.primary || '#600000' : 
+      'rgba(255, 255, 255, 0.1)'
+    };
+  }
+`;
+
 const PaymentForm = styled.div`
   margin: 1rem;
   padding: 1rem;
@@ -381,6 +453,10 @@ const VerificationCodeForm = styled.div`
 // The actual OrderChat component
 const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
   const stripe = useStripe();
+  const [showVerificationCode, setShowVerificationCode] = useState(false);
+  const [transaction, setTransaction] = useState(null);
+  
+  const [atLocation, setAtLocation] = useState(false);
   const elements = useElements();
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -411,6 +487,54 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
       ]);
     }
   }, [isOpen, item, messages.length]);
+
+  useEffect(() => {
+    // If the transaction status changes to confirmed, show the location
+    if (status === 'confirmed' && transaction?.meetupDetails) {
+      setMessages(prev => [
+        ...prev,
+        {
+          text: 'Pickup location:',
+          sender: 'system',
+          timestamp: new Date(),
+          type: 'text'
+        },
+        {
+          location: transaction.meetupDetails,
+          sender: 'seller',
+          timestamp: new Date(),
+          type: 'location'
+        }
+      ]);
+    }
+  }, [status, transaction]);
+
+  // Add a handler for arrival
+const handleArrivalAtLocation = async () => {
+  setAtLocation(true);
+  
+  // Add a message to the chat
+  setMessages(prev => [
+    ...prev,
+    {
+      text: "I've arrived at the pickup location",
+      sender: 'user',
+      timestamp: new Date(),
+      type: 'text'
+    },
+    {
+      text: "Great! Show the seller your verification code to complete the transaction.",
+      sender: 'system',
+      senderName: 'System',
+      timestamp: new Date(),
+      type: 'system',
+      messageClass: 'status-message'
+    }
+  ]);
+  
+  // Show the verification code
+  setShowVerificationCode(true);
+};
   
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return;
@@ -657,6 +781,20 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
               </VerificationCodeForm>
             );
           }
+
+          // Add this new block for location messages
+          if (msg.type === 'location') {
+            return (
+              <Message 
+                key={index} 
+                sent={msg.sender === 'user'}
+                theme={theme}
+              >
+                <PickupLocationMap location={msg.location} />
+                <div className="time">{formatTime(msg.timestamp)}</div>
+              </Message>
+            );
+          }
           
           return (
             <Message 
@@ -720,6 +858,59 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
             {loading ? 'Processing...' : `Pay $${parseFloat(item.price).toFixed(2)}`}
           </ActionButton>
         </PaymentForm>
+      )}
+
+      {status === 'awaiting_seller' && (
+        <TransactionFlow status={status} theme={theme}>
+          <h3>
+            <Clock size={18} />
+            Awaiting Seller
+          </h3>
+          <div className="status-message">
+            Your order has been placed and payment secured. Waiting for the seller to accept your order.
+          </div>
+        </TransactionFlow>
+      )}
+      
+      {status === 'confirmed' && !atLocation && (
+        <TransactionFlow status={status} theme={theme}>
+          <h3>
+            <Check size={18} />
+            Order Confirmed
+          </h3>
+          <div className="status-message">
+            The seller has accepted your order. Please proceed to the pickup location when ready.
+          </div>
+          <div className="action-buttons">
+            <StatusButton primary onClick={handleArrivalAtLocation} theme={theme}>
+              <Navigation size={16} />
+              I've Arrived at Pickup Location
+            </StatusButton>
+          </div>
+        </TransactionFlow>
+      )}
+      
+      {status === 'confirmed' && atLocation && showVerificationCode && (
+        <VerificationCodeForm theme={theme}>
+          <h4>Verification Code</h4>
+          <p>Show this code to the seller to complete your transaction:</p>
+          <div className="code">{transactionCode}</div>
+          <div style={{ 
+            marginTop: '1rem',
+            textAlign: 'center' 
+          }}>
+            <img 
+              src={`https://api.qrserver.com/v1/create-qr-code/?data=${transactionCode}&size=150x150`} 
+              alt="QR Code"
+              style={{
+                width: '150px',
+                height: '150px',
+                margin: '0 auto'
+              }}
+            />
+          </div>
+          <p>Keep this code private until the pickup is complete.</p>
+        </VerificationCodeForm>
       )}
       
       {(status === 'awaiting_seller' || status === 'confirmed') && (

@@ -14,6 +14,31 @@ import {
   increment 
 } from 'firebase/firestore';
 
+
+// Helper functions for transaction messages
+function getTransactionBuyerMessage(status) {
+  switch (status) {
+    case 'pending':
+      return 'Your payment is pending. Complete payment to proceed.';
+    case 'awaiting_seller':
+      return 'Waiting for the seller to accept your order.';
+    case 'confirmed':
+      return 'Order confirmed! Coordinate with the seller for pickup.';
+    default:
+      return `Order status: ${status}`;
+  }
+}
+
+function getTransactionSellerMessage(status) {
+  switch (status) {
+    case 'awaiting_seller':
+      return 'New order waiting for your acceptance.';
+    case 'confirmed':
+      return 'Order confirmed. Coordinate with buyer for pickup.';
+    default:
+      return `Order status: ${status}`;
+  }
+}
 // Changed to a regular class rather than static methods
 class NotificationService {
   static async getNotifications(userId) {
@@ -208,6 +233,103 @@ class NotificationService {
       };
     }
   }
+
+  // src/services/NotificationService.js
+// Add this new method to NotificationService:
+
+static setupNotificationsListener(userId, callback) {
+  if (!userId) return () => {};
+  
+  // Listen for chats
+  const chatsRef = collection(db, 'chats');
+  const chatsQuery = query(
+    chatsRef,
+    where('participants', 'array-contains', userId),
+    orderBy('lastMessageTime', 'desc')
+  );
+  
+  // Listen for transactions
+  const buyerQuery = query(
+    collection(db, 'transactions'),
+    where('buyerId', '==', userId),
+    where('status', 'in', ['pending', 'awaiting_seller', 'confirmed']),
+    orderBy('updatedAt', 'desc')
+  );
+  
+  const sellerQuery = query(
+    collection(db, 'transactions'),
+    where('sellerId', '==', userId),
+    where('status', 'in', ['awaiting_seller', 'confirmed']),
+    orderBy('updatedAt', 'desc')
+  );
+  
+  // Create merged listener
+  const unsubChats = onSnapshot(chatsQuery, async (chatSnapshot) => {
+    const transactionSnapshots = await Promise.all([
+      getDocs(buyerQuery),
+      getDocs(sellerQuery)
+    ]);
+    
+    // Process all notifications
+    const notifications = [];
+    
+    // Process chat notifications
+    chatSnapshot.forEach(doc => {
+      const chat = doc.data();
+      const unreadCount = chat.unreadCount?.[userId] || 0;
+      
+      if (unreadCount > 0) {
+        notifications.push({
+          id: doc.id,
+          type: 'message',
+          title: `New message${unreadCount > 1 ? 's' : ''}`,
+          message: `You have ${unreadCount} unread message${unreadCount > 1 ? 's' : ''} related to "${chat.itemName || 'a conversation'}"`,
+          timestamp: chat.lastMessageTime || new Date(),
+          unread: true,
+          count: unreadCount,
+          itemName: chat.itemName,
+          itemImage: chat.itemImage
+        });
+      }
+    });
+    
+    // Process transaction notifications
+    transactionSnapshots.forEach(snapshot => {
+      snapshot.forEach(doc => {
+        const transaction = doc.data();
+        const isBuyer = transaction.buyerId === userId;
+        
+        notifications.push({
+          id: doc.id,
+          type: 'transaction',
+          title: isBuyer ? 
+            `Your order for ${transaction.itemName}` : 
+            `New order: ${transaction.itemName}`,
+          message: isBuyer ?
+            getTransactionBuyerMessage(transaction.status) :
+            getTransactionSellerMessage(transaction.status),
+          timestamp: transaction.updatedAt || transaction.createdAt || new Date(),
+          unread: true,
+          status: transaction.status,
+          role: isBuyer ? 'buyer' : 'seller',
+          itemName: transaction.itemName,
+          itemImage: transaction.itemImage
+        });
+      });
+    });
+    
+    // Sort by timestamp
+    notifications.sort((a, b) => 
+      (b.timestamp?.toDate?.() || b.timestamp) - 
+      (a.timestamp?.toDate?.() || a.timestamp)
+    );
+    
+    callback(notifications);
+  });
+  
+  return unsubChats;
+}
+
   
   static getTransactionStatusMessage(status, role) {
     const messages = {
@@ -256,6 +378,8 @@ class NotificationService {
     
     return unsubscribe;
   }
+
+  
 }
 
 // Export properly - use default export

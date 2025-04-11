@@ -14,10 +14,12 @@ import {
   AlertTriangle,
   ThumbsUp,
   ThumbsDown,
+  ShoppingCart, Package,
   Upload
 } from 'lucide-react';
 import { TransactionService } from '../../services/TransactionService';
 import { auth, db, storage } from '../../firebase/config';
+import BarcodeScanner from '../Transaction/BarcodeScanner';
 import { 
     collection, 
     addDoc, 
@@ -497,6 +499,22 @@ const VerificationCheck = styled.div`
         border-color: ${props => props.theme?.colors?.accent || '#800000'};
       }
     }
+    
+    button {
+      padding: 0.75rem;
+      background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+      color: ${props => props.theme?.colors?.accent || '#800000'};
+      border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      &:hover {
+        background: ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+      }
+    }
   }
   
   .error-message {
@@ -506,11 +524,12 @@ const VerificationCheck = styled.div`
   }
 `;
 
+
 // The actual SellerOrderChat component
 const SellerOrderChat = ({ isOpen, onClose, transaction, theme }) => {
   const [messages, setMessages] = useState([]);
+  const [showScanner, setShowScanner] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
-  const [showMeetupForm, setShowMeetupForm] = useState(false);
   const [showCodeVerification, setShowCodeVerification] = useState(false);
   const [meetupAddress, setMeetupAddress] = useState('');
   const [meetupDetails, setMeetupDetails] = useState('');
@@ -550,6 +569,42 @@ const SellerOrderChat = ({ isOpen, onClose, transaction, theme }) => {
     
     return () => unsubscribe();
   }, [transaction?.id]);
+
+  const handleScanBarcode = (code) => {
+    setVerificationCode(code);
+    setShowScanner(false);
+    
+    // Verify the code
+    handleVerifyCode();
+  };
+  
+  // Update in src/components/Chat/SellerOrderChat.js
+
+// Add a method to handle when the buyer arrives
+const handleBuyerArrival = async () => {
+  try {
+    // Add a system message to the chat
+    await addDoc(collection(db, 'chats', transaction.id, 'messages'), {
+      text: 'Buyer has arrived at the pickup location. Please verify their code to complete the transaction.',
+      sender: 'system',
+      senderName: 'System',
+      timestamp: serverTimestamp(),
+      type: 'system',
+      messageClass: 'alert-message'
+    });
+    
+    // Update the transaction
+    await updateDoc(doc(db, 'transactions', transaction.id), {
+      buyerArrived: true,
+      updatedAt: serverTimestamp()
+    });
+    
+    // Show the code verification form
+    setShowCodeVerification(true);
+  } catch (error) {
+    console.error('Error handling buyer arrival:', error);
+  }
+};
   
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !transaction?.id) return;
@@ -592,7 +647,6 @@ const SellerOrderChat = ({ isOpen, onClose, transaction, theme }) => {
         lastMessageTime: serverTimestamp()
       });
       
-      setShowMeetupForm(true);
     } catch (error) {
       console.error('Error accepting order:', error);
     } finally {
@@ -626,28 +680,6 @@ const SellerOrderChat = ({ isOpen, onClose, transaction, theme }) => {
       onClose();
     } catch (error) {
       console.error('Error rejecting order:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handleSetMeetup = async () => {
-    try {
-      setLoading(true);
-      
-      // Create meetup location object
-      const meetupLocation = {
-        address: meetupAddress,
-        details: meetupDetails,
-        time: meetupTime ? new Date(meetupTime).toISOString() : new Date().toISOString(),
-        timestamp: new Date()
-      };
-      
-      await TransactionService.setMeetupDetails(transaction.id, meetupLocation);
-      
-      setShowMeetupForm(false);
-    } catch (error) {
-      console.error('Error setting meetup:', error);
     } finally {
       setLoading(false);
     }
@@ -714,6 +746,138 @@ const SellerOrderChat = ({ isOpen, onClose, transaction, theme }) => {
     return new Date(timestamp).toLocaleDateString();
   };
   
+  // Update in src/components/Chat/SellerOrderChat.js
+// Add within the ActionSection:
+
+const renderTransactionPanel = () => {
+  switch(transaction?.status) {
+    case 'awaiting_seller':
+      return (
+        <div style={{
+          padding: '1.5rem',
+          background: 'rgba(33, 150, 243, 0.1)',
+          borderRadius: '12px',
+          marginBottom: '1rem',
+          border: '1px solid rgba(33, 150, 243, 0.3)'
+        }}>
+          <h3 style={{ 
+            marginBottom: '1rem',
+            color: '#2196F3',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <ShoppingCart size={18} />
+            New Order Request
+          </h3>
+          
+          <div style={{ marginBottom: '0.5rem' }}>
+            <strong>{transaction.buyerName}</strong> wants to purchase:
+          </div>
+          
+          <div style={{
+            display: 'flex',
+            gap: '1rem',
+            background: 'rgba(0, 0, 0, 0.2)',
+            padding: '1rem',
+            borderRadius: '8px',
+            marginBottom: '1rem'
+          }}>
+            <div style={{ 
+              width: '50px', 
+              height: '50px',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              flexShrink: 0
+            }}>
+              {transaction.itemImage ? (
+                <img 
+                  src={transaction.itemImage} 
+                  alt={transaction.itemName} 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <div style={{ 
+                  width: '100%', 
+                  height: '100%', 
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Package size={20} opacity={0.6} />
+                </div>
+              )}
+            </div>
+            
+            <div>
+              <div style={{ fontWeight: 'bold' }}>{transaction.itemName}</div>
+              <div style={{ 
+                color: theme?.colors?.accent || '#800000',
+                fontWeight: 'bold'
+              }}>
+                ${parseFloat(transaction.price).toFixed(2)}
+              </div>
+            </div>
+          </div>
+          
+          <div style={{ marginBottom: '1.5rem' }}>
+            What would you like to do with this order?
+          </div>
+          
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <ActionButton variant="deny" onClick={handleRejectOrder} disabled={loading}>
+              <ThumbsDown size={18} />
+              Decline Order
+            </ActionButton>
+            <ActionButton variant="accept" onClick={handleAcceptOrder} disabled={loading}>
+              <ThumbsUp size={18} />
+              Accept Order
+            </ActionButton>
+          </div>
+        </div>
+      );
+    
+    case 'confirmed':
+      return (
+        <div style={{ 
+          marginBottom: '1rem',
+          padding: '1rem',
+          background: 'rgba(76, 175, 80, 0.1)',
+          borderRadius: '8px',
+          border: '1px solid rgba(76, 175, 80, 0.3)'
+        }}>
+          <p>You've accepted this order. When the buyer arrives, verify their code to complete the transaction.</p>
+          
+          {transaction.buyerAtLocation && (
+            <button 
+              onClick={() => setShowCodeVerification(true)}
+              style={{
+                background: theme?.colors?.accent || '#800000',
+                color: 'white',
+                border: 'none',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                marginTop: '0.5rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <Check size={16} />
+              Verify Code & Complete Sale
+            </button>
+          )}
+        </div>
+      );
+      
+    default:
+      return null;
+  }
+};
+
+// Then add this right before the renderActionSection:
   // Show appropriate UI based on transaction status
   const renderActionSection = () => {
     if (!transaction) return null;
@@ -733,12 +897,12 @@ const SellerOrderChat = ({ isOpen, onClose, transaction, theme }) => {
       );
     }
     
-    if (transaction.status === 'confirmed') {
+    if (transaction.status === 'confirmed' && transaction.buyerAtLocation) {
       return (
         <ActionSection>
           <ActionButton onClick={() => setShowCodeVerification(true)} disabled={loading}>
             <DollarSign size={18} />
-            Complete Sale
+            Verify Code & Complete Sale
           </ActionButton>
         </ActionSection>
       );
@@ -913,50 +1077,7 @@ const SellerOrderChat = ({ isOpen, onClose, transaction, theme }) => {
         })}
         <div ref={messagesEndRef} />
       </ChatMessages>
-      
-      {showMeetupForm && (
-        <MeetupForm theme={theme}>
-          <h4>Set Meetup Details</h4>
-          <div className="form-group">
-            <label>Meetup Location</label>
-            <input 
-              type="text"
-              placeholder="Enter address"
-              value={meetupAddress}
-              onChange={(e) => setMeetupAddress(e.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label>Additional Details</label>
-            <textarea
-              placeholder="Any specific instructions for the meetup"
-              value={meetupDetails}
-              onChange={(e) => setMeetupDetails(e.target.value)}
-            ></textarea>
-          </div>
-          <div className="form-group">
-            <label>Meetup Time</label>
-            <input 
-              type="datetime-local"
-              value={meetupTime}
-              onChange={(e) => setMeetupTime(e.target.value)}
-            />
-          </div>
-          <div className="buttons">
-            <ActionButton onClick={() => setShowMeetupForm(false)} variant="deny">
-              Cancel
-            </ActionButton>
-            <ActionButton 
-              onClick={handleSetMeetup} 
-              disabled={!meetupAddress || loading}
-            >
-              <MapPin size={18} />
-              Set Meetup
-            </ActionButton>
-          </div>
-        </MeetupForm>
-      )}
-      
+                  
       {showCodeVerification && (
         <VerificationCheck theme={theme}>
           <h4>
@@ -972,6 +1093,9 @@ const SellerOrderChat = ({ isOpen, onClose, transaction, theme }) => {
               onChange={(e) => setVerificationCode(e.target.value.toUpperCase())}
               maxLength={11}
             />
+            <button onClick={() => setShowScanner(true)}>
+              <Camera size={20} />
+            </button>
           </div>
           {verificationError && (
             <div className="error-message">{verificationError}</div>
@@ -990,8 +1114,32 @@ const SellerOrderChat = ({ isOpen, onClose, transaction, theme }) => {
             </ActionButton>
           </div>
         </VerificationCheck>
+      )}      
+
+      // Add the barcode scanner
+      {showScanner && (
+        <div style={{ 
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          zIndex: 2000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <BarcodeScanner 
+            onScan={handleScanBarcode}
+            onCancel={() => setShowScanner(false)}
+          />
+        </div>
+
       )}
       
+      {renderTransactionPanel()}
       {renderActionSection()}
       
       {transaction.status === 'confirmed' && (

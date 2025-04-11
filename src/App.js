@@ -19,7 +19,6 @@ import ShopDashboard from './pages/shop/ShopDashboard';
 import ProfilePage from './pages/shop/ProfilePage.js';
 import NotificationsPage from './pages/shop/NotificationsPage.js';
 import ShopPublicView from './pages/shop/shopPublicView.js';
-import TransactionsPage from './pages/transactions/Transactions';
 
 // Update in src/App.js to add the notification routes
 import MessagesPage from './pages/shop/MessagesPage';
@@ -43,12 +42,7 @@ const AppRoutes = () => {
         <Route path="/shop/create/template" element={<LiveShopCreation />} />
         <Route path="/shop/:userId" element={<ShopPage />} />
         <Route path="/shop/:shopId/view" element={<ShopPublicView />} />
-        <Route path="/transactions" element={
-            <ProtectedRoute>
-              <TransactionsPage />
-            </ProtectedRoute>
-          } />
-
+        
         {/* Messages Page */}
         <Route path="/messages" element={
           <ProtectedRoute>
