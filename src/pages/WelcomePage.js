@@ -14,6 +14,8 @@ import { db } from '../firebase/config';
 import { WELCOME_STYLES } from '../theme/welcomeStyles';
 import { getShopData } from '../firebase/firebaseService';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocation } from '../contexts/LocationContext';
+import LocationDialog from '../components/LocationDialog';
 
 const ChatOverlay = styled.div`
   position: fixed;
@@ -734,6 +736,52 @@ const ZoomContainer = styled.div`
   transition: all 0.3s ease;
 `;
 
+// Add to styled components section in WelcomePage.js
+const LocationIndicator = styled.div`
+  position: relative;
+  top: 90px; // Position it below the header
+  left: 2rem;
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+  backdrop-filter: blur(4px);
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  font-size: 0.9rem;
+  z-index: 10;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  max-width: 300px;
+  
+  &:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: translateY(-2px);
+  }
+  
+  .location-icon {
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    margin-right: 0.75rem;
+  }
+  
+  .location-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .updating {
+    margin-left: 0.5rem;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(128, 0, 0, 0.2);
+    border-radius: 50%;
+    border-top-color: ${props => props.theme?.colors?.accent || '#800000'};
+    animation: spin 1s linear infinite;
+  }
+`;
+
 
 const WelcomePage = () => {
   const navigate = useNavigate(); // New
@@ -747,7 +795,6 @@ const WelcomePage = () => {
   };
   const [nearbyItems, setNearbyItems] = useState([]);
   const [featuredMedia, setFeaturedMedia] = useState([]);
-  const [userLocation, setUserLocation] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchAddress, setSearchAddress] = useState('');
   const [searching, setSearching] = useState(false);
@@ -771,9 +818,63 @@ const WelcomePage = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedChatItem, setSelectedChatItem] = useState(null);
   // New state for categorized items
-const [clothingItems, setClothingItems] = useState([]);
-const [electronicsItems, setElectronicsItems] = useState([]);
-const [collectiblesItems, setCollectiblesItems] = useState([]);
+  const [clothingItems, setClothingItems] = useState([]);
+  const [electronicsItems, setElectronicsItems] = useState([]);
+  const [collectiblesItems, setCollectiblesItems] = useState([]);
+  const { userLocation, locationPermission, requestLocation } = useLocation();
+  const [updatingLocation, setUpdatingLocation] = useState(false);
+
+  
+
+  useEffect(() => {
+    if (activeTab === 'nearby' && userLocation) {
+      console.log('Auto-searching nearby items with location:', userLocation);
+      fetchNearbyItems();
+      setHasSearched(true); // Important: set this to true so items display
+    }
+  }, [activeTab, userLocation]);
+
+  useEffect(() => {
+    // Request location when component mounts
+    if (locationPermission === 'pending') {
+      requestLocation();
+    }
+  }, []);
+  
+  // Handle location updates when userLocation changes
+  useEffect(() => {
+    if (userLocation) {
+      // If we have location and are on the nearby tab, fetch items
+      if (activeTab === 'nearby') {
+        fetchNearbyItems();
+        setHasSearched(true);
+      }
+      
+      // Update items with distance information on featured tab
+      if (activeTab === 'featured') {
+        loadCategorizedItems();
+      }
+      
+      // Finish updating indicator if it was in progress
+      setUpdatingLocation(false);
+    }
+  }, [userLocation, activeTab]);
+  
+  // Handle location indicator click
+  const handleLocationUpdate = () => {
+    setUpdatingLocation(true);
+    requestLocation();
+  };
+  
+  // Get human-readable location info
+  const getLocationDisplayText = () => {
+    if (!userLocation) {
+      return "Location: Not available";
+    }
+    
+    // Format coordinates for display
+    return `Location: ${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}`;
+  };
 
   // Add a function to load categorized items
   const loadCategorizedItems = async () => {
@@ -781,7 +882,34 @@ const [collectiblesItems, setCollectiblesItems] = useState([]);
       setLoading(true);
       setError(null);
 
-      const allItems = await getFeaturedItems(24); // Get more items to categorize
+      const allItems = await getFeaturedItems(24);
+      
+      // Calculate distances if user location is available
+      let itemsWithDistance = allItems;
+      if (userLocation) {
+        itemsWithDistance = allItems.map(item => {
+          if (item.coordinates && item.coordinates.lat && item.coordinates.lng) {
+            try {
+              const distanceInMeters = getDistance(
+                { latitude: userLocation.latitude, longitude: userLocation.longitude },
+                { latitude: item.coordinates.lat, longitude: item.coordinates.lng }
+              );
+              const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
+              
+              return {
+                ...item,
+                distance: distanceInMeters,
+                distanceInMiles,
+                formattedDistance: `${distanceInMiles} mi`
+              };
+            } catch (e) {
+              console.warn('Error calculating distance for item:', e);
+              return item;
+            }
+          }
+          return item;
+        });
+      }
 
       // In a real scenario, items would have a 'category' field
       // Here we're simulating by categorizing based on item names/descriptions
@@ -825,7 +953,7 @@ const [collectiblesItems, setCollectiblesItems] = useState([]);
       setClothingItems(clothing.slice(0, 8));
       setElectronicsItems(electronics.slice(0, 8));
       setCollectiblesItems(collectibles.slice(0, 8));
-      setFeaturedItems(allItems.slice(0, 8));
+      setFeaturedItems(itemsWithDistance.slice(0, 8));
       setTotalItems(allItems.length);
 
       setLoading(false);
@@ -981,59 +1109,16 @@ const handleInquireClick = () => {
   }, []);
 
     // Add location permission handling
-  const requestLocationPermission = () => {
-    setError(null);
-    
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          });
-          setShowLocationPrompt(false);
-          setLocationChecked(true);
-          fetchNearbyItems(position.coords);
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          // Handle specific error codes
-          switch (error.code) {
-            case 1: // PERMISSION_DENIED
-              setError(
-                <div>
-                  Location access was denied. To enable:
-                  <ol style={{ marginTop: '0.5rem', marginLeft: '1.5rem' }}>
-                    <li>Click the lock icon 🔒 in your browser's address bar</li>
-                    <li>Click "Site settings"</li>
-                    <li>Change location permission to "Allow"</li>
-                    <li>Refresh the page</li>
-                  </ol>
-                </div>
-              );
-              break;
-            case 2: // POSITION_UNAVAILABLE
-              setError('Could not detect your current location. Please try again.');
-              break;
-            case 3: // TIMEOUT
-              setError('Location request timed out. Please try again.');
-              break;
-            default:
-              setError('Unable to access your location. Please enable location services.');
-          }
-          setLocationChecked(true);
-        },
-        {
-          enableHighAccuracy: true,
-          maximumAge: 0,
-          timeout: 10000
-        }
-      );
-    } else {
-      setError('Geolocation is not supported by your browser.');
+    const requestLocationPermission = () => {
+      setError(null);
+      
+      // Use the requestLocation function from the LocationContext
+      requestLocation();
+      
+      // These state updates should still happen to track UI state
       setLocationChecked(true);
-    }
-  };
+      setShowLocationPrompt(false);
+    };
   
   // Update the useEffect for tab changes
   useEffect(() => {
@@ -1067,9 +1152,9 @@ const handleInquireClick = () => {
   }, [activeTab]);
 
   // Add nearby items fetching
-  const fetchNearbyItems = async (coordinates) => {
-    if (!coordinates || typeof coordinates.latitude !== 'number' || typeof coordinates.longitude !== 'number') {
-      setError('Invalid location coordinates');
+  const fetchNearbyItems = async () => {
+    if (!userLocation) {
+      setError('Location information is not available');
       setSearching(false);
       return;
     }
@@ -1088,7 +1173,7 @@ const handleInquireClick = () => {
           shopData.items
             .filter(item => !item.deleted)
             .forEach(item => {
-              // Get coordinates either from coordinates object or parse from address
+              // Get coordinates from item
               let itemCoords = item.coordinates;
               if (!itemCoords && item.address) {
                 const coordsMatch = item.address.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
@@ -1103,7 +1188,7 @@ const handleInquireClick = () => {
               if (itemCoords?.lat && itemCoords?.lng) {
                 try {
                   const distanceInMeters = getDistance(
-                    { latitude: coordinates.latitude, longitude: coordinates.longitude },
+                    { latitude: userLocation.latitude, longitude: userLocation.longitude },
                     { latitude: itemCoords.lat, longitude: itemCoords.lng }
                   );
   
@@ -1139,6 +1224,7 @@ const handleInquireClick = () => {
       });
   
       setNearbyItems(itemsInRadius);
+      setHasSearched(true);
       
       if (itemsInRadius.length === 0) {
         setError('No items found in your area');
@@ -1157,35 +1243,14 @@ const handleInquireClick = () => {
     setSearching(true);
     setError(null);
     
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const coordinates = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          };
-  
-          console.log('Got user coordinates:', coordinates);
-  
-          try {
-            await fetchNearbyItems(coordinates);
-            // Set address display for reference
-            setSearchAddress(`${coordinates.latitude.toFixed(4)}, ${coordinates.longitude.toFixed(4)}`);
-          } catch (error) {
-            console.error('Error finding nearby items:', error);
-            setError('Error finding nearby items. Please try again.');
-          }
-          setSearching(false);
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          setError('Unable to access your location. Please enable location services.');
-          setSearching(false);
-        }
-      );
+    if (userLocation) {
+      // We already have location from context, use it
+      fetchNearbyItems();
+      setHasSearched(true);
     } else {
-      setError('Geolocation is not supported by your browser.');
-      setSearching(false);
+      // Request location
+      requestLocation();
+      // We'll rely on the useEffect to trigger fetchNearbyItems when location is available
     }
   };
   
@@ -1350,6 +1415,18 @@ React.useEffect(() => {
           </ShopNameBadge>
         )}
       </Header>
+
+      {/* Add Location Indicator */}
+      <LocationIndicator 
+        onClick={handleLocationUpdate}
+        theme={currentStyle}
+      >
+        <Navigation size={18} className="location-icon" />
+        <span className="location-text">
+          {getLocationDisplayText()}
+        </span>
+        {updatingLocation && <div className="updating" />}
+      </LocationIndicator>
 
       <StyleIndicator theme={currentStyle}>
       <PinButton 

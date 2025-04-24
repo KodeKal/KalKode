@@ -8,6 +8,8 @@ import { db } from '../../firebase/config';
 import { DEFAULT_THEME } from '../../theme/config/themes';
 import BuyDialog from '../../components/Transaction/BuyDialog';
 import OrderChat from '../../components/Chat/OrderChat';
+import { useLocation } from '../../contexts/LocationContext';
+import { getDistance } from 'geolib';
 import { 
   ShoppingCart, 
   Heart, 
@@ -417,6 +419,7 @@ const ShopPublicView = () => {
   const [currentImageIndices, setCurrentImageIndices] = useState({});
   const [chatOpen, setChatOpen] = useState(false);
 const [selectedChatItem, setSelectedChatItem] = useState(null);
+const { userLocation } = useLocation();
 
   useEffect(() => {
     const fetchShopData = async () => {
@@ -434,6 +437,32 @@ const [selectedChatItem, setSelectedChatItem] = useState(null);
         }
         
         const shop = shopSnap.data();
+
+        if (userLocation && shop.items && Array.isArray(shop.items)) {
+          shop.items = shop.items.map(item => {
+            if (item.coordinates && item.coordinates.lat && item.coordinates.lng) {
+              try {
+                const distanceInMeters = getDistance(
+                  { latitude: userLocation.latitude, longitude: userLocation.longitude },
+                  { latitude: item.coordinates.lat, longitude: item.coordinates.lng }
+                );
+                const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
+                
+                return {
+                  ...item,
+                  distance: distanceInMeters,
+                  distanceInMiles,
+                  formattedDistance: `${distanceInMiles} mi`
+                };
+              } catch (e) {
+                console.warn('Error calculating distance for item:', e);
+                return item;
+              }
+            }
+            return item;
+          });
+        }
+        
         setShopData(shop);
         
         // Initialize current image indices for items
@@ -456,7 +485,7 @@ const [selectedChatItem, setSelectedChatItem] = useState(null);
     if (shopId) {
       fetchShopData();
     }
-  }, [shopId]);
+    }, [shopId, userLocation]);
 
   const handleNextImage = (e, itemId) => {
     e.stopPropagation();
@@ -675,12 +704,12 @@ const [selectedChatItem, setSelectedChatItem] = useState(null);
                             </div>
 
                           
-                          {item.address && (
-                            <ItemLocation>
-                              <Navigation size={14} />
-                              {item.address}
-                            </ItemLocation>
-                          )}
+                            {item.formattedDistance && (
+                              <ItemLocation>
+                                <Navigation size={14} />
+                                {item.formattedDistance} from you
+                              </ItemLocation>
+                            )}
                           
                           <ActionButtons>
                             <ActionButton className="secondary">

@@ -86,6 +86,15 @@ const ItemInfo = styled.div`
     opacity: 0.7;
     margin-top: auto;
   }
+
+  .distance {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+  }
 `;
 
 const ImageSection = styled.div`
@@ -357,8 +366,9 @@ const Overlay = styled.div`
             </>
           )}
           
-          {showDistance && item.distance && (
-            <Distance theme={itemTheme}>{item.distance}</Distance>
+          {/* Show distance badge, even if not in the Nearby tab */}
+          {item.formattedDistance && (
+            <Distance theme={itemTheme}>{item.formattedDistance}</Distance>
           )}
         </ImageSection>
 
@@ -406,11 +416,20 @@ const Overlay = styled.div`
               </span>
             </div>
           )}
-          {item.location && (
-            <LocationText theme={itemTheme}>
+        
+          {/* Show distance if available */}
+          {item.formattedDistance && (
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem',
+              marginTop: '0.5rem',
+              fontSize: '0.85rem',
+              color: itemTheme?.colors?.accent || '#800000'
+            }}>
               <Navigation size={14} />
-              {item.location}
-            </LocationText>
+              {item.formattedDistance} away
+            </div>
           )}
         </ItemInfo>
       </ItemCard>

@@ -19,6 +19,7 @@ import ShopDashboard from './pages/shop/ShopDashboard';
 import ProfilePage from './pages/shop/ProfilePage.js';
 import NotificationsPage from './pages/shop/NotificationsPage.js';
 import ShopPublicView from './pages/shop/shopPublicView.js';
+import { LocationProvider } from './contexts/LocationContext';
 
 // Update in src/App.js to add the notification routes
 import MessagesPage from './pages/shop/MessagesPage';
@@ -82,14 +83,16 @@ const AppRoutes = () => {
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <TempStoreProvider>
-          <GlobalStyles />
-          <AppRoutes />
-        </TempStoreProvider>
-      </AuthProvider>
-    </Router>
+    <LocationProvider>
+      <Router>
+        <AuthProvider>
+          <TempStoreProvider>
+            <GlobalStyles />
+            <AppRoutes />
+          </TempStoreProvider>
+        </AuthProvider>
+      </Router>
+    </LocationProvider>
   );
 }
 
