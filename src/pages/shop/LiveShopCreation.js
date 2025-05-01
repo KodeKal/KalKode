@@ -624,7 +624,7 @@ const LiveShopCreation = () => {
           <EditableText
             value={shopData.name}
             onChange={(value) => handleShopDataChange('name', value)}
-            placeholder="Shop Name"
+            placeholder="Enter Your Shop Name"
             style={{
               fontSize: `${shopNameFontSize}rem`,
               maxWidth: '500px',

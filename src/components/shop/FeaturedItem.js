@@ -303,138 +303,138 @@ const Overlay = styled.div`
 `;
 
 // Update the FeaturedItem component
-  const FeaturedItem = ({ item, showDistance, theme, onItemClick }) => {
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const navigate = useNavigate();
-    const itemTheme = theme || item.shopTheme || {};
-  
-    const handleNextImage = (e) => {
-      e.stopPropagation();
-      const validImages = item.images?.filter(Boolean) || [];
-      if (validImages.length > 0) {
-        setCurrentImageIndex((prev) => (prev + 1) % validImages.length);
-      }
-    };
-    
-    const handlePrevImage = (e) => {
-      e.stopPropagation();
-      const validImages = item.images?.filter(Boolean) || [];
-      if (validImages.length > 0) {
-        setCurrentImageIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
-      }
-    };
-    
-    const getDisplayImage = () => {
-      const validImages = item.images?.filter(Boolean) || [];
-      if (validImages.length > 0) {
-        return validImages[currentImageIndex % validImages.length];
-      }
-      return '/placeholder-image.jpg';
-    };
-  
-    const formatPrice = (price) => {
-      try {
-        return parseFloat(price).toFixed(2);
-      } catch {
-        return '0.00';
-      }
-    };
-  
-    const handleClick = (e) => {
-      e.stopPropagation();
-      // Instead of handling zoom here, we'll pass the item up to the parent
-      if (onItemClick) onItemClick(item);
-    };
-  
-    return (
-      <ItemCard 
-        onClick={handleClick}
-        theme={itemTheme}
-        className={`item-card-${item.id}`}
-      >
-        <ImageSection theme={itemTheme}>
-          <img src={getDisplayImage()} alt={item.name} />
-          
-          {(item.images?.filter(Boolean).length > 1) && (
-            <>
-              <button className="carousel-arrow left" onClick={handlePrevImage}>
-                <ChevronLeft size={16} />
-              </button>
-              <button className="carousel-arrow right" onClick={handleNextImage}>
-                <ChevronRight size={16} />
-              </button>
-            </>
-          )}
-          
-          {/* Show distance badge, even if not in the Nearby tab */}
-          {item.formattedDistance && (
-            <Distance theme={itemTheme}>{item.formattedDistance}</Distance>
-          )}
-        </ImageSection>
+// And finally, make sure to update the FeaturedItem component to consistently display distance:
+const FeaturedItem = ({ item, showDistance, theme, onItemClick }) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const navigate = useNavigate();
+  const itemTheme = theme || item.shopTheme || {};
 
-        <ItemInfo theme={itemTheme}>
-          <h3>{item.name}</h3>
-          <div className="price">${formatPrice(item.price)}</div>
-          <div 
-            className="shop-name"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/shop/${item.shopId}/view`);
-            }}
-            style={{ 
-              cursor: 'pointer',
-              textDecoration: 'none',
-              transition: 'color 0.2s ease',
-            }}
-            onMouseOver={(e) => e.currentTarget.style.color = itemTheme?.colors?.accent || '#800000'}
-            onMouseOut={(e) => e.currentTarget.style.opacity = '0.7'}
-          >
-            {item.shopName || 'Unknown Shop'}
-          </div>
-          {item.quantity !== undefined && (
-            <div className="item-availability">
-              <span 
-                className="status-indicator" 
-                style={{ 
-                  display: 'inline-block',
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: parseInt(item.quantity) > 0 ? '#4CAF50' : '#FF5252',
-                  marginRight: '6px'
-                }}
-              ></span>
-              <span 
-                className="status-text"
-                style={{ 
-                  fontSize: '0.85rem',
-                  fontWeight: '500',
-                  color: parseInt(item.quantity) > 0 ? '#4CAF50' : '#FF5252' 
-                }}
-              >
-                {parseInt(item.quantity) > 0 ? 'In Stock' : 'Out of Stock'}
-              </span>
-            </div>
-          )}
+  const handleNextImage = (e) => {
+    e.stopPropagation();
+    const validImages = item.images?.filter(Boolean) || [];
+    if (validImages.length > 0) {
+      setCurrentImageIndex((prev) => (prev + 1) % validImages.length);
+    }
+  };
+  
+  const handlePrevImage = (e) => {
+    e.stopPropagation();
+    const validImages = item.images?.filter(Boolean) || [];
+    if (validImages.length > 0) {
+      setCurrentImageIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
+    }
+  };
+  
+  const getDisplayImage = () => {
+    const validImages = item.images?.filter(Boolean) || [];
+    if (validImages.length > 0) {
+      return validImages[currentImageIndex % validImages.length];
+    }
+    return '/placeholder-image.jpg';
+  };
+
+  const formatPrice = (price) => {
+    try {
+      return parseFloat(price).toFixed(2);
+    } catch {
+      return '0.00';
+    }
+  };
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    // Instead of handling zoom here, we'll pass the item up to the parent
+    if (onItemClick) onItemClick(item);
+  };
+
+  return (
+    <ItemCard 
+      onClick={handleClick}
+      theme={itemTheme}
+      className={`item-card-${item.id}`}
+    >
+      <ImageSection theme={itemTheme}>
+        <img src={getDisplayImage()} alt={item.name} />
         
-          {/* Show distance if available */}
-          {item.formattedDistance && (
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.5rem',
-              marginTop: '0.5rem',
-              fontSize: '0.85rem',
-              color: itemTheme?.colors?.accent || '#800000'
-            }}>
-              <Navigation size={14} />
-              {item.formattedDistance} away
-            </div>
-          )}
-        </ItemInfo>
-      </ItemCard>
+        {(item.images?.filter(Boolean).length > 1) && (
+          <>
+            <button className="carousel-arrow left" onClick={handlePrevImage}>
+              <ChevronLeft size={16} />
+            </button>
+            <button className="carousel-arrow right" onClick={handleNextImage}>
+              <ChevronRight size={16} />
+            </button>
+          </>
+        )}
+        
+        {/* Always show distance badge if available, regardless of tab */}
+        {item.formattedDistance && (
+          <Distance theme={itemTheme}>{item.formattedDistance}</Distance>
+        )}
+      </ImageSection>
+
+      <ItemInfo theme={itemTheme}>
+        <h3>{item.name}</h3>
+        <div className="price">${formatPrice(item.price)}</div>
+        <div 
+          className="shop-name"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/shop/${item.shopId}/view`);
+          }}
+          style={{ 
+            cursor: 'pointer',
+            textDecoration: 'none',
+            transition: 'color 0.2s ease',
+          }}
+          onMouseOver={(e) => e.currentTarget.style.color = itemTheme?.colors?.accent || '#800000'}
+          onMouseOut={(e) => e.currentTarget.style.opacity = '0.7'}
+        >
+          {item.shopName || 'Unknown Shop'}
+        </div>
+        {item.quantity !== undefined && (
+          <div className="item-availability">
+            <span 
+              className="status-indicator" 
+              style={{ 
+                display: 'inline-block',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: parseInt(item.quantity) > 0 ? '#4CAF50' : '#FF5252',
+                marginRight: '6px'
+              }}
+            ></span>
+            <span 
+              className="status-text"
+              style={{ 
+                fontSize: '0.85rem',
+                fontWeight: '500',
+                color: parseInt(item.quantity) > 0 ? '#4CAF50' : '#FF5252' 
+              }}
+            >
+              {parseInt(item.quantity) > 0 ? 'In Stock' : 'Out of Stock'}
+            </span>
+          </div>
+        )}
       
-);      
+        {/* Always show distance if available */}
+        {item.formattedDistance && (
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.5rem',
+            marginTop: '0.5rem',
+            fontSize: '0.85rem',
+            color: itemTheme?.colors?.accent || '#800000'
+          }}>
+            <Navigation size={14} />
+            {item.formattedDistance} away
+          </div>
+        )}
+      </ItemInfo>
+    </ItemCard>
+  );      
 };
 
 export default FeaturedItem;
