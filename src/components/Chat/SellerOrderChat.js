@@ -34,6 +34,91 @@ import {
   } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
+// Add these new styled components
+const PickupInstructionForm = styled.div`
+  margin: 1rem;
+  padding: 1rem;
+  background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+  border-radius: 12px;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+  
+  h4 {
+    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
+    margin: 0 0 1rem 0;
+    color: ${props => props.theme?.colors?.text || 'white'};
+    font-size: 1rem;
+  }
+  
+  .form-group {
+    margin-bottom: 1rem;
+    
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+    
+    input, textarea {
+      width: 100%;
+      padding: 0.75rem;
+      background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.2)'}90`};
+      border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
+      border-radius: 8px;
+      color: ${props => props.theme?.colors?.text || 'white'};
+      
+      &:focus {
+        outline: none;
+        border-color: ${props => props.theme?.colors?.accent || '#800000'};
+      }
+    }
+    
+    textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+  }
+  
+  .buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+`;
+
+const CompletionPrompt = styled.div`
+  margin: 1rem;
+  padding: 1rem;
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  text-align: center;
+  
+  h4 {
+    color: #4CAF50;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  
+  .completion-message {
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+  }
+  
+  .green-flag {
+    font-size: 2rem;
+    margin: 1rem 0;
+    animation: wave 1s ease-in-out infinite;
+  }
+  
+  @keyframes wave {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg); }
+    75% { transform: rotate(10deg); }
+  }
+`;
+
 const ChatDrawer = styled.div`
   position: fixed;
   top: 0;
@@ -540,11 +625,26 @@ const SellerOrderChat = ({ isOpen, onClose, transaction, theme }) => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Add these new state variables
+  const [showPickupForm, setShowPickupForm] = useState(false);
+  const [pickupAddress, setPickupAddress] = useState('');
+  const [pickupDetails, setPickupDetails] = useState('');
+  const [pickupTime, setPickupTime] = useState('');
+  const [showCompletion, setShowCompletion] = useState(false);
+  const [buyerETA, setBuyerETA] = useState('');
+  const [buyerArrived, setBuyerArrived] = useState(false);
   
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    if (showPickupForm && transaction?.itemAddress) {
+      setPickupAddress(transaction.itemAddress);
+    }
+  }, [showPickupForm, transaction?.itemAddress]);
   
   // Load chat messages
   useEffect(() => {
@@ -569,6 +669,86 @@ const SellerOrderChat = ({ isOpen, onClose, transaction, theme }) => {
     
     return () => unsubscribe();
   }, [transaction?.id]);
+
+  useEffect(() => {
+    if (showPickupForm && transaction) {
+      // Use itemAddress from transaction if available
+      if (transaction.itemAddress) {
+        setPickupAddress(transaction.itemAddress);
+      }
+    }
+  }, [showPickupForm, transaction]);
+
+  // Listen for buyer ETA and arrival messages
+  useEffect(() => {
+    if (!transaction?.id) return;
+
+    const q = query(
+      collection(db, 'chats', transaction.id, 'messages'),
+      orderBy('timestamp', 'asc')
+    );
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const loadedMessages = [];
+      querySnapshot.forEach((doc) => {
+        const message = {
+          id: doc.id,
+          ...doc.data(),
+          timestamp: doc.data().timestamp?.toDate() || new Date()
+        };
+
+        // Check for ETA messages
+        if (message.type === 'eta') {
+          setBuyerETA(message.eta);
+        }
+
+        // Check for arrival messages
+        if (message.type === 'arrival') {
+          setBuyerArrived(true);
+          // Show completion prompt after arrival
+          setTimeout(() => {
+            setShowCompletion(true);
+          }, 2000);
+        }
+
+        loadedMessages.push(message);
+      });
+      setMessages(loadedMessages);
+    });
+
+    return () => unsubscribe();
+  }, [transaction?.id]);
+
+  const handleCompleteTransaction = async () => {
+    try {
+      setLoading(true);
+
+      // Mark transaction as completed
+      await updateDoc(doc(db, 'transactions', transaction.id), {
+        status: 'completed',
+        completedAt: serverTimestamp(),
+        completedBy: 'seller'
+      });
+
+      // Send completion message
+      await addDoc(collection(db, 'chats', transaction.id, 'messages'), {
+        text: 'Transaction completed! Product handed over to buyer. Thank you for your business!',
+        sender: 'system',
+        senderName: 'System',
+        timestamp: serverTimestamp(),
+        type: 'system',
+        messageClass: 'success-message'
+      });
+
+      setShowCompletion(false);
+      onClose(); // Close the chat
+
+    } catch (error) {
+      console.error('Error completing transaction:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleScanBarcode = (code) => {
     setVerificationCode(code);
@@ -628,24 +808,12 @@ const handleBuyerArrival = async () => {
     try {
       setLoading(true);
       console.log('Accepting transaction:', transaction.id);
+      
+      // The acceptTransaction function now handles sending pickup instructions
       await TransactionService.acceptTransaction(transaction.id);
       
-      // Add a system message
-      await addDoc(collection(db, 'chats', transaction.id, 'messages'), {
-        text: 'Order accepted by seller. Please arrange for pickup.',
-        sender: 'system',
-        senderName: 'System',
-        timestamp: serverTimestamp(),
-        type: 'system',
-        messageClass: 'success-message'
-      });
-      
-      // Update unread count for buyer
-      await updateDoc(doc(db, 'chats', transaction.id), {
-        [`unreadCount.${transaction.buyerId}`]: increment(1),
-        lastMessage: 'Order accepted by seller',
-        lastMessageTime: serverTimestamp()
-      });
+      // No need to show pickup form or send additional messages
+      // The transaction service handles this now
       
     } catch (error) {
       console.error('Error accepting order:', error);
@@ -680,6 +848,72 @@ const handleBuyerArrival = async () => {
       onClose();
     } catch (error) {
       console.error('Error rejecting order:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePickupSubmit = async () => {
+    if (!pickupAddress.trim()) {
+      alert('Please provide a pickup address');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      const pickupInfo = {
+        address: pickupAddress,
+        details: pickupDetails || 'No additional details provided',
+        time: pickupTime || 'Flexible timing',
+        type: 'in_person',
+        coordinates: transaction.itemCoordinates || null // Include coordinates if available
+      };
+      
+      // Send detailed pickup instructions to buyer
+      const instructionText = `📍 PICKUP INSTRUCTIONS 📍
+  
+  📍 Address: ${pickupAddress}
+  
+  📋 Details: ${pickupDetails || 'Meet at the specified address'}
+  
+  ⏰ Available Time: ${pickupTime || 'Flexible - contact seller to arrange'}
+  
+  Please confirm your estimated arrival time once you're ready to pick up your item.`;
+  
+      await addDoc(collection(db, 'chats', transaction.id, 'messages'), {
+        text: instructionText,
+        sender: auth.currentUser.uid,
+        senderName: auth.currentUser.displayName || auth.currentUser.email,
+        timestamp: serverTimestamp(),
+        type: 'pickup-instructions',
+        pickupInfo: pickupInfo
+      });
+      
+      // Update transaction with pickup details
+      await updateDoc(doc(db, 'transactions', transaction.id), {
+        pickupDetails: pickupInfo,
+        status: 'pickup_confirmed',
+        updatedAt: serverTimestamp()
+      });
+      
+      setShowPickupForm(false);
+      
+      // Add system message requesting ETA
+      setTimeout(async () => {
+        await addDoc(collection(db, 'chats', transaction.id, 'messages'), {
+          text: '⏰ Please provide your estimated time of arrival when you\'re ready to pick up your item.',
+          sender: 'system',
+          senderName: 'System',
+          timestamp: serverTimestamp(),
+          type: 'system',
+          messageClass: 'status-message'
+        });
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error sending pickup instructions:', error);
+      alert('Failed to send pickup instructions. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -1137,6 +1371,117 @@ const renderTransactionPanel = () => {
           />
         </div>
 
+      )}
+
+      {/* Pickup Instruction Form */}
+      {/* Enhanced Pickup Instruction Form */}
+      {showPickupForm && (
+        <PickupInstructionForm theme={theme}>
+          <h4>
+            <MapPin size={18} />
+            Confirm Pickup Instructions
+          </h4>
+          <div className="form-group">
+            <label>Pickup Address *</label>
+            <input
+              type="text"
+              placeholder="123 Main St, City, State"
+              value={pickupAddress}
+              onChange={(e) => setPickupAddress(e.target.value)}
+              required
+            />
+            <small style={{ opacity: 0.7, fontSize: '0.8rem' }}>
+              {transaction?.itemAddress ? 'Auto-filled from item location' : 'Enter pickup address'}
+            </small>
+          </div>
+          <div className="form-group">
+            <label>Meeting Instructions</label>
+            <textarea
+              placeholder="e.g., Meet at the front door, look for red car, ring doorbell, etc."
+              value={pickupDetails}
+              onChange={(e) => setPickupDetails(e.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <label>Available Time Window</label>
+            <input
+              type="text"
+              placeholder="e.g., 2-5 PM today, Tomorrow morning, Flexible"
+              value={pickupTime}
+              onChange={(e) => setPickupTime(e.target.value)}
+            />
+          </div>
+          <div className="buttons">
+            <ActionButton onClick={() => setShowPickupForm(false)} variant="deny">
+              Cancel
+            </ActionButton>
+            <ActionButton 
+              onClick={handlePickupSubmit} 
+              disabled={!pickupAddress.trim() || loading}
+              variant="accept"
+            >
+              <Send size={18} />
+              {loading ? 'Sending...' : 'Send Pickup Instructions'}
+            </ActionButton>
+          </div>
+        </PickupInstructionForm>
+      )}
+
+      {/* Show buyer ETA if available */}
+      {buyerETA && (
+        <div style={{
+          margin: '1rem',
+          padding: '1rem',
+          background: 'rgba(33, 150, 243, 0.1)',
+          borderRadius: '12px',
+          border: '1px solid rgba(33, 150, 243, 0.3)'
+        }}>
+          <h4 style={{ color: '#2196F3', margin: '0 0 0.5rem 0' }}>
+            <Clock size={18} style={{ marginRight: '0.5rem' }} />
+            Buyer ETA
+          </h4>
+          <p>The buyer will arrive in: <strong>{buyerETA}</strong></p>
+        </div>
+      )}
+
+      {/* Show arrival notification */}
+      {buyerArrived && (
+        <div style={{
+          margin: '1rem',
+          padding: '1rem',
+          background: 'rgba(255, 152, 0, 0.1)',
+          borderRadius: '12px',
+          border: '1px solid rgba(255, 152, 0, 0.3)'
+        }}>
+          <h4 style={{ color: '#FF9800', margin: '0 0 0.5rem 0' }}>
+            <MapPin size={18} style={{ marginRight: '0.5rem' }} />
+            Buyer Has Arrived
+          </h4>
+          <p>The buyer is at the pickup location. Verify their code to complete the transaction.</p>
+        </div>
+      )}
+
+      {/* Completion Prompt */}
+      {showCompletion && (
+        <CompletionPrompt>
+          <h4>
+            <Check size={18} />
+            Ready to Complete Transaction
+          </h4>
+          <div className="green-flag">🟢</div>
+          <div className="completion-message">
+            Location verified! You can now give the product to the buyer.
+          </div>
+          <ActionButton 
+            className="primary"
+            onClick={handleCompleteTransaction}
+            disabled={loading}
+            theme={theme}
+          >
+            <Check size={16} />
+            Product Handed Over - Complete Transaction
+          </ActionButton>
+        </CompletionPrompt>
       )}
       
       {renderTransactionPanel()}

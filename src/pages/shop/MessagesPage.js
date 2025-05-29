@@ -25,6 +25,7 @@ import {
   Link,
   RefreshCw,
   MoreVertical,
+  ShoppingCart,
   FileText
 } from 'lucide-react';
 import { collection, query, where, orderBy, onSnapshot, getDocs, 
@@ -140,6 +141,34 @@ const ChatItemsContainer = styled.div`
   &::-webkit-scrollbar-thumb {
     background: rgba(128, 0, 0, 0.5);
     border-radius: 10px;
+  }
+`;
+
+// Add this styled component
+const ScrollIndicator = styled.div`
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 60px;
+  background: rgba(128, 0, 0, 0.3);
+  border-radius: 2px;
+  opacity: ${props => props.show ? 0.7 : 0};
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 10;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: ${props => props.scrollPercent}%;
+    left: 0;
+    width: 100%;
+    height: 20px;
+    background: rgba(128, 0, 0, 0.8);
+    border-radius: 2px;
+    transform: translateY(-50%);
   }
 `;
 
@@ -339,11 +368,14 @@ const ChatItem = styled.div`
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  max-height: none;
-  width: calc(100% + 1.7rem); /* Adjusted width */
+  width: calc(100% + 4rem); /* Adjusted width */
+
+  min-width: 0; /* Allow content to shrink */
+  flex-shrink: 0; /* Don't shrink the item itself */
+  box-sizing: border-box; /* Include padding/border in width */
   
   &:hover {
-    transform: translateY(-0px);
+    transform: translateY(-2px);
     border-color: #800000;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     
@@ -358,7 +390,7 @@ const ChatItem = styled.div`
     height: 56px;
     border-radius: 8px;
     overflow: hidden;
-    flex-shrink: 0;
+    flex-shrink: 0; /* Don't let image shrink */
     background: rgba(0, 0, 0, 0.6);
     
     img {
@@ -370,7 +402,7 @@ const ChatItem = styled.div`
   
   .chat-info {
     flex: 1;
-    min-width: 0;
+    min-width: 0; /* Important: allows text to truncate */
     
     .chat-name {
       font-weight: bold;
@@ -401,6 +433,7 @@ const ChatItem = styled.div`
       
       .chat-time {
         opacity: 0.6;
+        flex-shrink: 0; /* Don't let time shrink */
       }
       
       .chat-status {
@@ -409,6 +442,7 @@ const ChatItem = styled.div`
         font-size: 0.7rem;
         font-weight: bold;
         text-transform: uppercase;
+        flex-shrink: 0; /* Don't let status shrink */
         
         &.active {
           background: rgba(76, 175, 80, 0.2);
@@ -1140,9 +1174,36 @@ const MessagesPage = () => {
     chatId: ''
   });
   const [sending, setSending] = useState(false);
+
+  const [showScrollIndicator, setShowScrollIndicator] = useState(false);
+  const [scrollPercent, setScrollPercent] = useState(0);
+  const chatListRef = useRef(null);
   
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+
+  // Add this useEffect to handle scroll
+useEffect(() => {
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    const isScrollable = scrollHeight > clientHeight;
+    setShowScrollIndicator(isScrollable);
+    
+    if (isScrollable) {
+      const percent = (scrollTop / (scrollHeight - clientHeight)) * 80; // 80% to account for indicator height
+      setScrollPercent(Math.min(Math.max(percent, 0), 80));
+    }
+  };
+
+  const chatContainer = chatListRef.current;
+  if (chatContainer) {
+    chatContainer.addEventListener('scroll', handleScroll);
+    // Check initial scroll state
+    handleScroll({ target: chatContainer });
+    
+    return () => chatContainer.removeEventListener('scroll', handleScroll);
+  }
+}, [filteredChats.length]);
   
   useEffect(() => {
     const fetchTransactionDetails = async () => {
@@ -1888,6 +1949,24 @@ useEffect(() => {
       <MainContent>
         <ChatsList>
           <ChatsListHeader>
+          <SearchInput>
+            <Search className="search-icon" size={16} />
+            <input
+                type="text"
+                placeholder="Search conversations..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button 
+                  className="clear-button"
+                  onClick={() => setSearchTerm('')}
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </SearchInput>
+
             <ChatTabs>
               <ChatTab 
                 active={activeTab === 'all'} 
@@ -1926,24 +2005,7 @@ useEffect(() => {
                 Completed
               </ChatTab>
             </ChatTabs>
-
-            <SearchInput>
-            <Search className="search-icon" size={16} />
-            <input
-                type="text"
-                placeholder="Search conversations..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              {searchTerm && (
-                <button 
-                  className="clear-button"
-                  onClick={() => setSearchTerm('')}
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </SearchInput>
+            
           </ChatsListHeader>
             
           <ChatItemsContainer>
@@ -2061,7 +2123,11 @@ useEffect(() => {
                 </ChatItem>
               ))
             )}
-          </ChatItemsContainer>
+                  <ScrollIndicator 
+                  show={showScrollIndicator} 
+                  scrollPercent={scrollPercent} 
+                />
+        </ChatItemsContainer>
         </ChatsList>
         
         <ChatDisplay>
@@ -2105,55 +2171,166 @@ useEffect(() => {
               
               <ChatBody>
               {selectedChat?.transactionId && renderTransactionPanel()}
-                {messages.length === 0 ? (
-                  <div style={{ 
-                    textAlign: 'center', 
-                    padding: '2rem', 
-                    opacity: 0.7,
-                    fontStyle: 'italic'
-                  }}>
-                    No messages yet. Start the conversation!
-                  </div>
-                ) : (
-                  messages.map((message, index) => {
-                    if (message.type === 'date') {
-                      return (
-                        <DateSeparator key={`date-${index}`}>
-                          <span>{formatDate(message.date)}</span>
-                        </DateSeparator>
-                      );
-                    }
-                    
-                    const isSentByMe = message.sender === auth.currentUser.uid;
-                    const isSystem = message.sender === 'system';
-                    
+              {messages.length === 0 ? (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '2rem', 
+                  opacity: 0.7,
+                  fontStyle: 'italic'
+                }}>
+                  No messages yet. Start the conversation!
+                </div>
+              ) : (
+                messages.map((message, index) => {
+                  if (message.type === 'date') {
                     return (
-                      <Message
-                        key={message.id}
-                        sent={isSentByMe}
-                        className={isSystem ? 'system-message' : ''}
-                      >
-                        {message.text && <div>{message.text}</div>}
-                        
-                        {message.image && (
-                          <div className="image-container">
-                            <img 
-                              src={message.image} 
-                              alt="Shared" 
-                              onClick={() => window.open(message.image, '_blank')}
-                            />
-                          </div>
-                        )}
-                        
-                        {message.timestamp && (
-                          <div className="message-time">
-                            {formatTimestamp(message.timestamp)}
-                          </div>
-                        )}
-                      </Message>
+                      <DateSeparator key={`date-${index}`}>
+                        <span>{formatDate(message.date)}</span>
+                      </DateSeparator>
                     );
-                  })
-                )}
+                  }
+
+                  const isSentByMe = message.sender === auth.currentUser.uid;
+                  const isSystem = message.sender === 'system';
+
+                  return (
+                    <Message
+                      key={message.id}
+                      sent={isSentByMe}
+                      className={isSystem ? 'system-message' : ''}
+                    >
+                      {message.text && <div>{message.text}</div>}
+
+                      {message.image && (
+                        <div className="image-container">
+                          <img 
+                            src={message.image} 
+                            alt="Shared" 
+                            onClick={() => window.open(message.image, '_blank')}
+                          />
+                        </div>
+                      )}
+
+                      {/* Add this in the message rendering section */}
+                      {message.type === 'pickup-instructions' && (
+                        <div style={{
+                          background: 'rgba(33, 150, 243, 0.1)',
+                          border: '1px solid rgba(33, 150, 243, 0.3)',
+                          borderRadius: '12px',
+                          padding: '1.5rem',
+                          margin: '1rem 0',
+                          position: 'relative'
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            marginBottom: '1rem',
+                            color: '#2196F3',
+                            fontWeight: 'bold',
+                            fontSize: '1.1rem'
+                          }}>
+                            <MapPin size={20} />
+                            📍 Pickup Instructions
+                          </div>
+                          
+                          {message.pickupInfo && (
+                            <div style={{ lineHeight: '1.6' }}>
+                              <div style={{ marginBottom: '0.75rem' }}>
+                                <strong style={{ color: '#2196F3' }}>📍 Address:</strong>
+                                <div style={{ marginLeft: '1rem', marginTop: '0.25rem' }}>
+                                  {message.pickupInfo.address}
+                                </div>
+                              </div>
+                              
+                              {message.pickupInfo.details && (
+                                <div style={{ marginBottom: '0.75rem' }}>
+                                  <strong style={{ color: '#2196F3' }}>📋 Instructions:</strong>
+                                  <div style={{ marginLeft: '1rem', marginTop: '0.25rem' }}>
+                                    {message.pickupInfo.details}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              <div style={{ marginBottom: '0.75rem' }}>
+                                <strong style={{ color: '#2196F3' }}>⏰ Available Time:</strong>
+                                <div style={{ marginLeft: '1rem', marginTop: '0.25rem' }}>
+                                  {message.pickupInfo.time}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div style={{
+                            marginTop: '1rem',
+                            padding: '0.75rem',
+                            background: 'rgba(255, 193, 7, 0.1)',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(255, 193, 7, 0.3)',
+                            fontSize: '0.9rem',
+                            color: '#FF8F00'
+                          }}>
+                            💡 Please confirm your estimated arrival time when ready to pick up
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ADD THE ORDER CODE DISPLAY HERE */}
+                      {message.type === 'verification-code' && message.showInMessages && (
+                        <div style={{
+                          background: 'rgba(76, 175, 80, 0.1)',
+                          border: '1px solid rgba(76, 175, 80, 0.3)',
+                          borderRadius: '8px',
+                          padding: '1rem',
+                          margin: '0.5rem 0',
+                          textAlign: 'center'
+                        }}>
+                          <div style={{ 
+                            fontWeight: 'bold', 
+                            marginBottom: '0.5rem',
+                            color: '#4CAF50',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem'
+                          }}>
+                            <ShoppingCart size={16} />
+                            Your Order Code
+                          </div>
+                          <div style={{
+                            fontFamily: 'monospace',
+                            fontSize: '1.4rem',
+                            fontWeight: 'bold',
+                            background: 'rgba(0, 0, 0, 0.3)',
+                            padding: '0.75rem',
+                            borderRadius: '6px',
+                            letterSpacing: '3px',
+                            color: '#4CAF50',
+                            border: '1px dashed #4CAF50',
+                            margin: '0.5rem 0'
+                          }}>
+                            {message.code}
+                          </div>
+                          <div style={{ 
+                            fontSize: '0.85rem', 
+                            marginTop: '0.5rem', 
+                            opacity: 0.8,
+                            color: '#4CAF50'
+                          }}>
+                            💡 Show this code to the seller for pickup
+                          </div>
+                        </div>
+                      )}
+
+                      {message.timestamp && (
+                        <div className="message-time">
+                          {formatTimestamp(message.timestamp)}
+                        </div>
+                      )}
+                    </Message>
+                  );
+                })
+              )}
                 <div ref={messagesEndRef} />
               </ChatBody>
               

@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef  } from 'react';
 import { getFeaturedItems } from '../firebase/firebaseService';
 import FeaturedItem from '..//components/shop/FeaturedItem';
-import { Users, Package, Navigation, Film, Pin, ChevronLeft, ChevronRight, X, MessageCircle, ShoppingCart } from 'lucide-react';
+import { Search, Users, Package, Navigation, Film, Pin, ChevronLeft, ChevronRight, X, MessageCircle, ShoppingCart } from 'lucide-react';
 import { getDistance } from 'geolib';
 import OrderChat from '../components/Chat/OrderChat'; // Import the OrderChat component
 
@@ -782,6 +782,85 @@ const LocationIndicator = styled.div`
   }
 `;
 
+// Add this new styled component for the featured search
+const FeaturedSearchContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 2rem auto;
+  padding: 0.5rem 0;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+`;
+
+const FeaturedSearchInput = styled.input`
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(128, 0, 0, 0.2);
+  border-radius: 20px;
+  padding: 0.6rem 1.2rem;
+  color: white;
+  font-size: 0.9rem;
+  min-width: 0;
+
+  &:focus {
+    outline: none;
+    border-color: rgba(128, 0, 0, 0.4);
+  }
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+  }
+`;
+
+const FeaturedSearchButton = styled.button`
+  background: rgba(128, 0, 0, 0.2);
+  border: 1px solid rgba(128, 0, 0, 0.3);
+  padding: 0.6rem 1.2rem;
+  border-radius: 20px;
+  color: white;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background: rgba(128, 0, 0, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const FeaturedClearButton = styled.button`
+  background: transparent;
+  border: 1px solid rgba(128, 0, 0, 0.3);
+  padding: 0.6rem 1.2rem;
+  border-radius: 20px;
+  color: white;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(128, 0, 0, 0.1);
+  }
+`;
+
 
 const WelcomePage = () => {
   const navigate = useNavigate(); // New
@@ -824,6 +903,12 @@ const WelcomePage = () => {
   const { userLocation, locationPermission, requestLocation } = useLocation();
   const [updatingLocation, setUpdatingLocation] = useState(false);
 
+  // Add these new state variables
+  const [featuredSearchTerm, setFeaturedSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasSearchResults, setHasSearchResults] = useState(false);
+
   
 
   useEffect(() => {
@@ -839,6 +924,18 @@ const WelcomePage = () => {
     if (locationPermission === 'pending') {
       requestLocation();
     }
+  }, []);
+
+  // Add this useEffect for cleanup
+  useEffect(() => {
+    return () => {
+      // Cleanup on component unmount
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      document.body.removeAttribute('data-scroll-y');
+    };
   }, []);
   
   // Handle location updates when userLocation changes
@@ -874,6 +971,102 @@ const WelcomePage = () => {
     
     // Format coordinates for display
     return `Location: ${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}`;
+  };
+
+  // Add this new function for searching featured items
+  const searchFeaturedItems = async (searchTerm) => {
+    if (!searchTerm.trim()) {
+      setSearchResults([]);
+      setHasSearchResults(false);
+      return;
+    }
+  
+    try {
+      setIsSearching(true);
+      setError(null);
+    
+      const shopsRef = collection(db, 'shops');
+      const snapshot = await getDocs(shopsRef);
+      
+      let allMatchingItems = [];
+      
+      // Search through all shops for matching items
+      snapshot.docs.forEach(doc => {
+        const shopData = doc.data();
+        if (shopData?.items && Array.isArray(shopData.items)) {
+          shopData.items
+            .filter(item => !item.deleted)
+            .forEach(item => {
+              const itemName = (item.name || '').toLowerCase();
+              const itemDescription = (item.description || '').toLowerCase();
+              const searchLower = searchTerm.toLowerCase();
+              
+              // Check if search term matches name or description
+              if (itemName.includes(searchLower) || itemDescription.includes(searchLower)) {
+                allMatchingItems.push({
+                  ...item,
+                  shopId: doc.id,
+                  shopName: shopData.name || 'Unknown Shop',
+                  shopTheme: shopData.theme
+                });
+              }
+            });
+        }
+      });
+    
+      // Calculate distances if user location is available
+      if (userLocation) {
+        allMatchingItems = allMatchingItems.map(item => {
+          if (item.coordinates && item.coordinates.lat && item.coordinates.lng) {
+            try {
+              const distanceInMeters = getDistance(
+                { latitude: userLocation.latitude, longitude: userLocation.longitude },
+                { latitude: item.coordinates.lat, longitude: item.coordinates.lng }
+              );
+              const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
+              
+              return {
+                ...item,
+                distance: distanceInMeters,
+                distanceInMiles,
+                formattedDistance: `${distanceInMiles} mi`
+              };
+            } catch (e) {
+              console.warn('Error calculating distance for item:', e);
+              return item;
+            }
+          }
+          return item;
+        });
+      }
+    
+      setSearchResults(allMatchingItems);
+      setHasSearchResults(true);
+      
+      if (allMatchingItems.length === 0) {
+        setError(`No items found matching "${searchTerm}"`);
+      }
+    } catch (error) {
+      console.error('Error searching items:', error);
+      setError('Failed to search items. Please try again later.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Add this function to handle clearing the search
+  const handleClearFeaturedSearch = () => {
+    setFeaturedSearchTerm('');
+    setSearchResults([]);
+    setHasSearchResults(false);
+    setError(null);
+  };
+
+  // Add this function to handle search input
+  const handleFeaturedSearch = () => {
+    if (featuredSearchTerm.trim()) {
+      searchFeaturedItems(featuredSearchTerm);
+    }
   };
 
   // Add a function to load categorized items
@@ -1063,27 +1256,35 @@ const WelcomePage = () => {
       cancelAnimationFrame(sliderAnimationRef.current);
     }
     
-    // Save current scroll position to prevent background scrolling
+    // Save current scroll position and disable background scrolling
     const scrollY = window.scrollY;
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollY}px`;
     document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden'; // Add this line
+    
+    // Store scroll position for restoration
+    document.body.setAttribute('data-scroll-y', scrollY);
   };
 
 // Add a handler to close the zoomed view
 const handleCloseZoom = () => {
   setZoomedItem(null);
   
-  // Restore scrolling
-  const scrollY = parseFloat(document.body.style.top || '0') * -1;
+  // Restore scrolling properly
+  const scrollY = document.body.getAttribute('data-scroll-y') || '0';
   document.body.style.position = '';
   document.body.style.top = '';
   document.body.style.width = '';
-  window.scrollTo(0, scrollY);
+  document.body.style.overflow = ''; // Add this line
+  document.body.removeAttribute('data-scroll-y'); // Clean up
+  
+  // Restore scroll position
+  window.scrollTo(0, parseInt(scrollY));
   
   // Resume slider if needed
   if (sliderAnimationRef.current === null) {
-    // Start slider animation again
+    // Start slider animation again if needed
   }
 };
 
@@ -1091,7 +1292,31 @@ const handleCloseZoom = () => {
 const handleOrderClick = (item) => {
   setSelectedChatItem(item);
   setChatOpen(true);
-  setZoomedItem(null); // Close the zoom view
+  
+  // Close zoom view and restore scrolling if it was open
+  if (zoomedItem) {
+    setZoomedItem(null);
+    const scrollY = document.body.getAttribute('data-scroll-y') || '0';
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    document.body.removeAttribute('data-scroll-y');
+    window.scrollTo(0, parseInt(scrollY));
+  }
+};
+
+// Update the chat close handler
+const handleCloseChat = () => {
+  setChatOpen(false);
+  setSelectedChatItem(null);
+  
+  // Ensure scrolling is restored
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.width = '';
+  document.body.style.overflow = '';
+  document.body.removeAttribute('data-scroll-y');
 };
 
 const handleInquireClick = () => {
@@ -1601,313 +1826,359 @@ React.useEffect(() => {
 
 
       {/* Featured Items Tab */}
-      {activeTab === 'featured' && (
-        <CategorySlidersSection>
-          {/* First slider - Featured Items */}
-          <div>
-            <CategoryHeader theme={currentStyle}>
-              <h2>Featured Items</h2>
-            </CategoryHeader>
+{activeTab === 'featured' && (
+  <>
+    {/* Add search container */}
+    <FeaturedSearchContainer>
+      <FeaturedSearchInput
+        type="text"
+        placeholder="Search for items across all shops..."
+        value={featuredSearchTerm}
+        onChange={(e) => setFeaturedSearchTerm(e.target.value)}
+        onKeyPress={(e) => e.key === 'Enter' && handleFeaturedSearch()}
+      />
+      <FeaturedSearchButton 
+        onClick={handleFeaturedSearch}
+        disabled={isSearching || !featuredSearchTerm.trim()}
+      >
+        <Search size={16} />
+        Search
+      </FeaturedSearchButton>
+      {hasSearchResults && (
+        <FeaturedClearButton onClick={handleClearFeaturedSearch}>
+          <X size={16} />
+          Clear
+        </FeaturedClearButton>
+      )}
+    </FeaturedSearchContainer>
 
-            <SliderContainer theme={currentStyle}>
-              <ScrollButton className="left" onClick={handleScrollLeft} theme={currentStyle}>
-                <ChevronLeft size={16} />
-              </ScrollButton>
+    {/* Show search results or default categorized view */}
+    {hasSearchResults ? (
+      <div>
+        <CategoryHeader theme={currentStyle}>
+          <h2>Search Results ({searchResults.length})</h2>
+        </CategoryHeader>
 
-              <Slider ref={sliderRef}>
-                {featuredItems.map(item => (
-                  <SlideItem key={`item-${item.shopId}-${item.id}`}>
-                    <FeaturedItem
-                      item={item}
-                      theme={currentStyle}
-                      onItemClick={handleItemClick}
-                      showDistance={true} // Always show distance if available
-                    />
-                  </SlideItem>
-                ))}
-              </Slider>
-              
-              <ScrollButton className="right" onClick={handleScrollRight} theme={currentStyle}>
-                <ChevronRight size={16} />
-              </ScrollButton>
-            </SliderContainer>
+        {error ? (
+          <EmptyGridMessage>
+            <h3>No Results Found</h3>
+            <p>{error}</p>
+          </EmptyGridMessage>
+        ) : isSearching ? (
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <LoadingSpinner />
           </div>
-                
-          {/* Second slider - Clothing & Accessories */}
-          <div>
-            <CategoryHeader theme={currentStyle}>
-              <h2>Clothing & Accessories</h2>
-            </CategoryHeader>
-              
-            <SliderContainer theme={currentStyle}>
-              <ScrollButton className="left" onClick={(e) => {
-                const container = e.target.closest('.slider-container').querySelector('.slider');
-                container.scrollBy({
-                  left: -600,
-                  behavior: 'smooth'
-                });
-              }} theme={currentStyle}>
-                <ChevronLeft size={16} />
-              </ScrollButton>
-
-              <Slider className="slider">
-                {clothingItems.map(item => (
-                  <SlideItem key={`clothing-${item.shopId}-${item.id}`}>
-                    <FeaturedItem
-                      item={item}
-                      theme={currentStyle}
-                      onItemClick={handleItemClick}
-                    />
-                  </SlideItem>
-                ))}
-              </Slider>
-              
-              <ScrollButton className="right" onClick={(e) => {
-                const container = e.target.closest('.slider-container').querySelector('.slider');
-                container.scrollBy({
-                  left: 600,
-                  behavior: 'smooth'
-                });
-              }} theme={currentStyle}>
-                <ChevronRight size={16} />
-              </ScrollButton>
-            </SliderContainer>
-          </div>
-            
-          {/* Third slider - Electronics & Tech */}
-          <div>
-            <CategoryHeader theme={currentStyle}>
-              <h2>Electronics & Tech</h2>
-            </CategoryHeader>
-            
-            <SliderContainer theme={currentStyle}>
-              <ScrollButton className="left" onClick={(e) => {
-                const container = e.target.closest('.slider-container').querySelector('.slider');
-                container.scrollBy({
-                  left: -600,
-                  behavior: 'smooth'
-                });
-              }} theme={currentStyle}>
-                <ChevronLeft size={16} />
-              </ScrollButton>
-
-              <Slider className="slider">
-                {electronicsItems.map(item => (
-                  <SlideItem key={`electronics-${item.shopId}-${item.id}`}>
-                    <FeaturedItem
-                      item={item}
-                      theme={currentStyle}
-                      onItemClick={handleItemClick}
-                    />
-                  </SlideItem>
-                ))}
-              </Slider>
-              
-              <ScrollButton className="right" onClick={(e) => {
-                const container = e.target.closest('.slider-container').querySelector('.slider');
-                container.scrollBy({
-                  left: 600,
-                  behavior: 'smooth'
-                });
-              }} theme={currentStyle}>
-                <ChevronRight size={16} />
-              </ScrollButton>
-            </SliderContainer>
-          </div>
-            
-          {/* Fourth slider - Collectibles & Rarities */}
-          <div>
-            <CategoryHeader theme={currentStyle}>
-              <h2>Collectibles & Rarities</h2>
-            </CategoryHeader>
-            
-            <SliderContainer theme={currentStyle} className="slider-container">
-              <ScrollButton className="left" onClick={(e) => {
-                const container = e.target.closest('.slider-container').querySelector('.slider');
-                container.scrollBy({
-                  left: -600,
-                  behavior: 'smooth'
-                });
-              }} theme={currentStyle}>
-                <ChevronLeft size={16} />
-              </ScrollButton>
-
-              <Slider className="slider">
-                {collectiblesItems.map(item => (
-                  <SlideItem key={`collectibles-${item.shopId}-${item.id}`}>
-                    <FeaturedItem
-                      item={item}
-                      theme={currentStyle}
-                      onItemClick={handleItemClick}
-                    />
-                  </SlideItem>
-                ))}
-              </Slider>
-              
-              <ScrollButton className="right" onClick={(e) => {
-                const container = e.target.closest('.slider-container').querySelector('.slider');
-                container.scrollBy({
-                  left: 600,
-                  behavior: 'smooth'
-                });
-              }} theme={currentStyle}>
-                <ChevronRight size={16} />
-              </ScrollButton>
-            </SliderContainer>
-          </div>
-        </CategorySlidersSection>
+        ) : searchResults.length === 0 ? (
+          <EmptyGridMessage>
+            <h3>No Items Found</h3>
+            <p>No items match your search criteria.</p>
+          </EmptyGridMessage>
+        ) : (
+          <GridContainer>
+            {searchResults.map(item => (
+              <FeaturedItem 
+                key={`search-${item.shopId}-${item.id}`} 
+                item={item}
+                theme={currentStyle}
+                onItemClick={handleItemClick}
+                showDistance={true}
+              />
+            ))}
+          </GridContainer>
         )}
+      </div>
+    ) : (
+      // Default categorized view
+      <CategorySlidersSection>
+        {/* First slider - Featured Items */}
+        <div>
+          <CategoryHeader theme={currentStyle}>
+            <h2>Featured Items</h2>
+          </CategoryHeader>
 
-      {/* Add the zoomed view overlay at the ROOT level of your return */}
-      {zoomedItem && (
-        <ZoomOverlay onClick={handleCloseZoom} theme={currentStyle}>
-          <ZoomContainer 
-            theme={currentStyle}
-            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
-          >
-            <div style={{ position: 'relative', width: '100%' }}>
-              {/* Image section */}
-              <div style={{ padding: '1rem 1rem 0.5rem 1rem' }}>
-                <div style={{ 
-                  position: 'relative', 
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  aspectRatio: '4/3'
-                }}>
-                  <img 
-                    src={zoomedItem.images?.filter(Boolean)[0] || '/placeholder-image.jpg'} 
-                    alt={zoomedItem.name} 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          <SliderContainer theme={currentStyle}>
+            <ScrollButton className="left" onClick={handleScrollLeft} theme={currentStyle}>
+              <ChevronLeft size={16} />
+            </ScrollButton>
+
+            <Slider ref={sliderRef}>
+              {featuredItems.map(item => (
+                <SlideItem key={`item-${item.shopId}-${item.id}`}>
+                  <FeaturedItem
+                    item={item}
+                    theme={currentStyle}
+                    onItemClick={handleItemClick}
+                    showDistance={true}
                   />
-                </div>
-              </div>
+                </SlideItem>
+              ))}
+            </Slider>
+            
+            <ScrollButton className="right" onClick={handleScrollRight} theme={currentStyle}>
+              <ChevronRight size={16} />
+            </ScrollButton>
+          </SliderContainer>
+        </div>
               
-              {/* Content section */}
-              <div style={{ padding: '0.5rem 1.5rem 1.5rem 1.5rem' }}>
-                <h3 style={{ 
-                  fontSize: '1.3rem', 
-                  margin: '0 0 0.5rem 0',
-                  fontFamily: currentStyle?.fonts?.heading || 'inherit'
-                }}>{zoomedItem.name}</h3>
+        {/* Second slider - Clothing & Accessories */}
+        <div>
+          <CategoryHeader theme={currentStyle}>
+            <h2>Clothing & Accessories</h2>
+          </CategoryHeader>
+            
+          <SliderContainer theme={currentStyle}>
+            <ScrollButton className="left" onClick={(e) => {
+              const container = e.target.closest('.slider-container').querySelector('.slider');
+              container.scrollBy({
+                left: -600,
+                behavior: 'smooth'
+              });
+            }} theme={currentStyle}>
+              <ChevronLeft size={16} />
+            </ScrollButton>
 
-                <div style={{ 
-                  fontSize: '1.2rem', 
-                  fontWeight: 'bold',
-                  color: currentStyle?.colors?.accent || '#800000',
-                  marginBottom: '0.5rem'
-                }}>
-                  ${parseFloat(zoomedItem.price || 0).toFixed(2)}
-                </div>
-              
-                <div style={{ 
-                  fontSize: '0.9rem', 
-                  opacity: 0.8,
-                  marginBottom: '1.5rem',
-                  maxHeight: '100px',
-                  overflow: 'auto'
-                }}>
-                  {zoomedItem.description || 'No description available.'}
-                </div>
-              
-                {/* Show distance if available */}
-                {zoomedItem.formattedDistance && (
-                  <div style={{ 
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    fontSize: '0.9rem',
-                    opacity: 0.8,
-                    marginBottom: '1rem'
-                  }}>
-                    <Navigation size={16} />
-                    {zoomedItem.formattedDistance} away
-                  </div>
-                )}
+            <Slider className="slider">
+              {clothingItems.map(item => (
+                <SlideItem key={`clothing-${item.shopId}-${item.id}`}>
+                  <FeaturedItem
+                    item={item}
+                    theme={currentStyle}
+                    onItemClick={handleItemClick}
+                  />
+                </SlideItem>
+              ))}
+            </Slider>
+            
+            <ScrollButton className="right" onClick={(e) => {
+              const container = e.target.closest('.slider-container').querySelector('.slider');
+              container.scrollBy({
+                left: 600,
+                behavior: 'smooth'
+              });
+            }} theme={currentStyle}>
+              <ChevronRight size={16} />
+            </ScrollButton>
+          </SliderContainer>
+        </div>
+          
+        {/* Third slider - Electronics & Tech */}
+        <div>
+          <CategoryHeader theme={currentStyle}>
+            <h2>Electronics & Tech</h2>
+          </CategoryHeader>
+          
+          <SliderContainer theme={currentStyle}>
+            <ScrollButton className="left" onClick={(e) => {
+              const container = e.target.closest('.slider-container').querySelector('.slider');
+              container.scrollBy({
+                left: -600,
+                behavior: 'smooth'
+              });
+            }} theme={currentStyle}>
+              <ChevronLeft size={16} />
+            </ScrollButton>
 
-                {/* Action buttons */}
-                <div style={{ 
-                  display: 'flex',
-                  gap: '0.5rem'
-                }}>
-                  <ActionButton 
-                    className="secondary"
-                    onClick={handleInquireClick}
+            <Slider className="slider">
+              {electronicsItems.map(item => (
+                <SlideItem key={`electronics-${item.shopId}-${item.id}`}>
+                  <FeaturedItem
+                    item={item}
                     theme={currentStyle}
-                  >
-                    <MessageCircle size={16} />
-                    Inquire
-                  </ActionButton>
-                  <ActionButton 
-                    className="primary"
-                    onClick={() => handleOrderClick(zoomedItem)}
+                    onItemClick={handleItemClick}
+                  />
+                </SlideItem>
+              ))}
+            </Slider>
+            
+            <ScrollButton className="right" onClick={(e) => {
+              const container = e.target.closest('.slider-container').querySelector('.slider');
+              container.scrollBy({
+                left: 600,
+                behavior: 'smooth'
+              });
+            }} theme={currentStyle}>
+              <ChevronRight size={16} />
+            </ScrollButton>
+          </SliderContainer>
+        </div>
+          
+        {/* Fourth slider - Collectibles & Rarities */}
+        <div>
+          <CategoryHeader theme={currentStyle}>
+            <h2>Collectibles & Rarities</h2>
+          </CategoryHeader>
+          
+          <SliderContainer theme={currentStyle} className="slider-container">
+            <ScrollButton className="left" onClick={(e) => {
+              const container = e.target.closest('.slider-container').querySelector('.slider');
+              container.scrollBy({
+                left: -600,
+                behavior: 'smooth'
+              });
+            }} theme={currentStyle}>
+              <ChevronLeft size={16} />
+            </ScrollButton>
+
+            <Slider className="slider">
+              {collectiblesItems.map(item => (
+                <SlideItem key={`collectibles-${item.shopId}-${item.id}`}>
+                  <FeaturedItem
+                    item={item}
                     theme={currentStyle}
-                  >
-                    <ShoppingCart size={16} />
-                    Order
-                  </ActionButton>
-                </div>
-              </div>
-              
-              {/* Close button */}
-              <button 
-                onClick={handleCloseZoom}
-                style={{
-                  position: 'absolute',
-                  top: '0.5rem',
-                  right: '0.5rem',
-                  background: 'rgba(0, 0, 0, 0.5)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '24px',
-                  height: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  cursor: 'pointer',
-                  zIndex: 10
-                }}
-              >
-                <X size={14} />
-              </button>
+                    onItemClick={handleItemClick}
+                  />
+                </SlideItem>
+              ))}
+            </Slider>
+            
+            <ScrollButton className="right" onClick={(e) => {
+              const container = e.target.closest('.slider-container').querySelector('.slider');
+              container.scrollBy({
+                left: 600,
+                behavior: 'smooth'
+              });
+            }} theme={currentStyle}>
+              <ChevronRight size={16} />
+            </ScrollButton>
+          </SliderContainer>
+        </div>
+        </CategorySlidersSection>
+      )}
+    </>
+  )}
+
+  {/* Add the zoomed view overlay at the ROOT level of your return */}
+  {zoomedItem && (
+    <ZoomOverlay onClick={handleCloseZoom} theme={currentStyle}>
+      <ZoomContainer 
+        theme={currentStyle}
+        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+      >
+        <div style={{ position: 'relative', width: '100%' }}>
+          {/* Image section */}
+          <div style={{ padding: '1rem 1rem 0.5rem 1rem' }}>
+            <div style={{ 
+              position: 'relative', 
+              borderRadius: '8px',
+              overflow: 'hidden',
+              aspectRatio: '4/3'
+            }}>
+              <img 
+                src={zoomedItem.images?.filter(Boolean)[0] || '/placeholder-image.jpg'} 
+                alt={zoomedItem.name} 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
             </div>
-          </ZoomContainer>
-        </ZoomOverlay>
-      )}
+          </div>
+          
+          {/* Content section */}
+          <div style={{ padding: '0.5rem 1.5rem 1.5rem 1.5rem' }}>
+            <h3 style={{ 
+              fontSize: '1.3rem', 
+              margin: '0 0 0.5rem 0',
+              fontFamily: currentStyle?.fonts?.heading || 'inherit'
+            }}>{zoomedItem.name}</h3>
 
-      <ChatOverlay 
-        isOpen={chatOpen} 
-        onClick={() => setChatOpen(false)}
-      />
+            <div style={{ 
+              fontSize: '1.2rem', 
+              fontWeight: 'bold',
+              color: currentStyle?.colors?.accent || '#800000',
+              marginBottom: '0.5rem'
+            }}>
+              ${parseFloat(zoomedItem.price || 0).toFixed(2)}
+            </div>
+          
+            <div style={{ 
+              fontSize: '0.9rem', 
+              opacity: 0.8,
+              marginBottom: '1.5rem',
+              maxHeight: '100px',
+              overflow: 'auto'
+            }}>
+              {zoomedItem.description || 'No description available.'}
+            </div>
+          
+            {/* Show distance if available */}
+            {zoomedItem.formattedDistance && (
+              <div style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '0.9rem',
+                opacity: 0.8,
+                marginBottom: '1rem'
+              }}>
+                <Navigation size={16} />
+                {zoomedItem.formattedDistance} away
+              </div>
+            )}
 
-      {chatOpen && selectedChatItem && (
-        <OrderChat 
-          isOpen={chatOpen} 
-          onClose={() => setChatOpen(false)} 
-          item={selectedChatItem}
-          shopId={selectedChatItem.shopId}
-          shopName={selectedChatItem.shopName}
-          theme={currentStyle}
-        />
-      )}
+            {/* Action buttons */}
+            <div style={{ 
+              display: 'flex',
+              gap: '0.5rem'
+            }}>
+              <ActionButton 
+                className="secondary"
+                onClick={handleInquireClick}
+                theme={currentStyle}
+              >
+                <MessageCircle size={16} />
+                Inquire
+              </ActionButton>
+              <ActionButton 
+                className="primary"
+                onClick={() => handleOrderClick(zoomedItem)}
+                theme={currentStyle}
+              >
+                <ShoppingCart size={16} />
+                Order
+              </ActionButton>
+            </div>
+          </div>
+          
+          {/* Close button */}
+          <button 
+            onClick={handleCloseZoom}
+            style={{
+              position: 'absolute',
+              top: '0.5rem',
+              right: '0.5rem',
+              background: 'rgba(0, 0, 0, 0.5)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '24px',
+              height: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              cursor: 'pointer',
+              zIndex: 10
+            }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      </ZoomContainer>
+    </ZoomOverlay>
+  )}
 
-      {/* Chat Overlay and Component */}
-      <ChatOverlay 
-        isOpen={chatOpen} 
-        onClick={() => setChatOpen(false)}
-      />
-
-      {chatOpen && selectedChatItem && (
-        <OrderChat 
-          isOpen={chatOpen} 
-          onClose={() => setChatOpen(false)} 
-          item={selectedChatItem}
-          shopId={selectedChatItem.shopId}
-          shopName={selectedChatItem.shopName}
-          theme={currentStyle}
-        />
-      )}      
-        
+  <ChatOverlay 
+    isOpen={chatOpen} 
+    onClick={handleCloseChat} // Use the new function instead of inline
+  />
+  
+  {chatOpen && selectedChatItem && (
+    <OrderChat 
+      isOpen={chatOpen} 
+      onClose={handleCloseChat} // Use the new function here too
+      item={selectedChatItem}
+      shopId={selectedChatItem.shopId}
+      shopName={selectedChatItem.shopName}
+      theme={currentStyle}
+    />
+  )}
 
       </MainContent>
     </PageContainer>
