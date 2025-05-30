@@ -25,44 +25,50 @@ export const TransactionService = {
   initiateTransaction: async (itemId, sellerId, price, meetupType) => {
     try {
       const buyer = auth.currentUser;
-
+  
       if (!buyer) {
         throw new Error('You must be logged in to make a purchase');
       }
 
+      if (buyer.uid === sellerId) {
+        throw new Error('You cannot purchase items from your own store');
+      }
+  
       // Get the shop document to find the item
       const shopRef = doc(db, 'shops', sellerId);
       const shopSnap = await getDoc(shopRef);
-
+  
       if (!shopSnap.exists()) {
         throw new Error('Shop not found');
       }
-
+  
       const shopData = shopSnap.data();
-
+  
       // Find the item in the shop's items array
       const itemIndex = shopData.items.findIndex(item => item.id === itemId);
-
+  
       if (itemIndex === -1) {
         throw new Error('Item not found');
       }
-
+  
       const itemData = shopData.items[itemIndex];
-
+  
       // Check quantity
       const currentQuantity = itemData.quantity || 0;
       if (currentQuantity < 1) {
         throw new Error('This item is out of stock');
       }
-
+  
       // Generate transaction code
       const transactionCode = generateTransactionCode();
-
-      // Create a new transaction
+  
+      // Create a new transaction with item address included
       const transaction = {
         itemId,
         itemName: itemData.name,
         itemImage: itemData.images?.[0] || null,
+        itemAddress: itemData.address || null, // Add this line
+        itemCoordinates: itemData.coordinates || null, // Add this line
         price: parseFloat(price),
         sellerId,
         sellerName: shopData.name || '',
@@ -76,16 +82,16 @@ export const TransactionService = {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
-
+  
       // Create the transaction first
       const transactionRef = await addDoc(collection(db, 'transactions'), transaction);
       const transactionId = transactionRef.id;
-
+  
       // Now check if a chat already exists for this transaction
       const chatsRef = collection(db, 'chats');
       const q = query(chatsRef, where('transactionId', '==', transactionId));
       const existingChats = await getDocs(q);
-
+  
       // If no chat exists, create one (and ONLY one)
       if (existingChats.empty) {
         // Create a single chat document with both participants
@@ -94,22 +100,23 @@ export const TransactionService = {
           itemId: itemData.id,
           itemName: itemData.name,
           itemImage: itemData.images?.[0] || null,
+          itemAddress: itemData.address || null, // Add this line
           buyerId: buyer.uid,
           buyerName: buyer.displayName || buyer.email,
           sellerId,
           sellerName: shopData.name || '',
-          participants: [buyer.uid, sellerId], // Include both participants
+          participants: [buyer.uid, sellerId],
           lastMessage: 'Transaction initiated',
           lastMessageTime: serverTimestamp(),
           unreadCount: {
             [buyer.uid]: 0,
-            [sellerId]: 1 // Notify seller immediately
+            [sellerId]: 1
           }
         };
-
+  
         // Create the chat using the transaction ID as the chat ID to ensure uniqueness
         await setDoc(doc(db, 'chats', transactionId), chatDoc);
-
+  
         // Add welcome message to the chat
         await addDoc(collection(db, 'chats', transactionId, 'messages'), {
           text: `Transaction started for ${itemData.name}. Please complete payment to confirm your order.`,
@@ -120,19 +127,19 @@ export const TransactionService = {
           messageClass: 'status-message'
         });
       }
-
+  
       // Decrease item quantity
       const updatedItems = [...shopData.items];
       updatedItems[itemIndex] = {
         ...itemData,
         quantity: currentQuantity - 1
       };
-
+  
       // Update the shop document with the new items array
       await updateDoc(shopRef, {
         items: updatedItems
       });
-
+  
       return {
         transactionId,
         transactionCode
@@ -318,77 +325,88 @@ completePickupTransaction: async (transactionId, verificationCode) => {
   },
   
   // Accept a transaction as a seller
-  acceptTransaction: async (transactionId) => {
-    try {
-      const seller = auth.currentUser;
-      
-      if (!seller) {
-        throw new Error('You must be logged in to accept a transaction');
-      }
-      
-      const transactionRef = doc(db, 'transactions', transactionId);
-      const transactionSnap = await getDoc(transactionRef);
-      
-      if (!transactionSnap.exists()) {
-        throw new Error('Transaction not found');
-      }
-      
-      const transaction = transactionSnap.data();
-      
-      // Verify that the current user is the seller
-      if (transaction.sellerId !== seller.uid) {
-        throw new Error('You are not authorized to accept this transaction');
-      }
-      
-      // Get the shop data to find the item location
-      const shopRef = doc(db, 'shops', seller.uid);
-      const shopSnap = await getDoc(shopRef);
-      
-      if (!shopSnap.exists()) {
-        throw new Error('Shop not found');
-      }
-      
-      const shopData = shopSnap.data();
-      const item = shopData.items.find(i => i.id === transaction.itemId);
-      
-      // Get location from item
-      const itemLocation = {
-        address: item?.address || 'Location not specified',
-        coordinates: item?.coordinates || null,
-        timestamp: serverTimestamp()
-      };
-      
-      // Update transaction status and set location
-      await updateDoc(transactionRef, {
-        status: 'confirmed',
-        meetupDetails: itemLocation,
-        updatedAt: serverTimestamp()
-      });
-      
-      // Add system message to chat
-      await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-        text: 'Seller has accepted the order. See pickup location details below.',
-        sender: 'system',
-        senderName: 'System',
-        timestamp: serverTimestamp(),
-        type: 'system'
-      });
-      
-      // Add location message to chat
-      await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-        location: itemLocation,
-        sender: seller.uid,
-        senderName: shopData.name || seller.displayName || seller.email,
-        timestamp: serverTimestamp(),
-        type: 'location'
-      });
-      
-      return true;
-    } catch (error) {
-      console.error('Error accepting transaction:', error);
-      throw error;
+  // Accept a transaction as a seller
+acceptTransaction: async (transactionId) => {
+  try {
+    const seller = auth.currentUser;
+    
+    if (!seller) {
+      throw new Error('You must be logged in to accept a transaction');
     }
-  },
+    
+    const transactionRef = doc(db, 'transactions', transactionId);
+    const transactionSnap = await getDoc(transactionRef);
+    
+    if (!transactionSnap.exists()) {
+      throw new Error('Transaction not found');
+    }
+    
+    const transaction = transactionSnap.data();
+    
+    // Verify that the current user is the seller
+    if (transaction.sellerId !== seller.uid) {
+      throw new Error('You are not authorized to accept this transaction');
+    }
+    
+    // Get the shop data to find the item location
+    const shopRef = doc(db, 'shops', seller.uid);
+    const shopSnap = await getDoc(shopRef);
+    
+    if (!shopSnap.exists()) {
+      throw new Error('Shop not found');
+    }
+    
+    const shopData = shopSnap.data();
+    const item = shopData.items.find(i => i.id === transaction.itemId);
+    
+    // Get location from item
+    const itemLocation = {
+      address: item?.address || 'Location not specified',
+      coordinates: item?.coordinates || null,
+      timestamp: serverTimestamp()
+    };
+    
+    // Update transaction status and set location
+    await updateDoc(transactionRef, {
+      status: 'confirmed',
+      meetupDetails: itemLocation,
+      itemAddress: item?.address || 'Location not specified', // Add this line
+      itemCoordinates: item?.coordinates || null, // Add this line
+      updatedAt: serverTimestamp()
+    });
+    
+    // Add system message to chat with pickup details
+    const pickupMessage = `📍 PICKUP INSTRUCTIONS 📍
+
+📍 Address: ${item?.address || 'Location not specified'}
+
+📋 Details: Meet at the specified address for item pickup
+
+⏰ Available Time: Contact seller to arrange timing
+
+The seller has accepted your order. Please provide your estimated arrival time when ready to pick up.`;
+
+    await addDoc(collection(db, 'chats', transactionId, 'messages'), {
+      text: pickupMessage,
+      sender: seller.uid,
+      senderName: shopData.name || seller.displayName || seller.email,
+      timestamp: serverTimestamp(),
+      type: 'pickup-instructions',
+      pickupInfo: {
+        address: item?.address || 'Location not specified',
+        details: 'Meet at the specified address for item pickup',
+        time: 'Contact seller to arrange timing',
+        type: 'in_person',
+        coordinates: item?.coordinates || null
+      }
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error accepting transaction:', error);
+    throw error;
+  }
+},
   
   // Reject a transaction as a seller
   rejectTransaction: async (transactionId, reason) => {

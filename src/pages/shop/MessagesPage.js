@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled, { ThemeProvider } from 'styled-components';
 import { MapPin, ThumbsUp, ThumbsDown, Camera } from 'lucide-react';
 import { TransactionService } from '../../services/TransactionService';
+import { PaymentService } from '../../services/PaymentService';
 import PickupLocationMap from '../../components/Transaction/PickupLocationMap';
 import { 
   MessageCircle, 
@@ -26,7 +27,9 @@ import {
   RefreshCw,
   MoreVertical,
   ShoppingCart,
-  FileText
+  FileText,
+  Star,
+  Navigation
 } from 'lucide-react';
 import { collection, query, where, orderBy, onSnapshot, getDocs, 
   doc, updateDoc, deleteDoc, getDoc, serverTimestamp, addDoc, 
@@ -1141,6 +1144,315 @@ const NotificationForm = styled.form`
   }
 `;
 
+const MessageBubbleContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem 0.5rem 1.5rem; // Adjusted padding for bottom placement
+  background: rgba(0, 0, 0, 0.3); // Slightly darker to match input area
+  border-top: 1px solid rgba(128, 0, 0, 0.2); // Add top border instead of full border
+  border-radius: 0; // Remove border radius for seamless integration
+`;
+
+const MessageBubbleHeader = styled.div`
+  font-size: 0.85rem; // Slightly smaller for bottom placement
+  color: #800000;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0.9;
+`;
+
+const MessageBubbleOptions = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); // Use grid for better layout
+  gap: 0.5rem;
+  max-height: 120px; // Limit height to prevent taking too much space
+  overflow-y: auto;
+  
+  /* Custom scrollbar for the options */
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(128, 0, 0, 0.5);
+    border-radius: 2px;
+  }
+`;
+
+const CompletionStatusCard = styled.div`
+  margin: 1rem 0;
+  padding: 1rem;
+  background: ${props => 
+    props.completed ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 152, 0, 0.1)'
+  };
+  border: 1px solid ${props => 
+    props.completed ? 'rgba(76, 175, 80, 0.3)' : 'rgba(255, 152, 0, 0.3)'
+  };
+  border-radius: 12px;
+  
+  .status-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    color: ${props => 
+      props.completed ? '#4CAF50' : '#FF9800'
+    };
+    font-weight: bold;
+  }
+  
+  .status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    
+    .status-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      &.completed {
+        background: #4CAF50;
+        color: white;
+      }
+      
+      &.pending {
+        background: rgba(255, 255, 255, 0.2);
+        color: rgba(255, 255, 255, 0.6);
+      }
+    }
+  }
+`;
+
+const RatingModal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+`;
+
+const RatingModalContent = styled.div`
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 400px;
+  border: 1px solid rgba(128, 0, 0, 0.3);
+  
+  h3 {
+    color: #800000;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  
+  .rating-section {
+    margin-bottom: 1.5rem;
+    
+    .rating-label {
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    
+    .stars-container {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 1rem;
+      
+      .star {
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.3);
+        transition: all 0.2s;
+        
+        &.filled {
+          color: #FFD700;
+        }
+        
+        &:hover {
+          color: #FFD700;
+          transform: scale(1.1);
+        }
+      }
+    }
+  }
+  
+  textarea {
+    width: 100%;
+    min-height: 80px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: white;
+    padding: 0.75rem;
+    margin-bottom: 1.5rem;
+    resize: vertical;
+    
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+    
+    &:focus {
+      outline: none;
+      border-color: #800000;
+    }
+  }
+  
+  .modal-actions {
+    display: flex;
+    gap: 1rem;
+    
+    button {
+      flex: 1;
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+      
+      &.cancel {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        
+        &:hover {
+          background: rgba(255, 255, 255, 0.05);
+        }
+      }
+      
+      &.submit {
+        background: #800000;
+        border: none;
+        color: white;
+        
+        &:hover {
+          background: #600000;
+        }
+        
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+`;
+
+const SystemMessage = styled(Message)`
+  background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.2)'};
+  align-self: center;
+  text-align: center;
+  font-style: italic;
+  max-width: 90%;
+  
+  &.status-message {
+    background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+    border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+    font-weight: 500;
+  }
+  
+  &.alert-message {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    color: #FFC107;
+  }
+  
+  &.success-message {
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    color: #4CAF50;
+  }
+  
+  &.error-message {
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    color: #F44336;
+  }
+`;
+
+// If you need a theme variable for the rating prompt message, add this
+// (Replace with your actual theme variable if you have one)
+const theme = {
+  colors: {
+    accent: '#800000',
+    background: '#000000',
+    text: '#FFFFFF'
+  }
+};
+
+const MessageBubble = styled.button`
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(128, 0, 0, 0.3);
+  border-radius: 6px; // Smaller border radius
+  padding: 0.6rem 0.8rem; // Slightly smaller padding
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem; // Slightly smaller font
+  min-height: 44px; // Ensure minimum touch target size
+  
+  &:hover {
+    background: rgba(128, 0, 0, 0.2);
+    border-color: #800000;
+    transform: translateY(-1px); // Smaller transform for bottom placement
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  .bubble-text {
+    flex: 1;
+    min-width: 0; // Allow text to truncate if needed
+  }
+  
+  .bubble-description {
+    font-size: 0.75rem; // Smaller description text
+    opacity: 0.7;
+    margin-top: 0.25rem;
+    line-height: 1.2;
+  }
+`;
+
+
 // Main component
 const MessagesPage = () => {
   // Component logic remains the same
@@ -1181,6 +1493,12 @@ const MessagesPage = () => {
   
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+
+  const [showRating, setShowRating] = useState(false);
+  const [completionStatus, setCompletionStatus] = useState({
+    productProvided: false,
+    productReceived: false
+  });
 
   // Add this useEffect to handle scroll
 useEffect(() => {
@@ -1276,6 +1594,136 @@ useEffect(() => {
     } finally {
       setVerifying(false);
     }
+  };
+
+  const renderCompletionStatus = (transaction) => {
+    if (!transaction || transaction.status !== 'confirmed') return null;
+    
+    const productProvided = transaction.productProvided || false;
+    const productReceived = transaction.productReceived || false;
+    const bothCompleted = productProvided && productReceived;
+    
+    return (
+      <CompletionStatusCard completed={bothCompleted}>
+        <div className="status-header">
+          {bothCompleted ? (
+            <>
+              <Check size={20} />
+              Exchange Completed
+            </>
+          ) : (
+            <>
+              <Clock size={20} />
+              Awaiting Exchange Confirmation
+            </>
+          )}
+        </div>
+        
+        <div className="status-grid">
+          <div className="status-item">
+            <div className={`status-icon ${productProvided ? 'completed' : 'pending'}`}>
+              {productProvided ? <Check size={12} /> : <Package size={12} />}
+            </div>
+            <span>Product Provided</span>
+          </div>
+          
+          <div className="status-item">
+            <div className={`status-icon ${productReceived ? 'completed' : 'pending'}`}>
+              {productReceived ? <Check size={12} /> : <User size={12} />}
+            </div>
+            <span>Product Received</span>
+          </div>
+        </div>
+        
+        {!bothCompleted && (
+          <div style={{ 
+            fontSize: '0.9rem', 
+            opacity: 0.8, 
+            textAlign: 'center',
+            fontStyle: 'italic'
+          }}>
+            Both parties must confirm the exchange to complete the transaction
+          </div>
+        )}
+      </CompletionStatusCard>
+    );
+  };
+
+  const TransactionRatingModal = ({ 
+    isOpen, 
+    onClose, 
+    onSubmit, 
+    userRole, 
+    transaction 
+  }) => {
+    const [rating, setRating] = useState(0);
+    const [comment, setComment] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    
+    const handleSubmit = async () => {
+      if (rating === 0) return;
+      
+      try {
+        setSubmitting(true);
+        await onSubmit(rating, comment);
+        onClose();
+      } catch (error) {
+        console.error('Error submitting rating:', error);
+      } finally {
+        setSubmitting(false);
+      }
+    };
+    
+    if (!isOpen) return null;
+    
+    return (
+      <RatingModal onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <RatingModalContent>
+          <h3>
+            <Star size={24} />
+            Rate Your Experience
+          </h3>
+          
+          <div className="rating-section">
+            <div className="rating-label">
+              How was your experience with this {userRole === 'buyer' ? 'seller' : 'buyer'}?
+            </div>
+            
+            <div className="stars-container">
+              {[1, 2, 3, 4, 5].map(star => (
+                <Star
+                  key={star}
+                  size={32}
+                  className={`star ${star <= rating ? 'filled' : ''}`}
+                  onClick={() => setRating(star)}
+                  fill={star <= rating ? '#FFD700' : 'none'}
+                />
+              ))}
+            </div>
+          </div>
+          
+          <textarea
+            placeholder="Share your experience (optional)..."
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            maxLength={500}
+          />
+          
+          <div className="modal-actions">
+            <button className="cancel" onClick={onClose}>
+              Cancel
+            </button>
+            <button 
+              className="submit" 
+              onClick={handleSubmit}
+              disabled={rating === 0 || submitting}
+            >
+              {submitting ? 'Submitting...' : `Submit ${rating} Star Rating`}
+            </button>
+          </div>
+        </RatingModalContent>
+      </RatingModal>
+    );
   };
 
   // Add our transaction panel renderer
@@ -1694,6 +2142,529 @@ useEffect(() => {
       setError('Failed to send message. Please try again.');
     }
   };
+
+  // Add these helper functions for location handling
+const reverseGeocode = async (lat, lng) => {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'KalKode Marketplace'
+        }
+      }
+    );
+    
+    const data = await response.json();
+    
+    if (data && data.display_name) {
+      // Format a clean address
+      const address = data.address;
+      let formattedAddress = data.display_name;
+      
+      if (address) {
+        const parts = [];
+        if (address.house_number) parts.push(address.house_number);
+        if (address.road) parts.push(address.road);
+        if (address.city || address.town || address.village) {
+          parts.push(address.city || address.town || address.village);
+        }
+        if (address.state) parts.push(address.state);
+        if (address.postcode) parts.push(address.postcode);
+        
+        if (parts.length > 0) {
+          formattedAddress = parts.join(', ');
+        }
+      }
+      
+      return {
+        address: formattedAddress,
+        googleMapsLink: `https://maps.google.com/?q=${lat},${lng}`,
+        coordinates: { lat, lng }
+      };
+    }
+    
+    throw new Error('No address found');
+  } catch (error) {
+    console.warn('Reverse geocoding failed:', error);
+    // Fallback to coordinates
+    return {
+      address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+      googleMapsLink: `https://maps.google.com/?q=${lat},${lng}`,
+      coordinates: { lat, lng }
+    };
+  }
+};
+
+const getItemLocationData = async (transaction) => {
+  try {
+    // Get the shop document to find the item
+    const shopRef = doc(db, 'shops', transaction.sellerId);
+    const shopSnap = await getDoc(shopRef);
+    
+    if (!shopSnap.exists()) {
+      throw new Error('Shop not found');
+    }
+    
+    const shopData = shopSnap.data();
+    const item = shopData.items.find(i => i.id === transaction.itemId);
+    
+    if (!item) {
+      throw new Error('Item not found');
+    }
+    
+    let locationData = null;
+    
+    // Check if item has coordinates
+    if (item.coordinates && item.coordinates.lat && item.coordinates.lng) {
+      // Convert coordinates to address
+      locationData = await reverseGeocode(item.coordinates.lat, item.coordinates.lng);
+    } else if (item.address) {
+      // If item has an address string, use it
+      locationData = {
+        address: item.address,
+        googleMapsLink: `https://maps.google.com/?q=${encodeURIComponent(item.address)}`,
+        coordinates: null
+      };
+    } else {
+      // Fallback: no location data available
+      throw new Error('No location data available for this item');
+    }
+    
+    return {
+      ...locationData,
+      itemName: item.name,
+      itemId: item.id
+    };
+  } catch (error) {
+    console.error('Error getting item location:', error);
+    throw error;
+  }
+};
+
+// Update the getMessageBubbleOptions function to include enhanced location sharing
+const getMessageBubbleOptions = (transaction, userRole) => {
+  if (!transaction) return [];
+  
+  const status = transaction.status;
+  const options = [];
+  
+  switch (status) {
+    case 'awaiting_seller':
+      if (userRole === 'seller') {
+        options.push(
+          {
+            id: 'accept_order',
+            icon: <ThumbsUp size={16} />,
+            text: '✅ Accept Order',
+            description: 'Accept this order and proceed to coordination',
+            action: 'accept'
+          },
+          {
+            id: 'decline_order',
+            icon: <ThumbsDown size={16} />,
+            text: '❌ Decline Order',
+            description: 'Decline this order with reason',
+            action: 'decline'
+          }
+        );
+      }
+      break;
+      
+    case 'confirmed':
+      if (userRole === 'seller') {
+        const hasSharedLocation = transaction.meetupDetails;
+        
+        if (!hasSharedLocation) {
+          options.push({
+            id: 'share_location',
+            icon: <MapPin size={16} />,
+            text: '📍 Share Pickup Location',
+            description: 'Send pickup address and Google Maps link',
+            action: 'share_location'
+          });
+        }
+        
+        options.push(
+          {
+            id: 'ready_for_pickup',
+            icon: <Package size={16} />,
+            text: '📦 Item Ready for Pickup',
+            description: 'Notify buyer that item is ready',
+            action: 'ready_pickup'
+          },
+          {
+            id: 'suggest_time',
+            icon: <Clock size={16} />,
+            text: '⏰ Suggest Pickup Time',
+            description: 'Suggest available pickup times',
+            action: 'suggest_time'
+          }
+        );
+
+        // Add product provided option if buyer has arrived
+        if (transaction.buyerArrived && !transaction.productProvided) {
+          options.push({
+            id: 'product_provided',
+            icon: <Check size={16} />,
+            text: '📦 Product Provided',
+            description: 'Confirm you have given the product to buyer',
+            action: 'product_provided'
+          });
+        }
+        
+      } else if (userRole === 'buyer') {
+        options.push(
+          {
+            id: 'confirm_pickup_time',
+            icon: <Check size={16} />,
+            text: '✅ Confirm Pickup Time',
+            description: 'Confirm when you can pick up',
+            action: 'confirm_time'
+          },
+          {
+            id: 'request_directions',
+            icon: <MapPin size={16} />,
+            text: '🗺️ Request Directions',
+            description: 'Ask for detailed directions',
+            action: 'request_directions'
+          },
+          {
+            id: 'arriving_soon',
+            icon: <Navigation size={16} />,
+            text: '🚗 Arriving Soon',
+            description: 'Notify seller you are on the way',
+            action: 'arriving'
+          },
+          {
+            id: 'arrived',
+            icon: <MapPin size={16} />,
+            text: '📍 I Have Arrived',
+            description: 'Let seller know you are at the location',
+            action: 'arrived'
+          }
+        );
+
+        // Add product received option if seller has provided
+        if (transaction.productProvided && !transaction.productReceived) {
+          options.push({
+            id: 'product_received',
+            icon: <Check size={16} />,
+            text: '✅ Product Received',
+            description: 'Confirm you have received the product',
+            action: 'product_received'
+          });
+        }
+      }
+      break;
+      
+    case 'completed':
+      // Add rating options if not yet rated
+      if (userRole === 'seller' && !transaction.sellerRating) {
+        options.push({
+          id: 'rate_transaction',
+          icon: <Star size={16} />,
+          text: '⭐ Rate Transaction',
+          description: 'Rate your experience with this buyer',
+          action: 'rate_transaction'
+        });
+      } else if (userRole === 'buyer' && !transaction.buyerRating) {
+        options.push({
+          id: 'rate_transaction',
+          icon: <Star size={16} />,
+          text: '⭐ Rate Transaction',
+          description: 'Rate your experience with this seller',
+          action: 'rate_transaction'
+        });
+      }
+      break;
+  }
+  
+  return options;
+};
+
+// Update the handleMessageBubbleAction function with enhanced location sharing
+const handleMessageBubbleAction = async (action, transaction, userRole) => {
+  if (!selectedChat || !transaction) return;
+  
+  try {
+    let messageText = '';
+    let systemAction = null;
+    
+    switch (action) {
+      case 'accept':
+        messageText = '✅ Order Accepted! I will prepare your item for pickup and share the location details.';
+        systemAction = () => TransactionService.acceptTransaction(transaction.id);
+        break;
+        
+      case 'decline':
+        const reason = prompt('Please provide a reason for declining (optional):') || 'No reason provided';
+        messageText = `❌ Order Declined: ${reason}`;
+        systemAction = () => TransactionService.rejectTransaction(transaction.id, reason);
+        break;
+        
+      case 'share_location':
+        try {
+          // Show loading state
+          setLoading(true);
+          
+          // Get enhanced location data
+          const locationData = await getItemLocationData(transaction);
+          
+          // Send location message with Google Maps link
+          messageText = `📍 **Pickup Location for ${locationData.itemName}**\n\n` +
+                       `📧 Address: ${locationData.address}\n\n` +
+                       `🗺️ Google Maps: ${locationData.googleMapsLink}\n\n` +
+                       `💡 Click the Google Maps link for turn-by-turn directions!`;
+          
+          // Also send a separate detailed pickup instructions message
+          setTimeout(async () => {
+            await addDoc(collection(db, 'chats', selectedChat.id, 'messages'), {
+              text: `📋 **Pickup Instructions:**\n\n` +
+                    `• Please text me when you arrive\n` +
+                    `• I'll meet you at the address above\n` +
+                    `• Bring your order code: ${transaction.transactionCode}\n` +
+                    `• Contact me if you have trouble finding the location`,
+              sender: auth.currentUser.uid,
+              senderName: auth.currentUser.displayName || auth.currentUser.email,
+              timestamp: serverTimestamp(),
+              type: 'pickup-instructions',
+              pickupInfo: {
+                address: locationData.address,
+                googleMapsLink: locationData.googleMapsLink,
+                details: 'Please text me when you arrive. I\'ll meet you at this address.',
+                time: 'Flexible timing - contact me to arrange',
+                coordinates: locationData.coordinates
+              }
+            });
+          }, 1000);
+          
+        } catch (error) {
+          console.error('Error getting location data:', error);
+          messageText = '📍 I\'ll share the pickup location with you separately. Please contact me for specific details about where to meet.';
+        } finally {
+          setLoading(false);
+        }
+        break;
+        
+      case 'ready_pickup':
+        messageText = '📦 Great news! Your item is ready for pickup. Let me know when you can come by and I\'ll be ready for you.';
+        break;
+        
+      case 'suggest_time':
+        const timeOptions = [
+          'Today after 3 PM',
+          'Tomorrow morning (9 AM - 12 PM)', 
+          'Tomorrow afternoon (1 PM - 6 PM)',
+          'This weekend',
+          'Flexible - contact me'
+        ];
+        
+        const timeSelection = prompt(
+          `When would work best for pickup?\n\n` +
+          timeOptions.map((option, index) => `${index + 1}. ${option}`).join('\n') +
+          `\n\nEnter number (1-5) or type your own time:`
+        );
+        
+        let suggestedTime = 'Flexible timing';
+        const timeIndex = parseInt(timeSelection) - 1;
+        
+        if (timeIndex >= 0 && timeIndex < timeOptions.length) {
+          suggestedTime = timeOptions[timeIndex];
+        } else if (timeSelection && timeSelection.trim()) {
+          suggestedTime = timeSelection.trim();
+        }
+        
+        messageText = `⏰ **Pickup Time Suggestion:** ${suggestedTime}\n\nDoes this work for you? Let me know and I'll make sure to be available!`;
+        break;
+        
+      case 'send_directions':
+        const directions = prompt(
+          'Provide detailed directions to help the buyer find you:\n\n' +
+          'Example: "Enter through the main gate, drive to Building B, park in visitor spots. I\'ll meet you at the entrance."'
+        );
+        
+        if (directions && directions.trim()) {
+          messageText = `🧭 **Detailed Directions:**\n\n${directions.trim()}\n\n💡 Feel free to call or text if you need any clarification!`;
+        } else {
+          return; // Don't send if no directions provided
+        }
+        break;
+        
+      case 'confirm_time':
+        const confirmedTime = prompt('What time works best for you?') || 'Soon';
+        messageText = `✅ **Pickup Confirmed:** I can pick up ${confirmedTime}. Thank you! Looking forward to meeting you.`;
+        break;
+        
+      case 'request_directions':
+        messageText = '🗺️ Could you provide more detailed directions to help me find the exact pickup location? Any landmarks or specific instructions would be helpful!';
+        break;
+        
+      case 'arriving':
+        const etaMinutes = prompt('How many minutes until you arrive?') || '10-15';
+        messageText = `🚗 **On my way!** I should arrive in about ${etaMinutes} minutes. I'll text you when I get there.`;
+        break;
+        
+      case 'arrived':
+        messageText = `📍 **I have arrived!** I'm at the pickup location now. Where would you like to meet? My order code is: ${transaction.transactionCode}`;
+        break;
+        
+      case 'product_provided':
+        messageText = '📦 I have provided the product to the buyer. Please confirm receipt when you have the item.';
+        systemAction = () => TransactionService.markProductProvided(transaction.id);
+        break;
+        
+      case 'product_received':
+        messageText = '✅ I have received the product. Thank you for the smooth transaction!';
+        systemAction = () => TransactionService.markProductReceived(transaction.id);
+        break;
+        
+      case 'rate_transaction':
+        // Open rating modal
+        setShowRating(true);
+        return; // Don't send message, just open rating
+        
+      default:
+        return;
+      }
+    
+    // Execute system action first if needed
+    if (systemAction) {
+      await systemAction();
+    }
+    
+    // Send the message
+    await addDoc(collection(db, 'chats', selectedChat.id, 'messages'), {
+      text: messageText,
+      sender: auth.currentUser.uid,
+      senderName: auth.currentUser.displayName || auth.currentUser.email,
+      timestamp: serverTimestamp(),
+      type: 'bubble-message',
+      bubbleAction: action
+    });
+    
+    // Update chat metadata
+    const otherPartyId = selectedChat.isBuyer ? selectedChat.sellerId : selectedChat.buyerId;
+    
+    await updateDoc(doc(db, 'chats', selectedChat.id), {
+      lastMessage: messageText.split('\n')[0], // Use first line for preview
+      lastMessageTime: serverTimestamp(),
+      [`unreadCount.${otherPartyId}`]: increment(1)
+    });
+    
+  } catch (error) {
+    console.error('Error handling message bubble action:', error);
+    setError('Failed to send message. Please try again.');
+  }
+};
+
+// Complete transaction with stock decrement function
+const completeTransactionWithStock = async (transactionId) => {
+  try {
+    const transactionRef = doc(db, 'transactions', transactionId);
+    const transactionSnap = await getDoc(transactionRef);
+    
+    if (!transactionSnap.exists()) {
+      throw new Error('Transaction not found');
+    }
+    
+    const transaction = transactionSnap.data();
+    
+    // Auto-release escrow using the stored transaction code
+    try {
+      await PaymentService.capturePayment(transactionId, transaction.transactionCode);
+    } catch (paymentError) {
+      console.warn('Payment capture failed, but continuing with transaction completion:', paymentError);
+    }
+
+    // Decrement stock when transaction is completed
+    const shopRef = doc(db, 'shops', transaction.sellerId);
+    const shopSnap = await getDoc(shopRef);
+    
+    if (shopSnap.exists()) {
+      const shopData = shopSnap.data();
+      const itemIndex = shopData.items.findIndex(item => item.id === transaction.itemId);
+      
+      if (itemIndex !== -1) {
+        const updatedItems = [...shopData.items];
+        const currentQuantity = updatedItems[itemIndex].quantity || 0;
+        
+        // Decrement stock only now
+        updatedItems[itemIndex] = {
+          ...updatedItems[itemIndex],
+          quantity: Math.max(0, currentQuantity - 1)
+        };
+
+        await updateDoc(shopRef, {
+          items: updatedItems
+        });
+      }
+    }
+
+    // Update transaction status
+    await updateDoc(transactionRef, {
+      status: 'completed',
+      completedAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    // Add completion message
+    await addDoc(collection(db, 'chats', transactionId, 'messages'), {
+      text: '🎉 Transaction completed successfully! Funds have been released to the seller.',
+      sender: 'system',
+      senderName: 'System',
+      timestamp: serverTimestamp(),
+      type: 'system',
+      messageClass: 'success-message'
+    });
+
+    // Trigger rating prompts for both parties
+    setTimeout(async () => {
+      await addDoc(collection(db, 'chats', transactionId, 'messages'), {
+        text: '⭐ Please rate your experience with this transaction',
+        sender: 'system',
+        senderName: 'System',
+        timestamp: serverTimestamp(),
+        type: 'rating-prompt'
+      });
+    }, 3000);
+
+  } catch (error) {
+    console.error('Error completing transaction:', error);
+    throw error;
+  }
+};
+
+const submitTransactionRating = async (transactionId, rating, comment, userRole) => {
+  try {
+    const transactionRef = doc(db, 'transactions', transactionId);
+    const ratingField = userRole === 'seller' ? 'sellerRating' : 'buyerRating';
+    const commentField = userRole === 'seller' ? 'sellerComment' : 'buyerComment';
+    
+    await updateDoc(transactionRef, {
+      [ratingField]: rating,
+      [commentField]: comment || '',
+      [`${ratingField}At`]: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    // Add rating message to chat
+    await addDoc(collection(db, 'chats', transactionId, 'messages'), {
+      text: `⭐ ${userRole === 'seller' ? 'Seller' : 'Buyer'} rated this transaction ${rating}/5 stars`,
+      sender: 'system',
+      senderName: 'System',
+      timestamp: serverTimestamp(),
+      type: 'system',
+      messageClass: 'success-message'
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error submitting rating:', error);
+    throw error;
+  }
+};
   
   // Upload and send image
   const handleUploadImage = async (file) => {
@@ -1864,6 +2835,38 @@ useEffect(() => {
         day: 'numeric' 
       });
     }
+  };
+
+  
+  // Add this component to render message bubbles
+  const MessageBubblesPanel = ({ transaction, userRole }) => {
+    const options = getMessageBubbleOptions(transaction, userRole);
+    
+    if (options.length === 0) return null;
+    
+    return (
+      <MessageBubbleContainer>
+        <MessageBubbleHeader>
+          <MessageCircle size={16} />
+          Quick Actions
+        </MessageBubbleHeader>
+        
+        <MessageBubbleOptions>
+          {options.map((option) => (
+            <MessageBubble
+              key={option.id}
+              onClick={() => handleMessageBubbleAction(option.action, transaction, userRole)}
+            >
+              {option.icon}
+              <div className="bubble-text">
+                <div>{option.text}</div>
+                <div className="bubble-description">{option.description}</div>
+              </div>
+            </MessageBubble>
+          ))}
+        </MessageBubbleOptions>
+      </MessageBubbleContainer>
+    );
   };
   
   // Show transaction status with icon
@@ -2131,46 +3134,59 @@ useEffect(() => {
         </ChatsList>
         
         <ChatDisplay>
-          {selectedChat ? (
-            <>
-              <ChatHeader>
-                <div className="left-section">
-                  <div className="avatar">
-                    {selectedChat.isBuyer ? (
-                      <User size={20} />
-                    ) : (
-                      <Package size={20} />
-                    )}
-                  </div>
-                  
-                  <div className="chat-user-details">
-                    <div className="chat-title">
-                      {selectedChat.otherPartyName || "Unknown user"}
-                      {selectedChat.transaction && getStatusDisplay(selectedChat.transaction.status)}
-                    </div>
-                    <div className="chat-subtitle">
-                      {selectedChat.isBuyer ? "Seller" : "Buyer"} • {selectedChat.itemName}
-                    </div>
-                  </div>
+        {selectedChat ? (
+          <>
+            <ChatHeader>
+              <div className="left-section">
+                <div className="avatar">
+                  {selectedChat.isBuyer ? (
+                    <User size={20} />
+                  ) : (
+                    <Package size={20} />
+                  )}
                 </div>
                 
-                <div className="actions-menu">
-                  <button 
-                    onClick={() => setNotificationModalOpen(true)}
-                    title="Send SMS Notification"
-                  >
-                    <Bell size={20} />
-                  </button>
-                  
-                  <div className="transaction-details">
-                    <DollarSign size={16} />
-                    ${parseFloat(selectedChat.transaction?.price || 0).toFixed(2)}
+                <div className="chat-user-details">
+                  <div className="chat-title">
+                    {selectedChat.otherPartyName || "Unknown user"}
+                    {selectedChat.transaction && getStatusDisplay(selectedChat.transaction.status)}
+                  </div>
+                  <div className="chat-subtitle">
+                    {selectedChat.isBuyer ? "Seller" : "Buyer"} • {selectedChat.itemName}
                   </div>
                 </div>
-              </ChatHeader>
-              
-              <ChatBody>
+              </div>
+                
+              <div className="actions-menu">
+                <button 
+                  onClick={() => setNotificationModalOpen(true)}
+                  title="Send SMS Notification"
+                >
+                  <Bell size={20} />
+                </button>
+                
+                <div className="transaction-details">
+                  <DollarSign size={16} />
+                  ${parseFloat(selectedChat.transaction?.price || 0).toFixed(2)}
+                </div>
+              </div>
+            </ChatHeader>
+                
+            <ChatBody>
               {selectedChat?.transactionId && renderTransactionPanel()}
+                            
+              {/* Add completion status card */}
+              {transactionDetails && renderCompletionStatus(transactionDetails)}
+                            
+              {/* Existing message bubbles panel */}
+              {transactionDetails && selectedChat && (
+                <MessageBubblesPanel 
+                  transaction={transactionDetails} 
+                  userRole={selectedChat.role} 
+                />
+              )}
+              
+              {/* Enhanced message rendering */}
               {messages.length === 0 ? (
                 <div style={{ 
                   textAlign: 'center', 
@@ -2190,17 +3206,68 @@ useEffect(() => {
                     );
                   }
 
+                  // Add rating prompt message type
+                  if (message.type === 'rating-prompt') {
+                    return (
+                      <SystemMessage 
+                        key={message.id} 
+                        theme={theme}
+                        className="status-message"
+                        style={{
+                          background: 'rgba(255, 193, 7, 0.1)',
+                          border: '1px solid rgba(255, 193, 7, 0.3)',
+                          color: '#FFC107'
+                        }}
+                      >
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          gap: '0.5rem',
+                          marginBottom: '0.5rem'
+                        }}>
+                          <Star size={18} />
+                          Rate Your Experience
+                        </div>
+                        {message.text}
+                        <button 
+                          onClick={() => setShowRating(true)}
+                          style={{
+                            marginTop: '0.5rem',
+                            padding: '0.5rem 1rem',
+                            background: '#FFC107',
+                            color: '#000',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          Rate Transaction
+                        </button>
+                        <div className="time">{formatTimestamp(message.timestamp)}</div>
+                      </SystemMessage>
+                    );
+                  }
+                
                   const isSentByMe = message.sender === auth.currentUser.uid;
                   const isSystem = message.sender === 'system';
-
+                  const isBubbleMessage = message.type === 'bubble-message';
+                
                   return (
                     <Message
                       key={message.id}
                       sent={isSentByMe}
                       className={isSystem ? 'system-message' : ''}
+                      style={isBubbleMessage ? {
+                        background: isSentByMe ? 
+                          'linear-gradient(45deg, #4CAF50, #388E3C)' : 
+                          'rgba(33, 150, 243, 0.2)',
+                        border: isBubbleMessage ? '1px solid rgba(33, 150, 243, 0.3)' : 'none'
+                      } : {}}
                     >
                       {message.text && <div>{message.text}</div>}
-
+                    
                       {message.image && (
                         <div className="image-container">
                           <img 
@@ -2211,7 +3278,6 @@ useEffect(() => {
                         </div>
                       )}
 
-                      {/* Add this in the message rendering section */}
                       {message.type === 'pickup-instructions' && (
                         <div style={{
                           background: 'rgba(33, 150, 243, 0.1)',
@@ -2233,49 +3299,132 @@ useEffect(() => {
                             <MapPin size={20} />
                             📍 Pickup Instructions
                           </div>
-                          
+
                           {message.pickupInfo && (
                             <div style={{ lineHeight: '1.6' }}>
-                              <div style={{ marginBottom: '0.75rem' }}>
-                                <strong style={{ color: '#2196F3' }}>📍 Address:</strong>
-                                <div style={{ marginLeft: '1rem', marginTop: '0.25rem' }}>
+                              <div style={{ marginBottom: '1rem' }}>
+                                <strong style={{ color: '#2196F3' }}>📧 Address:</strong>
+                                <div style={{ 
+                                  marginLeft: '1rem', 
+                                  marginTop: '0.5rem',
+                                  padding: '0.75rem',
+                                  background: 'rgba(0, 0, 0, 0.2)',
+                                  borderRadius: '6px',
+                                  fontFamily: 'monospace',
+                                  fontSize: '0.95rem'
+                                }}>
                                   {message.pickupInfo.address}
                                 </div>
                               </div>
                               
+                              {message.pickupInfo.googleMapsLink && (
+                                <div style={{ marginBottom: '1rem' }}>
+                                  <strong style={{ color: '#2196F3' }}>🗺️ Navigation:</strong>
+                                  <div style={{ marginLeft: '1rem', marginTop: '0.5rem' }}>
+                                    <a 
+                                      href={message.pickupInfo.googleMapsLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        padding: '0.5rem 1rem',
+                                        background: '#4285F4',
+                                        color: 'white',
+                                        textDecoration: 'none',
+                                        borderRadius: '6px',
+                                        fontSize: '0.9rem',
+                                        fontWeight: '500',
+                                        transition: 'background 0.3s ease'
+                                      }}
+                                      onMouseOver={(e) => e.target.style.background = '#3367D6'}
+                                      onMouseOut={(e) => e.target.style.background = '#4285F4'}
+                                    >
+                                      <Navigation size={16} />
+                                      Open in Google Maps
+                                    </a>
+                                  </div>
+                                </div>
+                              )}
+
                               {message.pickupInfo.details && (
-                                <div style={{ marginBottom: '0.75rem' }}>
+                                <div style={{ marginBottom: '1rem' }}>
                                   <strong style={{ color: '#2196F3' }}>📋 Instructions:</strong>
-                                  <div style={{ marginLeft: '1rem', marginTop: '0.25rem' }}>
+                                  <div style={{ 
+                                    marginLeft: '1rem', 
+                                    marginTop: '0.5rem',
+                                    whiteSpace: 'pre-line' // Preserve line breaks
+                                  }}>
                                     {message.pickupInfo.details}
                                   </div>
                                 </div>
                               )}
-                              
-                              <div style={{ marginBottom: '0.75rem' }}>
+
+                              <div style={{ marginBottom: '1rem' }}>
                                 <strong style={{ color: '#2196F3' }}>⏰ Available Time:</strong>
                                 <div style={{ marginLeft: '1rem', marginTop: '0.25rem' }}>
                                   {message.pickupInfo.time}
                                 </div>
                               </div>
+
+                              {message.pickupInfo.coordinates && (
+                                <div style={{ marginBottom: '1rem' }}>
+                                  <strong style={{ color: '#2196F3' }}>📍 Coordinates:</strong>
+                                  <div style={{ 
+                                    marginLeft: '1rem', 
+                                    marginTop: '0.25rem',
+                                    fontFamily: 'monospace',
+                                    fontSize: '0.85rem',
+                                    opacity: 0.8
+                                  }}>
+                                    {message.pickupInfo.coordinates.lat.toFixed(6)}, {message.pickupInfo.coordinates.lng.toFixed(6)}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
-                          
+
                           <div style={{
                             marginTop: '1rem',
                             padding: '0.75rem',
-                            background: 'rgba(255, 193, 7, 0.1)',
+                            background: 'rgba(76, 175, 80, 0.1)',
                             borderRadius: '6px',
-                            border: '1px solid rgba(255, 193, 7, 0.3)',
+                            border: '1px solid rgba(76, 175, 80, 0.3)',
                             fontSize: '0.9rem',
-                            color: '#FF8F00'
+                            color: '#4CAF50'
                           }}>
-                            💡 Please confirm your estimated arrival time when ready to pick up
+                            ✅ <strong>Ready to go!</strong> Use the Google Maps link above for turn-by-turn directions.
                           </div>
                         </div>
                       )}
 
-                      {/* ADD THE ORDER CODE DISPLAY HERE */}
+                      {message.type === 'bubble-message' && message.bubbleAction === 'share_location' && (
+                        <div style={{
+                          background: 'rgba(76, 175, 80, 0.1)',
+                          border: '1px solid rgba(76, 175, 80, 0.3)',
+                          borderRadius: '8px',
+                          padding: '1rem',
+                          margin: '0.5rem 0'
+                        }}>
+                          <div style={{ 
+                            fontWeight: 'bold', 
+                            marginBottom: '0.5rem',
+                            color: '#4CAF50',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'flex-start',
+                            gap: '0.5rem'
+                          }}>
+                            <MapPin size={16} />
+                            Location Shared
+                          </div>
+                          <div style={{ whiteSpace: 'pre-line', lineHeight: '1.5' }}>
+                            {message.text}
+                          </div>
+                        </div>
+                      )}
+
                       {message.type === 'verification-code' && message.showInMessages && (
                         <div style={{
                           background: 'rgba(76, 175, 80, 0.1)',
@@ -2331,62 +3480,80 @@ useEffect(() => {
                   );
                 })
               )}
-                <div ref={messagesEndRef} />
-              </ChatBody>
-              
-              <ChatInput>
-                <div className="input-container">
-                  <input 
-                    type="text" 
-                    placeholder="Type a message..." 
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  />
-                  <button 
-                    className="send-button" 
-                    onClick={handleSendMessage} 
-                    disabled={!inputMessage.trim() || uploadingFile}
-                  >
-                    <Send size={16} />
-                  </button>
-                </div>
-                
-                <button 
-                  className="attachment-button"
-                  onClick={() => fileInputRef.current.click()}
-                  disabled={uploadingFile}
-                >
-                  <Image size={20} />
-                </button>
-                
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  onChange={(e) => {
-                    if (e.target.files?.[0]) {
-                      handleUploadImage(e.target.files[0]);
-                      e.target.value = '';
-                    }
-                  }}
+              <div ref={messagesEndRef} />
+            </ChatBody>
+
+            <TransactionRatingModal
+              isOpen={showRating}
+              onClose={() => setShowRating(false)}
+              onSubmit={(rating, comment) => 
+                submitTransactionRating(transactionDetails.id, rating, comment, selectedChat.role)
+              }
+              userRole={selectedChat?.role}
+              transaction={transactionDetails}
+            />
+            
+            {/* MOVED: Message Bubbles Panel to here - ABOVE ChatInput */}
+            {transactionDetails && selectedChat && (
+              <MessageBubblesPanel 
+                transaction={transactionDetails} 
+                userRole={selectedChat.role} 
+              />
+            )}
+
+            <ChatInput>
+              <div className="input-container">
+                <input 
+                  type="text" 
+                  placeholder="Type a message..." 
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 />
-              </ChatInput>
-            </>
-          ) : (
-            <EmptyState>
-              <div className="icon-container">
-                <MessageCircle size={32} />
+                <button 
+                  className="send-button" 
+                  onClick={handleSendMessage} 
+                  disabled={!inputMessage.trim() || uploadingFile}
+                >
+                  <Send size={16} />
+                </button>
               </div>
-              <h3>No conversation selected</h3>
-              <p>Select a conversation from the list to view messages</p>
-              <button className="action-btn" onClick={() => window.location.href = '/'}>
-                <Package size={16} />
-                Browse Items
+
+              <button 
+                className="attachment-button"
+                onClick={() => fileInputRef.current.click()}
+                disabled={uploadingFile}
+              >
+                <Image size={20} />
               </button>
-            </EmptyState>
-          )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    handleUploadImage(e.target.files[0]);
+                    e.target.value = '';
+                  }
+                }}
+              />
+            </ChatInput>
+          </>
+        ) : (
+          <EmptyState>
+            <div className="icon-container">
+              <MessageCircle size={32} />
+            </div>
+            <h3>No conversation selected</h3>
+            <p>Select a conversation from the list to view messages</p>
+            <button className="action-btn" onClick={() => window.location.href = '/'}>
+              <Package size={16} />
+              Browse Items
+            </button>
+          </EmptyState>
+        )}
         </ChatDisplay>
       </MainContent>
       

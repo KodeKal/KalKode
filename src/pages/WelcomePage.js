@@ -989,10 +989,17 @@ const WelcomePage = () => {
       const snapshot = await getDocs(shopsRef);
       
       let allMatchingItems = [];
+      const currentUserId = user?.uid; // Get current user ID
       
       // Search through all shops for matching items
       snapshot.docs.forEach(doc => {
         const shopData = doc.data();
+        
+        // Skip the current user's shop entirely
+        if (doc.id === currentUserId) {
+          return;
+        }
+        
         if (shopData?.items && Array.isArray(shopData.items)) {
           shopData.items
             .filter(item => !item.deleted)
@@ -1054,6 +1061,14 @@ const WelcomePage = () => {
     }
   };
 
+  const forceRestoreScrolling = () => {
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    document.body.removeAttribute('data-scroll-y');
+  };
+  
   // Add this function to handle clearing the search
   const handleClearFeaturedSearch = () => {
     setFeaturedSearchTerm('');
@@ -1077,10 +1092,17 @@ const WelcomePage = () => {
   
       const allItems = await getFeaturedItems(24);
       
+      // Filter out own items FIRST before any other processing
+      const currentUserId = user?.uid;
+      const filteredItems = allItems.filter(item => {
+        // Remove items that belong to the current user
+        return item.shopId !== currentUserId;
+      });
+      
       // Calculate distances if user location is available
-      let itemsWithDistance = allItems;
+      let itemsWithDistance = filteredItems;
       if (userLocation) {
-        itemsWithDistance = allItems.map(item => {
+        itemsWithDistance = filteredItems.map(item => {
           if (item.coordinates && item.coordinates.lat && item.coordinates.lng) {
             try {
               const distanceInMeters = getDistance(
@@ -1104,7 +1126,7 @@ const WelcomePage = () => {
         });
       }
   
-      // Categorize items
+      // Categorize items (now all items are from other users)
       const clothing = [];
       const electronics = [];
       const collectibles = [];
@@ -1141,11 +1163,11 @@ const WelcomePage = () => {
         }
       });
   
-      setClothingItems(clothing.slice(0, 8));
       setElectronicsItems(electronics.slice(0, 8));
+      setClothingItems(clothing.slice(0, 8));
       setCollectiblesItems(collectibles.slice(0, 8));
       setFeaturedItems(itemsWithDistance.slice(0, 8));
-      setTotalItems(allItems.length);
+      setTotalItems(filteredItems.length);
   
       setLoading(false);
     } catch (error) {
@@ -1353,27 +1375,29 @@ const handleInquireClick = () => {
     
         switch (activeTab) {
           case 'featured':
-            const items = await getFeaturedItems(6);
-            setFeaturedItems(items);
-            break;
+            // Use the updated loadCategorizedItems which filters out own items
+            loadCategorizedItems();
+            return; // Don't set loading to false here since loadCategorizedItems handles it
           case 'nearby':
             // Don't automatically fetch nearby items
             setLoading(false);
             break;
           case 'media':
             // Fetch featured media content
+            setLoading(false);
             break;
+          default:
+            setLoading(false);
         }
       } catch (error) {
         console.error('Error loading content:', error);
         setError('Failed to load content. Please try again later.');
-      } finally {
         setLoading(false);
       }
     };
   
     loadTabContent();
-  }, [activeTab]);
+  }, [activeTab, user?.uid]);
 
   // Add nearby items fetching
   const fetchNearbyItems = async () => {
@@ -1389,10 +1413,17 @@ const handleInquireClick = () => {
       const snapshot = await getDocs(shopsRef);
       
       let itemsInRadius = [];
+      const currentUserId = user?.uid; // Get current user ID
       
       // Collect all items with valid coordinates
       snapshot.docs.forEach(doc => {
         const shopData = doc.data();
+        
+        // Skip the current user's shop entirely
+        if (doc.id === currentUserId) {
+          return;
+        }
+        
         if (shopData?.items && Array.isArray(shopData.items)) {
           shopData.items
             .filter(item => !item.deleted)
@@ -1545,7 +1576,8 @@ const handleInquireClick = () => {
       setLoading(true);
       setError(null);
       
-      const items = await getFeaturedItems(8); // Changed from 6 to 8
+      // Pass current user ID to filter out own items
+      const items = await getFeaturedItems(8, user?.uid);
       setFeaturedItems(items);
       setTotalItems(items.length);
       
@@ -1923,9 +1955,9 @@ React.useEffect(() => {
         {/* Second slider - Clothing & Accessories */}
         <div>
           <CategoryHeader theme={currentStyle}>
-            <h2>Clothing & Accessories</h2>
+            <h2>Electronics & Tech</h2>
           </CategoryHeader>
-            
+          
           <SliderContainer theme={currentStyle}>
             <ScrollButton className="left" onClick={(e) => {
               const container = e.target.closest('.slider-container').querySelector('.slider');
@@ -1938,8 +1970,8 @@ React.useEffect(() => {
             </ScrollButton>
 
             <Slider className="slider">
-              {clothingItems.map(item => (
-                <SlideItem key={`clothing-${item.shopId}-${item.id}`}>
+              {electronicsItems.map(item => (
+                <SlideItem key={`electronics-${item.shopId}-${item.id}`}>
                   <FeaturedItem
                     item={item}
                     theme={currentStyle}
@@ -1964,9 +1996,9 @@ React.useEffect(() => {
         {/* Third slider - Electronics & Tech */}
         <div>
           <CategoryHeader theme={currentStyle}>
-            <h2>Electronics & Tech</h2>
+            <h2>Clothing & Accessories</h2>
           </CategoryHeader>
-          
+            
           <SliderContainer theme={currentStyle}>
             <ScrollButton className="left" onClick={(e) => {
               const container = e.target.closest('.slider-container').querySelector('.slider');
@@ -1979,8 +2011,8 @@ React.useEffect(() => {
             </ScrollButton>
 
             <Slider className="slider">
-              {electronicsItems.map(item => (
-                <SlideItem key={`electronics-${item.shopId}-${item.id}`}>
+              {clothingItems.map(item => (
+                <SlideItem key={`clothing-${item.shopId}-${item.id}`}>
                   <FeaturedItem
                     item={item}
                     theme={currentStyle}
@@ -2168,7 +2200,7 @@ React.useEffect(() => {
     isOpen={chatOpen} 
     onClick={handleCloseChat} // Use the new function instead of inline
   />
-  
+
   {chatOpen && selectedChatItem && (
     <OrderChat 
       isOpen={chatOpen} 

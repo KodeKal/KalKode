@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { Users, Package, Navigation, Film, Pin, ChevronLeft, ChevronRight, X, MessageCircle, ShoppingCart } from 'lucide-react';
+import { Users, Package, Navigation, Store, Edit, ChevronLeft, ChevronRight, X, MessageCircle, ShoppingCart } from 'lucide-react';
 import OrderChat from '../../components/Chat/OrderChat'; // Import the OrderChat component
 
 
