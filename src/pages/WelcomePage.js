@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef  } from 'react';
 import { getFeaturedItems } from '../firebase/firebaseService';
 import FeaturedItem from '..//components/shop/FeaturedItem';
-import { Search, Users, Package, Navigation, Film, Pin, ChevronLeft, ChevronRight, X, MessageCircle, ShoppingCart } from 'lucide-react';
+import { Search, Users, Package, Navigation, Film, Pin, ChevronLeft, ChevronRight, X, MessageCircle, ShoppingCart, RefreshCw } from 'lucide-react';
 import { getDistance } from 'geolib';
 import OrderChat from '../components/Chat/OrderChat'; // Import the OrderChat component
 
@@ -613,6 +613,33 @@ const PinButton = styled.button`
   }
 `;
 
+const RefreshButton = styled.button`
+  background: none;
+  border: none;
+  color: ${props => props.theme?.colors?.text || "white"};
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.1) rotate(90deg);
+    color: ${props => props.theme?.colors?.accent || "#800000"};
+  }
+  
+  &.spinning {
+    animation: spin 0.5s ease-in-out;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`;
+
 // Update the StyleIndicator to include the pin button
 // Update the StyleIndicator component
 const StyleIndicator = styled.div`
@@ -885,6 +912,32 @@ const WelcomePage = () => {
   const [currentStyle, setCurrentStyle] = useState(null);
   const itemsPerPage = 6;
   const [isPinned, setIsPinned] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const refreshTheme = () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    
+    // Get all available styles
+    const styles = Object.values(WELCOME_STYLES);
+    // Filter out the current style
+    const otherStyles = styles.filter(style => style.id !== currentStyle.id);
+    
+    if (otherStyles.length > 0) {
+      const randomStyle = otherStyles[Math.floor(Math.random() * otherStyles.length)];
+      setCurrentStyle(randomStyle);
+      
+      // If the current style was pinned, unpin it since we're changing
+      if (isPinned) {
+        localStorage.removeItem('pinnedStyleId');
+        setIsPinned(false);
+      }
+    }
+    
+    // Reset spinning state after animation
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
   const { user, isAuthenticated } = useAuth();
   const [shopData, setShopData] = useState(null);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
@@ -1688,6 +1741,13 @@ React.useEffect(() => {
       </LocationIndicator>
 
       <StyleIndicator theme={currentStyle}>
+      <RefreshButton 
+        onClick={refreshTheme}
+        className={isRefreshing ? "spinning" : ""}
+        title="Get random theme"
+      >
+        <RefreshCw size={16} />
+      </RefreshButton>
       <PinButton 
         onClick={togglePinStyle} 
         isPinned={isPinned}
