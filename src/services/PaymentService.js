@@ -148,7 +148,7 @@ export const PaymentService = {
       
       // Add payment message to chat
       await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-        text: 'Payment processed successfully! Payment is secure and will be released to the seller when you provide the verification code upon pickup.',
+        text: 'Placeholder payment processed successfully!',
         sender: 'system',
         senderName: 'System',
         timestamp: serverTimestamp(),
