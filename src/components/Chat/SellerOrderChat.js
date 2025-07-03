@@ -1,123 +1,17 @@
-// src/components/Chat/SellerOrderChat.js
+// src/components/Chat/SellerOrderChat.js - Ultra Simplified
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { 
-  X, 
-  Send, 
-  MapPin, 
-  Check, 
-  MessageCircle, 
-  Camera, 
-  Calendar, 
-  Clock, 
-  DollarSign,
-  AlertTriangle,
-  ThumbsUp,
-  ThumbsDown,
-  ShoppingCart, Package,
-  Upload
-} from 'lucide-react';
+import { X, Send, Check } from 'lucide-react';
 import { TransactionService } from '../../services/TransactionService';
-import { auth, db, storage } from '../../firebase/config';
-import BarcodeScanner from '../Transaction/BarcodeScanner';
+import { auth, db } from '../../firebase/config';
 import { 
     collection, 
     addDoc, 
     query, 
     orderBy, 
     onSnapshot, 
-    serverTimestamp,
-    doc,
-    getDoc,
-    updateDoc,
-    increment 
+    serverTimestamp
   } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-
-// Add these new styled components
-const PickupInstructionForm = styled.div`
-  margin: 1rem;
-  padding: 1rem;
-  background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
-  border-radius: 12px;
-  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
-  
-  h4 {
-    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
-    margin: 0 0 1rem 0;
-    color: ${props => props.theme?.colors?.text || 'white'};
-    font-size: 1rem;
-  }
-  
-  .form-group {
-    margin-bottom: 1rem;
-    
-    label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-size: 0.9rem;
-    }
-    
-    input, textarea {
-      width: 100%;
-      padding: 0.75rem;
-      background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.2)'}90`};
-      border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
-      border-radius: 8px;
-      color: ${props => props.theme?.colors?.text || 'white'};
-      
-      &:focus {
-        outline: none;
-        border-color: ${props => props.theme?.colors?.accent || '#800000'};
-      }
-    }
-    
-    textarea {
-      min-height: 80px;
-      resize: vertical;
-    }
-  }
-  
-  .buttons {
-    display: flex;
-    gap: 0.5rem;
-  }
-`;
-
-const CompletionPrompt = styled.div`
-  margin: 1rem;
-  padding: 1rem;
-  background: rgba(76, 175, 80, 0.1);
-  border-radius: 12px;
-  border: 1px solid rgba(76, 175, 80, 0.3);
-  text-align: center;
-  
-  h4 {
-    color: #4CAF50;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-  
-  .completion-message {
-    margin-bottom: 1.5rem;
-    font-size: 1.1rem;
-  }
-  
-  .green-flag {
-    font-size: 2rem;
-    margin: 1rem 0;
-    animation: wave 1s ease-in-out infinite;
-  }
-  
-  @keyframes wave {
-    0%, 100% { transform: rotate(0deg); }
-    25% { transform: rotate(-10deg); }
-    75% { transform: rotate(10deg); }
-  }
-`;
 
 const ChatDrawer = styled.div`
   position: fixed;
@@ -206,63 +100,6 @@ const TransactionDetails = styled.div`
       }
     }
   }
-  
-  .transaction-details {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-    font-size: 0.9rem;
-    
-    .detail {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      
-      .label {
-        opacity: 0.7;
-      }
-      
-      .value {
-        font-weight: 500;
-      }
-    }
-  }
-  
-  .status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: 15px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    
-    &.pending {
-      background: rgba(255, 152, 0, 0.2);
-      color: #FF9800;
-    }
-    
-    &.awaiting_seller {
-      background: rgba(33, 150, 243, 0.2);
-      color: #2196F3;
-    }
-    
-    &.confirmed {
-      background: rgba(76, 175, 80, 0.2);
-      color: #4CAF50;
-    }
-    
-    &.completed {
-      background: rgba(76, 175, 80, 0.2);
-      color: #4CAF50;
-    }
-    
-    &.cancelled {
-      background: rgba(244, 67, 54, 0.2);
-      color: #F44336;
-    }
-  }
 `;
 
 const ChatMessages = styled.div`
@@ -285,119 +122,11 @@ const Message = styled.div`
   align-self: ${props => props.sent ? 'flex-end' : 'flex-start'};
   color: ${props => props.sent ? 'white' : props.theme?.colors?.text || 'white'};
   
-  ${props => props.sent ? `
-    border-bottom-right-radius: 4px;
-  ` : `
-    border-bottom-left-radius: 4px;
-  `}
-  
   .time {
     font-size: 0.7rem;
     margin-top: 0.5rem;
     opacity: 0.7;
     text-align: right;
-  }
-  
-  .item-preview {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-    
-    img {
-      width: 60px;
-      height: 60px;
-      border-radius: 8px;
-      object-fit: cover;
-    }
-    
-    .item-details {
-      h4 {
-        margin: 0 0 0.25rem 0;
-        font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
-      }
-      
-      .price {
-        font-weight: bold;
-        color: ${props => props.theme?.colors?.accent || '#800000'};
-      }
-    }
-  }
-  
-  .image-message {
-    max-width: 100%;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  
-  .verification-code {
-    font-family: monospace;
-    font-size: 1.2rem;
-    font-weight: bold;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 0.5rem;
-    border-radius: 4px;
-    text-align: center;
-    border: 1px dashed rgba(255, 255, 255, 0.2);
-    margin: 0.5rem 0;
-  }
-`;
-
-const SystemMessage = styled(Message)`
-  background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
-  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.2)'};
-  align-self: center;
-  text-align: center;
-  font-style: italic;
-  max-width: 90%;
-  
-  &.status-message {
-    background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
-    border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
-    font-weight: 500;
-  }
-  
-  &.alert-message {
-    background: rgba(255, 193, 7, 0.1);
-    border: 1px solid rgba(255, 193, 7, 0.3);
-    color: #FFC107;
-  }
-  
-  &.success-message {
-    background: rgba(76, 175, 80, 0.1);
-    border: 1px solid rgba(76, 175, 80, 0.3);
-    color: #4CAF50;
-  }
-  
-  &.error-message {
-    background: rgba(244, 67, 54, 0.1);
-    border: 1px solid rgba(244, 67, 54, 0.3);
-    color: #F44336;
-  }
-`;
-
-const LocationMessage = styled(Message)`
-  background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
-  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
-  
-  .location-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-  }
-  
-  .location-details {
-    background: rgba(0, 0, 0, 0.2);
-    padding: 0.75rem;
-    border-radius: 8px;
-    margin-bottom: 0.5rem;
-  }
-  
-  .location-time {
-    font-style: italic;
-    font-size: 0.9rem;
-    opacity: 0.8;
   }
 `;
 
@@ -420,56 +149,72 @@ const ChatInput = styled.div`
       border-color: ${props => props.theme?.colors?.accent || '#800000'};
     }
   }
-`;
-
-const ChatControls = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-left: 0.5rem;
-`;
-
-const IconButton = styled.button`
-  background: ${props => props.active ? `${props.theme?.colors?.accent}20` : 'transparent'};
-  border: none;
-  color: ${props => props.theme?.colors?.accent || '#800000'};
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.8;
-  transition: all 0.2s;
   
-  &:hover {
-    opacity: 1;
-    background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
-  }
-  
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  button {
+    background: transparent;
+    border: none;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    margin-left: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    
+    &:hover {
+      background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+    }
   }
 `;
 
-const ActionSection = styled.div`
+const CodeVerification = styled.div`
   padding: 1rem;
-  display: flex;
-  gap: 0.5rem;
-  border-top: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  margin: 1rem;
+  
+  h4 {
+    color: #4CAF50;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .code-input {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    
+    input {
+      flex: 1;
+      padding: 0.75rem;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      color: white;
+      font-family: monospace;
+      font-size: 1.2rem;
+      text-align: center;
+      letter-spacing: 2px;
+      
+      &:focus {
+        outline: none;
+        border-color: #4CAF50;
+      }
+    }
+  }
+  
+  .error-message {
+    color: #F44336;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
 `;
 
 const ActionButton = styled.button`
-  flex: 1;
+  width: 100%;
   padding: 0.75rem;
-  background: ${props => props.variant === 'accept' ? 
-    '#4CAF50' : 
-    props.variant === 'deny' ? 
-    '#F44336' : 
-    props.theme?.colors?.accent || '#800000'
-  };
+  background: #4CAF50;
   color: white;
   border: none;
   border-radius: 8px;
@@ -493,158 +238,19 @@ const ActionButton = styled.button`
   }
 `;
 
-const MeetupForm = styled.div`
-  padding: 1rem;
-  background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
-  border-radius: 12px;
-  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
-  margin: 0 1rem 1rem;
-  
-  h4 {
-    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
-    margin: 0 0 1rem 0;
-    font-size: 1rem;
-  }
-  
-  .form-group {
-    margin-bottom: 1rem;
-    
-    label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-size: 0.9rem;
-    }
-    
-    input, textarea {
-      width: 100%;
-      padding: 0.75rem;
-      background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.2)'}90`};
-      border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
-      border-radius: 8px;
-      color: ${props => props.theme?.colors?.text || 'white'};
-      
-      &:focus {
-        outline: none;
-        border-color: ${props => props.theme?.colors?.accent || '#800000'};
-      }
-    }
-    
-    textarea {
-      min-height: 80px;
-      resize: vertical;
-    }
-  }
-  
-  .buttons {
-    display: flex;
-    gap: 0.5rem;
-  }
-`;
-
-const VerificationCheck = styled.div`
-  padding: 1rem;
-  background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
-  border-radius: 12px;
-  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
-  margin: 0 1rem 1rem;
-  
-  h4 {
-    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
-    margin: 0 0 1rem 0;
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  p {
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-  }
-  
-  .code-input {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    
-    input {
-      flex: 1;
-      padding: 0.75rem;
-      background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.2)'}90`};
-      border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
-      border-radius: 8px;
-      color: ${props => props.theme?.colors?.text || 'white'};
-      font-family: monospace;
-      font-size: 1.2rem;
-      text-align: center;
-      letter-spacing: 2px;
-      
-      &:focus {
-        outline: none;
-        border-color: ${props => props.theme?.colors?.accent || '#800000'};
-      }
-    }
-    
-    button {
-      padding: 0.75rem;
-      background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
-      color: ${props => props.theme?.colors?.accent || '#800000'};
-      border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
-      border-radius: 8px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      
-      &:hover {
-        background: ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
-      }
-    }
-  }
-  
-  .error-message {
-    color: #F44336;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-  }
-`;
-
-
-// The actual SellerOrderChat component
 const SellerOrderChat = ({ isOpen, onClose, transaction, theme }) => {
   const [messages, setMessages] = useState([]);
-  const [showScanner, setShowScanner] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
-  const [showCodeVerification, setShowCodeVerification] = useState(false);
-  const [meetupAddress, setMeetupAddress] = useState('');
-  const [meetupDetails, setMeetupDetails] = useState('');
-  const [meetupTime, setMeetupTime] = useState('');
+  const [loading, setLoading] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [verificationError, setVerificationError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [showCodeInput, setShowCodeInput] = useState(true);
   const messagesEndRef = useRef(null);
-  const fileInputRef = useRef(null);
-
-  // Add these new state variables
-  const [showPickupForm, setShowPickupForm] = useState(false);
-  const [pickupAddress, setPickupAddress] = useState('');
-  const [pickupDetails, setPickupDetails] = useState('');
-  const [pickupTime, setPickupTime] = useState('');
-  const [showCompletion, setShowCompletion] = useState(false);
-  const [buyerETA, setBuyerETA] = useState('');
-  const [buyerArrived, setBuyerArrived] = useState(false);
   
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  useEffect(() => {
-    if (showPickupForm && transaction?.itemAddress) {
-      setPickupAddress(transaction.itemAddress);
-    }
-  }, [showPickupForm, transaction?.itemAddress]);
   
   // Load chat messages
   useEffect(() => {
@@ -669,122 +275,6 @@ const SellerOrderChat = ({ isOpen, onClose, transaction, theme }) => {
     
     return () => unsubscribe();
   }, [transaction?.id]);
-
-  useEffect(() => {
-    if (showPickupForm && transaction) {
-      // Use itemAddress from transaction if available
-      if (transaction.itemAddress) {
-        setPickupAddress(transaction.itemAddress);
-      }
-    }
-  }, [showPickupForm, transaction]);
-
-  // Listen for buyer ETA and arrival messages
-  useEffect(() => {
-    if (!transaction?.id) return;
-
-    const q = query(
-      collection(db, 'chats', transaction.id, 'messages'),
-      orderBy('timestamp', 'asc')
-    );
-
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const loadedMessages = [];
-      querySnapshot.forEach((doc) => {
-        const message = {
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp?.toDate() || new Date()
-        };
-
-        // Check for ETA messages
-        if (message.type === 'eta') {
-          setBuyerETA(message.eta);
-        }
-
-        // Check for arrival messages
-        if (message.type === 'arrival') {
-          setBuyerArrived(true);
-          // Show completion prompt after arrival
-          setTimeout(() => {
-            setShowCompletion(true);
-          }, 2000);
-        }
-
-        loadedMessages.push(message);
-      });
-      setMessages(loadedMessages);
-    });
-
-    return () => unsubscribe();
-  }, [transaction?.id]);
-
-  const handleCompleteTransaction = async () => {
-    try {
-      setLoading(true);
-
-      // Mark transaction as completed
-      await updateDoc(doc(db, 'transactions', transaction.id), {
-        status: 'completed',
-        completedAt: serverTimestamp(),
-        completedBy: 'seller'
-      });
-
-      // Send completion message
-      await addDoc(collection(db, 'chats', transaction.id, 'messages'), {
-        text: 'Transaction completed! Product handed over to buyer. Thank you for your business!',
-        sender: 'system',
-        senderName: 'System',
-        timestamp: serverTimestamp(),
-        type: 'system',
-        messageClass: 'success-message'
-      });
-
-      setShowCompletion(false);
-      onClose(); // Close the chat
-
-    } catch (error) {
-      console.error('Error completing transaction:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleScanBarcode = (code) => {
-    setVerificationCode(code);
-    setShowScanner(false);
-    
-    // Verify the code
-    handleVerifyCode();
-  };
-  
-  // Update in src/components/Chat/SellerOrderChat.js
-
-// Add a method to handle when the buyer arrives
-const handleBuyerArrival = async () => {
-  try {
-    // Add a system message to the chat
-    await addDoc(collection(db, 'chats', transaction.id, 'messages'), {
-      text: 'Buyer has arrived at the pickup location. Please verify their code to complete the transaction.',
-      sender: 'system',
-      senderName: 'System',
-      timestamp: serverTimestamp(),
-      type: 'system',
-      messageClass: 'alert-message'
-    });
-    
-    // Update the transaction
-    await updateDoc(doc(db, 'transactions', transaction.id), {
-      buyerArrived: true,
-      updatedAt: serverTimestamp()
-    });
-    
-    // Show the code verification form
-    setShowCodeVerification(true);
-  } catch (error) {
-    console.error('Error handling buyer arrival:', error);
-  }
-};
   
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !transaction?.id) return;
@@ -804,153 +294,6 @@ const handleBuyerArrival = async () => {
     }
   };
   
-  const handleAcceptOrder = async () => {
-    try {
-      setLoading(true);
-      console.log('Accepting transaction:', transaction.id);
-      
-      // The acceptTransaction function now handles sending pickup instructions
-      await TransactionService.acceptTransaction(transaction.id);
-      
-      // No need to show pickup form or send additional messages
-      // The transaction service handles this now
-      
-    } catch (error) {
-      console.error('Error accepting order:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handleRejectOrder = async () => {
-    try {
-      setLoading(true);
-      console.log('Rejecting transaction:', transaction.id);
-      await TransactionService.rejectTransaction(transaction.id, 'Rejected by seller');
-      
-      // Add a system message
-      await addDoc(collection(db, 'chats', transaction.id, 'messages'), {
-        text: 'Order rejected by seller.',
-        sender: 'system',
-        senderName: 'System',
-        timestamp: serverTimestamp(),
-        type: 'system',
-        messageClass: 'error-message'
-      });
-      
-      // Update unread count for buyer
-      await updateDoc(doc(db, 'chats', transaction.id), {
-        [`unreadCount.${transaction.buyerId}`]: increment(1),
-        lastMessage: 'Order rejected by seller',
-        lastMessageTime: serverTimestamp()
-      });
-      
-      onClose();
-    } catch (error) {
-      console.error('Error rejecting order:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePickupSubmit = async () => {
-    if (!pickupAddress.trim()) {
-      alert('Please provide a pickup address');
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      
-      const pickupInfo = {
-        address: pickupAddress,
-        details: pickupDetails || 'No additional details provided',
-        time: pickupTime || 'Flexible timing',
-        type: 'in_person',
-        coordinates: transaction.itemCoordinates || null // Include coordinates if available
-      };
-      
-      // Send detailed pickup instructions to buyer
-      const instructionText = `📍 PICKUP INSTRUCTIONS 📍
-  
-  📍 Address: ${pickupAddress}
-  
-  📋 Details: ${pickupDetails || 'Meet at the specified address'}
-  
-  ⏰ Available Time: ${pickupTime || 'Flexible - contact seller to arrange'}
-  
-  Please confirm your estimated arrival time once you're ready to pick up your item.`;
-  
-      await addDoc(collection(db, 'chats', transaction.id, 'messages'), {
-        text: instructionText,
-        sender: auth.currentUser.uid,
-        senderName: auth.currentUser.displayName || auth.currentUser.email,
-        timestamp: serverTimestamp(),
-        type: 'pickup-instructions',
-        pickupInfo: pickupInfo
-      });
-      
-      // Update transaction with pickup details
-      await updateDoc(doc(db, 'transactions', transaction.id), {
-        pickupDetails: pickupInfo,
-        status: 'pickup_confirmed',
-        updatedAt: serverTimestamp()
-      });
-      
-      setShowPickupForm(false);
-      
-      // Add system message requesting ETA
-      setTimeout(async () => {
-        await addDoc(collection(db, 'chats', transaction.id, 'messages'), {
-          text: '⏰ Please provide your estimated time of arrival when you\'re ready to pick up your item.',
-          sender: 'system',
-          senderName: 'System',
-          timestamp: serverTimestamp(),
-          type: 'system',
-          messageClass: 'status-message'
-        });
-      }, 1000);
-      
-    } catch (error) {
-      console.error('Error sending pickup instructions:', error);
-      alert('Failed to send pickup instructions. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handlePhotoUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file || !transaction?.id) return;
-    
-    try {
-      setUploadingPhoto(true);
-      
-      // Upload to Firebase Storage
-      const storageRef = ref(storage, `transactions/${transaction.id}/evidence_${Date.now()}`);
-      await uploadBytes(storageRef, file);
-      
-      // Get download URL
-      const photoURL = await getDownloadURL(storageRef);
-      
-      // Send as a message
-      await addDoc(collection(db, 'chats', transaction.id, 'messages'), {
-        image: photoURL,
-        sender: auth.currentUser.uid,
-        senderName: auth.currentUser.displayName || auth.currentUser.email,
-        timestamp: serverTimestamp(),
-        type: 'image'
-      });
-      
-      // Save to transaction
-      await TransactionService.uploadPhotoEvidence(transaction.id, photoURL);
-    } catch (error) {
-      console.error('Error uploading photo:', error);
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
-  
   const handleVerifyCode = async () => {
     if (!verificationCode.trim()) {
       setVerificationError('Please enter the verification code');
@@ -963,7 +306,16 @@ const handleBuyerArrival = async () => {
       
       await TransactionService.completeTransaction(transaction.id, verificationCode);
       
-      setShowCodeVerification(false);
+      await addDoc(collection(db, 'chats', transaction.id, 'messages'), {
+        text: '✅ Transaction completed! Funds have been released.',
+        sender: 'system',
+        senderName: 'System',
+        timestamp: serverTimestamp(),
+        type: 'system'
+      });
+      
+      setTimeout(() => onClose(), 2000);
+      
     } catch (error) {
       console.error('Error verifying code:', error);
       setVerificationError(error.message);
@@ -974,175 +326,6 @@ const handleBuyerArrival = async () => {
   
   const formatTime = (timestamp) => {
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-  
-  const formatDate = (timestamp) => {
-    return new Date(timestamp).toLocaleDateString();
-  };
-  
-  // Update in src/components/Chat/SellerOrderChat.js
-// Add within the ActionSection:
-
-const renderTransactionPanel = () => {
-  switch(transaction?.status) {
-    case 'awaiting_seller':
-      return (
-        <div style={{
-          padding: '1.5rem',
-          background: 'rgba(33, 150, 243, 0.1)',
-          borderRadius: '12px',
-          marginBottom: '1rem',
-          border: '1px solid rgba(33, 150, 243, 0.3)'
-        }}>
-          <h3 style={{ 
-            marginBottom: '1rem',
-            color: '#2196F3',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <ShoppingCart size={18} />
-            New Order Request
-          </h3>
-          
-          <div style={{ marginBottom: '0.5rem' }}>
-            <strong>{transaction.buyerName}</strong> wants to purchase:
-          </div>
-          
-          <div style={{
-            display: 'flex',
-            gap: '1rem',
-            background: 'rgba(0, 0, 0, 0.2)',
-            padding: '1rem',
-            borderRadius: '8px',
-            marginBottom: '1rem'
-          }}>
-            <div style={{ 
-              width: '50px', 
-              height: '50px',
-              borderRadius: '8px',
-              overflow: 'hidden',
-              flexShrink: 0
-            }}>
-              {transaction.itemImage ? (
-                <img 
-                  src={transaction.itemImage} 
-                  alt={transaction.itemName} 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              ) : (
-                <div style={{ 
-                  width: '100%', 
-                  height: '100%', 
-                  background: 'rgba(0, 0, 0, 0.4)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <Package size={20} opacity={0.6} />
-                </div>
-              )}
-            </div>
-            
-            <div>
-              <div style={{ fontWeight: 'bold' }}>{transaction.itemName}</div>
-              <div style={{ 
-                color: theme?.colors?.accent || '#800000',
-                fontWeight: 'bold'
-              }}>
-                ${parseFloat(transaction.price).toFixed(2)}
-              </div>
-            </div>
-          </div>
-          
-          <div style={{ marginBottom: '1.5rem' }}>
-            What would you like to do with this order?
-          </div>
-          
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <ActionButton variant="deny" onClick={handleRejectOrder} disabled={loading}>
-              <ThumbsDown size={18} />
-              Decline Order
-            </ActionButton>
-            <ActionButton variant="accept" onClick={handleAcceptOrder} disabled={loading}>
-              <ThumbsUp size={18} />
-              Accept Order
-            </ActionButton>
-          </div>
-        </div>
-      );
-    
-    case 'confirmed':
-      return (
-        <div style={{ 
-          marginBottom: '1rem',
-          padding: '1rem',
-          background: 'rgba(76, 175, 80, 0.1)',
-          borderRadius: '8px',
-          border: '1px solid rgba(76, 175, 80, 0.3)'
-        }}>
-          <p>You've accepted this order. When the buyer arrives, verify their code to complete the transaction.</p>
-          
-          {transaction.buyerAtLocation && (
-            <button 
-              onClick={() => setShowCodeVerification(true)}
-              style={{
-                background: theme?.colors?.accent || '#800000',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 1rem',
-                borderRadius: '8px',
-                marginTop: '0.5rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}
-            >
-              <Check size={16} />
-              Verify Code & Complete Sale
-            </button>
-          )}
-        </div>
-      );
-      
-    default:
-      return null;
-  }
-};
-
-// Then add this right before the renderActionSection:
-  // Show appropriate UI based on transaction status
-  const renderActionSection = () => {
-    if (!transaction) return null;
-    
-    if (transaction.status === 'awaiting_seller') {
-      return (
-        <ActionSection>
-          <ActionButton variant="deny" onClick={handleRejectOrder} disabled={loading}>
-            <ThumbsDown size={18} />
-            Reject Order
-          </ActionButton>
-          <ActionButton variant="accept" onClick={handleAcceptOrder} disabled={loading}>
-            <ThumbsUp size={18} />
-            Accept Order
-          </ActionButton>
-        </ActionSection>
-      );
-    }
-    
-    if (transaction.status === 'confirmed' && transaction.buyerAtLocation) {
-      return (
-        <ActionSection>
-          <ActionButton onClick={() => setShowCodeVerification(true)} disabled={loading}>
-            <DollarSign size={18} />
-            Verify Code & Complete Sale
-          </ActionButton>
-        </ActionSection>
-      );
-    }
-    
-    return null;
   };
   
   if (!transaction) {
@@ -1164,7 +347,7 @@ const renderTransactionPanel = () => {
   return (
     <ChatDrawer isOpen={isOpen} theme={theme}>
       <ChatHeader theme={theme}>
-        <h3>Transaction #{transaction.id.slice(-6)}</h3>
+        <h3>Order #{transaction.id.slice(-6)}</h3>
         <CloseButton onClick={onClose} theme={theme}>
           <X size={20} />
         </CloseButton>
@@ -1195,130 +378,31 @@ const renderTransactionPanel = () => {
             <div className="price">${parseFloat(transaction.price).toFixed(2)}</div>
             <div className="buyer">Buyer: {transaction.buyerName}</div>
           </div>
-          <div className="status">
-            <span className={`status-badge ${transaction.status}`}>
-              {transaction.status}
-            </span>
-          </div>
-        </div>
-        
-        <div className="transaction-details">
-          <div className="detail">
-            <Calendar size={14} />
-            <span className="label">Date:</span>
-            <span className="value">{formatDate(transaction.createdAt)}</span>
-          </div>
-          <div className="detail">
-            <Clock size={14} />
-            <span className="label">Time:</span>
-            <span className="value">{formatTime(transaction.createdAt)}</span>
-          </div>
-          <div className="detail">
-            <DollarSign size={14} />
-            <span className="label">Payment:</span>
-            <span className="value">{transaction.paymentStatus}</span>
-          </div>
-          <div className="detail">
-            <MapPin size={14} />
-            <span className="label">Meetup:</span>
-            <span className="value">{transaction.meetupType}</span>
-          </div>
         </div>
       </TransactionDetails>
       
       <ChatMessages>
-        {messages.map((msg) => {
-          if (msg.type === 'system') {
-            return (
-              <SystemMessage 
-                key={msg.id} 
-                theme={theme}
-                className={msg.messageClass}
-              >
-                {msg.text}
-                <div className="time">{formatTime(msg.timestamp)}</div>
-              </SystemMessage>
-            );
-          }
-          
-          if (msg.type === 'image') {
-            return (
-              <Message 
-                key={msg.id} 
-                sent={msg.sender === auth.currentUser?.uid}
-                theme={theme}
-              >
-                <img 
-                  src={msg.image} 
-                  alt="Shared"
-                  className="image-message"
-                />
-                <div className="time">{formatTime(msg.timestamp)}</div>
-              </Message>
-            );
-          }
-          
-          if (msg.type === 'location') {
-            return (
-              <LocationMessage
-                key={msg.id}
-                theme={theme}
-              >
-                <div className="location-header">
-                  <MapPin size={16} />
-                  Meetup Location
-                </div>
-                <div className="location-details">
-                  {msg.location.address}
-                  {msg.location.details && (
-                    <div style={{ marginTop: '0.5rem' }}>
-                      {msg.location.details}
-                    </div>
-                  )}
-                </div>
-                <div className="location-time">
-                  Time: {new Date(msg.location.time).toLocaleString()}
-                </div>
-                <div className="time">{formatTime(msg.timestamp)}</div>
-              </LocationMessage>
-            );
-          }
-          
-          if (msg.type === 'verification-code' && msg.sender === auth.currentUser?.uid) {
-            return (
-              <Message 
-                key={msg.id} 
-                sent
-                theme={theme}
-              >
-                <div>Verification code for buyer:</div>
-                <div className="verification-code">{msg.code}</div>
-                <div className="time">{formatTime(msg.timestamp)}</div>
-              </Message>
-            );
-          }
-          
-          return (
-            <Message 
-              key={msg.id} 
-              sent={msg.sender === auth.currentUser?.uid}
-              theme={theme}
-            >
-              {msg.text}
-              <div className="time">{formatTime(msg.timestamp)}</div>
-            </Message>
-          );
-        })}
+        {messages.map((msg) => (
+          <Message 
+            key={msg.id} 
+            sent={msg.sender === auth.currentUser?.uid}
+            theme={theme}
+          >
+            {msg.text}
+            <div className="time">{formatTime(msg.timestamp)}</div>
+          </Message>
+        ))}
         <div ref={messagesEndRef} />
       </ChatMessages>
-                  
-      {showCodeVerification && (
-        <VerificationCheck theme={theme}>
+      
+      {/* Code Verification */}
+      {showCodeInput && (
+        <CodeVerification>
           <h4>
-            <DollarSign size={18} />
+            <Check size={18} />
             Complete Transaction
           </h4>
-          <p>Enter the verification code provided by the buyer to complete the transaction and receive payment.</p>
+          <p>Enter the buyer's pickup code to complete the transaction:</p>
           <div className="code-input">
             <input
               type="text"
@@ -1326,203 +410,36 @@ const renderTransactionPanel = () => {
               value={verificationCode}
               onChange={(e) => setVerificationCode(e.target.value.toUpperCase())}
               maxLength={11}
-            />
-            <button onClick={() => setShowScanner(true)}>
-              <Camera size={20} />
-            </button>
-          </div>
-          {verificationError && (
-            <div className="error-message">{verificationError}</div>
-          )}
-          <div className="buttons">
-            <ActionButton onClick={() => setShowCodeVerification(false)} variant="deny">
-              Cancel
-            </ActionButton>
-            <ActionButton 
-              onClick={handleVerifyCode} 
-              disabled={!verificationCode || loading}
-              variant="accept"
-            >
-              <Check size={18} />
-              Verify Code
-            </ActionButton>
-          </div>
-        </VerificationCheck>
-      )}      
-
-      // Add the barcode scanner
-      {showScanner && (
-        <div style={{ 
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.8)',
-          zIndex: 2000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1rem'
-        }}>
-          <BarcodeScanner 
-            onScan={handleScanBarcode}
-            onCancel={() => setShowScanner(false)}
-          />
-        </div>
-
-      )}
-
-      {/* Pickup Instruction Form */}
-      {/* Enhanced Pickup Instruction Form */}
-      {showPickupForm && (
-        <PickupInstructionForm theme={theme}>
-          <h4>
-            <MapPin size={18} />
-            Confirm Pickup Instructions
-          </h4>
-          <div className="form-group">
-            <label>Pickup Address *</label>
-            <input
-              type="text"
-              placeholder="123 Main St, City, State"
-              value={pickupAddress}
-              onChange={(e) => setPickupAddress(e.target.value)}
-              required
-            />
-            <small style={{ opacity: 0.7, fontSize: '0.8rem' }}>
-              {transaction?.itemAddress ? 'Auto-filled from item location' : 'Enter pickup address'}
-            </small>
-          </div>
-          <div className="form-group">
-            <label>Meeting Instructions</label>
-            <textarea
-              placeholder="e.g., Meet at the front door, look for red car, ring doorbell, etc."
-              value={pickupDetails}
-              onChange={(e) => setPickupDetails(e.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label>Available Time Window</label>
-            <input
-              type="text"
-              placeholder="e.g., 2-5 PM today, Tomorrow morning, Flexible"
-              value={pickupTime}
-              onChange={(e) => setPickupTime(e.target.value)}
-            />
-          </div>
-          <div className="buttons">
-            <ActionButton onClick={() => setShowPickupForm(false)} variant="deny">
-              Cancel
-            </ActionButton>
-            <ActionButton 
-              onClick={handlePickupSubmit} 
-              disabled={!pickupAddress.trim() || loading}
-              variant="accept"
-            >
-              <Send size={18} />
-              {loading ? 'Sending...' : 'Send Pickup Instructions'}
-            </ActionButton>
-          </div>
-        </PickupInstructionForm>
-      )}
-
-      {/* Show buyer ETA if available */}
-      {buyerETA && (
-        <div style={{
-          margin: '1rem',
-          padding: '1rem',
-          background: 'rgba(33, 150, 243, 0.1)',
-          borderRadius: '12px',
-          border: '1px solid rgba(33, 150, 243, 0.3)'
-        }}>
-          <h4 style={{ color: '#2196F3', margin: '0 0 0.5rem 0' }}>
-            <Clock size={18} style={{ marginRight: '0.5rem' }} />
-            Buyer ETA
-          </h4>
-          <p>The buyer will arrive in: <strong>{buyerETA}</strong></p>
-        </div>
-      )}
-
-      {/* Show arrival notification */}
-      {buyerArrived && (
-        <div style={{
-          margin: '1rem',
-          padding: '1rem',
-          background: 'rgba(255, 152, 0, 0.1)',
-          borderRadius: '12px',
-          border: '1px solid rgba(255, 152, 0, 0.3)'
-        }}>
-          <h4 style={{ color: '#FF9800', margin: '0 0 0.5rem 0' }}>
-            <MapPin size={18} style={{ marginRight: '0.5rem' }} />
-            Buyer Has Arrived
-          </h4>
-          <p>The buyer is at the pickup location. Verify their code to complete the transaction.</p>
-        </div>
-      )}
-
-      {/* Completion Prompt */}
-      {showCompletion && (
-        <CompletionPrompt>
-          <h4>
-            <Check size={18} />
-            Ready to Complete Transaction
-          </h4>
-          <div className="green-flag">🟢</div>
-          <div className="completion-message">
-            Location verified! You can now give the product to the buyer.
-          </div>
-          <ActionButton 
-            className="primary"
-            onClick={handleCompleteTransaction}
-            disabled={loading}
-            theme={theme}
-          >
-            <Check size={16} />
-            Product Handed Over - Complete Transaction
-          </ActionButton>
-        </CompletionPrompt>
-      )}
-      
-      {renderTransactionPanel()}
-      {renderActionSection()}
-      
-      {transaction.status === 'confirmed' && (
-        <ChatInput>
-          <input
-            type="text"
-            placeholder="Type a message..."
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-          />
-          <ChatControls>
-            <IconButton 
-              onClick={() => fileInputRef.current.click()}
-              disabled={uploadingPhoto}
-              theme={theme}
-            >
-              <Camera size={20} />
-            </IconButton>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={handlePhotoUpload}
-            />
-            <IconButton 
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim()}
-              theme={theme}
-            >
-              <Send size={20} />
-            </IconButton>
-          </ChatControls>
-        </ChatInput>
-      )}
-    </ChatDrawer>
-  );
+              />
+         </div>
+         {verificationError && (
+           <div className="error-message">{verificationError}</div>
+         )}
+         <ActionButton 
+           onClick={handleVerifyCode} 
+           disabled={!verificationCode || loading}
+         >
+           <Check size={18} />
+           {loading ? 'Verifying...' : 'Complete Transaction'}
+         </ActionButton>
+       </CodeVerification>
+     )}
+     
+     {/* Chat Input */}
+     <ChatInput>
+       <input
+         type="text"
+         placeholder="Type a message..."
+         value={inputMessage}
+         onChange={(e) => setInputMessage(e.target.value)}
+         onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+       />
+       <button onClick={handleSendMessage}>
+         <Send size={20} />
+       </button>
+     </ChatInput>
+   </ChatDrawer>
+ );
 };
 
 export default SellerOrderChat;
