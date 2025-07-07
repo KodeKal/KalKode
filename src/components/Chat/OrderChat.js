@@ -1,7 +1,7 @@
 // src/components/Chat/OrderChat.js - Ultra Simplified
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { X, ShoppingCart, QrCode } from 'lucide-react';
+import { X, ShoppingCart, QrCode, Minimize2, Maximize2 } from 'lucide-react';
 import { TransactionService } from '../../services/TransactionService';
 import { PaymentService } from '../../services/PaymentService';
 import { auth } from '../../firebase/config';
@@ -144,6 +144,7 @@ const CodeDisplay = styled.div`
   border-radius: 12px;
   border: 1px solid rgba(76, 175, 80, 0.3);
   text-align: center;
+  transition: all 0.3s ease;
   
   h4 {
     color: #4CAF50;
@@ -152,6 +153,20 @@ const CodeDisplay = styled.div`
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+  }
+  
+  .code-content {
+    transition: all 0.3s ease;
+    overflow: hidden;
+    ${props => props.minimized ? `
+      max-height: 0;
+      opacity: 0;
+      margin: 0;
+      padding: 0;
+    ` : `
+      max-height: 500px;
+      opacity: 1;
+    `}
   }
   
   .code-display {
@@ -181,33 +196,50 @@ const ChatInput = styled.div`
   display: flex;
   align-items: center;
   padding: 1rem;
-  border-top: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+  border-top: 1px solid ${props => `${props.theme?.colors?.accent}20` || "rgba(128, 0, 0, 0.2)"};
   
   input {
     flex: 1;
     padding: 0.75rem 1rem;
-    background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
-    border: 1px solid ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
+    background: ${props => `${props.theme?.colors?.surface || "rgba(255, 255, 255, 0.05)"}90`};
+    border: 1px solid ${props => `${props.theme?.colors?.accent}20` || "rgba(255, 255, 255, 0.1)"};
     border-radius: 20px;
-    color: ${props => props.theme?.colors?.text || 'white'};
+    color: ${props => props.theme?.colors?.text || "white"};
     
     &:focus {
       outline: none;
-      border-color: ${props => props.theme?.colors?.accent || '#800000'};
+      border-color: ${props => props.theme?.colors?.accent || "#800000"};
     }
+  }
+  
+  .input-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: 0.5rem;
   }
   
   button {
     background: transparent;
     border: none;
-    color: ${props => props.theme?.colors?.accent || '#800000'};
-    margin-left: 0.5rem;
+    color: ${props => props.theme?.colors?.accent || "#800000"};
     cursor: pointer;
     padding: 0.5rem;
     border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
     
     &:hover {
-      background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+      background: ${props => `${props.theme?.colors?.accent}20` || "rgba(128, 0, 0, 0.2)"};
+    }
+    
+    &.qr-toggle {
+      color: ${props => props.qrMinimized ? 
+        props.theme?.colors?.text || "white" : 
+        props.theme?.colors?.accent || "#800000"
+      };
+      opacity: ${props => props.qrMinimized ? "0.7" : "1"};
     }
   }
 `;
@@ -222,6 +254,7 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
   const [status, setStatus] = useState('initial');
   const [loading, setLoading] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
+  const [qrMinimized, setQrMinimized] = useState(false);
   const messagesEndRef = useRef(null);
   
   // Scroll to bottom when messages change
@@ -408,27 +441,29 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
 
       {/* Show Code when ready for pickup */}
       {transactionCode && status === 'chat' && (
-        <CodeDisplay>
+        <CodeDisplay minimized={qrMinimized}>
           <h4>
             <QrCode size={18} />
             Your Pickup Code
           </h4>
-          <div className="code-display">{transactionCode}</div>
-          <div className="qr-code">
-            <img 
-              src={`https://api.qrserver.com/v1/create-qr-code/?data=${transactionCode}&size=150x150`} 
-              alt="QR Code"
-            />
+          <div className="code-content">
+            <div className="code-display">{transactionCode}</div>
+            <div className="qr-code">
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?data=${transactionCode}&size=150x150`} 
+                alt="QR Code"
+              />
+            </div>
+            <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+              Show this code to the seller when you arrive for pickup.
+            </p>
           </div>
-          <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>
-            Show this code to the seller when you arrive for pickup.
-          </p>
         </CodeDisplay>
       )}
 
       {/* Chat Input */}
       {status === 'chat' && (
-        <ChatInput>
+        <ChatInput qrMinimized={qrMinimized} theme={theme}>
           <input
             type="text"
             placeholder="Type a message..."
@@ -436,9 +471,20 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
           />
-          <button onClick={handleSendMessage}>
-            Send
-          </button>
+          <div className="input-actions">
+            {transactionCode && (
+              <button 
+                onClick={() => setQrMinimized(!qrMinimized)}
+                className="qr-toggle"
+                title={qrMinimized ? "Show QR Code" : "Hide QR Code"}
+              >
+                {qrMinimized ? <Maximize2 size={18} /> : <Minimize2 size={18} />}
+              </button>
+            )}
+            <button onClick={handleSendMessage}>
+              Send
+            </button>
+          </div>
         </ChatInput>
       )}
 

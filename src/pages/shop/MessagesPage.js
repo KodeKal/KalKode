@@ -10,7 +10,9 @@ import {
   Package,
   User,
   Check,
-  QrCode
+  QrCode,
+  Minimize2,
+  Maximize2
 } from 'lucide-react';
 import { 
   collection, 
@@ -502,11 +504,45 @@ const ChatInput = styled.div`
     }
   }
   
-  .send-button {
+  .input-actions {
     position: absolute;
     right: 0.5rem;
     top: 50%;
     transform: translateY(-50%);
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+  }
+  
+  .qr-toggle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: transparent;
+    color: ${props => props.qrMinimized ? 
+      "rgba(255, 255, 255, 0.7)" : 
+      "#4CAF50"
+    };
+    border: 1px solid ${props => props.qrMinimized ? 
+      "rgba(255, 255, 255, 0.3)" : 
+      "#4CAF50"
+    };
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      background: ${props => props.qrMinimized ? 
+        "rgba(255, 255, 255, 0.1)" : 
+        "rgba(76, 175, 80, 0.1)"
+      };
+      transform: scale(1.05);
+    }
+  }
+  
+  .send-button {
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -520,14 +556,14 @@ const ChatInput = styled.div`
     transition: all 0.3s ease;
     
     &:hover {
-      transform: translateY(-50%) scale(1.05);
+      transform: scale(1.05);
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     }
     
     &:disabled {
       opacity: 0.5;
       cursor: not-allowed;
-      transform: translateY(-50%) scale(1);
+      transform: scale(1);
       box-shadow: none;
     }
   }
@@ -613,6 +649,7 @@ const CodeDisplay = styled.div`
   border-radius: 12px;
   border: 1px solid rgba(76, 175, 80, 0.3);
   text-align: center;
+  transition: all 0.3s ease;
   
   h4 {
     color: #4CAF50;
@@ -621,6 +658,20 @@ const CodeDisplay = styled.div`
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+  }
+  
+  .code-content {
+    transition: all 0.3s ease;
+    overflow: hidden;
+    ${props => props.minimized ? `
+      max-height: 0;
+      opacity: 0;
+      margin: 0;
+      padding: 0;
+    ` : `
+      max-height: 500px;
+      opacity: 1;
+    `}
   }
   
   .code-display {
@@ -657,6 +708,7 @@ const MessagesPage = () => {
   const [verificationCode, setVerificationCode] = useState('');
   const [verificationError, setVerificationError] = useState(null);
   const [verifying, setVerifying] = useState(false);
+  const [qrMinimized, setQrMinimized] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Scroll to bottom when messages change
@@ -1035,21 +1087,23 @@ const MessagesPage = () => {
 
                {/* Show pickup code for buyer */}
                {selectedChat.isBuyer && transactionDetails?.transactionCode && (
-                 <CodeDisplay>
+                 <CodeDisplay minimized={qrMinimized}>
                    <h4>
                      <QrCode size={18} />
                      Your Pickup Code
                    </h4>
-                   <div className="code-display">{transactionDetails.transactionCode}</div>
-                   <div className="qr-code">
-                     <img 
-                       src={`https://api.qrserver.com/v1/create-qr-code/?data=${transactionDetails.transactionCode}&size=150x150`} 
-                       alt="QR Code"
-                     />
+                   <div className="code-content">
+                     <div className="code-display">{transactionDetails.transactionCode}</div>
+                     <div className="qr-code">
+                       <img 
+                         src={`https://api.qrserver.com/v1/create-qr-code/?data=${transactionDetails.transactionCode}&size=150x150`} 
+                         alt="QR Code"
+                       />
+                     </div>
+                     <p style={{ fontSize: "0.9rem", opacity: 0.8 }}>
+                       Show this code to the seller when you arrive for pickup.
+                     </p>
                    </div>
-                   <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>
-                     Show this code to the seller when you arrive for pickup.
-                   </p>
                  </CodeDisplay>
                )}
 
@@ -1083,22 +1137,33 @@ const MessagesPage = () => {
                  </CodeVerification>
                )}
                
-               <ChatInput>
+               <ChatInput qrMinimized={qrMinimized}>
                  <div className="input-container">
                    <input 
                      type="text" 
                      placeholder="Type a message..." 
                      value={inputMessage}
                      onChange={(e) => setInputMessage(e.target.value)}
-                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                     onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
                    />
-                   <button 
-                     className="send-button" 
-                     onClick={handleSendMessage} 
-                     disabled={!inputMessage.trim()}
-                   >
-                     <Send size={16} />
-                   </button>
+                   <div className="input-actions">
+                     {selectedChat.isBuyer && transactionDetails?.transactionCode && (
+                       <button 
+                         className="qr-toggle"
+                         onClick={() => setQrMinimized(!qrMinimized)}
+                         title={qrMinimized ? "Show QR Code" : "Hide QR Code"}
+                       >
+                         {qrMinimized ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
+                       </button>
+                     )}
+                     <button 
+                       className="send-button" 
+                       onClick={handleSendMessage} 
+                       disabled={!inputMessage.trim()}
+                     >
+                       <Send size={16} />
+                     </button>
+                   </div>
                  </div>
                </ChatInput>
              </>
