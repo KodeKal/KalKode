@@ -1,34 +1,21 @@
-// src/pages/shop/MessagesPage.js - With Ultra-Simple Chat Implementation
-import React, { useState, useEffect, useRef } from 'react';
+// src/pages/shop/MessagesPage.js - Optimized Version
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { 
-  MessageCircle, 
-  Search, 
-  X, 
-  Trash2, 
-  Send,
-  Package,
-  User,
-  Check,
-  QrCode,
-  Minimize2,
-  Maximize2
+  MessageCircle, Search, X, Trash2, Send, Package, User, Check, QrCode, Camera
 } from 'lucide-react';
 import { 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
-  onSnapshot, 
-  updateDoc, 
-  doc, 
-  addDoc,
-  serverTimestamp,
-  getDoc
+  collection, query, where, orderBy, onSnapshot, updateDoc, doc, addDoc, serverTimestamp
 } from 'firebase/firestore';
 import { db, auth } from '../../firebase/config';
 import { TransactionService } from '../../services/TransactionService';
+import QrScanner from 'qr-scanner';
 
+// Move QR scanner instance outside component to prevent recreation
+let qrScannerInstance = null;
+let scanHeartbeat = null;
+
+// Styled components (keeping existing styles but optimized)
 const PageContainer = styled.div`
   min-height: 100vh;
   background: linear-gradient(to bottom, #0B0B3B, #1A1A4C);
@@ -102,11 +89,9 @@ const ChatsList = styled.div`
 const SearchInput = styled.div`
   position: relative;
   margin-bottom: 1.5rem;
-  width: calc(100% - 0.1rem);
   
   input {
-    width: 83%;
-    height: 80%;
+    width: 85%;
     padding: 0.75rem 3rem 0.75rem 1rem;
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(128, 0, 0, 0.3);
@@ -132,6 +117,7 @@ const SearchInput = styled.div`
     top: 50%;
     transform: translateY(-50%);
     color: rgba(255, 255, 255, 0.6);
+    pointer-events: none;
   }
 
   .clear-button {
@@ -161,8 +147,6 @@ const ChatItemsContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding-right: 4rem;
-  margin-left: -0.35rem;
   
   &::-webkit-scrollbar {
     width: 6px;
@@ -182,24 +166,13 @@ const ChatItemsContainer = styled.div`
 const ChatItem = styled.div`
   display: flex;
   gap: 1rem;
-  background: ${props => props.active ? 
-    'rgba(128, 0, 0, 0.3)' : 
-    'rgba(0, 0, 0, 0.4)'
-  };
-  border: 2px solid ${props => props.active ? 
-    '#800000' : 
-    'rgba(128, 0, 0, 0.3)'
-  };
+  background: ${props => props.active ? 'rgba(128, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.4)'};
+  border: 2px solid ${props => props.active ? '#800000' : 'rgba(128, 0, 0, 0.3)'};
   border-radius: 12px;
   padding: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
-  overflow: hidden;
-  width: calc(100% + 4rem);
-  min-width: 0;
-  flex-shrink: 0;
-  box-sizing: border-box;
   
   &:hover {
     transform: translateY(-2px);
@@ -219,6 +192,9 @@ const ChatItem = styled.div`
     overflow: hidden;
     flex-shrink: 0;
     background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     
     img {
       width: 100%;
@@ -237,10 +213,7 @@ const ChatItem = styled.div`
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      color: ${props => props.active ? 
-        '#FFFFFF' : 
-        'rgba(255, 255, 255, 0.9)'
-      };
+      color: ${props => props.active ? '#FFFFFF' : 'rgba(255, 255, 255, 0.9)'};
     }
     
     .chat-preview {
@@ -301,49 +274,9 @@ const ChatItem = styled.div`
   }
 `;
 
-const EmptyState = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding: 2rem;
-  
-  .icon-container {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: rgba(128, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1.5rem;
-    
-    svg {
-      color: #800000;
-      opacity: 0.8;
-    }
-  }
-  
-  h3 {
-    margin-bottom: 0.5rem;
-    color: #800000;
-  }
-  
-  p {
-    max-width: 300px;
-    opacity: 0.8;
-    line-height: 1.5;
-    margin-bottom: 2rem;
-  }
-`;
-
 const ChatDisplay = styled.div`
-  flex: 0 0 auto;
-  width: calc(69% - 3rem);
-  margin-left: 3rem;
-  margin-top: -1rem;
+  flex: 1;
+  margin-left: 2rem;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -372,19 +305,11 @@ const ChatHeader = styled.div`
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    overflow: hidden;
-    flex-shrink: 0;
     background: rgba(128, 0, 0, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
     color: #FFFFFF;
-    
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
   }
   
   .chat-user-details {
@@ -393,17 +318,11 @@ const ChatHeader = styled.div`
     .chat-title {
       font-weight: bold;
       margin-bottom: 0.25rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
     }
     
     .chat-subtitle {
       font-size: 0.9rem;
       opacity: 0.8;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
     }
   }
   
@@ -412,9 +331,6 @@ const ChatHeader = styled.div`
     padding: 0.5rem 1rem;
     border-radius: 20px;
     font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
     border: 1px solid rgba(128, 0, 0, 0.3);
   }
 `;
@@ -448,14 +364,13 @@ const Message = styled.div`
   border-radius: 12px;
   font-size: 0.95rem;
   line-height: 1.4;
-  position: relative;
   
   align-self: ${props => props.sent ? 'flex-end' : 'flex-start'};
   background: ${props => props.sent ? 
     'linear-gradient(45deg, #800000, #4A0404)' : 
     'rgba(0, 0, 0, 0.4)'
   };
-  color: ${props => props.sent ? 'white' : '#FFFFFF'};
+  color: white;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   
   ${props => props.sent ? 
@@ -514,19 +429,13 @@ const ChatInput = styled.div`
     align-items: center;
   }
   
-  .qr-toggle {
+  .action-button {
     width: 32px;
     height: 32px;
     border-radius: 50%;
     background: transparent;
-    color: ${props => props.qrMinimized ? 
-      "rgba(255, 255, 255, 0.7)" : 
-      "#4CAF50"
-    };
-    border: 1px solid ${props => props.qrMinimized ? 
-      "rgba(255, 255, 255, 0.3)" : 
-      "#4CAF50"
-    };
+    border: 1px solid ${props => props.active ? '#4CAF50' : 'rgba(255, 255, 255, 0.3)'};
+    color: ${props => props.active ? '#4CAF50' : 'rgba(255, 255, 255, 0.7)'};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -534,10 +443,7 @@ const ChatInput = styled.div`
     transition: all 0.3s ease;
     
     &:hover {
-      background: ${props => props.qrMinimized ? 
-        "rgba(255, 255, 255, 0.1)" : 
-        "rgba(76, 175, 80, 0.1)"
-      };
+      background: ${props => props.active ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 255, 255, 0.1)'};
       transform: scale(1.05);
     }
   }
@@ -564,17 +470,39 @@ const ChatInput = styled.div`
       opacity: 0.5;
       cursor: not-allowed;
       transform: scale(1);
-      box-shadow: none;
     }
   }
 `;
 
-const CodeVerification = styled.div`
+const ActionButton = styled.button.withConfig({
+  shouldForwardProp: (prop) => prop !== 'active'
+})`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid ${props => props.active ? '#4CAF50' : 'rgba(255, 255, 255, 0.3)'};
+  color: ${props => props.active ? '#4CAF50' : 'rgba(255, 255, 255, 0.7)'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: ${props => props.active ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 255, 255, 0.1)'};
+    transform: scale(1.05);
+  }
+`;
+
+// Unified verification component
+const VerificationSection = styled.div`
   margin: 1rem 1.5rem;
   padding: 1rem;
   background: rgba(76, 175, 80, 0.1);
   border-radius: 12px;
   border: 1px solid rgba(76, 175, 80, 0.3);
+  transition: all 0.3s ease;
   
   h4 {
     color: #4CAF50;
@@ -584,14 +512,29 @@ const CodeVerification = styled.div`
     gap: 0.5rem;
   }
   
+  .content {
+    transition: all 0.3s ease;
+    overflow: hidden;
+    ${props => props.minimized ? `
+      max-height: 0;
+      opacity: 0;
+      margin: 0;
+      padding: 0;
+    ` : `
+      max-height: 500px;
+      opacity: 1;
+    `}
+  }
+  
   .code-input {
     display: flex;
     gap: 0.5rem;
     margin-bottom: 1rem;
+    position: relative;
     
     input {
       flex: 1;
-      padding: 0.75rem;
+      padding: 0.75rem 3rem 0.75rem 0.75rem;
       background: rgba(0, 0, 0, 0.2);
       border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 8px;
@@ -606,72 +549,28 @@ const CodeVerification = styled.div`
         border-color: #4CAF50;
       }
     }
-  }
-  
-  .error-message {
-    color: #F44336;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-  }
-`;
-
-const ActionButton = styled.button`
-  width: 100%;
-  padding: 0.75rem;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: all 0.3s;
-  
-  &:hover {
-    transform: translateY(-2px);
-    filter: brightness(1.1);
-  }
-  
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
-`;
-
-const CodeDisplay = styled.div`
-  margin: 1rem 1.5rem;
-  padding: 1rem;
-  background: rgba(76, 175, 80, 0.1);
-  border-radius: 12px;
-  border: 1px solid rgba(76, 175, 80, 0.3);
-  text-align: center;
-  transition: all 0.3s ease;
-  
-  h4 {
-    color: #4CAF50;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-  
-  .code-content {
-    transition: all 0.3s ease;
-    overflow: hidden;
-    ${props => props.minimized ? `
-      max-height: 0;
-      opacity: 0;
-      margin: 0;
-      padding: 0;
-    ` : `
-      max-height: 500px;
-      opacity: 1;
-    `}
+    
+    .camera-icon {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: #2196F3;
+      cursor: pointer;
+      padding: 0.25rem;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      &:hover {
+        background: rgba(33, 150, 243, 0.1);
+        transform: translateY(-50%) scale(1.1);
+      }
+    }
   }
   
   .code-display {
@@ -685,19 +584,241 @@ const CodeDisplay = styled.div`
     letter-spacing: 3px;
     color: #4CAF50;
     border: 2px dashed #4CAF50;
+    text-align: center;
   }
   
   .qr-code {
     margin: 1rem 0;
+    text-align: center;
+    
     img {
       width: 150px;
       height: 150px;
       border-radius: 8px;
     }
   }
+  
+  .message {
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    
+    &.error {
+      color: #F44336;
+      background: rgba(244, 67, 54, 0.1);
+      border: 1px solid rgba(244, 67, 54, 0.3);
+    }
+    
+    &.success {
+      color: #4CAF50;
+      background: rgba(76, 175, 80, 0.1);
+      border: 1px solid rgba(76, 175, 80, 0.3);
+      font-weight: bold;
+      line-height: 1.4;
+    }
+  }
+  
+  .action-button {
+    width: 100%;
+    padding: 0.75rem;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.3s;
+    
+    &:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
+    
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+`;
+
+const CameraModal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  
+  /* Prevent modal from closing on click */
+  .modal-content {
+    pointer-events: all;
+  }
+  
+  .camera-header {
+    color: white;
+    text-align: center;
+    margin-bottom: 2rem;
+    
+    h3 {
+      margin-bottom: 0.5rem;
+      color: #4CAF50;
+    }
+    
+    p {
+      opacity: 0.8;
+      font-size: 0.9rem;
+    }
+  }
+  
+  .camera-view {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 5px 30px rgba(0, 0, 0, 0.5);
+    
+    video {
+      width: 300px;
+      height: 300px;
+      object-fit: cover;
+      background: #000;
+      border: 2px solid #4CAF50;
+      transform: scaleX(-1);
+    }
+    
+    .scan-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px;
+      height: 200px;
+      border: 2px solid #4CAF50;
+      border-radius: 12px;
+      background: transparent;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+      
+      &::before, &::after {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #4CAF50;
+        border-radius: 3px;
+      }
+      
+      &::before {
+        top: -3px;
+        left: -3px;
+        border-right: transparent;
+        border-bottom: transparent;
+      }
+      
+      &::after {
+        bottom: -3px;
+        right: -3px;
+        border-left: transparent;
+        border-top: transparent;
+      }
+    }
+  }
+  
+  .camera-controls {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    
+    button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s;
+      
+      &.primary {
+        background: #4CAF50;
+        color: white;
+        
+        &:hover {
+          background: #45a049;
+        }
+      }
+      
+      &.secondary {
+        background: #f44336;
+        color: white;
+        
+        &:hover {
+          background: #da190b;
+        }
+      }
+    }
+  }
+  
+  .error-message {
+    color: #f44336;
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    text-align: center;
+  }
+`;
+
+const EmptyState = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+  
+  .icon-container {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(128, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    
+    svg {
+      color: #800000;
+      opacity: 0.8;
+    }
+  }
+  
+  h3 {
+    margin-bottom: 0.5rem;
+    color: #800000;
+  }
+  
+  p {
+    max-width: 300px;
+    opacity: 0.8;
+    line-height: 1.5;
+  }
 `;
 
 const MessagesPage = () => {
+  // Optimized state management - combine related states
   const [chats, setChats] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedChat, setSelectedChat] = useState(null);
@@ -705,116 +826,257 @@ const MessagesPage = () => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [transactionDetails, setTransactionDetails] = useState(null);
-  const [verificationCode, setVerificationCode] = useState('');
-  const [verificationError, setVerificationError] = useState(null);
-  const [verifying, setVerifying] = useState(false);
-  const [qrMinimized, setQrMinimized] = useState(false);
+  
+  // Unified verification state
+  const [verification, setVerification] = useState({
+    code: '',
+    error: null,
+    success: null,
+    loading: false,
+    minimized: true
+  });
+  
+  // UI state
+  const [ui, setUi] = useState({
+    qrMinimized: true,
+    showCamera: false,
+    cameraError: null
+  });
+  
   const messagesEndRef = useRef(null);
+  const videoRef = useRef(null);
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
+  // Optimized callbacks using useCallback
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, []);
 
-  // Load chats
-  useEffect(() => {
-    if (!auth.currentUser) return;
+  const updateVerification = useCallback((updates) => {
+    setVerification(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  const updateUI = useCallback((updates) => {
+    setUi(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  // Cleanup camera resources
+  const cleanupCamera = useCallback(() => {
+    console.log('🧹 Cleaning up camera...');
     
-    setLoading(true);
-    
-    const chatsRef = collection(db, 'chats');
-    const q = query(
-      chatsRef,
-      where('participants', 'array-contains', auth.currentUser.uid),
-      orderBy('lastMessageTime', 'desc')
+    if (qrScannerInstance) {
+      qrScannerInstance.destroy();
+      qrScannerInstance = null;
+    }
+    if (scanHeartbeat) {
+      clearInterval(scanHeartbeat);
+      scanHeartbeat = null;
+    }
+    if (videoRef.current?.srcObject) {
+      const tracks = videoRef.current.srcObject.getTracks();
+      tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+  }, []);
+
+  // Optimized QR scanning with automatic verification
+  const startQRScanning = useCallback(async () => {
+  if (!videoRef.current?.srcObject) return;
+
+  try {
+    if (qrScannerInstance) qrScannerInstance.destroy();
+
+    qrScannerInstance = new QrScanner(
+      videoRef.current,
+      async (result) => {
+        const code = result.data.toUpperCase().trim();
+        console.log('🎯 QR Code detected:', code);
+        
+        // Stop scanning immediately but keep camera open
+        if (qrScannerInstance) {
+          qrScannerInstance.stop();
+        }
+        
+        // Fill the input field
+        updateVerification({ code, error: null });
+        
+        // Show "Code detected" message and keep camera open for 2 seconds
+        updateUI({ cameraError: `✅ Code detected: ${code}. Verifying...` });
+        
+        // Wait 2 seconds before closing camera and verifying
+        setTimeout(async () => {
+          // Close camera
+          updateUI({ showCamera: false, cameraError: null });
+          cleanupCamera();
+          
+          // Now verify
+          try {
+            updateVerification({ loading: true, error: null, success: null });
+            
+            await TransactionService.completeTransaction(selectedChat.transactionId, code);
+            
+            await addDoc(collection(db, 'chats', selectedChat.transactionId, 'messages'), {
+              text: '✅ Transaction completed! Funds have been released.',
+              sender: 'system',
+              senderName: 'System',
+              timestamp: serverTimestamp(),
+              type: 'system'
+            });
+            
+            updateVerification({ 
+              code: '', 
+              loading: false,
+              success: `🎉 CODE VERIFIED! Transaction completed! 💰 Funds released. 📦 Please deliver the item to the buyer. Code: ${code}`
+            });
+            
+          } catch (error) {
+            updateVerification({ 
+              loading: false,
+              error: `❌ Invalid code "${code}". Please ask buyer for correct pickup code.`
+            });
+          }
+        }, 2000); // 2 second delay
+      },
+      {
+        returnDetailedScanResult: true,
+        highlightScanRegion: true,
+        highlightCodeOutline: true,
+        maxScansPerSecond: 505, // Reduced to prevent multiple detections
+        preferredCamera: 'environment'
+      }
     );
-    
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const chatData = [];
+
+    await qrScannerInstance.start();
+
+    // Backup scanning with same delay pattern
+    scanHeartbeat = setInterval(async () => {
+      if (!videoRef.current || qrScannerInstance?.hasFlash === false) return;
       
-      for (const doc of snapshot.docs) {
-        const chat = doc.data();
+      try {
+        const result = await QrScanner.scanImage(videoRef.current);
+        const code = result.toUpperCase().trim();
+        console.log('💓 Backup scan found QR:', code);
         
-        if (chat.hidden && chat.hidden[auth.currentUser.uid]) {
-          continue;
-        }
+        // Clear the interval immediately
+        clearInterval(scanHeartbeat);
+        scanHeartbeat = null;
         
-        const isBuyer = chat.buyerId === auth.currentUser.uid;
+        updateVerification({ code });
+        updateUI({ cameraError: `✅ Code detected: ${code}. Verifying...` });
         
-        chatData.push({
-          id: doc.id,
-          ...chat,
-          isBuyer,
-          isSeller: !isBuyer,
-          role: isBuyer ? 'buyer' : 'seller',
-          otherPartyId: isBuyer ? chat.sellerId : chat.buyerId,
-          otherPartyName: isBuyer ? chat.sellerName : chat.buyerName,
-          unreadCount: chat.unreadCount?.[auth.currentUser.uid] || 0
-        });
+        // Same 2-second delay pattern
+        setTimeout(async () => {
+          updateUI({ showCamera: false, cameraError: null });
+          cleanupCamera();
+          
+          try {
+            updateVerification({ loading: true, error: null });
+            await TransactionService.completeTransaction(selectedChat.transactionId, code);
+            
+            await addDoc(collection(db, 'chats', selectedChat.transactionId, 'messages'), {
+              text: '✅ Transaction completed! Funds have been released.',
+              sender: 'system',
+              senderName: 'System',
+              timestamp: serverTimestamp(),
+              type: 'system'
+            });
+            
+            updateVerification({ 
+              code: '', 
+              loading: false,
+              success: `🎉 CODE VERIFIED! Transaction completed! 💰 Funds released. 📦 Please deliver item. Code: ${code}`
+            });
+          } catch (error) {
+            updateVerification({ 
+              loading: false,
+              error: `❌ Invalid code "${code}". Please ask buyer for correct pickup code.`
+            });
+          }
+        }, 2000);
+        
+      } catch {
+        // Silent fail - continue scanning
       }
-      
-      setChats(chatData);
-      setLoading(false);
+    }, 1000); // Check every 1 second instead of 500ms
+
+  } catch (error) {
+    updateUI({ cameraError: 'QR scanning failed: ' + error.message });
+  }
+}, [selectedChat?.transactionId, cleanupCamera, updateVerification, updateUI]);
+
+  // Camera management
+  const toggleCamera = useCallback(async () => {
+  if (ui.showCamera) {
+    cleanupCamera();
+    updateUI({ showCamera: false, cameraError: null });
+    return;
+  }
+
+  try {
+    updateUI({ showCamera: true, cameraError: null });
+    
+    // Increased delay to ensure DOM update and prevent race conditions
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      video: { 
+        facingMode: 'environment',
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      } 
     });
     
-    return () => unsubscribe();
-  }, [auth.currentUser]);
-
-  // Load messages for selected chat
-  useEffect(() => {
-    if (!selectedChat) return;
-    
-    const messagesRef = collection(db, 'chats', selectedChat.id, 'messages');
-    const q = query(messagesRef, orderBy('timestamp', 'asc'));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const messageData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp
-      }));
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      await new Promise(resolve => {
+        videoRef.current.onloadedmetadata = resolve;
+      });
+      await videoRef.current.play();
       
-      setMessages(messageData);
+      // Additional delay before starting QR scanning
+      setTimeout(startQRScanning, 1500);
+    }
+  } catch (error) {
+    console.error('Camera error:', error);
+    updateUI({ cameraError: 'Camera error: ' + error.message, showCamera: false });
+  }
+}, [ui.showCamera, cleanupCamera, startQRScanning, updateUI]);
+
+  // Manual verification
+  const handleVerifyCode = useCallback(async () => {
+    if (!verification.code.trim()) {
+      updateVerification({ error: 'Please enter verification code' });
+      return;
+    }
+
+    try {
+      updateVerification({ loading: true, error: null, success: null });
       
-      // Mark messages as read
-      if (selectedChat.unreadCount > 0) {
-        updateDoc(doc(db, 'chats', selectedChat.id), {
-          [`unreadCount.${auth.currentUser.uid}`]: 0
-        });
-      }
-    });
-    
-    return () => unsubscribe();
-  }, [selectedChat?.id, auth.currentUser?.uid]);
-
-  // Load transaction details
-  useEffect(() => {
-    const fetchTransactionDetails = async () => {
-      if (selectedChat?.transactionId) {
-        try {
-          const transaction = await TransactionService.getTransactionById(selectedChat.transactionId);
-          setTransactionDetails(transaction);
-        } catch (error) {
-          console.error('Error fetching transaction:', error);
-        }
-      } else {
-        setTransactionDetails(null);
-      }
-    };
-    
-    fetchTransactionDetails();
-  }, [selectedChat?.transactionId]);
-
-  // Filter chats based on search
-  const filteredChats = chats.filter(chat => 
-    searchTerm === '' || 
-    (chat.itemName?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (chat.otherPartyName?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (chat.lastMessage?.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+      await TransactionService.completeTransaction(selectedChat.transactionId, verification.code);
+      
+      await addDoc(collection(db, 'chats', selectedChat.transactionId, 'messages'), {
+        text: '✅ Transaction completed! Funds have been released.',
+        sender: 'system',
+        senderName: 'System',
+        timestamp: serverTimestamp(),
+        type: 'system'
+      });
+      
+      updateVerification({ 
+        code: '', 
+        loading: false,
+        success: '🎉 Transaction completed! 💰 Funds released. 📦 Please deliver item.'
+      });
+      
+    } catch (error) {
+      updateVerification({ 
+        loading: false,
+        error: `Invalid code "${verification.code}". Please try again.`
+      });
+    }
+  }, [verification.code, selectedChat?.transactionId, updateVerification]);
 
   // Send message
-  const handleSendMessage = async () => {
+  const handleSendMessage = useCallback(async () => {
     if (!inputMessage.trim() || !selectedChat) return;
     
     try {
@@ -830,41 +1092,10 @@ const MessagesPage = () => {
     } catch (err) {
       console.error('Error sending message:', err);
     }
-  };
-
-  // Verify code (seller only)
-  const handleVerifyCode = async () => {
-    if (!verificationCode.trim()) {
-      setVerificationError('Please enter the verification code');
-      return;
-    }
-    
-    try {
-      setVerifying(true);
-      setVerificationError(null);
-      
-      await TransactionService.completeTransaction(selectedChat.transactionId, verificationCode);
-      
-      await addDoc(collection(db, 'chats', selectedChat.transactionId, 'messages'), {
-        text: '✅ Transaction completed! Funds have been released.',
-        sender: 'system',
-        senderName: 'System',
-        timestamp: serverTimestamp(),
-        type: 'system'
-      });
-      
-      setVerificationCode('');
-      
-    } catch (error) {
-      console.error('Error verifying code:', error);
-      setVerificationError(error.message);
-    } finally {
-      setVerifying(false);
-    }
-  };
+  }, [inputMessage, selectedChat]);
 
   // Delete chat
-  const handleDeleteChat = async (chatId, e) => {
+  const handleDeleteChat = useCallback(async (chatId, e) => {
     e.stopPropagation();
     
     if (!window.confirm('Are you sure you want to delete this conversation?')) return;
@@ -882,10 +1113,10 @@ const MessagesPage = () => {
     } catch (err) {
       console.error('Error deleting chat:', err);
     }
-  };
+  }, [selectedChat?.id]);
 
-  // Format timestamp
-  const formatTimestamp = (timestamp) => {
+  // Optimized timestamp formatting with memoization
+  const formatTimestamp = useCallback((timestamp) => {
     if (!timestamp) return '';
     
     let date;
@@ -909,7 +1140,114 @@ const MessagesPage = () => {
     } else {
       return date.toLocaleDateString();
     }
-  };
+  }, []);
+
+  // Memoized filtered chats
+  const filteredChats = useMemo(() => 
+    chats.filter(chat => 
+      searchTerm === '' || 
+      (chat.itemName?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (chat.otherPartyName?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (chat.lastMessage?.toLowerCase().includes(searchTerm.toLowerCase()))
+    ),
+    [chats, searchTerm]
+  );
+
+  // Effects
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  useEffect(() => {
+    return cleanupCamera;
+  }, [cleanupCamera]);
+
+  // Load chats (optimized)
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    
+    setLoading(true);
+    
+    const chatsRef = collection(db, 'chats');
+    const q = query(
+      chatsRef,
+      where('participants', 'array-contains', auth.currentUser.uid),
+      orderBy('lastMessageTime', 'desc')
+    );
+    
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const chatData = [];
+      
+      for (const doc of snapshot.docs) {
+        const chat = doc.data();
+        
+        if (chat.hidden?.[auth.currentUser.uid]) continue;
+        
+        const isBuyer = chat.buyerId === auth.currentUser.uid;
+        
+        chatData.push({
+          id: doc.id,
+          ...chat,
+          isBuyer,
+          isSeller: !isBuyer,
+          role: isBuyer ? 'buyer' : 'seller',
+          otherPartyId: isBuyer ? chat.sellerId : chat.buyerId,
+          otherPartyName: isBuyer ? chat.sellerName : chat.buyerName,
+          unreadCount: chat.unreadCount?.[auth.currentUser.uid] || 0
+        });
+      }
+      
+      setChats(chatData);
+      setLoading(false);
+    });
+    
+    return unsubscribe;
+  }, []);
+
+  // Load messages (optimized)
+  useEffect(() => {
+    if (!selectedChat) return;
+    
+    const messagesRef = collection(db, 'chats', selectedChat.id, 'messages');
+    const q = query(messagesRef, orderBy('timestamp', 'asc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const messageData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().timestamp
+      }));
+      
+      setMessages(messageData);
+      
+      // Mark as read
+      if (selectedChat.unreadCount > 0) {
+        updateDoc(doc(db, 'chats', selectedChat.id), {
+          [`unreadCount.${auth.currentUser.uid}`]: 0
+        });
+      }
+    });
+    
+    return unsubscribe;
+  }, [selectedChat?.id]);
+
+  // Load transaction details (optimized)
+  useEffect(() => {
+    const fetchTransactionDetails = async () => {
+      if (selectedChat?.transactionId) {
+        try {
+          const transaction = await TransactionService.getTransactionById(selectedChat.transactionId);
+          setTransactionDetails(transaction);
+        } catch (error) {
+          console.error('Error fetching transaction:', error);
+        }
+      } else {
+        setTransactionDetails(null);
+      }
+    };
+    
+    fetchTransactionDetails();
+  }, [selectedChat?.transactionId]);
 
   return (
     <PageContainer>
@@ -982,15 +1320,7 @@ const MessagesPage = () => {
                       {chat.itemImage ? (
                         <img src={chat.itemImage} alt={chat.itemName} />
                       ) : (
-                        <div style={{ 
-                          width: '100%', 
-                          height: '100%', 
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center' 
-                        }}>
-                          <Package size={20} opacity={0.5} />
-                        </div>
+                        <Package size={20} opacity={0.5} />
                       )}
                     </div>
                     
@@ -1021,166 +1351,222 @@ const MessagesPage = () => {
                     >
                       <Trash2 size={16} />
                     </button>
-                    </ChatItem>
-               ))
-             )}
-           </ChatItemsContainer>
-         </ChatsList>
-         
-         <ChatDisplay>
-           {selectedChat ? (
-             <>
-               <ChatHeader>
-                 <div className="left-section">
-                   <div className="avatar">
-                     {selectedChat.isBuyer ? (
-                       <User size={20} />
-                     ) : (
-                       <Package size={20} />
-                     )}
-                   </div>
-                   
-                   <div className="chat-user-details">
-                     <div className="chat-title">
-                       {selectedChat.otherPartyName || "Unknown user"}
-                     </div>
-                     <div className="chat-subtitle">
-                       {selectedChat.isBuyer ? "Seller" : "Buyer"} • {selectedChat.itemName}
-                     </div>
-                   </div>
-                 </div>
-                 
-                 {transactionDetails && (
-                   <div className="transaction-details">
-                     ${parseFloat(transactionDetails.price || 0).toFixed(2)}
-                   </div>
-                 )}
-               </ChatHeader>
-               
-               <ChatBody>
-                 {messages.length === 0 ? (
-                   <div style={{ 
-                     textAlign: 'center', 
-                     padding: '2rem', 
-                     opacity: 0.7,
-                     fontStyle: 'italic'
-                   }}>
-                     No messages yet. Start the conversation!
-                   </div>
-                 ) : (
-                   messages.map((message) => (
-                     <Message
-                       key={message.id}
-                       sent={message.sender === auth.currentUser?.uid}
-                     >
-                       {message.text}
-                       {message.timestamp && (
-                         <div className="message-time">
-                           {formatTimestamp(message.timestamp)}
-                         </div>
-                       )}
-                     </Message>
-                   ))
-                 )}
-                 <div ref={messagesEndRef} />
-               </ChatBody>
+                  </ChatItem>
+                ))
+              )}
+            </ChatItemsContainer>
+          </ChatsList>
+          
+          <ChatDisplay>
+            {selectedChat ? (
+              <>
+                <ChatHeader>
+                  <div className="left-section">
+                    <div className="avatar">
+                      {selectedChat.isBuyer ? <User size={20} /> : <Package size={20} />}
+                    </div>
+                    
+                    <div className="chat-user-details">
+                      <div className="chat-title">
+                        {selectedChat.otherPartyName || "Unknown user"}
+                      </div>
+                      <div className="chat-subtitle">
+                        {selectedChat.isBuyer ? "Seller" : "Buyer"} • {selectedChat.itemName}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {transactionDetails && (
+                    <div className="transaction-details">
+                      ${parseFloat(transactionDetails.price || 0).toFixed(2)}
+                    </div>
+                  )}
+                </ChatHeader>
+                
+                <ChatBody>
+                  {messages.length === 0 ? (
+                    <div style={{ 
+                      textAlign: 'center', 
+                      padding: '2rem', 
+                      opacity: 0.7,
+                      fontStyle: 'italic'
+                    }}>
+                      No messages yet. Start the conversation!
+                    </div>
+                  ) : (
+                    messages.map((message) => (
+                      <Message
+                        key={message.id}
+                        sent={message.sender === auth.currentUser?.uid}
+                      >
+                        {message.text}
+                        {message.timestamp && (
+                          <div className="message-time">
+                            {formatTimestamp(message.timestamp)}
+                          </div>
+                        )}
+                      </Message>
+                    ))
+                  )}
+                  <div ref={messagesEndRef} />
+                </ChatBody>
 
-               {/* Show pickup code for buyer */}
-               {selectedChat.isBuyer && transactionDetails?.transactionCode && (
-                 <CodeDisplay minimized={qrMinimized}>
-                   <h4>
-                     <QrCode size={18} />
-                     Your Pickup Code
-                   </h4>
-                   <div className="code-content">
-                     <div className="code-display">{transactionDetails.transactionCode}</div>
-                     <div className="qr-code">
-                       <img 
-                         src={`https://api.qrserver.com/v1/create-qr-code/?data=${transactionDetails.transactionCode}&size=150x150`} 
-                         alt="QR Code"
-                       />
-                     </div>
-                     <p style={{ fontSize: "0.9rem", opacity: 0.8 }}>
-                       Show this code to the seller when you arrive for pickup.
-                     </p>
-                   </div>
-                 </CodeDisplay>
-               )}
+                {/* Unified Verification Component */}
+                {selectedChat.isBuyer && transactionDetails?.transactionCode && (
+                  <VerificationSection minimized={ui.qrMinimized}>
+                    <h4>
+                      <ActionButton 
+                          active={!ui.qrMinimized}
+                          onClick={() => updateUI({ qrMinimized: !ui.qrMinimized })}
+                          title={ui.qrMinimized ? "Show QR Code" : "Hide QR Code"}
+                        >
+                          <QrCode size={14} />
+                        </ActionButton>
+                      Your Pickup Code
+                    </h4>
+                    <div className="content">
+                      <div className="code-display">{transactionDetails.transactionCode}</div>
+                      <div className="qr-code">
+                        <img 
+                          src={`https://api.qrserver.com/v1/create-qr-code/?data=${transactionDetails.transactionCode}&size=150x150`} 
+                          alt="QR Code"
+                        />
+                      </div>
+                      <p style={{ fontSize: "0.9rem", opacity: 0.8, textAlign: 'center' }}>
+                        Show this code to the seller when you arrive for pickup.
+                      </p>
+                    </div>
+                  </VerificationSection>
+                )}
 
-               {/* Code verification for seller */}
-               {selectedChat.isSeller && transactionDetails?.status === 'paid' && (
-                 <CodeVerification>
-                   <h4>
-                     <Check size={18} />
-                     Complete Transaction
-                   </h4>
-                   <p>Enter the buyer's pickup code to complete the transaction:</p>
-                   <div className="code-input">
-                     <input
-                       type="text"
-                       placeholder="KODE-XXXXXX"
-                       value={verificationCode}
-                       onChange={(e) => setVerificationCode(e.target.value.toUpperCase())}
-                       maxLength={11}
-                     />
-                   </div>
-                   {verificationError && (
-                     <div className="error-message">{verificationError}</div>
-                   )}
-                   <ActionButton 
-                     onClick={handleVerifyCode} 
-                     disabled={!verificationCode || verifying}
-                   >
-                     <Check size={18} />
-                     {verifying ? 'Verifying...' : 'Complete Transaction'}
-                   </ActionButton>
-                 </CodeVerification>
-               )}
-               
-               <ChatInput qrMinimized={qrMinimized}>
-                 <div className="input-container">
-                   <input 
-                     type="text" 
-                     placeholder="Type a message..." 
-                     value={inputMessage}
-                     onChange={(e) => setInputMessage(e.target.value)}
-                     onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                   />
-                   <div className="input-actions">
-                     {selectedChat.isBuyer && transactionDetails?.transactionCode && (
-                       <button 
-                         className="qr-toggle"
-                         onClick={() => setQrMinimized(!qrMinimized)}
-                         title={qrMinimized ? "Show QR Code" : "Hide QR Code"}
-                       >
-                         {qrMinimized ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
-                       </button>
-                     )}
-                     <button 
-                       className="send-button" 
-                       onClick={handleSendMessage} 
-                       disabled={!inputMessage.trim()}
-                     >
-                       <Send size={16} />
-                     </button>
-                   </div>
-                 </div>
-               </ChatInput>
-             </>
-           ) : (
-             <EmptyState>
-               <div className="icon-container">
-                 <MessageCircle size={32} />
-               </div>
-               <h3>No conversation selected</h3>
-               <p>Select a conversation from the list to view messages</p>
-             </EmptyState>
-           )}
-         </ChatDisplay>
-       </ContentWrapper>
-     </MainContent>
-   </PageContainer>
- );
+                {selectedChat.isSeller && transactionDetails?.status === 'paid' && (
+                  <VerificationSection minimized={verification.minimized}>
+                    <h4>
+                      <ActionButton 
+                          active={!verification.minimized}
+                          onClick={() => updateVerification({ minimized: !verification.minimized })}
+                          title={verification.minimized ? "Show Code Entry" : "Hide Code Entry"}
+                        >
+                          <QrCode size={14} />
+                        </ActionButton>
+                      Redeem Buyer Kode
+                    </h4>
+                    <div className="content">
+                      <p>Enter the buyer's pickup code to complete the transaction:</p>
+                      <div className="code-input">
+                        <input
+                          type="text"
+                          placeholder="KODE-XXXXXX"
+                          value={verification.code}
+                          onChange={(e) => updateVerification({ code: e.target.value.toUpperCase() })}
+                          maxLength={11}
+                        />
+                        <ActionButton 
+                          active={!verification.minimized}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleCamera();
+                          }}
+                          title="Scan QR Code"
+                        >
+                          <Camera size={20} />
+                        </ActionButton>
+                      </div>
+                      
+                      {verification.error && (
+                        <div className="message error">{verification.error}</div>
+                      )}
+                      {verification.success && (
+                        <div className="message success">{verification.success}</div>
+                      )}
+                      
+                      <button 
+                        className="action-button"
+                        onClick={handleVerifyCode} 
+                        disabled={!verification.code || verification.loading}
+                      >
+                        <Check size={18} />
+                        {verification.loading ? 'Verifying...' : 'Complete Transaction'}
+                      </button>
+                    </div>
+                  </VerificationSection>
+                )}
+                
+                <ChatInput>
+                  <div className="input-container">
+                    <input 
+                      type="text" 
+                      placeholder="Type a message..." 
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                    />
+                    <div className="input-actions">
+                      <button 
+                        className="send-button" 
+                        onClick={handleSendMessage} 
+                        disabled={!inputMessage.trim()}
+                      >
+                        <Send size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </ChatInput>
+              </>
+            ) : (
+              <EmptyState>
+                <div className="icon-container">
+                  <MessageCircle size={32} />
+                </div>
+                <h3>No conversation selected</h3>
+                <p>Select a conversation from the list to view messages</p>
+              </EmptyState>
+            )}
+          </ChatDisplay>
+
+          {/* Optimized Camera Modal */}
+          {ui.showCamera && (
+          <CameraModal onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content">
+              <div className="camera-header">
+                <h3>Scan QR Code</h3>
+                <p>Point camera at buyer's QR code</p>
+                <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>
+                  ✨ Code will be automatically verified when detected
+                </p>
+              </div>
+
+              <div className="camera-view">
+                <video ref={videoRef} autoPlay playsInline muted />
+                <div className="scan-overlay"></div>
+              </div>
+
+              <div className="camera-controls">
+                <button 
+                  className="secondary" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleCamera();
+                  }}
+                >
+                  <X size={16} />
+                  Stop Camera
+                </button>
+              </div>
+                
+              {ui.cameraError && (
+                <div className="error-message">
+                  {ui.cameraError}
+                </div>
+              )}
+            </div>
+          </CameraModal>
+        )}
+        </ContentWrapper>
+      </MainContent>
+    </PageContainer>
+  );
 };
 
 export default MessagesPage;
