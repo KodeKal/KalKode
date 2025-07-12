@@ -176,26 +176,102 @@ const Button = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
   }
+`;const PriceNegotiation = styled.div`
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: rgba(255, 193, 7, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  
+  .price-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    
+    .original-price {
+      text-decoration: line-through;
+      opacity: 0.6;
+      font-size: 0.9rem;
+    }
+    
+    .your-offer {
+      font-weight: bold;
+      color: #FFC107;
+      font-size: 1.1rem;
+    }
+  }
+  
+  .price-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    .dollar-sign {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #FFC107;
+    }
+    
+    input {
+      flex: 1;
+      padding: 0.75rem;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 193, 7, 0.5);
+      border-radius: 4px;
+      color: white;
+      font-size: 1.1rem;
+      font-weight: bold;
+      
+      &:focus {
+        outline: none;
+        border-color: #FFC107;
+      }
+    }
+    
+    .savings {
+      font-size: 0.9rem;
+      color: #4CAF50;
+      font-weight: bold;
+    }
+  }
+  
+  .negotiation-note {
+    font-size: 0.85rem;
+    opacity: 0.8;
+    margin-top: 0.5rem;
+    font-style: italic;
+  }
 `;
 
 const BuyDialog = ({ item, sellerId, onClose, onTransactionCreated }) => {
   const [meetupType, setMeetupType] = useState('inperson');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [offerPrice, setOfferPrice] = useState(parseFloat(item.price) || 0);
+  
+  const originalPrice = parseFloat(item.price) || 0;
+  const savings = originalPrice - offerPrice;
+  const isNegotiating = offerPrice !== originalPrice;
   
   const handleBuy = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const transactionId = await TransactionService.initiateTransaction(
+      // Use the new transaction flow that creates a purchase request
+      const result = await TransactionService.initiateTransaction(
         item.id,
         sellerId,
-        item.price,
+        offerPrice, // Use the negotiated price
         meetupType
       );
       
-      onTransactionCreated(transactionId);
+      if (result.transactionId) {
+        // Redirect to messages to continue the flow
+        onTransactionCreated(result.transactionId);
+        onClose();
+      }
     } catch (error) {
       console.error('Error initiating transaction:', error);
       setError(error.message);
@@ -204,20 +280,25 @@ const BuyDialog = ({ item, sellerId, onClose, onTransactionCreated }) => {
     }
   };
   
+  const handlePriceChange = (e) => {
+    const value = parseFloat(e.target.value) || 0;
+    setOfferPrice(Math.max(0, value));
+  };
+  
   return (
     <DialogOverlay onClick={onClose}>
       <DialogContent 
         onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }} 
-          theme={item.theme}
-        >
+          e.preventDefault();
+          e.stopPropagation();
+        }} 
+        theme={item.theme}
+      >
         <CloseButton onClick={onClose} theme={item.theme}>
           <X size={20} />
         </CloseButton>
         
-        <Title theme={item.theme}>Buy Item</Title>
+        <Title theme={item.theme}>Make Purchase Request</Title>
         
         <ItemDetails theme={item.theme}>
           {item.images && item.images[0] && (
@@ -225,10 +306,45 @@ const BuyDialog = ({ item, sellerId, onClose, onTransactionCreated }) => {
           )}
           <div className="details">
             <h3>{item.name}</h3>
-            <div className="price">${parseFloat(item.price).toFixed(2)}</div>
+            <div className="price">Listed: ${originalPrice.toFixed(2)}</div>
             <div className="seller">Seller: {item.shopName}</div>
           </div>
         </ItemDetails>
+        
+        {/* Price Negotiation Section */}
+        <PriceNegotiation>
+          <div className="price-header">
+            <span>Your Offer:</span>
+            {isNegotiating && (
+              <div>
+                <span className="original-price">${originalPrice.toFixed(2)}</span>
+                <span className="your-offer"> → ${offerPrice.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+          
+          <div className="price-input-group">
+            <span className="dollar-sign">$</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={offerPrice}
+              onChange={handlePriceChange}
+              placeholder="Enter your offer"
+            />
+            {savings > 0 && (
+              <span className="savings">Save ${savings.toFixed(2)}</span>
+            )}
+          </div>
+          
+          <div className="negotiation-note">
+            {isNegotiating 
+              ? "Your offer will be sent to the seller for approval"
+              : "You're offering the listed price"
+            }
+          </div>
+        </PriceNegotiation>
         
         <MeetupOptions>
           <div className="title">Choose pickup method:</div>
@@ -280,11 +396,26 @@ const BuyDialog = ({ item, sellerId, onClose, onTransactionCreated }) => {
         
         <Button 
           onClick={handleBuy} 
-          disabled={loading}
+          disabled={loading || offerPrice <= 0}
           theme={item.theme}
         >
-          {loading ? 'Processing...' : 'Confirm Purchase'}
+          {loading ? 'Sending Request...' : 
+           isNegotiating ? `Send Offer (${offerPrice.toFixed(2)})` : 
+           'Send Purchase Request'}
         </Button>
+        
+        <div style={{
+          fontSize: '0.85rem',
+          opacity: 0.8,
+          textAlign: 'center',
+          marginTop: '1rem',
+          lineHeight: '1.4'
+        }}>
+          {isNegotiating 
+            ? "The seller will be notified of your offer and can accept, reject, or counter-offer"
+            : "The seller will be notified of your purchase request"
+          }
+        </div>
       </DialogContent>
     </DialogOverlay>
   );

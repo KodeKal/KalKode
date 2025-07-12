@@ -10,6 +10,7 @@ import {
 import { db, auth } from '../../firebase/config';
 import { TransactionService } from '../../services/TransactionService';
 import QrScanner from 'qr-scanner';
+import { useLocation, useSearchParams } from 'react-router-dom';
 
 // Move QR scanner instance outside component to prevent recreation
 let qrScannerInstance = null;
@@ -332,6 +333,175 @@ const ChatHeader = styled.div`
     border-radius: 20px;
     font-size: 0.9rem;
     border: 1px solid rgba(128, 0, 0, 0.3);
+  }
+`;
+
+const PurchaseRequestCard = styled.div`
+  margin: 1rem 1.5rem;
+  padding: 1.5rem;
+  background: ${props => {
+    switch(props.status) {
+      case 'pending_seller_acceptance': return 'rgba(255, 193, 7, 0.1)';
+      case 'seller_accepted': return 'rgba(76, 175, 80, 0.1)';
+      case 'seller_rejected': return 'rgba(244, 67, 54, 0.1)';
+      case 'paid': return 'rgba(33, 150, 243, 0.1)';
+      default: return 'rgba(255, 255, 255, 0.05)';
+    }
+  }};
+  border-radius: 12px;
+  border: 1px solid ${props => {
+    switch(props.status) {
+      case 'pending_seller_acceptance': return 'rgba(255, 193, 7, 0.3)';
+      case 'seller_accepted': return 'rgba(76, 175, 80, 0.3)';
+      case 'seller_rejected': return 'rgba(244, 67, 54, 0.3)';
+      case 'paid': return 'rgba(33, 150, 243, 0.3)';
+      default: return 'rgba(255, 255, 255, 0.1)';
+    }
+  }};
+  
+  h4 {
+    margin: 0 0 1rem 0;
+    color: ${props => {
+      switch(props.status) {
+        case 'pending_seller_acceptance': return '#FFC107';
+        case 'seller_accepted': return '#4CAF50';
+        case 'seller_rejected': return '#F44336';
+        case 'paid': return '#2196F3';
+        default: return '#FFFFFF';
+      }
+    }};
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .purchase-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    
+    .detail {
+      .label {
+        font-size: 0.8rem;
+        opacity: 0.7;
+        margin-bottom: 0.25rem;
+      }
+      
+      .value {
+        font-weight: bold;
+        color: white;
+      }
+    }
+  }
+  
+  .actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    
+    button {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      
+      &.accept {
+        background: #4CAF50;
+        color: white;
+        
+        &:hover {
+          background: #45a049;
+        }
+      }
+      
+      &.reject {
+        background: transparent;
+        border: 1px solid #F44336;
+        color: #F44336;
+        
+        &:hover {
+          background: rgba(244, 67, 54, 0.1);
+        }
+      }
+      
+      &.pay {
+        background: #2196F3;
+        color: white;
+        
+        &:hover {
+          background: #1976D2;
+        }
+      }
+    }
+  }
+`;
+
+const PaymentForm = styled.div`
+  margin: 1rem 1.5rem;
+  padding: 1rem;
+  background: rgba(33, 150, 243, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+  
+  h4 {
+    color: #2196F3;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .payment-amount {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    margin: 1rem 0;
+    color: #2196F3;
+  }
+  
+  .mock-payment-form {
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      color: white;
+      
+      &::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+      }
+    }
+  }
+  
+  .payment-button {
+    width: 100%;
+    padding: 1rem;
+    background: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    
+    &:hover {
+      background: #1976D2;
+    }
+    
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   }
 `;
 
@@ -826,6 +996,239 @@ const MessagesPage = () => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [transactionDetails, setTransactionDetails] = useState(null);
+  const [purchaseRequest, setPurchaseRequest] = useState(null);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [searchParams] = useSearchParams();
+  const targetChatId = searchParams.get('chat');
+
+  useEffect(() => {
+    if (targetChatId && chats.length > 0) {
+      const targetChat = chats.find(chat => chat.id === targetChatId);
+      if (targetChat && !selectedChat) {
+        setSelectedChat(targetChat);
+      }
+    }
+  }, [targetChatId, chats, selectedChat]);
+
+  useEffect(() => {
+    if (selectedChat?.pendingPurchase) {
+      setPurchaseRequest(selectedChat.pendingPurchase);
+    }
+  }, [selectedChat]);
+
+  // Handle seller accepting/rejecting purchase
+  const handleSellerResponse = async (decision, finalPrice = null) => {
+    try {
+      setPaymentLoading(true);
+      
+      await TransactionService.respondToPurchaseRequest(
+        selectedChat.transactionId, 
+        decision, 
+        finalPrice
+      );
+      
+      // Refresh will happen via real-time listener
+    } catch (error) {
+      console.error('Error responding to purchase:', error);
+      alert('Error: ' + error.message);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  // Handle buyer payment
+  const handlePayment = async () => {
+    try {
+      setPaymentLoading(true);
+      
+      // Mock payment data
+      const mockPaymentData = {
+        cardNumber: '4242424242424242',
+        expiryMonth: '12',
+        expiryYear: '25',
+        cvc: '123'
+      };
+      
+      const result = await TransactionService.processPayment(
+        selectedChat.transactionId,
+        mockPaymentData
+      );
+      
+      if (result.success) {
+        setShowPaymentForm(false);
+        // The transaction code will appear in chat messages via real-time updates
+      }
+      
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      alert('Payment failed: ' + error.message);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  // Render purchase request card
+  const renderPurchaseRequest = () => {
+    if (!purchaseRequest) return null;
+    
+    const isSeller = selectedChat?.isSeller;
+    const isBuyer = selectedChat?.isBuyer;
+    
+    return (
+      <PurchaseRequestCard status={purchaseRequest.status}>
+        <h4>
+          {purchaseRequest.status === 'pending_seller_acceptance' && '⏳ Purchase Request'}
+          {purchaseRequest.status === 'seller_accepted' && '✅ Request Accepted'}
+          {purchaseRequest.status === 'seller_rejected' && '❌ Request Declined'}
+          {purchaseRequest.status === 'paid' && '💰 Payment Complete'}
+        </h4>
+        
+        <div className="purchase-details">
+          <div className="detail">
+            <div className="label">Item</div>
+            <div className="value">{purchaseRequest.itemName}</div>
+          </div>
+          <div className="detail">
+            <div className="label">
+              {purchaseRequest.finalPrice ? 'Final Price' : 'Requested Price'}
+            </div>
+            <div className="value">
+              ${(purchaseRequest.finalPrice || purchaseRequest.negotiatedPrice).toFixed(2)}
+            </div>
+          </div>
+        </div>
+        
+        {/* Seller Actions */}
+        {isSeller && purchaseRequest.status === 'pending_seller_acceptance' && (
+          <div className="actions">
+            <button 
+              className="reject" 
+              onClick={() => handleSellerResponse('reject')}
+              disabled={paymentLoading}
+            >
+              Decline
+            </button>
+            <button 
+              className="accept" 
+              onClick={() => handleSellerResponse('accept', purchaseRequest.negotiatedPrice)}
+              disabled={paymentLoading}
+            >
+              Accept ${purchaseRequest.negotiatedPrice.toFixed(2)}
+            </button>
+          </div>
+        )}
+        
+        {/* Buyer Payment Action */}
+        {isBuyer && purchaseRequest.status === 'seller_accepted' && (
+          <div className="actions">
+            <button 
+              className="pay" 
+              onClick={() => setShowPaymentForm(true)}
+              disabled={paymentLoading}
+            >
+              Pay ${(purchaseRequest.finalPrice || purchaseRequest.negotiatedPrice).toFixed(2)}
+            </button>
+          </div>
+        )}
+      </PurchaseRequestCard>
+    );
+  };
+
+  // Render payment form
+  const renderPaymentForm = () => {
+    if (!showPaymentForm || !purchaseRequest) return null;
+    
+    return (
+      <PaymentForm>
+        <h4>💳 Complete Payment</h4>
+        <div className="payment-amount">
+          ${(purchaseRequest.finalPrice || purchaseRequest.negotiatedPrice).toFixed(2)}
+        </div>
+        
+        <div className="mock-payment-form">
+          <input type="text" placeholder="Card Number: 4242 4242 4242 4242" readOnly />
+          <input type="text" placeholder="MM/YY: 12/25" readOnly />
+          <input type="text" placeholder="CVC: 123" readOnly />
+        </div>
+        
+        <button 
+          className="payment-button"
+          onClick={handlePayment}
+          disabled={paymentLoading}
+        >
+          {paymentLoading ? 'Processing...' : 'Complete Payment'}
+        </button>
+        
+        <button 
+          style={{ 
+            width: '100%', 
+            marginTop: '0.5rem', 
+            background: 'transparent', 
+            border: '1px solid rgba(255,255,255,0.3)', 
+            color: 'white', 
+            padding: '0.5rem',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+          onClick={() => setShowPaymentForm(false)}
+        >
+          Cancel
+        </button>
+      </PaymentForm>
+    );
+  };
+
+  // Update the message rendering to handle special message types
+  const renderMessage = (message) => {
+    const currentUserId = auth.currentUser?.uid;
+    
+    // Check if message is visible to current user
+    if (message.visibleTo && !message.visibleTo.includes(currentUserId)) {
+      return null;
+    }
+    
+    return (
+      <Message 
+        key={message.id} 
+        sent={message.sender === currentUserId}
+      >
+        {message.type === 'payment_success' && message.purchaseData?.transactionCode && (
+          <div style={{ 
+            background: 'rgba(76, 175, 80, 0.2)', 
+            padding: '1rem', 
+            borderRadius: '8px',
+            marginBottom: '1rem',
+            border: '1px solid rgba(76, 175, 80, 0.3)'
+          }}>
+            <div style={{ fontWeight: 'bold', color: '#4CAF50', marginBottom: '0.5rem' }}>
+              🎉 Payment Successful!
+            </div>
+            <div style={{ fontSize: '1.2rem', fontFamily: 'monospace', letterSpacing: '2px' }}>
+              {message.purchaseData.transactionCode}
+            </div>
+            <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '0.5rem' }}>
+              Show this code to the seller for pickup
+            </div>
+            <div style={{ marginTop: '1rem' }}>
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?data=${message.purchaseData.transactionCode}&size=100x100`}
+                alt="QR Code"
+                style={{ borderRadius: '4px' }}
+              />
+            </div>
+          </div>
+        )}
+        
+        {message.text}
+        {message.timestamp && (
+          <div className="message-time">
+            {formatTimestamp(message.timestamp)}
+          </div>
+        )}
+      </Message>
+    );
+  };
   
   // Unified verification state
   const [verification, setVerification] = useState({
@@ -1382,31 +1785,19 @@ const MessagesPage = () => {
                     </div>
                   )}
                 </ChatHeader>
+
+                {renderPurchaseRequest()}
+                
+                {/* Add payment form */}
+                {renderPaymentForm()}
                 
                 <ChatBody>
                   {messages.length === 0 ? (
-                    <div style={{ 
-                      textAlign: 'center', 
-                      padding: '2rem', 
-                      opacity: 0.7,
-                      fontStyle: 'italic'
-                    }}>
+                    <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.7 }}>
                       No messages yet. Start the conversation!
                     </div>
                   ) : (
-                    messages.map((message) => (
-                      <Message
-                        key={message.id}
-                        sent={message.sender === auth.currentUser?.uid}
-                      >
-                        {message.text}
-                        {message.timestamp && (
-                          <div className="message-time">
-                            {formatTimestamp(message.timestamp)}
-                          </div>
-                        )}
-                      </Message>
-                    ))
+                    messages.map(renderMessage).filter(Boolean)
                   )}
                   <div ref={messagesEndRef} />
                 </ChatBody>
