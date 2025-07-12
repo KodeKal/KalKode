@@ -16,6 +16,7 @@ import { getShopData } from '../firebase/firebaseService';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import LocationDialog from '../components/LocationDialog';
+import ThemeDecorations from '../components/ThemeDecorations';
 
 const ChatOverlay = styled.div`
   position: fixed;
@@ -950,9 +951,6 @@ const WelcomePage = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedChatItem, setSelectedChatItem] = useState(null);
   // New state for categorized items
-  const [clothingItems, setClothingItems] = useState([]);
-  const [electronicsItems, setElectronicsItems] = useState([]);
-  const [collectiblesItems, setCollectiblesItems] = useState([]);
   const { userLocation, locationPermission, requestLocation } = useLocation();
   const [updatingLocation, setUpdatingLocation] = useState(false);
 
@@ -962,7 +960,19 @@ const WelcomePage = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearchResults, setHasSearchResults] = useState(false);
 
-  
+  const [categories, setCategories] = useState({
+  'Electronics & Tech': [],
+  'Clothing & Accessories': [],
+  'Home & Garden': [],
+  'Sports & Outdoors': [],
+  'Books & Media': [],
+  'Toys & Games': [],
+  'Health & Beauty': [],
+  'Automotive': [],
+  'Collectibles & Art': [],
+  'Food & Beverages': [],
+  'Other': []
+});
 
   useEffect(() => {
     if (activeTab === 'nearby' && userLocation) {
@@ -1142,16 +1152,15 @@ const WelcomePage = () => {
     try {
       setLoading(true);
       setError(null);
-  
-      const allItems = await getFeaturedItems(24);
-      
+
+      const allItems = await getFeaturedItems(48); // Increased to get more items
+
       // Filter out own items FIRST before any other processing
       const currentUserId = user?.uid;
       const filteredItems = allItems.filter(item => {
-        // Remove items that belong to the current user
         return item.shopId !== currentUserId;
       });
-      
+
       // Calculate distances if user location is available
       let itemsWithDistance = filteredItems;
       if (userLocation) {
@@ -1163,7 +1172,7 @@ const WelcomePage = () => {
                 { latitude: item.coordinates.lat, longitude: item.coordinates.lng }
               );
               const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
-              
+
               return {
                 ...item,
                 distance: distanceInMeters,
@@ -1178,50 +1187,41 @@ const WelcomePage = () => {
           return item;
         });
       }
-  
-      // Categorize items (now all items are from other users)
-      const clothing = [];
-      const electronics = [];
-      const collectibles = [];
-  
+
+      // Categorize items based on seller's category selection
+      const categorizedItems = {
+        'Electronics & Tech': [],
+        'Clothing & Accessories': [],
+        'Home & Garden': [],
+        'Sports & Outdoors': [],
+        'Books & Media': [],
+        'Toys & Games': [],
+        'Health & Beauty': [],
+        'Automotive': [],
+        'Collectibles & Art': [],
+        'Food & Beverages': [],
+        'Other': []
+      };
+
       itemsWithDistance.forEach(item => {
-        const name = (item.name || '').toLowerCase();
-        const description = (item.description || '').toLowerCase();
-  
-        // Simple keyword-based categorization
-        if (name.includes('shirt') || name.includes('pant') || 
-            name.includes('shoe') || name.includes('hat') ||
-            name.includes('jacket') || description.includes('wear') ||
-            description.includes('clothing')) {
-          clothing.push(item);
-        } else if (name.includes('phone') || name.includes('laptop') || 
-                  name.includes('computer') || name.includes('tv') ||
-                  name.includes('headphone') || description.includes('electronic') ||
-                  description.includes('device')) {
-          electronics.push(item);
-        } else if (name.includes('card') || name.includes('figure') || 
-                  name.includes('comic') || name.includes('vintage') ||
-                  name.includes('rare') || description.includes('collectible') ||
-                  description.includes('collection')) {
-          collectibles.push(item);
+        const category = item.category || 'Other';
+        if (categorizedItems[category]) {
+          categorizedItems[category].push(item);
         } else {
-          // Distribute remaining items
-          if (clothing.length <= electronics.length && clothing.length <= collectibles.length) {
-            clothing.push(item);
-          } else if (electronics.length <= collectibles.length) {
-            electronics.push(item);
-          } else {
-            collectibles.push(item);
-          }
+          // If category doesn't exist in our predefined list, put in Other
+          categorizedItems['Other'].push(item);
         }
       });
-  
-      setElectronicsItems(electronics.slice(0, 8));
-      setClothingItems(clothing.slice(0, 8));
-      setCollectiblesItems(collectibles.slice(0, 8));
+
+      // Limit each category to 8 items for display
+      Object.keys(categorizedItems).forEach(category => {
+        categorizedItems[category] = categorizedItems[category].slice(0, 8);
+      });
+
+      setCategories(categorizedItems);
       setFeaturedItems(itemsWithDistance.slice(0, 8));
       setTotalItems(filteredItems.length);
-  
+
       setLoading(false);
     } catch (error) {
       console.error('Error loading categorized items:', error);
@@ -1229,7 +1229,6 @@ const WelcomePage = () => {
       setLoading(false);
     }
   };
-  
 
   // Add these to your SliderContainer
   const handleScrollLeft = () => {
@@ -1710,6 +1709,7 @@ React.useEffect(() => {
   
   return (
     <PageContainer className="page-container" theme={currentStyle}>
+    <ThemeDecorations theme={currentStyle} />
       <Header theme={currentStyle}>
         <Logo onClick={() => navigate('/')} theme={currentStyle}>
           KALKODE
@@ -2011,130 +2011,59 @@ React.useEffect(() => {
             </ScrollButton>
           </SliderContainer>
         </div>
+            
+        {/* Dynamic category sliders */}
+        {Object.entries(categories).map(([categoryName, items]) => {
+          // Only show categories that have items
+          if (items.length === 0) return null;
+
+          return (
+            <div key={categoryName}>
+              <CategoryHeader theme={currentStyle}>
+                <h2>{categoryName}</h2>
+                <span className="view-all">
+                  {items.length} item{items.length !== 1 ? 's' : ''}
+                </span>
+              </CategoryHeader>
+
+              <SliderContainer theme={currentStyle} className="slider-container">
+                <ScrollButton className="left" onClick={(e) => {
+                  const container = e.target.closest('.slider-container').querySelector('.slider');
+                  container.scrollBy({
+                    left: -600,
+                    behavior: 'smooth'
+                  });
+                }} theme={currentStyle}>
+                  <ChevronLeft size={16} />
+                </ScrollButton>
               
-        {/* Second slider - Clothing & Accessories */}
-        <div>
-          <CategoryHeader theme={currentStyle}>
-            <h2>Electronics & Tech</h2>
-          </CategoryHeader>
-          
-          <SliderContainer theme={currentStyle}>
-            <ScrollButton className="left" onClick={(e) => {
-              const container = e.target.closest('.slider-container').querySelector('.slider');
-              container.scrollBy({
-                left: -600,
-                behavior: 'smooth'
-              });
-            }} theme={currentStyle}>
-              <ChevronLeft size={16} />
-            </ScrollButton>
-
-            <Slider className="slider">
-              {electronicsItems.map(item => (
-                <SlideItem key={`electronics-${item.shopId}-${item.id}`}>
-                  <FeaturedItem
-                    item={item}
-                    theme={currentStyle}
-                    onItemClick={handleItemClick}
-                  />
-                </SlideItem>
-              ))}
-            </Slider>
-            
-            <ScrollButton className="right" onClick={(e) => {
-              const container = e.target.closest('.slider-container').querySelector('.slider');
-              container.scrollBy({
-                left: 600,
-                behavior: 'smooth'
-              });
-            }} theme={currentStyle}>
-              <ChevronRight size={16} />
-            </ScrollButton>
-          </SliderContainer>
-        </div>
-          
-        {/* Third slider - Electronics & Tech */}
-        <div>
-          <CategoryHeader theme={currentStyle}>
-            <h2>Clothing & Accessories</h2>
-          </CategoryHeader>
-            
-          <SliderContainer theme={currentStyle}>
-            <ScrollButton className="left" onClick={(e) => {
-              const container = e.target.closest('.slider-container').querySelector('.slider');
-              container.scrollBy({
-                left: -600,
-                behavior: 'smooth'
-              });
-            }} theme={currentStyle}>
-              <ChevronLeft size={16} />
-            </ScrollButton>
-
-            <Slider className="slider">
-              {clothingItems.map(item => (
-                <SlideItem key={`clothing-${item.shopId}-${item.id}`}>
-                  <FeaturedItem
-                    item={item}
-                    theme={currentStyle}
-                    onItemClick={handleItemClick}
-                  />
-                </SlideItem>
-              ))}
-            </Slider>
-            
-            <ScrollButton className="right" onClick={(e) => {
-              const container = e.target.closest('.slider-container').querySelector('.slider');
-              container.scrollBy({
-                left: 600,
-                behavior: 'smooth'
-              });
-            }} theme={currentStyle}>
-              <ChevronRight size={16} />
-            </ScrollButton>
-          </SliderContainer>
-        </div>
-          
-        {/* Fourth slider - Collectibles & Rarities */}
-        <div>
-          <CategoryHeader theme={currentStyle}>
-            <h2>Collectibles & Rarities</h2>
-          </CategoryHeader>
-          
-          <SliderContainer theme={currentStyle} className="slider-container">
-            <ScrollButton className="left" onClick={(e) => {
-              const container = e.target.closest('.slider-container').querySelector('.slider');
-              container.scrollBy({
-                left: -600,
-                behavior: 'smooth'
-              });
-            }} theme={currentStyle}>
-              <ChevronLeft size={16} />
-            </ScrollButton>
-
-            <Slider className="slider">
-              {collectiblesItems.map(item => (
-                <SlideItem key={`collectibles-${item.shopId}-${item.id}`}>
-                  <FeaturedItem
-                    item={item}
-                    theme={currentStyle}
-                    onItemClick={handleItemClick}
-                  />
-                </SlideItem>
-              ))}
-            </Slider>
-            
-            <ScrollButton className="right" onClick={(e) => {
-              const container = e.target.closest('.slider-container').querySelector('.slider');
-              container.scrollBy({
-                left: 600,
-                behavior: 'smooth'
-              });
-            }} theme={currentStyle}>
-              <ChevronRight size={16} />
-            </ScrollButton>
-          </SliderContainer>
-        </div>
-        </CategorySlidersSection>
+                <Slider className="slider">
+                  {items.map(item => (
+                    <SlideItem key={`${categoryName}-${item.shopId}-${item.id}`}>
+                      <FeaturedItem
+                        item={item}
+                        theme={currentStyle}
+                        onItemClick={handleItemClick}
+                        showDistance={true}
+                      />
+                    </SlideItem>
+                  ))}
+                </Slider>
+                
+                <ScrollButton className="right" onClick={(e) => {
+                  const container = e.target.closest('.slider-container').querySelector('.slider');
+                  container.scrollBy({
+                    left: 600,
+                    behavior: 'smooth'
+                  });
+                }} theme={currentStyle}>
+                  <ChevronRight size={16} />
+                </ScrollButton>
+              </SliderContainer>
+            </div>
+          );
+        })}
+      </CategorySlidersSection>
       )}
     </>
   )}

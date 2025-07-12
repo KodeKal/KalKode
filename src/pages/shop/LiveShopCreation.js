@@ -25,6 +25,21 @@ import AddressInput from '../../components/shop/AddressInput';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 import QuantitySelector from '../../components/shop/QuantitySelector';
 
+
+const ITEM_CATEGORIES = [
+  'Electronics & Tech',
+  'Clothing & Accessories',
+  'Home & Garden',
+  'Sports & Outdoors',
+  'Books & Media',
+  'Toys & Games',
+  'Health & Beauty',
+  'Automotive',
+  'Collectibles & Art',
+  'Food & Beverages',
+  'Other'
+];
+
 // Keep all existing styled components as they were
 const PageContainer = styled.div.attrs({ className: 'page-container' })`
   min-height: 100vh;
@@ -110,6 +125,27 @@ const ActionButtons = styled.div`
   display: flex;
   gap: 1rem;
   z-index: 100;
+`;
+
+const CategorySelect = styled.select`
+  width: 100%;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
+  border-radius: ${props => props.theme?.styles?.borderRadius || '8px'};
+  padding: 0.75rem;
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
+  margin-bottom: 1rem;
+  
+  &:focus {
+    outline: none;
+    border-color: ${props => props.theme?.colors?.accent || '#800000'};
+  }
+  
+  option {
+    background: ${props => props.theme?.colors?.background || '#000000'};
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  }
 `;
 
 const ActionButton = styled.button`
@@ -478,6 +514,7 @@ const LiveShopCreation = () => {
       name: '',
       price: '',
       description: '',
+      category: 'Other',
       images: [null, null, null],
       currentImageIndex: 0,
       address: '',
@@ -507,6 +544,7 @@ const LiveShopCreation = () => {
         name: '',
         price: '',
         description: '',
+        category: 'Other',
         images: [null, null, null],
         currentImageIndex: 0,
         address: '',
@@ -711,6 +749,17 @@ const LiveShopCreation = () => {
                 multiline
                 theme={selectedTheme}
               />
+               <CategorySelect
+                value={item.category || 'Other'}
+                onChange={(e) => handleItemUpdate(item.id, { category: e.target.value })}
+                theme={selectedTheme}
+              >
+                {ITEM_CATEGORIES.map(category => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </CategorySelect>
               <QuantitySelector 
                 value={parseInt(item.quantity) || 1}
                 onChange={(value) => handleItemUpdate(item.id, { quantity: value })}

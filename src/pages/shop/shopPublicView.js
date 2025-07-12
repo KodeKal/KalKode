@@ -39,6 +39,19 @@ const MainContent = styled.div`
   z-index: 1;
 `;
 
+const CategoryBadge = styled.div`
+  display: inline-block;
+  background: ${props => `${props.theme?.colors?.accent || '#800000'}20`};
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+`;
+
 const ShopBanner = styled.div`
   position: fixed;
   top: 0;
@@ -666,6 +679,12 @@ const { userLocation } = useLocation();
                           <div className="description">
                             {item.description || 'No description available.'}
                           </div>
+
+                           {item.category && item.category !== 'Other' && (
+                              <CategoryBadge theme={shopData?.theme}>
+                                {item.category}
+                              </CategoryBadge>
+                            )}
 
                           <div style={{ 
                               display: 'flex', 

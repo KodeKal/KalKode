@@ -7,7 +7,22 @@ import { Users, Package, Navigation, Store, Edit, ChevronLeft, ChevronRight, X, 
 import OrderChat from '../../components/Chat/OrderChat'; // Import the OrderChat component
 
 
-// Update the ItemCard to handle expanded state
+const CategoryBadge = styled.div`
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  background: ${props => `${props.theme?.colors?.accent || '#800000'}90`};
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 2;
+  backdrop-filter: blur(4px);
+`;
+
 // Update the ItemCard styled component
 const ItemCard = styled.div`
   background: ${props => props.theme?.colors?.surface || 'rgba(0, 0, 0, 0.4)'};
@@ -355,6 +370,13 @@ const FeaturedItem = ({ item, showDistance, theme, onItemClick }) => {
     >
       <ImageSection theme={itemTheme}>
         <img src={getDisplayImage()} alt={item.name} />
+        
+        {/* ADD THIS CATEGORY BADGE */}
+        {item.category && item.category !== 'Other' && (
+          <CategoryBadge theme={itemTheme}>
+            {item.category}
+          </CategoryBadge>
+        )}
         
         {(item.images?.filter(Boolean).length > 1) && (
           <>

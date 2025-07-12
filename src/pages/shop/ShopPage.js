@@ -18,6 +18,21 @@ import ThemeSelector from '../../components/ThemeSelector/ThemeSelector';
 import QuantitySelector from '../../components/shop/QuantitySelector';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 
+
+const ITEM_CATEGORIES = [
+  'Electronics & Tech',
+  'Clothing & Accessories',
+  'Home & Garden',
+  'Sports & Outdoors',
+  'Books & Media',
+  'Toys & Games',
+  'Health & Beauty',
+  'Automotive',
+  'Collectibles & Art',
+  'Food & Beverages',
+  'Other'
+];
+
 const ShopProfileSection = styled.div`
   display: flex;
   flex-direction: column;
@@ -164,6 +179,28 @@ const AddItemButton = styled.button`
     box-shadow: 0 2px 5px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
   }
 `;
+
+const CategorySelect = styled.select`
+  width: 100%;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
+  border-radius: ${props => props.theme?.styles?.borderRadius || '8px'};
+  padding: 0.75rem;
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
+  margin-bottom: 1rem;
+  
+  &:focus {
+    outline: none;
+    border-color: ${props => props.theme?.colors?.accent || '#800000'};
+  }
+  
+  option {
+    background: ${props => props.theme?.colors?.background || '#000000'};
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  }
+`;
+
 
 // Let's also update the ItemCard to better respond to theme changes
 const ItemCard = styled.div`
@@ -942,6 +979,7 @@ const ShopPage = () => {
       name: 'Item Name',
       price: '',
       description: '',
+      category: 'Other',
       zipCode: '',
       images: [null, null, null],
       currentImageIndex: 0
@@ -1246,6 +1284,18 @@ const ShopPage = () => {
                           theme={shopData?.theme}
                         />
                       </div>
+
+                      <CategorySelect
+                        value={item.category || 'Other'}
+                        onChange={(e) => handleItemUpdate(item.id, { category: e.target.value })}
+                        theme={shopData?.theme}
+                      >
+                        {ITEM_CATEGORIES.map(category => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </CategorySelect>
 
                       <QuantitySelector 
                         value={parseInt(item.quantity) || 1}
