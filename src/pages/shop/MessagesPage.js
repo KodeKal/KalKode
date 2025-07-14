@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { 
-  MessageCircle, Search, X, Trash2, Send, Package, User, Check, QrCode, Camera
+  MessageCircle, Search, X, Trash2, Send, Package, User, Check, QrCode, Camera, Plus, Minus, ChevronDown
 } from 'lucide-react';
 import { 
   collection, query, where, orderBy, onSnapshot, updateDoc, doc, addDoc, serverTimestamp
@@ -987,6 +987,274 @@ const EmptyState = styled.div`
   }
 `;
 
+const QuantityRequestCard = styled.div`
+  margin: ${props => props.minimized ? '0' : '0 1.5rem'};
+  padding: ${props => props.minimized ? '0' : '1.5rem'};
+  background: ${props => props.minimized ? 'transparent' : (() => {
+    switch(props.status) {
+      case 'pending_seller_acceptance': return 'rgba(255, 193, 7, 0.1)';
+      case 'seller_accepted': return 'rgba(76, 175, 80, 0.1)';
+      case 'seller_rejected': return 'rgba(244, 67, 54, 0.1)';
+      case 'paid': return 'rgba(33, 150, 243, 0.1)';
+      default: return 'rgba(255, 255, 255, 0.05)';
+    }
+  })()};
+  border-radius: ${props => props.minimized ? '0' : '12px'};
+  border: ${props => props.minimized ? 'none' : (() => {
+    switch(props.status) {
+      case 'pending_seller_acceptance': return '1px solid rgba(255, 193, 7, 0.3)';
+      case 'seller_accepted': return '1px solid rgba(76, 175, 80, 0.3)';
+      case 'seller_rejected': return '1px solid rgba(244, 67, 54, 0.3)';
+      case 'paid': return '1px solid rgba(33, 150, 243, 0.3)';
+      default: return '1px solid rgba(255, 255, 255, 0.1)';
+    }
+  })()};
+  overflow: hidden;
+  transition: all 0.3s ease;
+  max-height: ${props => props.minimized ? '0' : '800px'};
+  opacity: ${props => props.minimized ? '0' : '1'};
+  
+  h4 {
+    margin: 0 0 1rem 0;
+    color: ${props => {
+      switch(props.status) {
+        case 'pending_seller_acceptance': return '#FFC107';
+        case 'seller_accepted': return '#4CAF50';
+        case 'seller_rejected': return '#F44336';
+        case 'paid': return '#2196F3';
+        default: return '#FFFFFF';
+      }
+    }};
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .quantity-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    
+    .detail {
+      .label {
+        font-size: 0.8rem;
+        opacity: 0.7;
+        margin-bottom: 0.25rem;
+      }
+      
+      .value {
+        font-weight: bold;
+        color: white;
+        
+        &.highlight {
+          color: #FFC107;
+          font-size: 1.1rem;
+        }
+      }
+    }
+  }
+  
+  .quantity-adjustment {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    
+    .adjustment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      
+      .label {
+        font-weight: bold;
+        color: #FFC107;
+      }
+      
+      .max-available {
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
+    }
+    
+    .quantity-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      
+      .quantity-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 2px solid #FFC107;
+        background: transparent;
+        color: #FFC107;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        
+        &:hover:not(:disabled) {
+          background: #FFC107;
+          color: black;
+        }
+        
+        &:disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
+        }
+      }
+      
+      .quantity-display {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: white;
+        min-width: 60px;
+        text-align: center;
+      }
+    }
+    
+    .total-preview {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 1.1rem;
+      color: #4CAF50;
+      font-weight: bold;
+    }
+  }
+  
+  .actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    
+    button {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      
+      &.accept {
+        background: #4CAF50;
+        color: white;
+        
+        &:hover {
+          background: #45a049;
+          transform: translateY(-2px);
+        }
+      }
+      
+      &.reject {
+        background: transparent;
+        border: 1px solid #F44336;
+        color: #F44336;
+        
+        &:hover {
+          background: rgba(244, 67, 54, 0.1);
+        }
+      }
+      
+      &.pay {
+        background: #2196F3;
+        color: white;
+        
+        &:hover {
+          background: #1976D2;
+          transform: translateY(-2px);
+        }
+      }
+    }
+  }
+`;
+
+const StatusButton = styled.button`
+  margin: 1rem 1.5rem 0.5rem;
+  padding: 0.75rem 1rem;
+  background: ${props => {
+    switch(props.status) {
+      case 'pending_seller_acceptance': return 'rgba(255, 193, 7, 0.2)';
+      case 'seller_accepted': return 'rgba(76, 175, 80, 0.2)';
+      case 'seller_rejected': return 'rgba(244, 67, 54, 0.2)';
+      case 'paid': return 'rgba(33, 150, 243, 0.2)';
+      default: return 'rgba(255, 255, 255, 0.1)';
+    }
+  }};
+  border: 1px solid ${props => {
+    switch(props.status) {
+      case 'pending_seller_acceptance': return 'rgba(255, 193, 7, 0.5)';
+      case 'seller_accepted': return 'rgba(76, 175, 80, 0.5)';
+      case 'seller_rejected': return 'rgba(244, 67, 54, 0.5)';
+      case 'paid': return 'rgba(33, 150, 243, 0.5)';
+      default: return 'rgba(255, 255, 255, 0.3)';
+    }
+  }};
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  .status-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    
+    .status-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: ${props => {
+        switch(props.status) {
+          case 'pending_seller_acceptance': return '#FFC107';
+          case 'seller_accepted': return '#4CAF50';
+          case 'seller_rejected': return '#F44336';
+          case 'paid': return '#2196F3';
+          default: return '#FFFFFF';
+        }
+      }};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+    }
+    
+    .status-text {
+      .main-text {
+        font-size: 0.95rem;
+        margin-bottom: 0.1rem;
+      }
+      
+      .sub-text {
+        font-size: 0.8rem;
+        opacity: 0.8;
+      }
+    }
+  }
+  
+  .toggle-icon {
+    transform: ${props => props.minimized ? 'rotate(0deg)' : 'rotate(180deg)'};
+    transition: transform 0.3s ease;
+  }
+`;
+
 const MessagesPage = () => {
   // Optimized state management - combine related states
   const [chats, setChats] = useState([]);
@@ -1001,6 +1269,10 @@ const MessagesPage = () => {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [searchParams] = useSearchParams();
   const targetChatId = searchParams.get('chat');
+   const [adjustedQuantity, setAdjustedQuantity] = useState(1);
+  const [maxAvailableQuantity, setMaxAvailableQuantity] = useState(0);
+  const [statusWindowMinimized, setStatusWindowMinimized] = useState(false);
+
 
   useEffect(() => {
     if (targetChatId && chats.length > 0) {
@@ -1012,25 +1284,27 @@ const MessagesPage = () => {
   }, [targetChatId, chats, selectedChat]);
 
   useEffect(() => {
-    if (selectedChat?.pendingPurchase) {
-      setPurchaseRequest(selectedChat.pendingPurchase);
-    }
-  }, [selectedChat]);
+  if (selectedChat?.pendingPurchase) {
+    setPurchaseRequest(selectedChat.pendingPurchase);
+    // FIX: Properly initialize quantity states
+    setAdjustedQuantity(selectedChat.pendingPurchase.requestedQuantity || 1);
+    setMaxAvailableQuantity(selectedChat.pendingPurchase.availableQuantity || 0);
+  }
+}, [selectedChat]);
 
-  // Handle seller accepting/rejecting purchase
-  const handleSellerResponse = async (decision, finalPrice = null) => {
+  const handleQuantityResponse = async (decision, finalQuantity = null) => {
     try {
       setPaymentLoading(true);
       
-      await TransactionService.respondToPurchaseRequest(
+      await TransactionService.respondToQuantityRequest(  // Correct method name
         selectedChat.transactionId, 
         decision, 
-        finalPrice
+        finalQuantity
       );
       
       // Refresh will happen via real-time listener
     } catch (error) {
-      console.error('Error responding to purchase:', error);
+      console.error('Error responding to quantity request:', error);
       alert('Error: ' + error.message);
     } finally {
       setPaymentLoading(false);
@@ -1038,7 +1312,7 @@ const MessagesPage = () => {
   };
 
   // Handle buyer payment
-  const handlePayment = async () => {
+  const handleQuantityPayment = async () => {
     try {
       setPaymentLoading(true);
       
@@ -1050,7 +1324,7 @@ const MessagesPage = () => {
         cvc: '123'
       };
       
-      const result = await TransactionService.processPayment(
+      const result = await TransactionService.processQuantityPayment(  // Correct method name
         selectedChat.transactionId,
         mockPaymentData
       );
@@ -1068,53 +1342,175 @@ const MessagesPage = () => {
     }
   };
 
-  // Render purchase request card
-  const renderPurchaseRequest = () => {
-    if (!purchaseRequest) return null;
-    
-    const isSeller = selectedChat?.isSeller;
-    const isBuyer = selectedChat?.isBuyer;
-    
-    return (
-      <PurchaseRequestCard status={purchaseRequest.status}>
+  // Quantity adjustment functions
+  const adjustQuantity = (delta) => {
+    const newQuantity = Math.max(1, Math.min(maxAvailableQuantity, adjustedQuantity + delta));
+    setAdjustedQuantity(newQuantity);
+  };
+
+  // Render quantity-based purchase request card
+  // Render quantity-based purchase request card
+const renderQuantityRequest = () => {
+  if (!purchaseRequest) return null;
+  
+  const isSeller = selectedChat?.isSeller;
+  const isBuyer = selectedChat?.isBuyer;
+  const unitPrice = purchaseRequest.unitPrice || 0;
+  const requestedQty = purchaseRequest.requestedQuantity || 1;
+  const adjustedTotal = unitPrice * adjustedQuantity;
+  
+  // Get status display info
+  const getStatusInfo = () => {
+    switch(purchaseRequest.status) {
+      case 'pending_seller_acceptance':
+        return {
+          icon: '⏳',
+          main: 'Quantity Purchase Request',
+          sub: `${requestedQty}x ${purchaseRequest.itemName} - $${(unitPrice * requestedQty).toFixed(2)}`
+        };
+      case 'seller_accepted':
+        return {
+          icon: '✅',
+          main: 'Request Accepted',
+          sub: `${purchaseRequest.approvedQuantity}x approved - $${(purchaseRequest.finalTotalPrice || 0).toFixed(2)}`
+        };
+      case 'seller_rejected':
+        return {
+          icon: '❌',
+          main: 'Request Declined',
+          sub: 'Seller declined your request'
+        };
+      case 'paid':
+        return {
+          icon: '💰',
+          main: 'Payment Complete',
+          sub: 'Waiting for pickup coordination'
+        };
+      default:
+        return {
+          icon: '📦',
+          main: 'Transaction',
+          sub: 'Processing...'
+        };
+    }
+  };
+  
+  const statusInfo = getStatusInfo();
+  
+  return (
+    <>
+      <StatusButton 
+        status={purchaseRequest.status}
+        minimized={statusWindowMinimized}
+        onClick={() => setStatusWindowMinimized(!statusWindowMinimized)}
+      >
+        <div className="status-info">
+          <div className="status-icon">{statusInfo.icon}</div>
+          <div className="status-text">
+            <div className="main-text">{statusInfo.main}</div>
+            <div className="sub-text">{statusInfo.sub}</div>
+          </div>
+        </div>
+        <div className="toggle-icon">
+          <ChevronDown size={20} />
+        </div>
+      </StatusButton>
+      
+      <QuantityRequestCard 
+        status={purchaseRequest.status}
+        minimized={statusWindowMinimized}
+      >
         <h4>
-          {purchaseRequest.status === 'pending_seller_acceptance' && '⏳ Purchase Request'}
+          {purchaseRequest.status === 'pending_seller_acceptance' && '⏳ Quantity Purchase Request'}
           {purchaseRequest.status === 'seller_accepted' && '✅ Request Accepted'}
           {purchaseRequest.status === 'seller_rejected' && '❌ Request Declined'}
           {purchaseRequest.status === 'paid' && '💰 Payment Complete'}
         </h4>
         
-        <div className="purchase-details">
+        <div className="quantity-details">
           <div className="detail">
             <div className="label">Item</div>
             <div className="value">{purchaseRequest.itemName}</div>
           </div>
           <div className="detail">
-            <div className="label">
-              {purchaseRequest.finalPrice ? 'Final Price' : 'Requested Price'}
-            </div>
-            <div className="value">
-              ${(purchaseRequest.finalPrice || purchaseRequest.negotiatedPrice).toFixed(2)}
-            </div>
+            <div className="label">Unit Price</div>
+            <div className="value">${unitPrice.toFixed(2)}</div>
+          </div>
+          <div className="detail">
+            <div className="label">Requested Qty</div>
+            <div className="value highlight">{requestedQty}</div>
           </div>
         </div>
+        
+        {purchaseRequest.approvedQuantity && (
+          <div className="quantity-details">
+            <div className="detail">
+              <div className="label">Approved Qty</div>
+              <div className="value highlight">{purchaseRequest.approvedQuantity}</div>
+            </div>
+            <div className="detail">
+              <div className="label">Final Total</div>
+              <div className="value highlight">${(purchaseRequest.finalTotalPrice || 0).toFixed(2)}</div>
+            </div>
+            <div className="detail"></div>
+          </div>
+        )}
+        
+        {/* Seller Quantity Adjustment */}
+        {isSeller && purchaseRequest.status === 'pending_seller_acceptance' && (
+          <div className="quantity-adjustment">
+            <div className="adjustment-header">
+              <span className="label">Adjust Quantity (Optional)</span>
+              <span className="max-available">Max available: {maxAvailableQuantity}</span>
+            </div>
+            
+            <div className="quantity-controls">
+              <button 
+                className="quantity-btn"
+                onClick={() => adjustQuantity(-1)}
+                disabled={adjustedQuantity <= 1}
+              >
+                <Minus size={16} />
+              </button>
+              
+              <div className="quantity-display">
+                {adjustedQuantity}
+              </div>
+              
+              <button 
+                className="quantity-btn"
+                onClick={() => adjustQuantity(1)}
+                disabled={adjustedQuantity >= maxAvailableQuantity}
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+            
+            <div className="total-preview">
+              Total: ${adjustedTotal.toFixed(2)}
+            </div>
+          </div>
+        )}
         
         {/* Seller Actions */}
         {isSeller && purchaseRequest.status === 'pending_seller_acceptance' && (
           <div className="actions">
             <button 
               className="reject" 
-              onClick={() => handleSellerResponse('reject')}
+              onClick={() => handleQuantityResponse('reject')}
               disabled={paymentLoading}
             >
-              Decline
+              Decline Request
             </button>
             <button 
               className="accept" 
-              onClick={() => handleSellerResponse('accept', purchaseRequest.negotiatedPrice)}
+              onClick={() => handleQuantityResponse('accept', adjustedQuantity)}
               disabled={paymentLoading}
             >
-              Accept ${purchaseRequest.negotiatedPrice.toFixed(2)}
+              {adjustedQuantity === requestedQty ? 
+                `Accept ${adjustedQuantity} items` : 
+                `Approve ${adjustedQuantity} items (adjusted)`
+              }
             </button>
           </div>
         )}
@@ -1127,23 +1523,30 @@ const MessagesPage = () => {
               onClick={() => setShowPaymentForm(true)}
               disabled={paymentLoading}
             >
-              Pay ${(purchaseRequest.finalPrice || purchaseRequest.negotiatedPrice).toFixed(2)}
+              Pay ${(purchaseRequest.finalTotalPrice || purchaseRequest.totalPrice || 0).toFixed(2)}
             </button>
           </div>
         )}
-      </PurchaseRequestCard>
-    );
-  };
+      </QuantityRequestCard>
+    </>
+  );
+};
 
-  // Render payment form
+  // Render payment form (keep from original but update for quantity)
   const renderPaymentForm = () => {
     if (!showPaymentForm || !purchaseRequest) return null;
+    
+    const finalAmount = purchaseRequest.finalTotalPrice || purchaseRequest.totalPrice || 0;
+    const approvedQty = purchaseRequest.approvedQuantity || purchaseRequest.requestedQuantity || 1;
     
     return (
       <PaymentForm>
         <h4>💳 Complete Payment</h4>
         <div className="payment-amount">
-          ${(purchaseRequest.finalPrice || purchaseRequest.negotiatedPrice).toFixed(2)}
+          ${finalAmount.toFixed(2)}
+        </div>
+        <div style={{ textAlign: 'center', marginBottom: '1rem', opacity: 0.8 }}>
+          {approvedQty}x {purchaseRequest.itemName}
         </div>
         
         <div className="mock-payment-form">
@@ -1154,7 +1557,7 @@ const MessagesPage = () => {
         
         <button 
           className="payment-button"
-          onClick={handlePayment}
+          onClick={handleQuantityPayment}
           disabled={paymentLoading}
         >
           {paymentLoading ? 'Processing...' : 'Complete Payment'}
@@ -1179,7 +1582,8 @@ const MessagesPage = () => {
     );
   };
 
-  // Update the message rendering to handle special message types
+  
+    // Update the message rendering to handle special message types
   const renderMessage = (message) => {
     const currentUserId = auth.currentUser?.uid;
     
@@ -1204,18 +1608,19 @@ const MessagesPage = () => {
             <div style={{ fontWeight: 'bold', color: '#4CAF50', marginBottom: '0.5rem' }}>
               🎉 Payment Successful!
             </div>
-            <div style={{ fontSize: '1.2rem', fontFamily: 'monospace', letterSpacing: '2px' }}>
-              {message.purchaseData.transactionCode}
-            </div>
             <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '0.5rem' }}>
               Show this code to the seller for pickup
             </div>
+            
             <div style={{ marginTop: '1rem' }}>
               <img 
                 src={`https://api.qrserver.com/v1/create-qr-code/?data=${message.purchaseData.transactionCode}&size=100x100`}
                 alt="QR Code"
                 style={{ borderRadius: '4px' }}
               />
+            </div>
+            <div style={{ fontSize: '1.2rem', fontFamily: 'monospace', letterSpacing: '2px' }}>
+              {message.purchaseData.transactionCode}
             </div>
           </div>
         )}
@@ -1781,17 +2186,22 @@ const MessagesPage = () => {
                   
                   {transactionDetails && (
                     <div className="transaction-details">
-                      ${parseFloat(transactionDetails.price || 0).toFixed(2)}
+                      {transactionDetails.approvedQuantity ? 
+                        `${transactionDetails.approvedQuantity}x = $${transactionDetails.finalTotalPrice.toFixed(2)}` :
+                        transactionDetails.requestedQuantity ? 
+                          `${transactionDetails.requestedQuantity}x = $${transactionDetails.totalPrice.toFixed(2)}` :
+                          `$${parseFloat(transactionDetails.price || 0).toFixed(2)}`
+                      }
                     </div>
                   )}
                 </ChatHeader>
 
-                {renderPurchaseRequest()}
+                {renderQuantityRequest()}
                 
-                {/* Add payment form */}
                 {renderPaymentForm()}
                 
                 <ChatBody>
+                  {/* Keep existing message rendering */}
                   {messages.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.7 }}>
                       No messages yet. Start the conversation!
@@ -1801,34 +2211,6 @@ const MessagesPage = () => {
                   )}
                   <div ref={messagesEndRef} />
                 </ChatBody>
-
-                {/* Unified Verification Component */}
-                {selectedChat.isBuyer && transactionDetails?.transactionCode && (
-                  <VerificationSection minimized={ui.qrMinimized}>
-                    <h4>
-                      <ActionButton 
-                          active={!ui.qrMinimized}
-                          onClick={() => updateUI({ qrMinimized: !ui.qrMinimized })}
-                          title={ui.qrMinimized ? "Show QR Code" : "Hide QR Code"}
-                        >
-                          <QrCode size={14} />
-                        </ActionButton>
-                      Your Pickup Code
-                    </h4>
-                    <div className="content">
-                      <div className="code-display">{transactionDetails.transactionCode}</div>
-                      <div className="qr-code">
-                        <img 
-                          src={`https://api.qrserver.com/v1/create-qr-code/?data=${transactionDetails.transactionCode}&size=150x150`} 
-                          alt="QR Code"
-                        />
-                      </div>
-                      <p style={{ fontSize: "0.9rem", opacity: 0.8, textAlign: 'center' }}>
-                        Show this code to the seller when you arrive for pickup.
-                      </p>
-                    </div>
-                  </VerificationSection>
-                )}
 
                 {selectedChat.isSeller && transactionDetails?.status === 'paid' && (
                   <VerificationSection minimized={verification.minimized}>

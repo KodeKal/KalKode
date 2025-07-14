@@ -1,4 +1,4 @@
-// src/services/TransactionService.js - Enhanced with proper flow
+// src/services/TransactionService.js - Enhanced with quantity-based flow
 
 import { db, auth } from '../firebase/config';
 import { 
@@ -8,12 +8,16 @@ import {
  doc, 
  getDoc, 
  serverTimestamp,
- setDoc
+ setDoc,
+ query,
+ where,
+ orderBy,
+ getDocs
 } from 'firebase/firestore';
 
 export const TransactionService = {
- // Step 1: Buyer initiates transaction (creates pending transaction)
- initiateTransaction: async (itemId, sellerId, price, meetupType) => {
+ // Step 1: Buyer initiates quantity-based transaction
+ initiateQuantityTransaction: async (itemId, sellerId, unitPrice, requestedQuantity, meetupType) => {
    try {
      const buyer = auth.currentUser;
 
@@ -40,11 +44,17 @@ export const TransactionService = {
        throw new Error('Item not found');
      }
 
-     // Check quantity
-     const currentQuantity = item.quantity || 0;
-     if (currentQuantity < 1) {
+     // Check available quantity
+     const availableQuantity = parseInt(item.quantity) || 0;
+     if (availableQuantity < 1) {
        throw new Error('This item is out of stock');
      }
+
+     if (requestedQuantity > availableQuantity) {
+       throw new Error(`Only ${availableQuantity} items available`);
+     }
+
+     const totalPrice = parseFloat(unitPrice) * parseInt(requestedQuantity);
 
      // Create PENDING transaction (waiting for seller acceptance)
      const transaction = {
@@ -53,14 +63,15 @@ export const TransactionService = {
        itemImage: item.images?.[0] || null,
        itemAddress: item.address || null,
        itemCoordinates: item.coordinates || null,
-       originalPrice: parseFloat(item.price),
-       negotiatedPrice: parseFloat(price), // Could be different if negotiated
-       finalPrice: null, // Set when seller accepts
+       unitPrice: parseFloat(unitPrice),
+       requestedQuantity: parseInt(requestedQuantity),
+       approvedQuantity: null, // Set by seller
+       totalPrice,
        sellerId,
        sellerName: shopData.name || '',
        buyerId: buyer.uid,
        buyerName: buyer.displayName || buyer.email,
-       status: 'pending_seller_acceptance', // NEW STATUS
+       status: 'pending_seller_acceptance',
        paymentStatus: 'not_paid',
        meetupType,
        transactionCode: null, // Generated after payment
@@ -83,7 +94,7 @@ export const TransactionService = {
        sellerId,
        sellerName: shopData.name || '',
        participants: [buyer.uid, sellerId],
-       lastMessage: `Purchase request for ${item.name} - $${price}`,
+       lastMessage: `Purchase request for ${requestedQuantity}x ${item.name}`,
        lastMessageTime: serverTimestamp(),
        unreadCount: {
          [buyer.uid]: 0,
@@ -93,10 +104,12 @@ export const TransactionService = {
        pendingPurchase: {
          itemId,
          itemName: item.name,
-         negotiatedPrice: parseFloat(price),
-         originalPrice: parseFloat(item.price),
+         unitPrice: parseFloat(unitPrice),
+         requestedQuantity: parseInt(requestedQuantity),
+         totalPrice,
          status: 'pending_seller_acceptance',
-         buyerName: buyer.displayName || buyer.email
+         buyerName: buyer.displayName || buyer.email,
+         availableQuantity
        }
      };
 
@@ -104,16 +117,18 @@ export const TransactionService = {
 
      // Add system message about purchase request
      await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-       text: `Purchase request initiated for ${item.name} at $${price}. Waiting for seller acceptance.`,
+       text: `🛒 Purchase request sent: ${requestedQuantity}x ${item.name} at $${unitPrice.toFixed(2)} each (Total: $${totalPrice.toFixed(2)}). Waiting for seller acceptance.`,
        sender: 'system',
        senderName: 'System',
        timestamp: serverTimestamp(),
-       type: 'purchase_request',
+       type: 'quantity_purchase_request',
        purchaseData: {
          itemName: item.name,
-         requestedPrice: parseFloat(price),
-         originalPrice: parseFloat(item.price),
-         meetupType
+         unitPrice: parseFloat(unitPrice),
+         requestedQuantity: parseInt(requestedQuantity),
+         totalPrice,
+         meetupType,
+         availableQuantity
        }
      });
 
@@ -122,13 +137,13 @@ export const TransactionService = {
        status: 'pending_seller_acceptance'
      };
    } catch (error) {
-     console.error('Error initiating transaction:', error);
+     console.error('Error initiating quantity transaction:', error);
      throw error;
    }
  },
 
- // Step 2: Seller accepts/rejects the purchase request
- respondToPurchaseRequest: async (transactionId, decision, finalPrice = null) => {
+ // Step 2: Seller accepts/rejects/adjusts the quantity request
+ respondToQuantityRequest: async (transactionId, decision, approvedQuantity = null) => {
    try {
      const currentUser = auth.currentUser;
      if (!currentUser) throw new Error('Authentication required');
@@ -147,43 +162,63 @@ export const TransactionService = {
        throw new Error('Only the seller can respond to this request');
      }
 
+     // Get current item availability
+     const shopRef = doc(db, 'shops', transaction.sellerId);
+     const shopSnap = await getDoc(shopRef);
+     const shopData = shopSnap.data();
+     const item = shopData.items.find(item => item.id === transaction.itemId);
+     const currentAvailableQuantity = parseInt(item.quantity) || 0;
+
      if (decision === 'accept') {
-       const agreedPrice = finalPrice || transaction.negotiatedPrice;
+       const finalQuantity = approvedQuantity || transaction.requestedQuantity;
+       
+       if (finalQuantity > currentAvailableQuantity) {
+         throw new Error(`Only ${currentAvailableQuantity} items currently available`);
+       }
+
+       const finalTotalPrice = transaction.unitPrice * finalQuantity;
        
        // Update transaction status to accepted
        await updateDoc(transactionRef, {
          status: 'seller_accepted',
-         finalPrice: agreedPrice,
+         approvedQuantity: finalQuantity,
+         finalTotalPrice: finalTotalPrice,
          sellerAcceptedAt: serverTimestamp(),
          updatedAt: serverTimestamp()
        });
 
        // Update chat with acceptance
        await updateDoc(doc(db, 'chats', transactionId), {
-         lastMessage: `Seller accepted purchase for $${agreedPrice}`,
+         lastMessage: `Seller approved ${finalQuantity}x ${transaction.itemName}`,
          lastMessageTime: serverTimestamp(),
          pendingPurchase: {
            ...transaction,
            status: 'seller_accepted',
-           finalPrice: agreedPrice
+           approvedQuantity: finalQuantity,
+           finalTotalPrice: finalTotalPrice
          },
          [`unreadCount.${transaction.buyerId}`]: 1
        });
 
        // Add system message
+       const adjustmentText = finalQuantity !== transaction.requestedQuantity ? 
+         ` (adjusted from ${transaction.requestedQuantity} to ${finalQuantity})` : '';
+       
        await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-         text: `Seller accepted the purchase request for $${agreedPrice}. Buyer can now proceed with payment.`,
+         text: `✅ Seller approved ${finalQuantity}x ${transaction.itemName}${adjustmentText}. Total: $${finalTotalPrice.toFixed(2)}. Buyer may now proceed with payment.`,
          sender: 'system',
          senderName: 'System',
          timestamp: serverTimestamp(),
          type: 'seller_accepted',
          purchaseData: {
-           finalPrice: agreedPrice,
-           sellerName: transaction.sellerName
+           approvedQuantity: finalQuantity,
+           finalTotalPrice: finalTotalPrice,
+           sellerName: transaction.sellerName,
+           wasAdjusted: finalQuantity !== transaction.requestedQuantity
          }
        });
 
-       return { success: true, finalPrice: agreedPrice };
+       return { success: true, approvedQuantity: finalQuantity, finalTotalPrice };
      } else {
        // Seller rejected
        await updateDoc(transactionRef, {
@@ -203,7 +238,7 @@ export const TransactionService = {
        });
 
        await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-         text: 'Seller declined the purchase request.',
+         text: '❌ Item is not available currently.',
          sender: 'system',
          senderName: 'System',
          timestamp: serverTimestamp(),
@@ -213,13 +248,13 @@ export const TransactionService = {
        return { success: true, rejected: true };
      }
    } catch (error) {
-     console.error('Error responding to purchase request:', error);
+     console.error('Error responding to quantity request:', error);
      throw error;
    }
  },
 
  // Step 3: Buyer processes payment after seller acceptance
- processPayment: async (transactionId, paymentMethodData) => {
+ processQuantityPayment: async (transactionId, paymentMethodData) => {
    try {
      const transactionRef = doc(db, 'transactions', transactionId);
      const transactionSnap = await getDoc(transactionRef);
@@ -236,9 +271,14 @@ export const TransactionService = {
 
      // Generate transaction code for pickup
      const transactionCode = generateTransactionCode();
+     const finalAmount = transaction.finalTotalPrice || transaction.totalPrice;
 
-     // Mock payment processing (replace with real Stripe integration)
-     console.log('Processing payment for $', transaction.finalPrice);
+     // Mock payment processing
+     console.log('Processing payment for quantity transaction:', {
+       quantity: transaction.approvedQuantity,
+       unitPrice: transaction.unitPrice,
+       total: finalAmount
+     });
      
      // Update transaction with payment success
      await updateDoc(transactionRef, {
@@ -263,32 +303,34 @@ export const TransactionService = {
 
      // Add system message with code (only buyer can see)
      await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-       text: `Payment processed successfully! Your pickup code is: ${transactionCode}`,
+       text: `💳 Payment processed successfully! \n\n📦 Your pickup details:\n• Quantity: ${transaction.approvedQuantity}x ${transaction.itemName}\n• Total paid: $${finalAmount.toFixed(2)}\n• Pickup code: ${transactionCode}\n\nShow this code to the seller during pickup.`,
        sender: 'system',
        senderName: 'System',
        timestamp: serverTimestamp(),
        type: 'payment_success',
-       visibleTo: [transaction.buyerId], // Only buyer sees the code
+       visibleTo: [transaction.buyerId],
        purchaseData: {
          transactionCode,
-         finalPrice: transaction.finalPrice
+         approvedQuantity: transaction.approvedQuantity,
+         finalTotalPrice: finalAmount
        }
      });
 
      // Add separate message for seller (without code)
      await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-       text: 'Buyer has completed payment. Funds are held in escrow until pickup is confirmed.',
+       text: `💰 Buyer has completed payment for ${transaction.approvedQuantity}x ${transaction.itemName} ($${finalAmount.toFixed(2)}). Funds are held in escrow until pickup is confirmed. Please coordinate with the buyer for pickup details.`,
        sender: 'system',
        senderName: 'System',
        timestamp: serverTimestamp(),
        type: 'payment_notification',
        visibleTo: [transaction.sellerId],
        purchaseData: {
-         finalPrice: transaction.finalPrice
+         approvedQuantity: transaction.approvedQuantity,
+         finalTotalPrice: finalAmount
        }
      });
 
-     // Reserve item (decrease quantity)
+     // Reserve items (decrease quantity in shop)
      const shopRef = doc(db, 'shops', transaction.sellerId);
      const shopSnap = await getDoc(shopRef);
      if (shopSnap.exists()) {
@@ -297,9 +339,10 @@ export const TransactionService = {
        
        if (itemIndex !== -1) {
          const updatedItems = [...shopData.items];
+         const currentQuantity = parseInt(updatedItems[itemIndex].quantity) || 0;
          updatedItems[itemIndex] = {
            ...updatedItems[itemIndex],
-           quantity: Math.max(0, (updatedItems[itemIndex].quantity || 1) - 1)
+           quantity: Math.max(0, currentQuantity - transaction.approvedQuantity)
          };
 
          await updateDoc(shopRef, { items: updatedItems });
@@ -309,10 +352,11 @@ export const TransactionService = {
      return {
        success: true,
        transactionCode,
-       finalPrice: transaction.finalPrice
+       approvedQuantity: transaction.approvedQuantity,
+       finalTotalPrice: finalAmount
      };
    } catch (error) {
-     console.error('Error processing payment:', error);
+     console.error('Error processing quantity payment:', error);
      throw error;
    }
  },
@@ -352,25 +396,62 @@ export const TransactionService = {
        }
      });
      
+     const finalAmount = transaction.finalTotalPrice || transaction.totalPrice;
+     const quantity = transaction.approvedQuantity || transaction.requestedQuantity;
+     
      // Add completion message
      await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-       text: '✅ Transaction completed! Funds have been released to the seller.',
+       text: `🎉 Transaction completed successfully!\n\n📦 ${quantity}x ${transaction.itemName} delivered\n💰 ${finalAmount.toFixed(2)} released to seller\n\nThank you for using our marketplace!`,
        sender: 'system',
        senderName: 'System',
        timestamp: serverTimestamp(),
        type: 'transaction_completed'
      });
      
-     console.log(`Released $${transaction.finalPrice} from escrow to seller ${transaction.sellerId}`);
+     console.log(`Released ${finalAmount} from escrow to seller ${transaction.sellerId} for ${quantity}x ${transaction.itemName}`);
      
      return {
        success: true,
-       message: 'Transaction completed successfully'
+       message: 'Transaction completed successfully',
+       quantity: quantity,
+       totalAmount: finalAmount
      };
    } catch (error) {
      console.error('Error completing transaction:', error);
      throw error;
    }
+ },
+
+ // Legacy method for backward compatibility
+ initiateTransaction: async (itemId, sellerId, price, meetupType) => {
+   // Default to quantity of 1 for legacy support
+   return await TransactionService.initiateQuantityTransaction(
+     itemId, 
+     sellerId, 
+     price, 
+     1, 
+     meetupType
+   );
+ },
+
+ // Legacy method for backward compatibility  
+ respondToPurchaseRequest: async (transactionId, decision, finalPrice = null) => {
+   const transactionRef = doc(db, 'transactions', transactionId);
+   const transactionSnap = await getDoc(transactionRef);
+   const transaction = transactionSnap.data();
+   
+   if (finalPrice && transaction.unitPrice) {
+     // Convert final price back to quantity if needed
+     const approvedQuantity = Math.round(finalPrice / transaction.unitPrice);
+     return await TransactionService.respondToQuantityRequest(transactionId, decision, approvedQuantity);
+   }
+   
+   return await TransactionService.respondToQuantityRequest(transactionId, decision);
+ },
+
+ // Legacy method for backward compatibility
+ processPayment: async (transactionId, paymentMethodData) => {
+   return await TransactionService.processQuantityPayment(transactionId, paymentMethodData);
  },
 
  // Get transaction by ID
@@ -387,6 +468,90 @@ export const TransactionService = {
      };
    } catch (error) {
      console.error('Error getting transaction:', error);
+     throw error;
+   }
+ },
+
+ // Additional helper methods for quantity management
+ 
+ // Check item availability before transaction
+ checkItemAvailability: async (itemId, sellerId, requestedQuantity) => {
+   try {
+     const shopRef = doc(db, 'shops', sellerId);
+     const shopSnap = await getDoc(shopRef);
+     
+     if (!shopSnap.exists()) {
+       throw new Error('Shop not found');
+     }
+
+     const shopData = shopSnap.data();
+     const item = shopData.items.find(item => item.id === itemId);
+     
+     if (!item) {
+       throw new Error('Item not found');
+     }
+
+     const availableQuantity = parseInt(item.quantity) || 0;
+     
+     return {
+       available: availableQuantity >= requestedQuantity,
+       availableQuantity,
+       requestedQuantity,
+       item
+     };
+   } catch (error) {
+     console.error('Error checking item availability:', error);
+     throw error;
+   }
+ },
+
+ // Get all transactions for a user (buyer or seller)
+ getUserTransactions: async (userId, role = 'both') => {
+   try {
+     const transactions = [];
+     
+     if (role === 'buyer' || role === 'both') {
+       const buyerQuery = query(
+         collection(db, 'transactions'),
+         where('buyerId', '==', userId),
+         orderBy('createdAt', 'desc')
+       );
+       const buyerSnap = await getDocs(buyerQuery);
+       buyerSnap.forEach(doc => {
+         transactions.push({
+           id: doc.id,
+           ...doc.data(),
+           userRole: 'buyer'
+         });
+       });
+     }
+
+     if (role === 'seller' || role === 'both') {
+       const sellerQuery = query(
+         collection(db, 'transactions'),
+         where('sellerId', '==', userId),
+         orderBy('createdAt', 'desc')
+       );
+       const sellerSnap = await getDocs(sellerQuery);
+       sellerSnap.forEach(doc => {
+         transactions.push({
+           id: doc.id,
+           ...doc.data(),
+           userRole: 'seller'
+         });
+       });
+     }
+
+     // Sort by creation date, most recent first
+     transactions.sort((a, b) => {
+       const aTime = a.createdAt?.toDate() || new Date(0);
+       const bTime = b.createdAt?.toDate() || new Date(0);
+       return bTime - aTime;
+     });
+
+     return transactions;
+   } catch (error) {
+     console.error('Error getting user transactions:', error);
      throw error;
    }
  }

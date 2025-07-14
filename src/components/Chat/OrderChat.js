@@ -1,4 +1,4 @@
-// src/components/Chat/OrderChat.js - Updated for new flow
+// src/components/Chat/OrderChat.js - Updated for quantity-based transactions
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -15,12 +15,17 @@ const OrderChat = ({ isOpen, onClose, item, shopId, shopName, theme }) => {
 
   if (!isOpen) return null;
 
+  // Ensure item has the necessary quantity information
+  const enhancedItem = {
+    ...item,
+    shopName,
+    quantity: item.quantity || 0, // Ensure quantity is available
+    theme: theme || item.theme
+  };
+
   return (
     <BuyDialog
-      item={{
-        ...item,
-        shopName
-      }}
+      item={enhancedItem}
       sellerId={shopId}
       onClose={onClose}
       onTransactionCreated={handleTransactionCreated}
