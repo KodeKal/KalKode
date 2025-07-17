@@ -1,5 +1,4 @@
-// src/components/ThemeSelector/ThemeSelector.js
-
+// src/components/ThemeSelector/ThemeSelector.js - Updated for 30 themes
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
@@ -27,10 +26,10 @@ const DropdownContent = styled.div`
   left: 50%;
   transform: translateX(-50%);
   width: auto;
-  min-width: 480px; /* Increased width for more themes */
+  min-width: 600px; // Increased for 6 columns
   max-width: 90vw;
-  max-height: 70vh; /* Add max height for scrolling */
-  overflow-y: auto; /* Add scrolling */
+  max-height: 70vh;
+  overflow-y: auto;
   background: ${props => props.theme?.colors?.background || '#000000'};
   border: 1px solid ${props => props.theme?.colors?.accent || '#800000'};
   border-radius: 8px;
@@ -38,7 +37,6 @@ const DropdownContent = styled.div`
   padding: 1rem;
   z-index: 1000;
   
-  /* Custom scrollbar */
   &::-webkit-scrollbar {
     width: 6px;
   }
@@ -54,15 +52,15 @@ const DropdownContent = styled.div`
   }
 `;
 
-// Updated grid layout for more themes
+// 6 columns for 30 themes (5 rows)
 const ThemeGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(6, 1fr); /* Changed from 5 to 6 columns */
+  grid-template-columns: repeat(6, 1fr);
   gap: 0.7rem;
   margin-bottom: 1rem;
   
   @media (max-width: 768px) {
-    grid-template-columns: repeat(4, 1fr); /* Changed from 3 to 4 columns on mobile */
+    grid-template-columns: repeat(4, 1fr);
   }
   
   @media (max-width: 480px) {
@@ -80,13 +78,10 @@ const ThemeOption = styled.div`
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  background: ${props => props.color};
+  background: ${props => props.gradient || props.color};
   border: 2px solid ${props => props.active ? 'white' : 'transparent'};
   position: relative;
   overflow: hidden;
-  
-  /* Add gradient overlay to show theme colors better */
-  background: ${props => props.gradient || props.color};
   
   &:hover {
     transform: scale(1.05);
@@ -107,7 +102,7 @@ const ThemeOption = styled.div`
   }
   
   .style-name {
-    font-size: 8px;
+    font-size: 7px;
     color: white;
     text-shadow: 0 0 3px black;
     text-align: center;
@@ -123,7 +118,7 @@ const ThemeOption = styled.div`
     border-radius: 2px;
   }
   
-  /* Theme category indicator */
+  // Category indicator
   &::before {
     content: '';
     position: absolute;
@@ -136,19 +131,13 @@ const ThemeOption = styled.div`
   }
 `;
 
-// Add category colors for visual organization
-const getCategoryColor = (themeName) => {
-  if (themeName.includes('Soccer') || themeName.includes('Sports')) return '#4CAF50';
-  if (themeName.includes('Ethiopian') || themeName.includes('Eritrean') || themeName.includes('African')) return '#FF9800';
-  if (themeName.includes('Mexican') || themeName.includes('American')) return '#F44336';
-  if (themeName.includes('Food') || themeName.includes('Gourmet')) return '#FF5722';
-  if (themeName.includes('Code') || themeName.includes('Gaming') || themeName.includes('Cyber')) return '#00E676';
-  if (themeName.includes('Music') || themeName.includes('Cinema')) return '#E91E63';
-  if (themeName.includes('Elegance') || themeName.includes('Royal')) return '#9C27B0';
-  if (themeName.includes('Desert') || themeName.includes('Safari')) return '#FF6F00';
-  if (themeName.includes('Space') || themeName.includes('Winter')) return '#2196F3';
-  if (themeName.includes('Tropical') || themeName.includes('Japanese')) return '#00BCD4';
-  return 'transparent';
+// Simple category colors
+const getCategoryColor = (themeId) => {
+  if (themeId <= 10) return '#4CAF50'; // Original themes - green
+  if (themeId <= 15) return '#FF9800'; // Cultural themes - orange
+  if (themeId <= 20) return '#E91E63'; // Creative themes - pink
+  if (themeId <= 25) return '#2196F3'; // Environment themes - blue
+  return '#9C27B0'; // Tech/Space themes - purple
 };
 
 const ApplyButton = styled.button`
@@ -191,7 +180,7 @@ const ThemeSelector = ({
                 color={theme.colors.accent}
                 gradient={theme.colors.accentGradient || theme.colors.accent}
                 active={currentTheme.id === theme.id}
-                categoryColor={getCategoryColor(theme.name)}
+                categoryColor={getCategoryColor(theme.id)}
                 onClick={() => {
                   onThemeSelect(theme);
                   if (!isAuthenticated) {
@@ -223,4 +212,4 @@ const ThemeSelector = ({
   );
 };
 
-export default ThemeSelector;
+export default ThemeSelector; 
