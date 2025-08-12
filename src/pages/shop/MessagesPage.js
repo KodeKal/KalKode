@@ -534,6 +534,7 @@ const Message = styled.div`
   border-radius: 12px;
   font-size: 0.95rem;
   line-height: 1.4;
+  white-space: pre-wrap; /* ADD THIS LINE - preserves line breaks */
   
   align-self: ${props => props.sent ? 'flex-end' : 'flex-start'};
   background: ${props => props.sent ? 

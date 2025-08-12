@@ -182,11 +182,11 @@ const AddItemButton = styled.button`
 
 const CategorySelect = styled.select`
   width: 100%;
-  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
+  background: #1a1a1a !important; /* Force dark background */
   border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
   border-radius: ${props => props.theme?.styles?.borderRadius || '8px'};
   padding: 0.75rem;
-  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  color: #ffffff !important; /* Force white text */
   font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
   margin-bottom: 1rem;
   
@@ -196,8 +196,15 @@ const CategorySelect = styled.select`
   }
   
   option {
-    background: ${props => props.theme?.colors?.background || '#000000'};
-    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+    background: #1a1a1a !important; /* Force dark background for options */
+    color: #ffffff !important; /* Force white text for options */
+    padding: 0.5rem;
+  }
+  
+  /* Webkit browsers (Chrome, Safari) */
+  option:checked {
+    background: ${props => props.theme?.colors?.accent || '#800000'} !important;
+    color: #ffffff !important;
   }
 `;
 

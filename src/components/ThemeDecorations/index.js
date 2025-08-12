@@ -132,18 +132,6 @@ const ThemeDecorations = ({ theme }) => {
         </FloatingElement>
       ))}
 
-      {/* Pulsing dots */}
-      {[...Array(dots)].map((_, index) => (
-        <PulsingDot
-          key={`dot-${index}`}
-          theme={theme}
-          size={`${6 + (index % 3) * 2}px`}
-          delay={`${index * 0.5}s`}
-          top={`${20 + (index * 10)}%`}
-          left={`${80 - (index * 8)}%`}
-        />
-      ))}
-
       {/* Pattern overlay */}
       {pattern && (
         <SimplePattern
