@@ -307,7 +307,7 @@ const SellerOrderChat = ({ isOpen, onClose, transaction, theme }) => {
       await TransactionService.completeTransaction(transaction.id, verificationCode);
       
       await addDoc(collection(db, 'chats', transaction.id, 'messages'), {
-        text: '✅ Transaction completed! Funds have been released.',
+        text: '✅ Transaction completed:\nFunds have been released.\nStatus: Order fulfilled.',
         sender: 'system',
         senderName: 'System',
         timestamp: serverTimestamp(),

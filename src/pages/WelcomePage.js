@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef  } from 'react';
 import { getFeaturedItems } from '../firebase/firebaseService';
 import FeaturedItem from '..//components/shop/FeaturedItem';
-import { Search, Users, Package, Navigation, Film, Pin, ChevronLeft, ChevronRight, X, MessageCircle, ShoppingCart, RefreshCw } from 'lucide-react';
+import { Search, Users, Package, Navigation, Film, Plus, Minus, Pin, ChevronLeft, ChevronRight, X, MessageCircle, ShoppingCart, RefreshCw } from 'lucide-react';
 import { getDistance } from 'geolib';
 import OrderChat from '../components/Chat/OrderChat'; // Import the OrderChat component
 
@@ -17,6 +17,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import LocationDialog from '../components/LocationDialog';
 import ThemeDecorations from '../components/ThemeDecorations';
+import { TransactionService } from '../services/TransactionService';
+
 
 const ChatOverlay = styled.div`
   position: fixed;
@@ -752,16 +754,75 @@ const ScrollButton = styled.button`
 
 const ZoomContainer = styled.div`
   position: relative;
-  z-index: 10001; // Even higher z-index than the overlay
+  z-index: 10001;
   border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
   overflow: hidden;
   border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-  background: ${props => props.theme?.colors?.surface || 'rgba(0, 0, 0, 0.8)'};
-  max-height: 90vh;
-  max-width: 90vw;
-  width: 500px;
+  background: ${props => props.theme?.colors?.background || '#000000'};
+  max-height: 95vh;
+  max-width: 95vw;
+  width: 600px;
   transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+`;
+
+const QuantitySelector = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+  
+  .quantity-label {
+    font-weight: bold;
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  }
+  
+  .quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    
+    .quantity-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+      background: transparent;
+      color: ${props => props.theme?.colors?.accent || '#800000'};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      
+      &:hover:not(:disabled) {
+        background: ${props => props.theme?.colors?.accent || '#800000'};
+        color: white;
+      }
+      
+      &:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+    }
+    
+    .quantity-display {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: ${props => props.theme?.colors?.text || 'white'};
+      min-width: 60px;
+      text-align: center;
+    }
+  }
+  
+  .quantity-total {
+    margin-top: 0.5rem;
+    font-size: 1.1rem;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    font-weight: bold;
+  }
 `;
 
 // Add to styled components section in WelcomePage.js
@@ -914,6 +975,7 @@ const WelcomePage = () => {
   const itemsPerPage = 6;
   const [isPinned, setIsPinned] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [orderQuantity, setOrderQuantity] = useState(1);
 
   const refreshTheme = () => {
     if (isRefreshing) return;
@@ -1324,22 +1386,46 @@ const WelcomePage = () => {
 
   const handleItemClick = (item) => {
     setZoomedItem(item);
-    
-    // If you're using the slider, pause it
-    if (sliderAnimationRef.current) {
-      cancelAnimationFrame(sliderAnimationRef.current);
-    }
+    setOrderQuantity(1); // Reset quantity when opening new item
     
     // Save current scroll position and disable background scrolling
     const scrollY = window.scrollY;
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollY}px`;
     document.body.style.width = '100%';
-    document.body.style.overflow = 'hidden'; // Add this line
+    document.body.style.overflow = 'hidden';
     
-    // Store scroll position for restoration
     document.body.setAttribute('data-scroll-y', scrollY);
   };
+
+  const adjustQuantity = (delta) => {
+    const maxQuantity = parseInt(zoomedItem?.quantity) || 1;
+    const newQuantity = Math.max(1, Math.min(maxQuantity, orderQuantity + delta));
+    setOrderQuantity(newQuantity);
+  };
+
+  const handleDirectOrder = async () => {
+  if (!zoomedItem) return;
+  
+  try {
+    // Use the existing TransactionService but with quantity
+    const result = await TransactionService.initiateQuantityTransaction(
+      zoomedItem.id,
+      zoomedItem.shopId,
+      parseFloat(zoomedItem.price),
+      orderQuantity,
+      'inperson'
+    );
+    
+    if (result.transactionId) {
+      handleCloseZoom();
+      navigate(`/messages?chat=${result.transactionId}`);
+    }
+  } catch (error) {
+    console.error('Error placing order:', error);
+    alert('Error placing order: ' + error.message);
+  }
+};
 
 // Add a handler to close the zoomed view
 const handleCloseZoom = () => {
@@ -2070,137 +2156,218 @@ React.useEffect(() => {
 
   {/* Add the zoomed view overlay at the ROOT level of your return */}
   {zoomedItem && (
-    <ZoomOverlay onClick={handleCloseZoom} theme={currentStyle}>
-      <ZoomContainer 
-        theme={currentStyle}
-        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
-      >
-        <div style={{ position: 'relative', width: '100%' }}>
-          {/* Image section */}
-          <div style={{ padding: '1rem 1rem 0.5rem 1rem' }}>
-            <div style={{ 
-              position: 'relative', 
-              borderRadius: '8px',
-              overflow: 'hidden',
-              aspectRatio: '4/3'
-            }}>
-              <img 
-                src={zoomedItem.images?.filter(Boolean)[0] || '/placeholder-image.jpg'} 
-                alt={zoomedItem.name} 
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            </div>
+  <ZoomOverlay onClick={handleCloseZoom} theme={currentStyle}>
+    <ZoomContainer 
+      theme={currentStyle}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Image section */}
+        <div style={{ 
+          padding: '1rem 1rem 0.5rem 1rem', 
+          borderBottom: `1px solid ${currentStyle?.colors?.accent}30`,
+          flex: '0 0 auto'
+        }}>
+          <div style={{ 
+            position: 'relative', 
+            borderRadius: '8px',
+            overflow: 'hidden',
+            aspectRatio: '4/3'
+          }}>
+            <img 
+              src={zoomedItem.images?.filter(Boolean)[0] || '/placeholder-image.jpg'} 
+              alt={zoomedItem.name} 
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
           </div>
-          
-          {/* Content section */}
-          <div style={{ padding: '0.5rem 1.5rem 1.5rem 1.5rem' }}>
-            <h3 style={{ 
-              fontSize: '1.3rem', 
-              margin: '0 0 0.5rem 0',
-              fontFamily: currentStyle?.fonts?.heading || 'inherit'
-            }}>{zoomedItem.name}</h3>
+        </div>
+        
+        {/* Content section - scrollable */}
+        <div style={{ 
+          padding: '1rem 1.5rem', 
+          flex: '1 1 auto', 
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          {/* Title and Price */}
+          <h3 style={{ 
+            fontSize: '1.4rem', 
+            margin: '0 0 0.5rem 0',
+            fontFamily: currentStyle?.fonts?.heading || 'inherit'
+          }}>{zoomedItem.name}</h3>
 
-            <div style={{ 
-              fontSize: '1.2rem', 
-              fontWeight: 'bold',
+          <div style={{ 
+            fontSize: '1.3rem', 
+            fontWeight: 'bold',
+            color: currentStyle?.colors?.accent || '#800000',
+            marginBottom: '1rem'
+          }}>
+            ${parseFloat(zoomedItem.price || 0).toFixed(2)} each
+          </div>
+
+          {/* Category Badge */}
+          {zoomedItem.category && zoomedItem.category !== 'Other' && (
+            <div style={{
+              display: 'inline-block',
+              background: `${currentStyle?.colors?.accent || '#800000'}20`,
               color: currentStyle?.colors?.accent || '#800000',
-              marginBottom: '0.5rem'
+              padding: '0.25rem 0.75rem',
+              borderRadius: '12px',
+              fontSize: '0.75rem',
+              fontWeight: '500',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              marginBottom: '1rem',
+              width: 'fit-content'
             }}>
-              ${parseFloat(zoomedItem.price || 0).toFixed(2)}
+              {zoomedItem.category}
             </div>
-          
-            <div style={{ 
-              fontSize: '0.9rem', 
-              opacity: 0.8,
-              marginBottom: '1.5rem',
-              maxHeight: '100px',
-              overflow: 'auto'
-            }}>
-              {zoomedItem.description || 'No description available.'}
-            </div>
-          
-            {/* Show distance if available */}
-            {zoomedItem.formattedDistance && (
-              <div style={{ 
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                fontSize: '0.9rem',
-                opacity: 0.8,
-                marginBottom: '1rem'
-              }}>
-                <Navigation size={16} />
-                {zoomedItem.formattedDistance} away
-              </div>
-            )}
+          )}
 
-            {/* Action buttons */}
-            <div style={{ 
-              display: 'flex',
-              gap: '0.5rem'
-            }}>
-              <ActionButton 
-                className="secondary"
-                onClick={handleInquireClick}
-                theme={currentStyle}
+          {/* Quantity Selector */}
+          <QuantitySelector theme={currentStyle}>
+            <div className="quantity-label">Quantity:</div>
+            <div className="quantity-controls">
+              <button 
+                className="quantity-btn"
+                onClick={() => adjustQuantity(-1)}
+                disabled={orderQuantity <= 1}
               >
-                <MessageCircle size={16} />
-                Inquire
-              </ActionButton>
-              <ActionButton 
-                className="primary"
-                onClick={() => handleOrderClick(zoomedItem)}
-                theme={currentStyle}
+                <Minus size={16} />
+              </button>
+              
+              <div className="quantity-display">
+                {orderQuantity}
+              </div>
+              
+              <button 
+                className="quantity-btn"
+                onClick={() => adjustQuantity(1)}
+                disabled={orderQuantity >= parseInt(zoomedItem.quantity || 1)}
               >
-                <ShoppingCart size={16} />
-                Order
-              </ActionButton>
+                <Plus size={16} />
+              </button>
             </div>
-          </div>
-          
-          {/* Close button */}
-          <button 
-            onClick={handleCloseZoom}
-            style={{
-              position: 'absolute',
-              top: '0.5rem',
-              right: '0.5rem',
-              background: 'rgba(0, 0, 0, 0.5)',
-              border: 'none',
-              borderRadius: '50%',
-              width: '24px',
-              height: '24px',
+            <div className="quantity-total">
+              Total: ${(parseFloat(zoomedItem.price || 0) * orderQuantity).toFixed(2)}
+            </div>
+          </QuantitySelector>
+
+          {/* Stock Status */}
+          {zoomedItem.quantity !== undefined && (
+            <div style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              cursor: 'pointer',
-              zIndex: 10
-            }}
-          >
-            <X size={14} />
-          </button>
+              gap: '0.5rem',
+              marginBottom: '1rem',
+              fontSize: '0.9rem'
+            }}>
+              <span 
+                style={{ 
+                  display: 'inline-block',
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: parseInt(zoomedItem.quantity) > 0 ? '#4CAF50' : '#FF5252'
+                }}
+              />
+              <span style={{ 
+                color: parseInt(zoomedItem.quantity) > 0 ? '#4CAF50' : '#FF5252',
+                fontWeight: '500' 
+              }}>
+                {parseInt(zoomedItem.quantity) > 0 ? 
+                  `${zoomedItem.quantity} in stock` : 
+                  'Out of stock'
+                }
+              </span>
+            </div>
+          )}
+        
+          {/* Description */}
+          <div style={{ 
+            fontSize: '0.95rem', 
+            opacity: 0.9,
+            marginBottom: '1rem',
+            lineHeight: '1.5'
+          }}>
+            {zoomedItem.description || 'No description available.'}
+          </div>
+        
+          {/* Distance */}
+          {zoomedItem.formattedDistance && (
+            <div style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.9rem',
+              opacity: 0.8,
+              marginBottom: '1.5rem'
+            }}>
+              <Navigation size={16} />
+              {zoomedItem.formattedDistance} away
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div style={{ 
+            display: 'flex',
+            gap: '0.5rem',
+            marginTop: 'auto'
+          }}>
+            <ActionButton 
+              className="secondary"
+              onClick={handleInquireClick}
+              theme={currentStyle}
+              style={{ flex: '0 0 auto' }}
+            >
+              <MessageCircle size={16} />
+              Inquire
+            </ActionButton>
+            <ActionButton 
+              className="primary"
+              onClick={handleDirectOrder}
+              theme={currentStyle}
+              style={{ flex: '1' }}
+              disabled={parseInt(zoomedItem.quantity || 0) < 1 || orderQuantity > parseInt(zoomedItem.quantity || 0)}
+            >
+              <ShoppingCart size={16} />
+              {parseInt(zoomedItem.quantity || 0) < 1 ? 
+                'Out of Stock' : 
+                `Order ${orderQuantity} item${orderQuantity > 1 ? 's' : ''}`
+              }
+            </ActionButton>
+          </div>
         </div>
-      </ZoomContainer>
-    </ZoomOverlay>
-  )}
-
-  <ChatOverlay 
-    isOpen={chatOpen} 
-    onClick={handleCloseChat} // Use the new function instead of inline
-  />
-
-  {chatOpen && selectedChatItem && (
-    <OrderChat 
-      isOpen={chatOpen} 
-      onClose={handleCloseChat} // Use the new function here too
-      item={selectedChatItem}
-      shopId={selectedChatItem.shopId}
-      shopName={selectedChatItem.shopName}
-      theme={currentStyle}
-    />
-  )}
-
+        
+        {/* Close button */}
+        <button 
+          onClick={handleCloseZoom}
+          style={{
+            position: 'absolute',
+            top: '0.5rem',
+            right: '0.5rem',
+            background: 'rgba(0, 0, 0, 0.5)',
+            border: 'none',
+            borderRadius: '50%',
+            width: '32px',
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            cursor: 'pointer',
+            zIndex: 10
+          }}
+        >
+          <X size={16} />
+        </button>
+      </div>
+    </ZoomContainer>
+  </ZoomOverlay>
+)}
+ 
+ 
       </MainContent>
     </PageContainer>
   );

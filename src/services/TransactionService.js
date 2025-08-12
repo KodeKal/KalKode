@@ -117,20 +117,20 @@ export const TransactionService = {
 
      // Add system message about purchase request
      await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-       text: `🛒 Purchase request sent: ${requestedQuantity}x ${item.name} at $${unitPrice.toFixed(2)} each (Total: $${totalPrice.toFixed(2)}). Waiting for seller acceptance.`,
-       sender: 'system',
-       senderName: 'System',
-       timestamp: serverTimestamp(),
-       type: 'quantity_purchase_request',
-       purchaseData: {
-         itemName: item.name,
-         unitPrice: parseFloat(unitPrice),
-         requestedQuantity: parseInt(requestedQuantity),
-         totalPrice,
-         meetupType,
-         availableQuantity
-       }
-     });
+        text: `🛒 Purchase request sent:\n${requestedQuantity}x ${item.name} at $${unitPrice.toFixed(2)} each (Total: $${totalPrice.toFixed(2)}).\nStatus: Waiting for seller acceptance.`,
+        sender: 'system',
+        senderName: 'System',
+        timestamp: serverTimestamp(),
+        type: 'quantity_purchase_request',
+        purchaseData: {
+          itemName: item.name,
+          unitPrice: parseFloat(unitPrice),
+          requestedQuantity: parseInt(requestedQuantity),
+          totalPrice,
+          meetupType,
+          availableQuantity
+        }
+      });
 
      return {
        transactionId,
@@ -204,19 +204,19 @@ export const TransactionService = {
        const adjustmentText = finalQuantity !== transaction.requestedQuantity ? 
          ` (adjusted from ${transaction.requestedQuantity} to ${finalQuantity})` : '';
        
-       await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-         text: `✅ Seller approved ${finalQuantity}x ${transaction.itemName}${adjustmentText}. Total: $${finalTotalPrice.toFixed(2)}. Buyer may now proceed with payment.`,
-         sender: 'system',
-         senderName: 'System',
-         timestamp: serverTimestamp(),
-         type: 'seller_accepted',
-         purchaseData: {
-           approvedQuantity: finalQuantity,
-           finalTotalPrice: finalTotalPrice,
-           sellerName: transaction.sellerName,
-           wasAdjusted: finalQuantity !== transaction.requestedQuantity
-         }
-       });
+      await addDoc(collection(db, 'chats', transactionId, 'messages'), {
+        text: `✅ Seller approved:\n${finalQuantity}x ${transaction.itemName}${adjustmentText}.\nTotal: $${finalTotalPrice.toFixed(2)}.\nStatus: Buyer may now proceed with payment.`,
+        sender: 'system',
+        senderName: 'System',
+        timestamp: serverTimestamp(),
+        type: 'seller_accepted',
+        purchaseData: {
+          approvedQuantity: finalQuantity,
+          finalTotalPrice: finalTotalPrice,
+          sellerName: transaction.sellerName,
+          wasAdjusted: finalQuantity !== transaction.requestedQuantity
+        }
+      });
 
        return { success: true, approvedQuantity: finalQuantity, finalTotalPrice };
      } else {
@@ -238,12 +238,12 @@ export const TransactionService = {
        });
 
        await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-         text: '❌ Item is not available currently.',
-         sender: 'system',
-         senderName: 'System',
-         timestamp: serverTimestamp(),
-         type: 'seller_rejected'
-       });
+          text: '❌ Purchase request declined:\nItem is not available currently.\nStatus: Transaction cancelled.',
+          sender: 'system',
+          senderName: 'System',
+          timestamp: serverTimestamp(),
+          type: 'seller_rejected'
+        });
 
        return { success: true, rejected: true };
      }
@@ -303,32 +303,32 @@ export const TransactionService = {
 
      // Add system message with code (only buyer can see)
      await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-       text: `💳 Payment processed successfully! \n\n📦 Your pickup details:\n• Quantity: ${transaction.approvedQuantity}x ${transaction.itemName}\n• Total paid: $${finalAmount.toFixed(2)}\n• Pickup code: ${transactionCode}\n\nShow this code to the seller during pickup.`,
-       sender: 'system',
-       senderName: 'System',
-       timestamp: serverTimestamp(),
-       type: 'payment_success',
-       visibleTo: [transaction.buyerId],
-       purchaseData: {
-         transactionCode,
-         approvedQuantity: transaction.approvedQuantity,
-         finalTotalPrice: finalAmount
-       }
-     });
+        text: `💳 Payment processed successfully!\n\n📦 Your pickup details:\n• Quantity: ${transaction.approvedQuantity}x ${transaction.itemName}\n• Total paid: $${finalAmount.toFixed(2)}\n• Pickup code: ${transactionCode}\n\nStatus: Show this code to the seller during pickup.`,
+        sender: 'system',
+        senderName: 'System',
+        timestamp: serverTimestamp(),
+        type: 'payment_success',
+        visibleTo: [transaction.buyerId],
+        purchaseData: {
+          transactionCode,
+          approvedQuantity: transaction.approvedQuantity,
+          finalTotalPrice: finalAmount
+        }
+      });
 
      // Add separate message for seller (without code)
      await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-       text: `💰 Buyer has completed payment for ${transaction.approvedQuantity}x ${transaction.itemName} ($${finalAmount.toFixed(2)}). Funds are held in escrow until pickup is confirmed. Please coordinate with the buyer for pickup details.`,
-       sender: 'system',
-       senderName: 'System',
-       timestamp: serverTimestamp(),
-       type: 'payment_notification',
-       visibleTo: [transaction.sellerId],
-       purchaseData: {
-         approvedQuantity: transaction.approvedQuantity,
-         finalTotalPrice: finalAmount
-       }
-     });
+        text: `💰 Buyer payment received:\n${transaction.approvedQuantity}x ${transaction.itemName} ($${finalAmount.toFixed(2)}).\nStatus: Funds held in escrow until pickup confirmed.\n\nPlease coordinate with buyer for pickup details.`,
+        sender: 'system',
+        senderName: 'System',
+        timestamp: serverTimestamp(),
+        type: 'payment_notification',
+        visibleTo: [transaction.sellerId],
+        purchaseData: {
+          approvedQuantity: transaction.approvedQuantity,
+          finalTotalPrice: finalAmount
+        }
+      });
 
      // Reserve items (decrease quantity in shop)
      const shopRef = doc(db, 'shops', transaction.sellerId);
@@ -401,12 +401,12 @@ export const TransactionService = {
      
      // Add completion message
      await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-       text: `🎉 Transaction completed successfully!\n\n📦 ${quantity}x ${transaction.itemName} delivered\n💰 ${finalAmount.toFixed(2)} released to seller\n\nThank you for using our marketplace!`,
-       sender: 'system',
-       senderName: 'System',
-       timestamp: serverTimestamp(),
-       type: 'transaction_completed'
-     });
+        text: `🎉 Transaction completed successfully!\n\n📦 Items delivered: ${quantity}x ${transaction.itemName}\n💰 Amount released: $${finalAmount.toFixed(2)}\nStatus: Transaction complete.\n\nThank you for using our marketplace!`,
+        sender: 'system',
+        senderName: 'System',
+        timestamp: serverTimestamp(),
+        type: 'transaction_completed'
+      });
      
      console.log(`Released ${finalAmount} from escrow to seller ${transaction.sellerId} for ${quantity}x ${transaction.itemName}`);
      

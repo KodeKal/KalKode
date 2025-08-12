@@ -75,7 +75,7 @@ const ItemInfo = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}`}; // Removed '90' opacity
 
   h3 {
     font-size: 1.2rem;
@@ -98,7 +98,6 @@ const ItemInfo = styled.div`
   .shop-name {
     font-size: 0.9rem;
     color: ${props => props.theme?.colors?.text || 'rgba(255, 255, 255, 0.7)'};
-    opacity: 0.7;
     margin-top: auto;
   }
 
@@ -284,25 +283,20 @@ const ActionButton = styled.button`
   }
 `;
 
-// Main component
-// Add these styled components
-// Update the ZoomContainer styled component with a higher z-index and better positioning
 const ZoomContainer = styled.div`
-  position: fixed;
-  z-index: 10000; // Much higher z-index to appear over everything
+  position: relative;
+  z-index: 10001;
   border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
   overflow: hidden;
   border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-  background: ${props => props.theme?.colors?.surface || 'rgba(0, 0, 0, 0.8)'};
-  max-height: 90vh; // Increase max height
-  max-width: 90vw;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 500px;
-  height: auto;
+  background: ${props => props.theme?.colors?.background || '#000000'};
+  max-height: 95vh;
+  max-width: 95vw;
+  width: 600px;
   transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
 `;
 
 // Also update the Overlay to have a higher z-index

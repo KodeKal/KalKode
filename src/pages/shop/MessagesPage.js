@@ -1723,7 +1723,7 @@ const renderQuantityRequest = () => {
             await TransactionService.completeTransaction(selectedChat.transactionId, code);
             
             await addDoc(collection(db, 'chats', selectedChat.transactionId, 'messages'), {
-              text: '✅ Transaction completed! Funds have been released.',
+              text: '✅ Transaction completed:\nFunds have been released.\nStatus: Order fulfilled.',
               sender: 'system',
               senderName: 'System',
               timestamp: serverTimestamp(),
