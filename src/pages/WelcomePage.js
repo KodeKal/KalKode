@@ -383,10 +383,26 @@ const LoadingSpinner = styled.div`
 const MainContent = styled.main`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 6rem 2rem 2rem 2rem; // Added top padding
+  padding: 6rem 2rem 2rem 2rem;
   position: relative;
   z-index: 1;
+  
+  /* Tablet responsive padding */
+  @media (max-width: 768px) {
+    padding: 6rem 1.5rem 2rem 1.5rem;
+  }
+  
+  /* Mobile responsive padding */
+  @media (max-width: 480px) {
+    padding: 6rem 1rem 2rem 1rem;
+  }
+  
+  /* Very small mobile */
+  @media (max-width: 360px) {
+    padding: 6rem 0.75rem 2rem 0.75rem;
+  }
 `;
+
 
 const LoginButton = styled.button`
   background: transparent;
@@ -431,9 +447,47 @@ const TabContainer = styled.div`
 
 const GridContainer = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); // Reduce the minmax value from 300px to 250px
   gap: 2rem;
   margin-top: 2rem;
+  
+  /* Desktop: 4 columns with min 250px width */
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  
+  /* Large tablet: 3 columns */
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  /* Medium tablet: 2-3 columns */
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+  }
+  
+  /* Small tablet/large phone: 2 columns */
+  @media (max-width: 600px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  /* Mobile phones: 2 columns optimized */
+  @media (max-width: 480px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding: 0 0.25rem; /* Add minimal side padding */
+  }
+  
+  /* Very small phones: 2 columns compact */
+  @media (max-width: 360px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    padding: 0;
+    margin-top: 0.75rem;
+  }
 `;
 
 const NearbyNotification = styled.div`
@@ -490,9 +544,19 @@ const AddressSearchContainer = styled.div`
   margin: 0 auto;
   padding: 0.5rem 0;
 
+  @media (max-width: 768px) {
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+
   @media (max-width: 600px) {
     flex-direction: column;
     gap: 0.5rem;
+    padding: 0.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.25rem;
   }
 `;
 
@@ -504,7 +568,7 @@ const AddressInput = styled.input`
   padding: 0.6rem 1.2rem;
   color: white;
   font-size: 0.9rem;
-  min-width: 0; // Prevents input from overflowing container
+  min-width: 0;
 
   &:focus {
     outline: none;
@@ -513,6 +577,18 @@ const AddressInput = styled.input`
 
   &::placeholder {
     color: rgba(255, 255, 255, 0.4);
+  }
+  
+  /* Mobile responsive */
+  @media (max-width: 600px) {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 16px;
   }
 `;
 
@@ -537,6 +613,25 @@ const SearchButton = styled.button`
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+  
+  /* Mobile responsive */
+  @media (max-width: 600px) {
+    width: 100%;
+    justify-content: center;
+    padding: 0.6rem 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 16px;
+    gap: 0.4rem;
+    
+    svg {
+      width: 14px;
+      height: 14px;
+    }
   }
 `;
 
@@ -564,13 +659,26 @@ const EmptyGridMessage = styled.div`
 // Add this to the styled components section in WelcomePage.js
 const SliderContainer = styled.div`
   width: 100%;
-  overflow-x: auto; /* Enable horizontal scrolling */
+  overflow-x: auto;
   position: relative;
   margin: 2rem 0;
   
-  /* Customize the scrollbar appearance */
+  /* Hide scroll buttons on mobile for better UX */
+  @media (max-width: 768px) {
+    margin: 1.5rem 0;
+    
+    .scroll-button {
+      display: none;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    margin: 1rem 0;
+  }
+  
+  /* Customize scrollbar for mobile */
   &::-webkit-scrollbar {
-    height: 10px; /* Height of the scrollbar */
+    height: 8px;
   }
   
   &::-webkit-scrollbar-track {
@@ -583,8 +691,10 @@ const SliderContainer = styled.div`
     border-radius: 10px;
   }
   
-  &::-webkit-scrollbar-thumb:hover {
-    background: ${props => props.theme?.colors?.primary || '#600000'};
+  @media (max-width: 480px) {
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
   }
 `;
 
@@ -597,6 +707,22 @@ const Slider = styled.div`
 const SlideItem = styled.div`
   flex: 0 0 300px;
   margin-right: 2rem;
+  
+  /* Mobile responsive sizing */
+  @media (max-width: 768px) {
+    flex: 0 0 250px;
+    margin-right: 1.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    flex: 0 0 200px;
+    margin-right: 1rem;
+  }
+  
+  @media (max-width: 360px) {
+    flex: 0 0 180px;
+    margin-right: 0.75rem;
+  }
 `;
 
 const PinButton = styled.button`
@@ -703,6 +829,42 @@ const CategoryHeader = styled.div`
       transform: translateX(3px);
     }
   }
+  
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    margin-bottom: 0.75rem;
+    
+    h2 {
+      font-size: 1.6rem;
+    }
+    
+    .view-all {
+      font-size: 0.85rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    margin-bottom: 0.5rem;
+    
+    h2 {
+      font-size: 1.4rem;
+    }
+    
+    .view-all {
+      font-size: 0.8rem;
+      gap: 0.3rem;
+    }
+  }
+  
+  @media (max-width: 360px) {
+    h2 {
+      font-size: 1.2rem;
+    }
+    
+    .view-all {
+      font-size: 0.75rem;
+    }
+  }
 `;
 
 const ZoomOverlay = styled.div`
@@ -712,11 +874,17 @@ const ZoomOverlay = styled.div`
   right: 0;
   bottom: 0;
   background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.5)'}80`};
-  z-index: 10000; // Extremely high z-index to appear over everything
+  z-index: 10000;
   backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 1rem;
+  
+  /* Mobile responsive */
+  @media (max-width: 480px) {
+    padding: 0.5rem;
+  }
 `;
 
 const ScrollButton = styled.button`
@@ -823,6 +991,37 @@ const QuantitySelector = styled.div`
     color: ${props => props.theme?.colors?.accent || '#800000'};
     font-weight: bold;
   }
+  
+  /* Mobile responsive */
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin: 0.75rem 0;
+    
+    .quantity-controls {
+      gap: 0.75rem;
+      
+      .quantity-btn {
+        width: 32px;
+        height: 32px;
+        
+        svg {
+          width: 14px;
+          height: 14px;
+        }
+      }
+      
+      .quantity-display {
+        font-size: 1.3rem;
+        min-width: 50px;
+      }
+    }
+    
+    .quantity-total {
+      font-size: 1rem;
+    }
+  }
 `;
 
 // Add to styled components section in WelcomePage.js
@@ -881,9 +1080,21 @@ const FeaturedSearchContainer = styled.div`
   margin: 0 auto 2rem auto;
   padding: 0.5rem 0;
 
+  @media (max-width: 768px) {
+    gap: 0.5rem;
+    margin: 0 auto 1.5rem auto;
+    padding: 0.5rem;
+  }
+
   @media (max-width: 600px) {
     flex-direction: column;
     gap: 0.5rem;
+    margin: 0 auto 1rem auto;
+    padding: 0.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.25rem;
   }
 `;
 
@@ -904,6 +1115,18 @@ const FeaturedSearchInput = styled.input`
 
   &::placeholder {
     color: rgba(255, 255, 255, 0.4);
+  }
+  
+  /* Mobile responsive */
+  @media (max-width: 600px) {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 16px;
   }
 `;
 
@@ -929,6 +1152,25 @@ const FeaturedSearchButton = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
   }
+  
+  /* Mobile responsive */
+  @media (max-width: 600px) {
+    width: 100%;
+    justify-content: center;
+    padding: 0.6rem 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 16px;
+    gap: 0.4rem;
+    
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
 `;
 
 const FeaturedClearButton = styled.button`
@@ -947,6 +1189,25 @@ const FeaturedClearButton = styled.button`
 
   &:hover {
     background: rgba(128, 0, 0, 0.1);
+  }
+  
+  /* Mobile responsive */
+  @media (max-width: 600px) {
+    width: 100%;
+    justify-content: center;
+    padding: 0.6rem 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 16px;
+    gap: 0.4rem;
+    
+    svg {
+      width: 14px;
+      height: 14px;
+    }
   }
 `;
 
