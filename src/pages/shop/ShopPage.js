@@ -505,14 +505,6 @@ const FloatingFontControls = styled.div`
   }
 `;
 
-const KalKodeCorner = styled.div`
-  position: fixed;
-  top: 2rem;
-  right: 2rem;
-  z-index: 100;
-  cursor: pointer;
-`;
-
 const TabControlsContainer = styled.div`
   position: fixed;
   display: flex;
@@ -540,14 +532,6 @@ const ThemeContainer = styled.div`
     margin-top: 0;
     margin-bottom: 0.5rem;
   }
-`;
-
-const KalKodeLogo = styled.div`
-  color: #A00000;
-  font-family: 'Impact', sans-serif;
-  font-size: 2rem;
-  letter-spacing: 2px;
-  transform: skew(-5deg);
 `;
 
 const TabControls = styled.div`
@@ -642,6 +626,16 @@ const ShopLogoCorner = styled.div`
   left: 2rem;
   z-index: 100;
   cursor: pointer;
+
+  @media (max-width: 768px) {
+    top: 1rem;
+    left: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    top: 0.5rem;
+    left: 0.5rem;
+  }
 `;
 
 const ShopLogo = styled.div`
@@ -655,6 +649,52 @@ const ShopLogo = styled.div`
 
   &:hover {
     opacity: 1;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 1.4rem;
+    letter-spacing: 1px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
+  }
+`;
+
+const KalKodeCorner = styled.div`
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  z-index: 100;
+  cursor: pointer;
+
+  @media (max-width: 768px) {
+    top: 1rem;
+    right: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+`;
+
+const KalKodeLogo = styled.div`
+  color: #A00000;
+  font-family: 'Impact', sans-serif;
+  font-size: 2rem;
+  letter-spacing: 2px;
+  transform: skew(-5deg);
+
+  @media (max-width: 768px) {
+    font-size: 1.4rem;
+    letter-spacing: 1px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
   }
 `;
 

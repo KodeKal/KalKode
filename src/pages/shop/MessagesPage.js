@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { 
-  MessageCircle, Search, X, Trash2, Send, Package, User, Check, QrCode, Camera, Plus, Minus, ChevronDown
+  MessageCircle, Search, X, Trash2, Send, Package, User, Check, QrCode, Camera, Plus, Minus, ChevronDown,
+  ArrowLeft, ChevronLeft
 } from 'lucide-react';
 import { 
   collection, query, where, orderBy, onSnapshot, updateDoc, doc, addDoc, serverTimestamp
@@ -16,7 +17,7 @@ import { useLocation, useSearchParams } from 'react-router-dom';
 let qrScannerInstance = null;
 let scanHeartbeat = null;
 
-// Styled components (keeping existing styles but optimized)
+// Styled components with mobile responsiveness
 const PageContainer = styled.div`
   min-height: 100vh;
   background: linear-gradient(to bottom, #0B0B3B, #1A1A4C);
@@ -37,6 +38,10 @@ const PageHeader = styled.div`
   right: 0;
   z-index: 20;
   height: 80px;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
 `;
 
 const HeaderContent = styled.div`
@@ -54,9 +59,25 @@ const HeaderContent = styled.div`
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    margin: 0;
 
     svg {
       color: #800000;
+    }
+
+    @media (max-width: 768px) {
+      font-size: 1.4rem;
+      gap: 0.5rem;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 1.2rem;
+      gap: 0.4rem;
+      
+      svg {
+        width: 20px;
+        height: 20px;
+      }
     }
   }
 `;
@@ -69,6 +90,11 @@ const MainContent = styled.div`
   bottom: 0;
   display: flex;
   padding: 0 1rem;
+
+  @media (max-width: 768px) {
+    padding: 0;
+    top: 80px;
+  }
 `;
 
 const ContentWrapper = styled.div`
@@ -77,6 +103,11 @@ const ContentWrapper = styled.div`
   margin: 0 auto;
   display: flex;
   height: 100%;
+  position: relative;
+
+  @media (max-width: 768px) {
+    max-width: 100%;
+  }
 `;
 
 const ChatsList = styled.div`
@@ -85,6 +116,41 @@ const ChatsList = styled.div`
   height: 100%;
   display: flex;
   flex-direction: column;
+  transition: transform 0.3s ease-in-out;
+
+  /* Mobile styles */
+  @media (max-width: 768px) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, #0B0B3B, #1A1A4C);
+    z-index: 30;
+    transform: ${props => props.isHidden ? 'translateX(-100%)' : 'translateX(0)'};
+    padding: 1rem;
+  }
+`;
+
+const MobileBackButton = styled.button`
+  display: none;
+  
+  @media (max-width: 768px) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+    border: none;
+    color: #FFFFFF;
+    padding: 1rem 0;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    font-size: 1rem;
+    
+    &:hover {
+      color: #800000;
+    }
+  }
 `;
 
 const SearchInput = styled.div`
@@ -110,6 +176,10 @@ const SearchInput = styled.div`
     &::placeholder {
       color: rgba(255, 255, 255, 0.6);
     }
+
+    @media (max-width: 768px) {
+      width: 100%;
+    }
   }
   
   .search-icon {
@@ -119,6 +189,10 @@ const SearchInput = styled.div`
     transform: translateY(-50%);
     color: rgba(255, 255, 255, 0.6);
     pointer-events: none;
+
+    @media (max-width: 768px) {
+      right: 1rem;
+    }
   }
 
   .clear-button {
@@ -138,6 +212,10 @@ const SearchInput = styled.div`
     
     &:hover {
       opacity: 1;
+    }
+
+    @media (max-width: 768px) {
+      right: 2.5rem;
     }
   }
 `;
@@ -286,6 +364,18 @@ const ChatDisplay = styled.div`
   border: 1px solid rgba(128, 0, 0, 0.3);
   overflow: hidden;
   box-shadow: 0 5px 30px rgba(0, 0, 0, 0.2);
+
+  /* Mobile styles */
+  @media (max-width: 768px) {
+    margin-left: 0;
+    border-radius: 0;
+    border: none;
+    height: 100%;
+    position: ${props => props.hasSelectedChat ? 'relative' : 'absolute'};
+    left: ${props => props.hasSelectedChat ? '0' : '100%'};
+    width: 100%;
+    transition: left 0.3s ease-in-out;
+  }
 `;
 
 const ChatHeader = styled.div`
@@ -300,6 +390,27 @@ const ChatHeader = styled.div`
     display: flex;
     align-items: center;
     gap: 1rem;
+  }
+  
+  .mobile-back-btn {
+    display: none;
+    
+    @media (max-width: 768px) {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: #FFFFFF;
+      cursor: pointer;
+      padding: 0.5rem;
+      margin-right: 0.5rem;
+      border-radius: 50%;
+      
+      &:hover {
+        background: rgba(128, 0, 0, 0.2);
+      }
+    }
   }
   
   .avatar {
@@ -333,6 +444,10 @@ const ChatHeader = styled.div`
     border-radius: 20px;
     font-size: 0.9rem;
     border: 1px solid rgba(128, 0, 0, 0.3);
+
+    @media (max-width: 768px) {
+      display: none;
+    }
   }
 `;
 
@@ -986,7 +1101,13 @@ const EmptyState = styled.div`
     opacity: 0.8;
     line-height: 1.5;
   }
+
+  /* Mobile styles */
+  @media (max-width: 768px) {
+    display: ${props => props.isMobile && !props.hasSelectedChat ? 'flex' : 'none'};
+  }
 `;
+
 
 const QuantityRequestCard = styled.div`
   margin: ${props => props.minimized ? '0' : '0 1.5rem'};
@@ -1273,7 +1394,35 @@ const MessagesPage = () => {
    const [adjustedQuantity, setAdjustedQuantity] = useState(1);
   const [maxAvailableQuantity, setMaxAvailableQuantity] = useState(0);
   const [statusWindowMinimized, setStatusWindowMinimized] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showChatList, setShowChatList] = useState(true);
 
+  // Check if mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Handle chat selection on mobile
+  const handleChatSelect = (chat) => {
+    setSelectedChat(chat);
+    if (isMobile) {
+      setShowChatList(false);
+    }
+  };
+
+  // Handle back to chat list on mobile
+  const handleBackToChatList = () => {
+    if (isMobile) {
+      setShowChatList(true);
+      setSelectedChat(null);
+    }
+  };
 
   useEffect(() => {
     if (targetChatId && chats.length > 0) {
@@ -2058,7 +2207,7 @@ const renderQuantityRequest = () => {
     fetchTransactionDetails();
   }, [selectedChat?.transactionId]);
 
-  return (
+   return (
     <PageContainer>
       <PageHeader>
         <HeaderContent>
@@ -2071,7 +2220,14 @@ const renderQuantityRequest = () => {
       
       <MainContent>
         <ContentWrapper>
-          <ChatsList>
+          <ChatsList isHidden={isMobile && !showChatList}>
+            {isMobile && selectedChat && (
+              <MobileBackButton onClick={handleBackToChatList}>
+                <ArrowLeft size={20} />
+                Back to Chats
+              </MobileBackButton>
+            )}
+            
             <SearchInput>
               <Search className="search-icon" size={16} />
               <input
@@ -2123,7 +2279,7 @@ const renderQuantityRequest = () => {
                   <ChatItem 
                     key={chat.id}
                     active={selectedChat?.id === chat.id}
-                    onClick={() => setSelectedChat(chat)}
+                    onClick={() => handleChatSelect(chat)}
                   >
                     <div className="chat-image">
                       {chat.itemImage ? (
@@ -2166,11 +2322,18 @@ const renderQuantityRequest = () => {
             </ChatItemsContainer>
           </ChatsList>
           
-          <ChatDisplay>
+          <ChatDisplay hasSelectedChat={isMobile ? !showChatList : !!selectedChat}>
             {selectedChat ? (
               <>
                 <ChatHeader>
                   <div className="left-section">
+                    <button 
+                      className="mobile-back-btn"
+                      onClick={handleBackToChatList}
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    
                     <div className="avatar">
                       {selectedChat.isBuyer ? <User size={20} /> : <Package size={20} />}
                     </div>
@@ -2188,10 +2351,10 @@ const renderQuantityRequest = () => {
                   {transactionDetails && (
                     <div className="transaction-details">
                       {transactionDetails.approvedQuantity ? 
-                        `${transactionDetails.approvedQuantity}x = $${transactionDetails.finalTotalPrice.toFixed(2)}` :
+                        `${transactionDetails.approvedQuantity}x = ${transactionDetails.finalTotalPrice.toFixed(2)}` :
                         transactionDetails.requestedQuantity ? 
-                          `${transactionDetails.requestedQuantity}x = $${transactionDetails.totalPrice.toFixed(2)}` :
-                          `$${parseFloat(transactionDetails.price || 0).toFixed(2)}`
+                          `${transactionDetails.requestedQuantity}x = ${transactionDetails.totalPrice.toFixed(2)}` :
+                          `${parseFloat(transactionDetails.price || 0).toFixed(2)}`
                       }
                     </div>
                   )}
@@ -2289,7 +2452,7 @@ const renderQuantityRequest = () => {
                 </ChatInput>
               </>
             ) : (
-              <EmptyState>
+              <EmptyState isMobile={isMobile} hasSelectedChat={!!selectedChat}>
                 <div className="icon-container">
                   <MessageCircle size={32} />
                 </div>
@@ -2341,6 +2504,32 @@ const renderQuantityRequest = () => {
       </MainContent>
     </PageContainer>
   );
+};
+
+const formatTimestamp = (timestamp) => {
+  if (!timestamp) return '';
+  
+  let date;
+  if (timestamp.toDate) {
+    date = timestamp.toDate();
+  } else if (timestamp instanceof Date) {
+    date = timestamp;
+  } else {
+    date = new Date(timestamp);
+  }
+  
+  const now = new Date();
+  const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } else if (diffDays === 1) {
+    return 'Yesterday';
+  } else if (diffDays < 7) {
+    return date.toLocaleDateString([], { weekday: 'short' });
+  } else {
+    return date.toLocaleDateString();
+  }
 };
 
 export default MessagesPage;

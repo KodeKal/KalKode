@@ -241,7 +241,7 @@ const Header = styled.header`
   height: 80px;
   padding: 0 2rem;
   display: grid;
-  grid-template-columns: auto 1fr auto; // Logo, space, shop name
+  grid-template-columns: auto 1fr auto;
   grid-gap: 2rem;
   align-items: center;
   background: ${props => props.theme?.colors?.headerBg || 'rgba(0, 0, 0, 0.9)'};
@@ -250,9 +250,19 @@ const Header = styled.header`
   position: fixed;
   top: 0;
   z-index: 10;
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    padding: 0 1rem;
+    grid-gap: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    padding: 0 0.5rem;
+    grid-gap: 0.5rem;
+  }
 `;
 
-// Keep the Logo styled component
 const Logo = styled.div`
   color: ${props => props.theme?.colors?.accent || '#800000'};
   font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
@@ -260,28 +270,51 @@ const Logo = styled.div`
   letter-spacing: 2px;
   transform: skew(-5deg);
   cursor: pointer;
-  flex-shrink: 0; // Prevent logo from shrinking
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    font-size: 1.4rem;
+    letter-spacing: 1px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
+  }
 `;
 
-// Create a styled component for the shop name on right
 const ShopNameBadge = styled.div`
   font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
-  font-size: 1.2rem; // Reduced size from 1.4rem
+  font-size: 1.2rem;
   color: ${props => props.theme?.colors?.accent || '#800000'};
-  max-width: 150px; // Limit width to prevent overflow
+  max-width: 150px;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; // Add ellipsis for long names
+  text-overflow: ellipsis;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: rgba(0, 0, 0, 0.5); // Add subtle background
-  padding: 0.4rem 0.8rem; // Add padding for better spacing
-  justify-self: flex-end; // Position at the right edge of its grid area
-  margin-right: 3rem; // Move it left from the far right edge
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.4rem 0.8rem;
+  justify-self: flex-end;
+  margin-right: 3rem;
   
   &:hover {
     transform: translateY(-2px);
     background: rgba(0, 0, 0, 0.7);
+  }
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+    max-width: 120px;
+    padding: 0.3rem 0.6rem;
+    margin-right: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+    max-width: 100px;
+    padding: 0.25rem 0.5rem;
+    margin-right: 0.5rem;
   }
 `;
 

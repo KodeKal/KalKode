@@ -85,6 +85,16 @@ const ShopLogoCorner = styled.div`
   left: 2rem;
   z-index: 100;
   cursor: pointer;
+
+  @media (max-width: 768px) {
+    top: 1rem;
+    left: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    top: 0.5rem;
+    left: 0.5rem;
+  }
 `;
 
 const ShopLogo = styled.div`
@@ -98,6 +108,16 @@ const ShopLogo = styled.div`
 
   &:hover {
     opacity: 1;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 1.4rem;
+    letter-spacing: 1px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
   }
 `;
 
@@ -116,9 +136,34 @@ const BackButton = styled.button`
   cursor: pointer;
   z-index: 100;
   transition: all 0.2s;
+  font-size: 0.9rem;
 
   &:hover {
     background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+  }
+
+  @media (max-width: 768px) {
+    top: 1rem;
+    right: 1rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.7rem;
+    
+    svg {
+      width: 12px;
+      height: 12px;
+    }
   }
 `;
 

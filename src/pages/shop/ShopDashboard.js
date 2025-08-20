@@ -42,6 +42,15 @@ const ShopName = styled.h1`
   background: linear-gradient(45deg, #800000, #4A0404);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  margin: 0;
+
+  @media (max-width: 768px) {
+    font-size: 1.4rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.2rem;
+  }
 `;
 
 const DashboardContent = styled.main`
