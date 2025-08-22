@@ -211,17 +211,17 @@ export const WELCOME_STYLES = {
 
   STYLE_14: {
     id: 14,
-    name: "Mexican Fiesta",
+    name: "Street Art Rebellion",
     colors: {
-      background: "#2E7D32",
+      background: "#1A0B0B",
       text: "#FFFFFF",
-      accent: "#FF5722",
-      accentGradient: "linear-gradient(45deg, #FF5722, #FFC107)",
-      surface: "rgba(255, 87, 34, 0.25)"
+      accent: "#FF0040",
+      accentGradient: "linear-gradient(45deg, #FF0040, #FF6B35, #F7931E)",
+      surface: "rgba(255, 0, 64, 0.25)"
     },
     fonts: {
-      heading: "'Fredoka One', cursive",
-      body: "'Nunito', sans-serif"
+      heading: "'Bungee', cursive",
+      body: "'Roboto Condensed', sans-serif"
     }
   },
 
@@ -243,17 +243,17 @@ export const WELCOME_STYLES = {
 
   STYLE_16: {
     id: 16,
-    name: "Gourmet Kitchen",
+    name: "Tech Entrepreneur",
     colors: {
-      background: "#3E2723",
-      text: "#FFF8E1",
-      accent: "#FF8F00",
-      accentGradient: "linear-gradient(45deg, #FF8F00, #FFB300)",
-      surface: "rgba(255, 143, 0, 0.2)"
+      background: "#0A0E27",
+      text: "#E8E8E8",
+      accent: "#00D2FF",
+      accentGradient: "linear-gradient(45deg, #00D2FF, #3A7BD5, #6C5CE7)",
+      surface: "rgba(0, 210, 255, 0.2)"
     },
     fonts: {
-      heading: "'Pacifico', cursive",
-      body: "'Lato', sans-serif"
+      heading: "'Space Grotesk', sans-serif",
+      body: "'Inter', sans-serif"
     }
   },
 
@@ -291,49 +291,49 @@ export const WELCOME_STYLES = {
 
   STYLE_19: {
     id: 19,
-    name: "Music Studio",
+    name: "Underground Hip-Hop",
     colors: {
-      background: "#212121",
+      background: "#0D0D0D",
       text: "#FFFFFF",
-      accent: "#E91E63",
-      accentGradient: "linear-gradient(45deg, #E91E63, #FF4081)",
-      surface: "rgba(233, 30, 99, 0.2)"
+      accent: "#FFD700",
+      accentGradient: "linear-gradient(45deg, #FFD700, #FFA500, #FF6347)",
+      surface: "rgba(255, 215, 0, 0.3)"
     },
     fonts: {
-      heading: "'Righteous', cursive",
+      heading: "'Oswald', sans-serif",
       body: "'Roboto', sans-serif"
     }
   },
 
   STYLE_20: {
     id: 20,
-    name: "Hollywood Cinema",
+    name: "Waving Flag",
     colors: {
-      background: "#0F0F0F",
-      text: "#FFFFFF",
-      accent: "#DAA520",
-      accentGradient: "linear-gradient(45deg, #DAA520, #FFD700)",
-      surface: "rgba(218, 165, 32, 0.25)"
+      background: "#1C1C1E",
+      text: "#F2F2F7",
+      accent: "#FF375F",
+      accentGradient: "linear-gradient(45deg, #FF375F, #FF9500, #30D158)",
+      surface: "rgba(255, 55, 95, 0.25)"
     },
     fonts: {
-      heading: "'Abril Fatface', cursive",
-      body: "'Lora', serif"
+      heading: "'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif",
+      body: "'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif"
     }
   },
 
   STYLE_21: {
     id: 21,
-    name: "Sahara Desert",
+    name: "Crypto Millionaire",
     colors: {
-      background: "#8D4004",
-      text: "#FFF8DC",
-      accent: "#FF8C00",
-      accentGradient: "linear-gradient(45deg, #FF8C00, #DAA520)",
-      surface: "rgba(255, 140, 0, 0.2)"
+      background: "#0B0E11",
+      text: "#FFFFFF",
+      accent: "#F7931A",
+      accentGradient: "linear-gradient(45deg, #F7931A, #50AF95, #6C5CE7)",
+      surface: "rgba(247, 147, 26, 0.2)"
     },
     fonts: {
-      heading: "'Cairo', sans-serif",
-      body: "'Roboto', sans-serif"
+      heading: "'JetBrains Mono', monospace",
+      body: "'Inter', sans-serif"
     }
   },
 
@@ -387,17 +387,17 @@ export const WELCOME_STYLES = {
 
   STYLE_25: {
     id: 25,
-    name: "Tropical Paradise",
+    name: "Fashion Forward",
     colors: {
-      background: "#006064",
-      text: "#FFFFFF",
-      accent: "#00BCD4",
-      accentGradient: "linear-gradient(45deg, #00BCD4, #4DD0E1)",
-      surface: "rgba(0, 188, 212, 0.25)"
+      background: "#1A1A1A",
+      text: "#FAFAFA",
+      accent: "#E91E63",
+      accentGradient: "linear-gradient(45deg, #E91E63, #9C27B0, #673AB7)",
+      surface: "rgba(233, 30, 99, 0.25)"
     },
     fonts: {
-      heading: "'Dancing Script', cursive",
-      body: "'Quicksand', sans-serif"
+      heading: "'Playfair Display', serif",
+      body: "'Lato', sans-serif"
     }
   },
 
@@ -451,17 +451,17 @@ export const WELCOME_STYLES = {
 
   STYLE_29: {
     id: 29,
-    name: "Winter Wonderland",
+    name: "Afrofuturist Vision",
     colors: {
-      background: "#1E3A8A",
-      text: "#F9FAFB",
-      accent: "#3B82F6",
-      accentGradient: "linear-gradient(45deg, #3B82F6, #93C5FD)",
-      surface: "rgba(59, 130, 246, 0.2)"
+      background: "#1B0A2E",
+      text: "#F0F8FF",
+      accent: "#8A2BE2",
+      accentGradient: "linear-gradient(45deg, #8A2BE2, #DA70D6, #FF1493)",
+      surface: "rgba(138, 43, 226, 0.3)"
     },
     fonts: {
-      heading: "'Fredoka One', cursive",
-      body: "'Nunito', sans-serif"
+      heading: "'Exo 2', sans-serif",
+      body: "'Ubuntu', sans-serif"
     }
   },
 
