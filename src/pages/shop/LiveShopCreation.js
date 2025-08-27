@@ -597,52 +597,7 @@ const LiveShopCreation = () => {
   };
 
   // Background effect
-  useEffect(() => {
-    const container = document.querySelector('.page-container');
-    if (!container) return;
-
-    const createPing = () => {
-      const ping = document.createElement('div');
-      ping.className = 'ping';
-      
-      ping.style.left = `${Math.random() * 100}%`;
-      ping.style.top = `${Math.random() * 100}%`;
-      ping.style.zIndex = '0';
-      
-      container.appendChild(ping);
-      
-      setTimeout(() => {
-        if (ping && ping.parentNode) {
-          ping.remove();
-        }
-      }, 2000);
-    };
-
-    const createPingGroup = (count) => {
-      for (let i = 0; i < count; i++) {
-        setTimeout(() => {
-          createPing();
-        }, i * 200);
-      }
-    };
-
-    const pingCounts = [10, 30, 20];
-    let currentIndex = 0;
-
-    const interval = setInterval(() => {
-      const count = pingCounts[currentIndex];
-      createPingGroup(count);
-      currentIndex = (currentIndex + 1) % pingCounts.length;
-    }, 3000);
-    
-    return () => {
-      clearInterval(interval);
-      const pings = container.getElementsByClassName('ping');
-      while (pings.length > 0) {
-        pings[0].remove();
-      }
-    };
-  }, []);
+  
 
   // Render methods
   const renderShopView = () => (
