@@ -205,7 +205,7 @@ export const TransactionService = {
          ` (adjusted from ${transaction.requestedQuantity} to ${finalQuantity})` : '';
        
       await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-        text: `✅ Seller approved:\n${finalQuantity}x ${transaction.itemName}${adjustmentText}.\nTotal: $${finalTotalPrice.toFixed(2)}.\nStatus: Buyer may now proceed with payment.`,
+        text: `✅ Seller approved:\n${finalQuantity}x ${transaction.itemName}${adjustmentText}.\nTotal: $${finalTotalPrice.toFixed(2)}.\nStatus: Buyer may now pay.`,
         sender: 'system',
         senderName: 'System',
         timestamp: serverTimestamp(),
@@ -238,7 +238,7 @@ export const TransactionService = {
        });
 
        await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-          text: '❌ Purchase request declined:\nItem is not available currently.\nStatus: Transaction cancelled.',
+          text: '❌ Purchase request declined:\nItem is currently not available.\nStatus: Transaction cancelled.',
           sender: 'system',
           senderName: 'System',
           timestamp: serverTimestamp(),
@@ -252,6 +252,100 @@ export const TransactionService = {
      throw error;
    }
  },
+
+ withdrawPayment: async (transactionId) => {
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error('Authentication required');
+
+    const transactionRef = doc(db, 'transactions', transactionId);
+    const transactionSnap = await getDoc(transactionRef);
+    
+    if (!transactionSnap.exists()) {
+      throw new Error('Transaction not found');
+    }
+    
+    const transaction = transactionSnap.data();
+    
+    // Verify this is the buyer
+    if (transaction.buyerId !== currentUser.uid) {
+      throw new Error('Only the buyer can withdraw payment');
+    }
+
+    // Can only withdraw if payment is escrowed but not yet picked up
+    if (transaction.status !== 'paid') {
+      throw new Error('Payment can only be withdrawn when transaction is in paid status');
+    }
+
+    // Update transaction status to withdrawn
+    await updateDoc(transactionRef, {
+      status: 'withdrawn',
+      paymentStatus: 'refunded',
+      withdrawnAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    // Restore item quantity back to shop
+    const shopRef = doc(db, 'shops', transaction.sellerId);
+    const shopSnap = await getDoc(shopRef);
+    if (shopSnap.exists()) {
+      const shopData = shopSnap.data();
+      const itemIndex = shopData.items.findIndex(item => item.id === transaction.itemId);
+      
+      if (itemIndex !== -1) {
+        const updatedItems = [...shopData.items];
+        const restoredQuantity = transaction.approvedQuantity || transaction.requestedQuantity || 1;
+        const currentQuantity = parseInt(updatedItems[itemIndex].quantity) || 0;
+        
+        updatedItems[itemIndex] = {
+          ...updatedItems[itemIndex],
+          quantity: currentQuantity + restoredQuantity
+        };
+
+        await updateDoc(shopRef, { items: updatedItems });
+      }
+    }
+
+    // Update chat
+    await updateDoc(doc(db, 'chats', transactionId), {
+      lastMessage: 'Payment withdrawn by buyer',
+      lastMessageTime: serverTimestamp(),
+      pendingPurchase: {
+        ...transaction,
+        status: 'withdrawn'
+      },
+      [`unreadCount.${transaction.sellerId}`]: 1
+    });
+
+    // Add system message about withdrawal
+    const quantity = transaction.approvedQuantity || transaction.requestedQuantity || 1;
+    const amount = transaction.finalTotalPrice || transaction.totalPrice || 0;
+    
+    await addDoc(collection(db, 'chats', transactionId, 'messages'), {
+      text: `🔄 Payment withdrawn by buyer:\n\n📦 Transaction cancelled: ${quantity}x ${transaction.itemName}\n💰 Amount refunded: $${amount.toFixed(2)}\n📈 Items returned to inventory\n\nStatus: Transaction cancelled.`,
+      sender: 'system',
+      senderName: 'System',
+      timestamp: serverTimestamp(),
+      type: 'payment_withdrawn',
+      purchaseData: {
+        withdrawnQuantity: quantity,
+        refundAmount: amount
+      }
+    });
+    
+    console.log(`Refunded ${amount} to buyer ${transaction.buyerId} and restored ${quantity}x ${transaction.itemName} to inventory`);
+    
+    return {
+      success: true,
+      message: 'Payment withdrawn successfully',
+      refundAmount: amount,
+      restoredQuantity: quantity
+    };
+  } catch (error) {
+    console.error('Error withdrawing payment:', error);
+    throw error;
+  }
+},
 
  // Step 3: Buyer processes payment after seller acceptance
  processQuantityPayment: async (transactionId, paymentMethodData) => {
