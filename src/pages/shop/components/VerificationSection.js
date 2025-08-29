@@ -489,8 +489,11 @@ const VerificationSection = ({ transactionId, transactionCode }) => {
 
   // Manual verification
   const handleVerifyCode = useCallback(async (codeToVerify = code) => {
-    if (!codeToVerify.trim()) {
-      setError('Please enter verification code');
+    const cleanCode = codeToVerify.trim();
+    
+    // Check if code has content beyond KODE-
+    if (cleanCode === 'KODE-' || cleanCode.length <= 5) {
+      setError('Please enter the complete verification code');
       return;
     }
 
@@ -499,7 +502,7 @@ const VerificationSection = ({ transactionId, transactionCode }) => {
       setError(null);
       setSuccess(null);
       
-      await TransactionService.completeTransaction(transactionId, codeToVerify);
+      await TransactionService.completeTransaction(transactionId, cleanCode);
       
       await addDoc(collection(db, 'chats', transactionId, 'messages'), {
         text: '✅ Transaction completed! Funds have been released.',
@@ -509,14 +512,14 @@ const VerificationSection = ({ transactionId, transactionCode }) => {
         type: 'system'
       });
       
-      setCode('');
-      setSuccess(`🎉 CODE VERIFIED! Transaction completed! 💰 Funds released. 📦 Please deliver item. Code: ${codeToVerify}`);
+      setCode('KODE-'); // Reset to prefix only
+      setSuccess(`🎉 CODE VERIFIED! Transaction completed! 💰 Funds released. 📦 Please deliver item. Code: ${cleanCode}`);
       
       // Auto-minimize after success
       setTimeout(() => setMinimized(true), 3000);
       
     } catch (error) {
-      setError(`Invalid code "${codeToVerify}". Please ask buyer for correct pickup code.`);
+      setError(`Invalid code "${cleanCode}". Please ask buyer for correct pickup code.`);
     } finally {
       setLoading(false);
     }
@@ -548,7 +551,24 @@ const VerificationSection = ({ transactionId, transactionCode }) => {
               type="text"
               placeholder="KODE-XXXXXX"
               value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              onChange={(e) => {
+                const value = e.target.value.toUpperCase();
+                // Ensure KODE- prefix is always present
+                if (value.startsWith('KODE-') || value === '') {
+                  setCode(value === '' ? 'KODE-' : value);
+                } else if (!value.startsWith('KODE-')) {
+                  // If user tries to type without prefix, add it
+                  setCode('KODE-' + value);
+                }
+              }}
+              onFocus={(e) => {
+                // Set cursor position after KODE- when focusing
+                setTimeout(() => {
+                  if (e.target.value === 'KODE-') {
+                    e.target.setSelectionRange(5, 5);
+                  }
+                }, 0);
+              }}
               maxLength={11}
             />
             <button 
@@ -570,7 +590,7 @@ const VerificationSection = ({ transactionId, transactionCode }) => {
           
           <ActionButton 
             onClick={() => handleVerifyCode()}
-            disabled={!code || loading}
+            disabled={code === 'KODE-' || code.length <= 5 || loading}
           >
             <Check size={18} />
             {loading ? 'Verifying...' : 'Complete Transaction'}
