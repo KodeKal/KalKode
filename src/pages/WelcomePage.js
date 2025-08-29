@@ -5,9 +5,11 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef  } from 'react';
 import { getFeaturedItems } from '../firebase/firebaseService';
 import FeaturedItem from '..//components/shop/FeaturedItem';
-import { Search, Users, Package, Navigation, Film, Plus, Minus, Pin, ChevronLeft, ChevronRight, X, MessageCircle, ShoppingCart, RefreshCw } from 'lucide-react';
+import { Search, Users, Package, Navigation, Film, Plus, Minus, Pin, ChevronLeft, LogOut, ChevronRight, X, MessageCircle, ShoppingCart, RefreshCw } from 'lucide-react';
 import { getDistance } from 'geolib';
 import OrderChat from '../components/Chat/OrderChat'; // Import the OrderChat component
+import { auth } from '../firebase/config';
+
 
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
@@ -18,7 +20,6 @@ import { useLocation } from '../contexts/LocationContext';
 import LocationDialog from '../components/LocationDialog';
 import ThemeDecorations from '../components/ThemeDecorations';
 import { TransactionService } from '../services/TransactionService';
-
 
 const ChatOverlay = styled.div`
   position: fixed;
@@ -62,7 +63,6 @@ const ProfileImage = styled.div`
   }
 `;
 
-// Update the ShopName styled component
 const ShopName = styled.h2`
   font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
   font-size: 5.4rem;
@@ -79,18 +79,15 @@ const MotivationalMessage = styled.p`
   font-size: 1.4rem;
   line-height: 1.6;
   max-width: 800px;
-  margin: 3rem auto 0; // Increased top margin to place it below the button
-  color: ${props => props.theme?.colors?.text || '#FFFFFF'}; // Use text color for subtlety
-  font-weight: 400; // Lighter weight for sleeker appearance
-  font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"}; // Use body font for elegance
+  margin: 3rem auto 0;
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  font-weight: 400;
+  font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
   text-align: center;
   padding: 1.5rem 2rem;
   letter-spacing: 0.5px;
-  
-  /* Sleek, minimal styling */
   position: relative;
   
-  /* Add subtle quotes */
   &::before, &::after {
     content: '"';
     font-family: ${props => props.theme?.fonts?.heading || "'Georgia', serif"};
@@ -110,7 +107,6 @@ const MotivationalMessage = styled.p`
     right: -1rem;
   }
   
-  /* Add subtle gradient bottom border */
   border-bottom: 1px solid transparent;
   background-image: ${props => `linear-gradient(90deg, transparent, ${props.theme?.colors?.accent || '#800000'}40, transparent)`};
   background-position: bottom;
@@ -118,7 +114,6 @@ const MotivationalMessage = styled.p`
   background-repeat: no-repeat;
 `;
 
-// Define motivational messages at the component level
 const MOTIVATIONAL_MESSAGES = [
   "Build your vision, Elevate humanity.",
   "Create greatness, Inspire progress.",
@@ -139,7 +134,6 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
   position: relative;
   overflow: hidden;
 
-  /* Existing background effects remain unchanged */
   &::before {
     content: '';
     position: absolute;
@@ -175,19 +169,18 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
     z-index: 0; 
   }
 
-  /* Updated ping animation to be 1/3 the size */
   .ping::before {
     content: '';
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 40px; // Reduced from 200px to about 1/3
-    height: 40px; // Reduced from 200px to about 1/3
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: transparent;
     border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
     transform: translate(-50%, -50%) scale(0);
-    opacity: 0.6; // Slightly reduced opacity for background effect
+    opacity: 0.6;
     animation: radarPing 3s ease-out forwards;
   }
   
@@ -196,20 +189,19 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 40px; // Reduced from 120px to about 1/3
-    height: 40px; // Reduced from 120px to about 1/3
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: transparent;
     border: 1px solid ${props => props.theme?.colors?.accent || '#800000'};
     transform: translate(-50%, -50%) scale(0);
-    opacity: 0.4; // Reduced opacity
+    opacity: 0.4;
     animation: radarPing 2.5s ease-out 0.2s forwards;
   }
 
-  // Make sure MainContent has a higher z-index
   & > main {
     position: relative;
-    z-index: 1; // Higher than ping z-index
+    z-index: 1;
   }
 
   @keyframes radarPing {
@@ -223,7 +215,6 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
     }
   }
 
-  /* Other keyframes remain the same */
   @keyframes galaxySwirl {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
@@ -235,13 +226,12 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
   }
 `;
 
-
 const Header = styled.header`
   width: 100%;
   height: 80px;
   padding: 0 2rem;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   grid-gap: 2rem;
   align-items: center;
   background: ${props => props.theme?.colors?.headerBg || 'rgba(0, 0, 0, 0.9)'};
@@ -251,10 +241,10 @@ const Header = styled.header`
   top: 0;
   z-index: 10;
 
-  /* Mobile responsive */
   @media (max-width: 768px) {
     padding: 0 1rem;
     grid-gap: 1rem;
+    grid-template-columns: auto 1fr auto;
   }
 
   @media (max-width: 480px) {
@@ -296,7 +286,7 @@ const ShopNameBadge = styled.div`
   background: rgba(0, 0, 0, 0.5);
   padding: 0.4rem 0.8rem;
   justify-self: flex-end;
-  margin-right: 3rem;
+  margin-right: 1rem;
   
   &:hover {
     transform: translateY(-2px);
@@ -304,19 +294,78 @@ const ShopNameBadge = styled.div`
   }
 
   @media (max-width: 768px) {
-    font-size: 1rem;
-    max-width: 120px;
-    padding: 0.3rem 0.6rem;
-    margin-right: 1rem;
+    display: none;
+  }
+`;
+
+const LogoutButton = styled.button`
+  background: transparent;
+  border: 2px solid #800000;
+  color: #800000;
+  padding: 0.6rem 1.5rem;
+  border-radius: 25px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  letter-spacing: 1px;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  &:hover {
+    background: rgba(128, 0, 0, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(128, 0, 0, 0.2);
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    border-radius: 20px;
+    
+    svg {
+      width: 16px;
+      height: 16px;
+    }
   }
 
   @media (max-width: 480px) {
-    font-size: 0.9rem;
-    max-width: 100px;
-    padding: 0.25rem 0.5rem;
-    margin-right: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem;
+    
+    .logout-text {
+      display: none;
+    }
   }
 `;
+
+const LoginButton = styled.button`
+  background: transparent;
+  border: 2px solid #800000;
+  color: #800000;
+  padding: 0.8rem 2rem;
+  border-radius: 30px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  letter-spacing: 1px;
+  font-size: 1rem;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  &:hover {
+    background: rgba(128, 0, 0, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 10px rgba(128, 0, 0, 0.2);
+  }
+`;
+
+
+
 
 // Update WelcomeSection
 const WelcomeSection = styled.section`
@@ -446,29 +495,6 @@ const MainContent = styled.main`
   }
 `;
 
-
-const LoginButton = styled.button`
-  background: transparent;
-  border: 2px solid #800000;
-  color: #800000;
-  padding: 0.8rem 2rem;
-  border-radius: 30px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
-  letter-spacing: 1px;
-  font-size: 1rem;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-
-  &:hover {
-    background: rgba(128, 0, 0, 0.1);
-    transform: translateY(-2px);
-    box-shadow: 0 2px 10px rgba(128, 0, 0, 0.2);
-  }
-`;
 
 const PLACEHOLDER_LOCATIONS = {
   '77085': {
@@ -1075,7 +1101,7 @@ const QuantitySelector = styled.div`
 // Add to styled components section in WelcomePage.js
 const LocationIndicator = styled.div`
   position: relative;
-  top: 90px; // Position it below the header
+  top: 90px;
   left: 2rem;
   display: flex;
   align-items: center;
@@ -1117,6 +1143,7 @@ const LocationIndicator = styled.div`
     animation: spin 1s linear infinite;
   }
 `;
+
 
 // Add this new styled component for the featured search
 const FeaturedSearchContainer = styled.div`
@@ -1263,6 +1290,7 @@ const MobileAwareContainer = styled.div`
   /* Add bottom padding on mobile when authenticated to account for bottom nav */
   padding-bottom: ${props => props.isAuthenticated && window.innerWidth <= 768 ? '100px' : '2rem'};
   
+  @media (max-width: 768px) {
     /* Ensure content doesn't get hidden behind bottom nav */
     padding-bottom: ${props => props.isAuthenticated ? '100px' : '2rem'};
   }
@@ -1504,6 +1532,23 @@ const WelcomePage = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      // The auth state change will automatically redirect via the useAuth context
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
+  const handleLogin = () => {
+    navigate('/auth', { 
+      state: { 
+        mode: 'login',
+        from: window.location.pathname
+      }
+    });
+  };
   const forceRestoreScrolling = () => {
     document.body.style.position = '';
     document.body.style.top = '';
@@ -2016,15 +2061,6 @@ const handleInquireClick = () => {
     }
   };
 
-  const handleLogin = () => {
-    navigate('/auth', { 
-      state: { 
-        mode: 'login',
-        from: window.location.pathname
-      }
-    });
-  };
-
   // In WelcomePage.js, update loadFeaturedItems
   // Update the loadFeaturedItems function to get 8 items
   const loadFeaturedItems = async () => {
@@ -2119,16 +2155,25 @@ React.useEffect(() => {
           KALKODE
         </Logo>
 
+        {/* Spacer for flex layout */}
+        <div />
+
         {isAuthenticated && shopData?.name && (
           <ShopNameBadge
             theme={currentStyle}
             onClick={() => navigate(`/shop/${user.uid}`)}
-            title={`Go to ${shopData.name}`} // More descriptive tooltip
+            title={`Go to ${shopData.name}`}
           >
-            {/* Optional: Add icon */}
-            {/* <Store size={14} style={{ marginRight: '6px' }} /> */}
             {shopData.name}
           </ShopNameBadge>
+        )}
+
+        {/* Show logout button when authenticated, login button when not */}
+        {isAuthenticated && (
+          <LogoutButton onClick={handleLogout}>
+            <LogOut size={18} />
+            <span className="logout-text">Logout</span>
+          </LogoutButton>
         )}
       </Header>
 

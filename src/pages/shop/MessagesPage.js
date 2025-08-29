@@ -1,16 +1,18 @@
-// src/pages/shop/MessagesPage.js - Refactored with enhanced features
+// src/pages/shop/MessagesPage.js - With Dynamic Theme System
 import React, { useState, useEffect, useReducer, useMemo } from 'react';
-import styled from 'styled-components';
+import styled, { ThemeProvider } from 'styled-components';
 import { 
-  MessageCircle, Search, X, Clock, Check, ArrowLeft, ChevronLeft
+  MessageCircle, Search, X, Clock, Check, ArrowLeft, ChevronLeft,
+  RefreshCw, Pin
 } from 'lucide-react';
 import { 
   collection, query, where, orderBy, onSnapshot, doc, updateDoc
 } from 'firebase/firestore';
 import { db, auth } from '../../firebase/config';
 import { useSearchParams } from 'react-router-dom';
+import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 
-// Import components (we'll create these next)
+// Import components
 import MessagesList from './components/MessagesList';
 import ChatView from './components/ChatView';
 import EmptyState from './components/EmptyState';
@@ -53,14 +55,48 @@ const initialChatState = {
   showChatList: true
 };
 
-// Styled components
+// Styled components with theme support
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: linear-gradient(to bottom, #0B0B3B, #1A1A4C);
-  color: #FFFFFF;
+  background: ${props => props.theme?.colors?.background || 'linear-gradient(to bottom, #0B0B3B, #1A1A4C)'};
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+
+  /* Theme-based background effects */
+  &::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: ${props => props.theme?.colors?.backgroundGradient || 'radial-gradient(circle at 20% 30%, rgba(128, 0, 0, 0.2) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(128, 0, 0, 0.15) 0%, transparent 50%)'};
+    opacity: 0.3;
+    z-index: 0;
+    animation: ${props => props.theme?.animations?.backgroundAnimation || 'none'};
+  }
+
+  /* Add starfield effect */
+  &::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      radial-gradient(circle 1px, ${props => props.theme?.colors?.text || '#FFF'} 1px, transparent 1px),
+      radial-gradient(circle 2px, ${props => props.theme?.colors?.accent || '#800000'} 1px, transparent 2px);
+    background-size: 200px 200px, 300px 300px;
+    background-position: 0 0;
+    opacity: 0.05;
+    z-index: 0;
+    animation: twinkle 4s infinite alternate;
+  }
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.03; }
+    50% { opacity: 0.08; }
+  }
   
   /* Add bottom padding on mobile for bottom navigation */
   @media (max-width: 768px) {
@@ -70,10 +106,10 @@ const PageContainer = styled.div`
 `;
 
 const PageHeader = styled.div`
-  background: rgba(0, 0, 0, 0.6);
+  background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.6)'}CC`};
   backdrop-filter: blur(10px);
   padding: 1.5rem 2rem;
-  border-bottom: 1px solid rgba(128, 0, 0, 0.3);
+  border-bottom: 1px solid ${props => props.theme?.colors?.accent ? `${props.theme.colors.accent}30` : 'rgba(128, 0, 0, 0.3)'};
   position: fixed;
   top: 0;
   left: 0;
@@ -85,7 +121,6 @@ const PageHeader = styled.div`
     padding: 1rem;
     height: 70px;
     
-    /* Hide or simplify header on very small screens */
     h1 {
       font-size: 1.4rem;
       
@@ -118,10 +153,12 @@ const HeaderContent = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
+  z-index: 1;
   
   h1 {
     font-size: 1.8rem;
-    background: linear-gradient(45deg, #800000, #4A0404);
+    background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     display: flex;
@@ -130,13 +167,84 @@ const HeaderContent = styled.div`
     margin: 0;
 
     svg {
-      color: #800000;
+      color: ${props => props.theme?.colors?.accent || '#800000'};
     }
 
     @media (max-width: 768px) {
       font-size: 1.4rem;
       gap: 0.5rem;
     }
+  }
+`;
+
+const ThemeControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 1;
+`;
+
+const ThemeButton = styled.button`
+  background: transparent;
+  border: 1px solid ${props => props.theme?.colors?.accent ? `${props.theme.colors.accent}40` : 'rgba(128, 0, 0, 0.4)'};
+  color: ${props => props.theme?.colors?.text || 'white'};
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0.7;
+
+  &:hover {
+    opacity: 1;
+    background: ${props => props.theme?.colors?.accent ? `${props.theme.colors.accent}20` : 'rgba(128, 0, 0, 0.2)'};
+    transform: scale(1.1);
+  }
+
+  &.spinning {
+    animation: spin 0.5s ease-in-out;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 768px) {
+    width: 32px;
+    height: 32px;
+    padding: 0.4rem;
+  }
+`;
+
+const StyleIndicator = styled.div`
+  background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.7)'}90`};
+  color: ${props => props.theme?.colors?.text || 'white'};
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid ${props => props.theme?.colors?.accent ? `${props.theme.colors.accent}30` : 'rgba(128, 0, 0, 0.3)'};
+  
+  .style-number {
+    font-weight: bold;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+  }
+
+  @media (max-width: 768px) {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  @media (max-width: 480px) {
+    display: none;
   }
 `;
 
@@ -152,7 +260,6 @@ const MainContent = styled.div`
   @media (max-width: 768px) {
     padding: 0;
     top: 70px;
-    /* Account for bottom navigation */
     bottom: 80px;
   }
   
@@ -160,7 +267,6 @@ const MainContent = styled.div`
     top: 60px;
   }
 `;
-
 
 const ContentWrapper = styled.div`
   max-width: 1200px;
@@ -175,6 +281,25 @@ const ContentWrapper = styled.div`
   }
 `;
 
+const ChatListContainer = styled.div`
+  position: relative;
+  width: ${props => props.isMobile ? '100%' : '350px'};
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease-in-out;
+  background: ${props => props.isMobile ? (props.theme?.colors?.background || 'linear-gradient(to bottom, #0B0B3B, #1A1A4C)') : 'transparent'};
+  
+  ${props => props.isMobile && `
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 30;
+    transform: ${props.showChatList ? 'translateX(0)' : 'translateX(-100%)'};
+    padding: 1rem;
+  `}
+`;
+
 const MobileBackButton = styled.button`
   display: none;
   
@@ -184,17 +309,17 @@ const MobileBackButton = styled.button`
     gap: 0.5rem;
     background: transparent;
     border: none;
-    color: #FFFFFF;
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
     cursor: pointer;
-    padding: 1rem;
+    padding: 1rem 0;
     margin-bottom: 1rem;
     font-size: 1rem;
-    border-bottom: 1px solid rgba(128, 0, 0, 0.2);
+    border-bottom: 1px solid ${props => props.theme?.colors?.accent ? `${props.theme.colors.accent}20` : 'rgba(128, 0, 0, 0.2)'};
     width: 100%;
     justify-content: flex-start;
     
     &:hover {
-      background: rgba(128, 0, 0, 0.1);
+      background: ${props => props.theme?.colors?.accent ? `${props.theme.colors.accent}10` : 'rgba(128, 0, 0, 0.1)'};
     }
     
     svg {
@@ -211,7 +336,6 @@ const FilterTabs = styled.div`
   padding: 0 0.5rem;
   overflow-x: auto;
   
-  /* Show scrollbar on mobile for better UX */
   &::-webkit-scrollbar {
     height: 4px;
   }
@@ -221,14 +345,13 @@ const FilterTabs = styled.div`
   }
   
   &::-webkit-scrollbar-thumb {
-    background: rgba(128, 0, 0, 0.5);
+    background: ${props => props.theme?.colors?.accent ? `${props.theme.colors.accent}80` : 'rgba(128, 0, 0, 0.5)'};
     border-radius: 2px;
   }
   
   @media (max-width: 768px) {
     padding: 0.5rem;
     gap: 0.25rem;
-    /* Ensure horizontal scroll works smoothly */
     overflow-x: auto;
     overflow-y: hidden;
     white-space: nowrap;
@@ -236,9 +359,18 @@ const FilterTabs = styled.div`
 `;
 
 const FilterTab = styled.button`
-  background: ${props => props.active ? 'rgba(128, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.3)'};
-  border: 1px solid ${props => props.active ? '#800000' : 'rgba(128, 0, 0, 0.3)'};
-  color: ${props => props.active ? '#FFFFFF' : 'rgba(255, 255, 255, 0.7)'};
+  background: ${props => props.active ? 
+    (props.theme?.colors?.accent ? `${props.theme.colors.accent}30` : 'rgba(128, 0, 0, 0.3)') : 
+    'rgba(0, 0, 0, 0.3)'
+  };
+  border: 1px solid ${props => props.active ? 
+    (props.theme?.colors?.accent || '#800000') : 
+    (props.theme?.colors?.accent ? `${props.theme.colors.accent}30` : 'rgba(128, 0, 0, 0.3)')
+  };
+  color: ${props => props.active ? 
+    (props.theme?.colors?.text || '#FFFFFF') : 
+    (props.theme?.colors?.text ? `${props.theme.colors.text}B3` : 'rgba(255, 255, 255, 0.7)')
+  };
   padding: 0.5rem 1rem;
   border-radius: 20px;
   cursor: pointer;
@@ -252,9 +384,9 @@ const FilterTab = styled.button`
   flex-shrink: 0;
 
   &:hover {
-    background: rgba(128, 0, 0, 0.3);
-    border-color: #800000;
-    color: #FFFFFF;
+    background: ${props => props.theme?.colors?.accent ? `${props.theme.colors.accent}30` : 'rgba(128, 0, 0, 0.3)'};
+    border-color: ${props => props.theme?.colors?.accent || '#800000'};
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
   }
 
   svg {
@@ -263,7 +395,10 @@ const FilterTab = styled.button`
   }
   
   .count {
-    background: ${props => props.active ? '#800000' : 'rgba(255, 255, 255, 0.2)'};
+    background: ${props => props.active ? 
+      (props.theme?.colors?.accent || '#800000') : 
+      'rgba(255, 255, 255, 0.2)'
+    };
     color: white;
     padding: 0.1rem 0.4rem;
     border-radius: 10px;
@@ -289,27 +424,26 @@ const SearchInput = styled.div`
   margin-bottom: 1rem;
   
   input {
-    width: 85%;
+    width: 100%;
     padding: 0.75rem 3rem 0.75rem 1rem;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(128, 0, 0, 0.3);
+    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.4)'}80`};
+    border: 1px solid ${props => props.theme?.colors?.accent ? `${props.theme.colors.accent}30` : 'rgba(128, 0, 0, 0.3)'};
     border-radius: 12px;
-    color: #FFFFFF;
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
     font-size: 0.9rem;
     transition: all 0.3s ease;
     
     &:focus {
       outline: none;
-      border-color: #800000;
-      box-shadow: 0 0 0 2px rgba(128, 0, 0, 0.3);
+      border-color: ${props => props.theme?.colors?.accent || '#800000'};
+      box-shadow: 0 0 0 2px ${props => props.theme?.colors?.accent ? `${props.theme.colors.accent}30` : 'rgba(128, 0, 0, 0.3)'};
     }
     
     &::placeholder {
-      color: rgba(255, 255, 255, 0.6);
+      color: ${props => props.theme?.colors?.text ? `${props.theme.colors.text}99` : 'rgba(255, 255, 255, 0.6)'};
     }
 
     @media (max-width: 768px) {
-      width: 100%;
       padding: 0.75rem 3rem 0.75rem 1rem;
     }
   }
@@ -319,7 +453,7 @@ const SearchInput = styled.div`
     right: 1rem;
     top: 50%;
     transform: translateY(-50%);
-    color: rgba(255, 255, 255, 0.6);
+    color: ${props => props.theme?.colors?.text ? `${props.theme.colors.text}99` : 'rgba(255, 255, 255, 0.6)'};
     pointer-events: none;
 
     @media (max-width: 768px) {
@@ -334,7 +468,7 @@ const SearchInput = styled.div`
     transform: translateY(-50%);
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.6);
+    color: ${props => props.theme?.colors?.text ? `${props.theme.colors.text}99` : 'rgba(255, 255, 255, 0.6)'};
     cursor: pointer;
     padding: 0.25rem;
     display: flex;
@@ -352,8 +486,82 @@ const MessagesPage = () => {
   const [chatState, chatDispatch] = useReducer(chatReducer, initialChatState);
   const [searchParams] = useSearchParams();
   const [isMobile, setIsMobile] = useState(false);
+  const [currentStyle, setCurrentStyle] = useState(null);
+  const [isPinned, setIsPinned] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const targetChatId = searchParams.get('chat');
+
+  // Initialize theme
+  useEffect(() => {
+    // Check if there's a pinned style in localStorage
+    const pinnedStyleId = localStorage.getItem('pinnedStyleId');
+    
+    if (pinnedStyleId) {
+      const pinnedStyle = Object.values(WELCOME_STYLES).find(
+        style => style.id.toString() === pinnedStyleId
+      );
+      
+      if (pinnedStyle) {
+        setCurrentStyle(pinnedStyle);
+        setIsPinned(true);
+        return;
+      }
+    }
+    
+    // If no pinned style or stored style not found, select a random one
+    const styles = Object.values(WELCOME_STYLES);
+    const randomStyle = styles[Math.floor(Math.random() * styles.length)];
+    setCurrentStyle(randomStyle);
+  }, []);
+
+  // Theme controls
+  const refreshTheme = () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    
+    // Get all available styles
+    const styles = Object.values(WELCOME_STYLES);
+    // Filter out the current style
+    const otherStyles = styles.filter(style => style.id !== currentStyle.id);
+    
+    if (otherStyles.length > 0) {
+      const randomStyle = otherStyles[Math.floor(Math.random() * otherStyles.length)];
+      setCurrentStyle(randomStyle);
+      
+      // If the current style was pinned, unpin it since we're changing
+      if (isPinned) {
+        localStorage.removeItem('pinnedStyleId');
+        setIsPinned(false);
+      }
+    }
+    
+    // Reset spinning state after animation
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
+
+  const togglePinStyle = () => {
+    if (isPinned) {
+      // Unpin the style
+      localStorage.removeItem('pinnedStyleId');
+      setIsPinned(false);
+      
+      // Select a new random style (different from current)
+      const styles = Object.values(WELCOME_STYLES).filter(
+        style => style.id !== currentStyle.id
+      );
+      
+      if (styles.length > 0) {
+        const randomStyle = styles[Math.floor(Math.random() * styles.length)];
+        setCurrentStyle(randomStyle);
+      }
+    } else {
+      // Pin the current style
+      localStorage.setItem('pinnedStyleId', currentStyle.id.toString());
+      setIsPinned(true);
+    }
+  };
 
   // Check if mobile
   useEffect(() => {
@@ -402,7 +610,6 @@ const MessagesPage = () => {
           isSeller: !isBuyer,
           role: isBuyer ? 'buyer' : 'seller',
           otherPartyId: isBuyer ? chat.sellerId : chat.buyerId,
-          // FIX: Use correct names - buyer should show their profile name, not store name
           otherPartyName: isBuyer ? 
             (chat.sellerName || 'Unknown Shop') : 
             (chat.buyerName || 'Unknown User'),
@@ -503,7 +710,7 @@ const MessagesPage = () => {
     }
   };
 
-  // Handle chat deletion
+  // Handle chat deletion with confirmation
   const handleDeleteChat = async (chatId, e) => {
     e.stopPropagation();
     
@@ -529,142 +736,143 @@ const MessagesPage = () => {
     }
   };
 
+  if (!currentStyle) return null;
+
   return (
-    <PageContainer>
-      <PageHeader>
-        <HeaderContent>
-          <h1>
-            <MessageCircle size={24} />
-            Messages
-          </h1>
-        </HeaderContent>
-      </PageHeader>
-      
-      <MainContent>
-        <ContentWrapper>
-          {/* Chat List */}
-          <div style={{
-            position: 'relative',
-            width: isMobile ? '100%' : '350px',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            transition: 'transform 0.3s ease-in-out',
-            ...(isMobile && {
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              background: 'linear-gradient(to bottom, #0B0B3B, #1A1A4C)',
-              zIndex: 30,
-              transform: chatState.showChatList ? 'translateX(0)' : 'translateX(-100%)',
-              padding: '1rem'
-            })
-          }}>
-            {isMobile && chatState.selectedChat && (
-              <button
-                onClick={handleBackToChatList}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#FFFFFF',
-                  padding: '1rem 0',
-                  marginBottom: '1rem',
-                  cursor: 'pointer',
-                  fontSize: '1rem'
-                }}
+    <ThemeProvider theme={currentStyle}>
+      <PageContainer theme={currentStyle}>
+        <PageHeader theme={currentStyle}>
+          <HeaderContent theme={currentStyle}>
+            <h1>
+              <MessageCircle size={24} />
+              Messages
+            </h1>
+            <ThemeControls>
+              <ThemeButton 
+                onClick={refreshTheme}
+                className={isRefreshing ? "spinning" : ""}
+                title="Get random theme"
+                theme={currentStyle}
               >
-                <ArrowLeft size={20} />
-                Back to Chats
-              </button>
-            )}
-            
-            {/* Filter Tabs - Always show on all devices */}
-            <FilterTabs>
-              {FILTER_OPTIONS.map(option => {
-                const Icon = option.icon;
-                const count = getFilterCounts[option.key];
-                return (
-                  <FilterTab
-                    key={option.key}
-                    active={chatState.activeFilter === option.key}
-                    onClick={() => chatDispatch({ type: 'SET_FILTER', payload: option.key })}
-                  >
-                    <Icon />
-                    {option.label}
-                    {count > 0 && <span className="count">{count}</span>}
-                  </FilterTab>
-                );
-              })}
-            </FilterTabs>
-            
-            {/* Search Input */}
-            <SearchInput>
-              <Search className="search-icon" size={16} />
-              <input
-                type="text"
-                placeholder="Search conversations..."
-                value={chatState.searchTerm}
-                onChange={(e) => chatDispatch({ type: 'SET_SEARCH_TERM', payload: e.target.value })}
-              />
-              {chatState.searchTerm && (
-                <button 
-                  className="clear-button"
-                  onClick={() => chatDispatch({ type: 'SET_SEARCH_TERM', payload: '' })}
-                >
-                  <X size={16} />
-                </button>
+                <RefreshCw size={16} />
+              </ThemeButton>
+              <ThemeButton 
+                onClick={togglePinStyle}
+                title={isPinned ? "Unpin this style" : "Pin this style"}
+                theme={currentStyle}
+              >
+                <Pin size={16} fill={isPinned ? currentStyle.colors.accent : "none"} />
+              </ThemeButton>
+              <StyleIndicator theme={currentStyle}>
+                <span>Style <span className="style-number">{currentStyle.id}</span></span>
+              </StyleIndicator>
+            </ThemeControls>
+          </HeaderContent>
+        </PageHeader>
+        
+        <MainContent>
+          <ContentWrapper>
+            {/* Chat List */}
+            <ChatListContainer 
+              isMobile={isMobile}
+              showChatList={chatState.showChatList}
+              theme={currentStyle}
+            >
+              {isMobile && chatState.selectedChat && (
+                <MobileBackButton onClick={handleBackToChatList} theme={currentStyle}>
+                  <ArrowLeft size={20} />
+                  Back to Chats
+                </MobileBackButton>
               )}
-            </SearchInput>
+              
+              {/* Filter Tabs */}
+              <FilterTabs theme={currentStyle}>
+                {FILTER_OPTIONS.map(option => {
+                  const Icon = option.icon;
+                  const count = getFilterCounts[option.key];
+                  return (
+                    <FilterTab
+                      key={option.key}
+                      active={chatState.activeFilter === option.key}
+                      onClick={() => chatDispatch({ type: 'SET_FILTER', payload: option.key })}
+                      theme={currentStyle}
+                    >
+                      <Icon />
+                      {option.label}
+                      {count > 0 && <span className="count">{count}</span>}
+                    </FilterTab>
+                  );
+                })}
+              </FilterTabs>
+              
+              {/* Search Input */}
+              <SearchInput theme={currentStyle}>
+                <Search className="search-icon" size={16} />
+                <input
+                  type="text"
+                  placeholder="Search conversations..."
+                  value={chatState.searchTerm}
+                  onChange={(e) => chatDispatch({ type: 'SET_SEARCH_TERM', payload: e.target.value })}
+                />
+                {chatState.searchTerm && (
+                  <button 
+                    className="clear-button"
+                    onClick={() => chatDispatch({ type: 'SET_SEARCH_TERM', payload: '' })}
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </SearchInput>
+              
+              {/* Messages List Component */}
+              <MessagesList
+                chats={getFilteredChats}
+                selectedChat={chatState.selectedChat}
+                loading={chatState.loading}
+                searchTerm={chatState.searchTerm}
+                onChatSelect={handleChatSelect}
+                onDeleteChat={handleDeleteChat}
+              />
+            </ChatListContainer>
             
-            {/* Messages List Component */}
-            <MessagesList
-              chats={getFilteredChats}
-              selectedChat={chatState.selectedChat}
-              loading={chatState.loading}
-              searchTerm={chatState.searchTerm}
-              onChatSelect={handleChatSelect}
-              onDeleteChat={handleDeleteChat}
-            />
-          </div>
-          
-          {/* Chat Display */}
-          <div style={{
-            flex: 1,
-            marginLeft: isMobile ? 0 : '2rem',
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            background: 'rgba(0, 0, 0, 0.4)',
-            borderRadius: isMobile ? 0 : '10px',
-            border: isMobile ? 'none' : '1px solid rgba(128, 0, 0, 0.3)',
-            overflow: 'hidden',
-            boxShadow: isMobile ? 'none' : '0 5px 30px rgba(0, 0, 0, 0.2)',
-            ...(isMobile && {
-              position: chatState.selectedChat ? 'relative' : 'absolute',
-              left: chatState.selectedChat ? '0' : '100%',
-              width: '100%',
-              transition: 'left 0.3s ease-in-out'
-            })
-          }}>
-            {chatState.selectedChat ? (
-              <ChatView
-                chat={chatState.selectedChat}
-                isMobile={isMobile}
-                onBackToList={handleBackToChatList}
-              />
-            ) : (
-              <EmptyState 
-                isMobile={isMobile} 
-                hasSelectedChat={!!chatState.selectedChat}
-              />
-            )}
-          </div>
-        </ContentWrapper>
-      </MainContent>
-    </PageContainer>
+            {/* Chat Display */}
+            <div style={{
+              flex: 1,
+              marginLeft: isMobile ? 0 : '2rem',
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+              background: `${currentStyle?.colors?.surface || 'rgba(0, 0, 0, 0.4)'}90`,
+              borderRadius: isMobile ? 0 : '10px',
+              border: isMobile ? 'none' : `1px solid ${currentStyle?.colors?.accent ? `${currentStyle.colors.accent}30` : 'rgba(128, 0, 0, 0.3)'}`,
+              overflow: 'hidden',
+              boxShadow: isMobile ? 'none' : '0 5px 30px rgba(0, 0, 0, 0.2)',
+              ...(isMobile && {
+                position: chatState.selectedChat ? 'relative' : 'absolute',
+                left: chatState.selectedChat ? '0' : '100%',
+                width: '100%',
+                transition: 'left 0.3s ease-in-out'
+              })
+            }}>
+              {chatState.selectedChat ? (
+                <ChatView
+                  chat={chatState.selectedChat}
+                  isMobile={isMobile}
+                  onBackToList={handleBackToChatList}
+                  theme={currentStyle}
+                />
+              ) : (
+                <EmptyState 
+                  isMobile={isMobile} 
+                  hasSelectedChat={!!chatState.selectedChat}
+                  theme={currentStyle}
+                />
+              )}
+            </div>
+          </ContentWrapper>
+        </MainContent>
+      </PageContainer>
+    </ThemeProvider>
   );
 };
 
