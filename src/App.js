@@ -1,11 +1,11 @@
-// Save at: src/App.js
-
+// Updated src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TempStoreProvider } from './contexts/TempStoreContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import NavMenu from './pages/shop/components/NavMenu';
+import BottomNavigation from './components/BottomNavigation/BottomNavigation';
 import { DEFAULT_THEME } from './theme/config/themes';
 import { GlobalStyles } from './styles/GlobalStyles';
 
@@ -29,13 +29,27 @@ const AppRoutes = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   
-  const showNavMenu = isAuthenticated && !['/auth', '/verify-email', '/shop/create/template'].some(
+  // Show desktop nav menu only on desktop and authenticated
+  const showDesktopNavMenu = isAuthenticated && !['/auth', '/verify-email', '/shop/create/template'].some(
     path => location.pathname === path || location.pathname.includes(path)
   );
 
+  // Show bottom navigation on mobile when authenticated
+  const showBottomNav = isAuthenticated && !['/auth', '/verify-email', '/shop/create/template'].some(
+    path => location.pathname === path || location.pathname.includes(path)
+  );
+
+  // Determine if we should add bottom padding for mobile nav
+  const needsBottomPadding = showBottomNav && window.innerWidth <= 768;
+
   return (
-    <>
-      {showNavMenu && <NavMenu theme={DEFAULT_THEME} />}
+    <div style={{ 
+      paddingBottom: needsBottomPadding ? '80px' : '0',
+      minHeight: '100vh'
+    }}>
+      {/* Desktop Navigation - Hidden on mobile */}
+      {showDesktopNavMenu && <NavMenu theme={DEFAULT_THEME} />}
+      
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<WelcomePage />} />
@@ -76,8 +90,14 @@ const AppRoutes = () => {
             <ProfilePage />
           </ProtectedRoute>
         } />
+
+        {/* Discover route - can point to welcome page for now */}
+        <Route path="/discover" element={<WelcomePage />} />
       </Routes>
-    </>
+
+      {/* Bottom Navigation - Only shown on mobile when authenticated */}
+      {showBottomNav && <BottomNavigation theme={DEFAULT_THEME} />}
+    </div>
   );
 };
 

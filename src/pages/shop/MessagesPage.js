@@ -61,6 +61,12 @@ const PageContainer = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  
+  /* Add bottom padding on mobile for bottom navigation */
+  @media (max-width: 768px) {
+    padding-bottom: 80px;
+    min-height: calc(100vh - 80px);
+  }
 `;
 
 const PageHeader = styled.div`
@@ -77,6 +83,32 @@ const PageHeader = styled.div`
 
   @media (max-width: 768px) {
     padding: 1rem;
+    height: 70px;
+    
+    /* Hide or simplify header on very small screens */
+    h1 {
+      font-size: 1.4rem;
+      
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+    }
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.75rem 1rem;
+    height: 60px;
+    
+    h1 {
+      font-size: 1.2rem;
+      gap: 0.5rem;
+      
+      svg {
+        width: 18px;
+        height: 18px;
+      }
+    }
   }
 `;
 
@@ -119,8 +151,16 @@ const MainContent = styled.div`
 
   @media (max-width: 768px) {
     padding: 0;
+    top: 70px;
+    /* Account for bottom navigation */
+    bottom: 80px;
+  }
+  
+  @media (max-width: 480px) {
+    top: 60px;
   }
 `;
+
 
 const ContentWrapper = styled.div`
   max-width: 1200px;
@@ -132,6 +172,35 @@ const ContentWrapper = styled.div`
 
   @media (max-width: 768px) {
     max-width: 100%;
+  }
+`;
+
+const MobileBackButton = styled.button`
+  display: none;
+  
+  @media (max-width: 768px) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+    border: none;
+    color: #FFFFFF;
+    cursor: pointer;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    border-bottom: 1px solid rgba(128, 0, 0, 0.2);
+    width: 100%;
+    justify-content: flex-start;
+    
+    &:hover {
+      background: rgba(128, 0, 0, 0.1);
+    }
+    
+    svg {
+      width: 20px;
+      height: 20px;
+    }
   }
 `;
 

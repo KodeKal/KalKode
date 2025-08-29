@@ -420,19 +420,29 @@ const MainContent = styled.main`
   position: relative;
   z-index: 1;
   
-  /* Tablet responsive padding */
+  /* Mobile responsive padding */
   @media (max-width: 768px) {
-    padding: 6rem 1.5rem 2rem 1.5rem;
+    padding: 6rem 1.5rem ${props => props.isAuthenticated ? '2rem' : '2rem'} 1.5rem;
+    /* Add extra bottom padding when authenticated for bottom nav */
+    ${props => props.isAuthenticated && `
+      padding-bottom: 8rem;
+    `}
   }
   
   /* Mobile responsive padding */
   @media (max-width: 480px) {
-    padding: 6rem 1rem 2rem 1rem;
+    padding: 6rem 1rem ${props => props.isAuthenticated ? '2rem' : '2rem'} 1rem;
+    ${props => props.isAuthenticated && `
+      padding-bottom: 8rem;
+    `}
   }
   
   /* Very small mobile */
   @media (max-width: 360px) {
-    padding: 6rem 0.75rem 2rem 0.75rem;
+    padding: 6rem 0.75rem ${props => props.isAuthenticated ? '2rem' : '2rem'} 0.75rem;
+    ${props => props.isAuthenticated && `
+      padding-bottom: 8rem;
+    `}
   }
 `;
 
@@ -803,7 +813,6 @@ const RefreshButton = styled.button`
 `;
 
 // Update the StyleIndicator to include the pin button
-// Update the StyleIndicator component
 const StyleIndicator = styled.div`
   position: fixed;
   bottom: 1rem;
@@ -817,6 +826,12 @@ const StyleIndicator = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  
+  /* On mobile, position above bottom navigation when authenticated */
+  @media (max-width: 768px) {
+    bottom: ${props => props.isAuthenticated ? '6rem' : '1rem'};
+    right: 1rem;
+  }
   
   .style-number {
     font-weight: bold;
@@ -1241,6 +1256,15 @@ const FeaturedClearButton = styled.button`
       width: 14px;
       height: 14px;
     }
+  }
+`;
+
+const MobileAwareContainer = styled.div`
+  /* Add bottom padding on mobile when authenticated to account for bottom nav */
+  padding-bottom: ${props => props.isAuthenticated && window.innerWidth <= 768 ? '100px' : '2rem'};
+  
+    /* Ensure content doesn't get hidden behind bottom nav */
+    padding-bottom: ${props => props.isAuthenticated ? '100px' : '2rem'};
   }
 `;
 
@@ -2120,21 +2144,22 @@ React.useEffect(() => {
         {updatingLocation && <div className="updating" />}
       </LocationIndicator>
 
-      <StyleIndicator theme={currentStyle}>
-      <RefreshButton 
-        onClick={refreshTheme}
-        className={isRefreshing ? "spinning" : ""}
-        title="Get random theme"
-      >
-        <RefreshCw size={16} />
-      </RefreshButton>
-      <PinButton 
-        onClick={togglePinStyle} 
-        isPinned={isPinned}
-        title={isPinned ? "Unpin this style" : "Pin this style"}
-      >
-        <Pin size={16} fill={isPinned ? currentStyle.colors.accent : "none"} />
-      </PinButton>
+      {/* Update StyleIndicator */}
+      <StyleIndicator theme={currentStyle} isAuthenticated={isAuthenticated}>
+        <RefreshButton 
+          onClick={refreshTheme}
+          className={isRefreshing ? "spinning" : ""}
+          title="Get random theme"
+        >
+          <RefreshCw size={16} />
+        </RefreshButton>
+        <PinButton 
+          onClick={togglePinStyle} 
+          isPinned={isPinned}
+          title={isPinned ? "Unpin this style" : "Pin this style"}
+        >
+          <Pin size={16} fill={isPinned ? currentStyle.colors.accent : "none"} />
+        </PinButton>
         <span>Style <span className="style-number">{currentStyle.id}</span></span>
         <span>{currentStyle.name}</span>
       </StyleIndicator>
