@@ -6,12 +6,13 @@ import {
   MessageCircle,
   Bell,
   User,
-  Store
+  Store,
+  Search,
+  Plus
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { auth, db } from '../../firebase/config';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { useAuth } from '../../contexts/AuthContext';
 
 const BottomNavContainer = styled.div`
   position: fixed;
@@ -99,10 +100,35 @@ const NavButton = styled.button`
   }
 `;
 
+const CreateButton = styled.button`
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: ${props => props.theme?.colors?.accentGradient || 
+    `linear-gradient(45deg, ${props.theme?.colors?.accent || '#800000'}, ${props.theme?.colors?.primary || '#4A0404'})`
+  };
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px ${props => `${props.theme?.colors?.accent || '#800000'}40`};
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px ${props => `${props.theme?.colors?.accent || '#800000'}60`};
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+`;
+
 const BottomNavigation = ({ theme }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, user } = useAuth(); // Add user to destructuring
   const [unreadMessages, setUnreadMessages] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(false);
 
@@ -156,44 +182,42 @@ const BottomNavigation = ({ theme }) => {
       icon: <Home size={22} />,
       label: 'Home',
       path: '/',
-      key: 'home',
-      showAlways: true
+      key: 'home'
     },
     {
-      icon: <Store size={22} />,
-      label: 'My Shop',
-      path: user?.uid ? `/shop/${user.uid}` : '/shop/create/template', // Fallback if no user
-      key: 'shop',
-      showAlways: false, // Only show when authenticated
-      requiresAuth: true
+      icon: <Search size={22} />,
+      label: 'Discover',
+      path: '/discover',
+      key: 'discover'
     },
     {
       icon: <MessageCircle size={22} />,
       label: 'Messages',
       path: '/messages',
       key: 'messages',
-      hasNotification: unreadMessages,
-      showAlways: true
+      hasNotification: unreadMessages
     },
     {
-      icon: <Bell size={22} />,
-      label: 'Notifications',
-      path: '/notifications',
-      key: 'notifications',
-      hasNotification: unreadNotifications,
-      showAlways: true
+      icon: <Store size={22} />,
+      label: 'Shop',
+      path: '/shop/dashboard',
+      key: 'shop'
     },
     {
       icon: <User size={22} />,
       label: 'Profile',
       path: '/profile',
-      key: 'profile',
-      showAlways: true
+      key: 'profile'
     }
   ];
 
   const handleNavigation = (path) => {
     navigate(path);
+  };
+
+  const handleCreate = () => {
+    // Navigate to shop creation or show create menu
+    navigate('/shop/create/template');
   };
 
   const isPathActive = (path) => {
@@ -203,16 +227,33 @@ const BottomNavigation = ({ theme }) => {
     return location.pathname.startsWith(path);
   };
 
-  // Filter items based on authentication status
-  const visibleItems = navigationItems.filter(item => {
-    if (item.showAlways) return true;
-    if (item.requiresAuth) return isAuthenticated;
-    return true;
-  });
-
   return (
     <BottomNavContainer theme={navTheme}>
-      {visibleItems.map((item) => (
+      {navigationItems.slice(0, 2).map((item) => (
+        <NavButton
+          key={item.key}
+          theme={navTheme}
+          active={isPathActive(item.path)}
+          onClick={() => handleNavigation(item.path)}
+          hasNotification={item.hasNotification}
+        >
+          <div className="icon-container">
+            {item.icon}
+            {item.hasNotification && <div className="notification-dot"></div>}
+          </div>
+          <span className="label">{item.label}</span>
+        </NavButton>
+      ))}
+
+      {/* Center Create Button */}
+      <CreateButton
+        theme={navTheme}
+        onClick={handleCreate}
+      >
+        <Plus size={24} />
+      </CreateButton>
+
+      {navigationItems.slice(2).map((item) => (
         <NavButton
           key={item.key}
           theme={navTheme}

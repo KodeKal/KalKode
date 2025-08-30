@@ -415,7 +415,7 @@ const MessagesList = ({
                 </div>
                 {transactionAmount && (
                   <div className="transaction-amount">
-                    ${transactionAmount}
+                    {transactionAmount}
                   </div>
                 )}
               </div>
