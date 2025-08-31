@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { 
   ChevronDown, Plus, Minus, Package, CreditCard, X
 } from 'lucide-react';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../../../firebase/config';
 import { TransactionService } from '../../../services/TransactionService';
 
@@ -318,8 +318,11 @@ const QuantityAdjustment = styled.div`
 `;
 
 const PaymentForm = styled.div`
-  margin: 0;
-  padding: 0;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: rgba(33, 150, 243, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(33, 150, 243, 0.3);
   
   h4 {
     color: #2196F3;
@@ -375,17 +378,10 @@ const PaymentForm = styled.div`
   }
 
   @media (max-width: 768px) {
+    padding: 0.75rem;
+    
     .payment-amount {
       font-size: 1.3rem;
-    }
-    
-    .mock-payment-form {
-      padding: 0.75rem;
-      
-      input {
-        padding: 0.65rem;
-        font-size: 0.9rem;
-      }
     }
   }
 `;
@@ -480,53 +476,16 @@ const ActionButtons = styled.div`
   }
 `;
 
-const TransactionStatusCard = ({ transaction: initialTransaction, chat, transactionId }) => {
-  const [minimized, setMinimized] = useState(true);
+const TransactionStatusCard = ({ transaction, chat, transactionId }) => {
+  const [minimized, setMinimized] = useState(true); // Always start minimized
   const [adjustedQuantity, setAdjustedQuantity] = useState(1);
   const [maxAvailableQuantity, setMaxAvailableQuantity] = useState(0);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [transaction, setTransaction] = useState(initialTransaction);
 
   const currentUser = auth.currentUser;
   const isSeller = chat?.isSeller;
   const isBuyer = chat?.isBuyer;
-
-  // Real-time listener for transaction updates
-  useEffect(() => {
-    if (!transactionId) return;
-
-    const unsubscribe = onSnapshot(
-      doc(db, 'transactions', transactionId),
-      (doc) => {
-        if (doc.exists()) {
-          const updatedTransaction = doc.data();
-          setTransaction(updatedTransaction);
-          
-          // Auto-minimize after status changes
-          const statusChanged = updatedTransaction.status !== transaction?.status;
-          if (statusChanged && 
-              ['seller_accepted', 'seller_rejected', 'paid', 'withdrawn', 'completed']
-                .includes(updatedTransaction.status)) {
-            setMinimized(true);
-            setShowPaymentForm(false);
-          }
-        }
-      },
-      (error) => {
-        console.error('Error listening to transaction updates:', error);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [transactionId]);
-
-  // Also listen to chat for pendingPurchase updates
-  useEffect(() => {
-    if (chat?.pendingPurchase) {
-      setTransaction(chat.pendingPurchase);
-    }
-  }, [chat?.pendingPurchase]);
 
   // Initialize quantities
   useEffect(() => {
@@ -535,6 +494,9 @@ const TransactionStatusCard = ({ transaction: initialTransaction, chat, transact
       setMaxAvailableQuantity(transaction.availableQuantity || transaction.requestedQuantity || 1);
     }
   }, [transaction]);
+
+  // Remove auto-minimize effect - let user control minimize state
+  // Status card now only minimizes when user clicks the toggle button
 
   // Get current item availability for sellers
   useEffect(() => {
@@ -549,9 +511,11 @@ const TransactionStatusCard = ({ transaction: initialTransaction, chat, transact
             const item = shopData.items?.find(item => item.id === transaction.itemId);
             const available = parseInt(item?.quantity) || 0;
             
+            // Seller can only approve up to requested amount or available, whichever is less
             const maxAllowed = Math.min(transaction.requestedQuantity, available);
             setMaxAvailableQuantity(maxAllowed);
             
+            // Reset adjusted quantity if it exceeds new max
             if (adjustedQuantity > maxAllowed) {
               setAdjustedQuantity(Math.max(1, maxAllowed));
             }
@@ -579,13 +543,13 @@ const TransactionStatusCard = ({ transaction: initialTransaction, chat, transact
         return {
           icon: '⏳',
           main: 'Quantity Purchase Request',
-          sub: `${requestedQty}x ${transaction.itemName} - $${(unitPrice * requestedQty).toFixed(2)}`
+          sub: `${requestedQty}x ${transaction.itemName} - ${(unitPrice * requestedQty).toFixed(2)}`
         };
       case 'seller_accepted':
         return {
           icon: '✅',
           main: 'Request Accepted',
-          sub: `${approvedQty}x approved - $${finalAmount.toFixed(2)}`
+          sub: `${approvedQty}x approved - ${finalAmount.toFixed(2)}`
         };
       case 'seller_rejected':
         return {
@@ -646,7 +610,7 @@ const TransactionStatusCard = ({ transaction: initialTransaction, chat, transact
         );
       }
       
-      // Status will update via listener
+      // Auto-minimize will happen via useEffect
     } catch (error) {
       console.error('Error responding to request:', error);
       alert('Error: ' + error.message);
@@ -668,8 +632,9 @@ const TransactionStatusCard = ({ transaction: initialTransaction, chat, transact
       };
       
       await TransactionService.processQuantityPayment(transactionId, mockPaymentData);
+      setShowPaymentForm(false);
       
-      // Status will update via listener
+      // Auto-minimize will happen via useEffect
     } catch (error) {
       console.error('Error processing payment:', error);
       alert('Payment failed: ' + error.message);
@@ -689,7 +654,7 @@ const TransactionStatusCard = ({ transaction: initialTransaction, chat, transact
       
       await TransactionService.withdrawPayment(transactionId);
       
-      // Status will update via listener
+      // Auto-minimize will happen via useEffect
     } catch (error) {
       console.error('Error withdrawing payment:', error);
       alert('Withdrawal failed: ' + error.message);
@@ -724,8 +689,82 @@ const TransactionStatusCard = ({ transaction: initialTransaction, chat, transact
         status={transaction.status}
         minimized={minimized}
       >
-        {/* Show payment form in-place on mobile */}
-        {showPaymentForm ? (
+        <h4>
+          {transaction.status === 'pending_seller_acceptance' && '⏳ Quantity Purchase Request'}
+          {transaction.status === 'seller_accepted' && '✅ Request Accepted'}
+          {transaction.status === 'seller_rejected' && '❌ Request Declined'}
+          {transaction.status === 'paid' && '💰 Payment Complete'}
+          {transaction.status === 'withdrawn' && '🔄 Payment Withdrawn'}
+          {transaction.status === 'completed' && '🎉 Transaction Completed'}
+        </h4>
+        
+        <TransactionDetails status={transaction.status}>
+          <div className="detail">
+            <div className="label">Item</div>
+            <div className="value">{transaction.itemName}</div>
+          </div>
+          <div className="detail">
+            <div className="label">Unit Price</div>
+            <div className="value">${unitPrice.toFixed(2)}</div>
+          </div>
+          <div className="detail">
+            <div className="label">Requested Qty</div>
+            <div className="value highlight">{requestedQty}</div>
+          </div>
+        </TransactionDetails>
+        
+        {approvedQty && (
+          <TransactionDetails>
+            <div className="detail">
+              <div className="label">Approved Qty</div>
+              <div className="value highlight">{approvedQty}</div>
+            </div>
+            <div className="detail">
+              <div className="label">Final Total</div>
+              <div className="value highlight">${finalAmount.toFixed(2)}</div>
+            </div>
+            <div className="detail"></div>
+          </TransactionDetails>
+        )}
+        
+        {/* Seller Quantity Adjustment */}
+        {isSeller && transaction.status === 'pending_seller_acceptance' && (
+          <QuantityAdjustment>
+            <div className="adjustment-header">
+              <span className="label">Adjust Quantity (Optional)</span>
+              <span className="max-available">Max available: {maxAvailableQuantity}</span>
+            </div>
+            
+            <div className="quantity-controls">
+              <button 
+                className="quantity-btn"
+                onClick={() => adjustQuantity(-1)}
+                disabled={adjustedQuantity <= 1}
+              >
+                <Minus size={16} />
+              </button>
+              
+              <div className="quantity-display">
+                {adjustedQuantity}
+              </div>
+              
+              <button 
+                className="quantity-btn"
+                onClick={() => adjustQuantity(1)}
+                disabled={adjustedQuantity >= maxAvailableQuantity}
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+            
+            <div className="total-preview">
+              Total: ${(unitPrice * adjustedQuantity).toFixed(2)}
+            </div>
+          </QuantityAdjustment>
+        )}
+        
+        {/* Payment Form */}
+        {showPaymentForm && (
           <PaymentForm>
             <h4>
               <CreditCard size={18} />
@@ -759,6 +798,7 @@ const TransactionStatusCard = ({ transaction: initialTransaction, chat, transact
               <button 
                 className="pay"
                 onClick={handlePayment}
+                minimized={minimized}
                 disabled={loading}
               >
                 <CreditCard size={16} />
@@ -766,137 +806,64 @@ const TransactionStatusCard = ({ transaction: initialTransaction, chat, transact
               </button>
             </ActionButtons>
           </PaymentForm>
-        ) : (
-          <>
-            <h4>
-              {transaction.status === 'pending_seller_acceptance' && '⏳ Quantity Purchase Request'}
-              {transaction.status === 'seller_accepted' && '✅ Request Accepted'}
-              {transaction.status === 'seller_rejected' && '❌ Request Declined'}
-              {transaction.status === 'paid' && '💰 Payment Complete'}
-              {transaction.status === 'withdrawn' && '🔄 Payment Withdrawn'}
-              {transaction.status === 'completed' && '🎉 Transaction Completed'}
-            </h4>
-            
-            <TransactionDetails status={transaction.status}>
-              <div className="detail">
-                <div className="label">Item</div>
-                <div className="value">{transaction.itemName}</div>
-              </div>
-              <div className="detail">
-                <div className="label">Unit Price</div>
-                <div className="value">${unitPrice.toFixed(2)}</div>
-              </div>
-              <div className="detail">
-                <div className="label">Requested Qty</div>
-                <div className="value highlight">{requestedQty}</div>
-              </div>
-            </TransactionDetails>
-            
-            {approvedQty && (
-              <TransactionDetails>
-                <div className="detail">
-                  <div className="label">Approved Qty</div>
-                  <div className="value highlight">{approvedQty}</div>
-                </div>
-                <div className="detail">
-                  <div className="label">Final Total</div>
-                  <div className="value highlight">${finalAmount.toFixed(2)}</div>
-                </div>
-                <div className="detail"></div>
-              </TransactionDetails>
-            )}
-            
-            {/* Seller Quantity Adjustment */}
+        )}
+        
+        {/* Action Buttons */}
+        {!isTransactionFinalized && (
+          <ActionButtons>
+            {/* Seller Actions */}
             {isSeller && transaction.status === 'pending_seller_acceptance' && (
-              <QuantityAdjustment>
-                <div className="adjustment-header">
-                  <span className="label">Adjust Quantity (Optional)</span>
-                  <span className="max-available">Max available: {maxAvailableQuantity}</span>
-                </div>
-                
-                <div className="quantity-controls">
-                  <button 
-                    className="quantity-btn"
-                    onClick={() => adjustQuantity(-1)}
-                    disabled={adjustedQuantity <= 1}
-                  >
-                    <Minus size={16} />
-                  </button>
-                  
-                  <div className="quantity-display">
-                    {adjustedQuantity}
-                  </div>
-                  
-                  <button 
-                    className="quantity-btn"
-                    onClick={() => adjustQuantity(1)}
-                    disabled={adjustedQuantity >= maxAvailableQuantity}
-                  >
-                    <Plus size={16} />
-                  </button>
-                </div>
-                
-                <div className="total-preview">
-                  Total: ${(unitPrice * adjustedQuantity).toFixed(2)}
-                </div>
-              </QuantityAdjustment>
+              <>
+                <button 
+                  className="reject" 
+                  onClick={() => handleSellerResponse('reject')}
+                  minimized={minimized}
+                  disabled={loading}
+                >
+                  <X size={16} />
+                  Decline
+                </button>
+                <button 
+                  className="accept" 
+                  onClick={() => handleSellerResponse('accept')}
+                  minimized={minimized}
+                  disabled={loading}
+                >
+                  <Package size={16} />
+                  {loading ? 'Processing...' : 
+                   adjustedQuantity === requestedQty ? 
+                     `Accept ${adjustedQuantity} items` : 
+                     `Approve ${adjustedQuantity} items (adjusted)`
+                  }
+                </button>
+              </>
             )}
             
-            {/* Action Buttons */}
-            {!isTransactionFinalized && (
-              <ActionButtons>
-                {/* Seller Actions */}
-                {isSeller && transaction.status === 'pending_seller_acceptance' && (
-                  <>
-                    <button 
-                      className="reject" 
-                      onClick={() => handleSellerResponse('reject')}
-                      disabled={loading}
-                    >
-                      <X size={16} />
-                      Decline
-                    </button>
-                    <button 
-                      className="accept" 
-                      onClick={() => handleSellerResponse('accept')}
-                      disabled={loading}
-                    >
-                      <Package size={16} />
-                      {loading ? 'Processing...' : 
-                       adjustedQuantity === requestedQty ? 
-                         `Accept ${adjustedQuantity} items` : 
-                         `Approve ${adjustedQuantity} items`
-                      }
-                    </button>
-                  </>
-                )}
-                
-                {/* Buyer Actions */}
-                {isBuyer && transaction.status === 'seller_accepted' && (
-                  <button 
-                    className="pay" 
-                    onClick={() => setShowPaymentForm(true)}
-                    disabled={loading}
-                  >
-                    <CreditCard size={16} />
-                    Pay ${finalAmount.toFixed(2)}
-                  </button>
-                )}
-                
-                {/* Buyer Withdrawal Option */}
-                {isBuyer && transaction.status === 'paid' && (
-                  <button 
-                    className="withdraw" 
-                    onClick={handleWithdrawal}
-                    disabled={loading}
-                  >
-                    <X size={16} />
-                    {loading ? 'Processing...' : 'Withdraw Payment'}
-                  </button>
-                )}
-              </ActionButtons>
+            {/* Buyer Actions */}
+            {isBuyer && transaction.status === 'seller_accepted' && !showPaymentForm && (
+              <button 
+                className="pay" 
+                onClick={() => setShowPaymentForm(true)}
+                disabled={loading}
+              >
+                <CreditCard size={16} />
+                Pay ${finalAmount.toFixed(2)}
+              </button>
             )}
-          </>
+            
+            {/* Buyer Withdrawal Option */}
+            {isBuyer && transaction.status === 'paid' && (
+              <button 
+                className="withdraw" 
+                onClick={handleWithdrawal}
+                minimized={minimized}
+                disabled={loading}
+              >
+                <X size={16} />
+                {loading ? 'Processing...' : 'Withdraw Payment'}
+              </button>
+            )}
+          </ActionButtons>
         )}
       </StatusCard>
     </StatusCardContainer>
