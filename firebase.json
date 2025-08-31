@@ -2,15 +2,8 @@
   "storage": {
     "cors": [
       {
-        "origin": [
-          "*"
-        ],
-        "method": [
-          "GET",
-          "POST",
-          "PUT",
-          "DELETE"
-        ],
+        "origin": ["*"],
+        "method": ["GET", "POST", "PUT", "DELETE"],
         "maxAgeSeconds": 3600
       }
     ]
@@ -31,21 +24,5 @@
         ]
       }
     ]
-  },
-  "functions": [
-    {
-      "source": "functions",
-      "codebase": "default",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log",
-        "*.local"
-      ],
-      "predeploy": [
-        "npm --prefix \"$RESOURCE_DIR\" run lint"
-      ]
-    }
-  ]
+  }
 }
