@@ -163,52 +163,82 @@ export const WELCOME_STYLES = {
   // Simplified new themes (11-30)
   STYLE_11: {
     id: 11,
-    name: "Soccer World",
+    name: "Pitch Perfect",
     colors: {
-      background: "#0B4D2C",
+      background: "#0A3D20",
       text: "#FFFFFF",
-      accent: "#00FF41",
-      accentGradient: "linear-gradient(45deg, #00FF41, #32CD32)",
-      surface: "rgba(0, 255, 65, 0.2)"
+      accent: "#32FF7E",
+      accentGradient: "linear-gradient(135deg, #32FF7E, #18FFFF, #00E676)",
+      surface: "rgba(50, 255, 126, 0.15)",
+      headerBg: "rgba(10, 61, 32, 0.95)",
+      tabActiveBg: "rgba(50, 255, 126, 0.25)",
+      tabBorder: "#32FF7E"
     },
     fonts: {
       heading: "'Exo 2', sans-serif",
       body: "'Roboto', sans-serif"
+    },
+    styles: {
+      borderRadius: "10px",
+      containerWidth: "1400px"
+    },
+    animations: {
+      backgroundAnimation: "fieldShift 20s ease-in-out infinite"
     }
   },
 
   STYLE_12: {
     id: 12,
-    name: "Ethiopian Pride",
+    name: "Highland Coffee",
     colors: {
-      background: "#1A472A",
-      text: "#FFFFFF",
-      accent: "#FFD700",
-      accentGradient: "linear-gradient(45deg, #FFD700, #FFA500)",
-      surface: "rgba(255, 215, 0, 0.2)"
+      background: "#1A0F0A",
+      text: "#F5E6D3",
+      accent: "#D4AF37",
+      accentGradient: "linear-gradient(135deg, #D4AF37, #B8860B, #CD853F)",
+      surface: "rgba(212, 175, 55, 0.12)",
+      headerBg: "rgba(26, 15, 10, 0.95)",
+      tabActiveBg: "rgba(212, 175, 55, 0.2)",
+      tabBorder: "#D4AF37"
     },
     fonts: {
-      heading: "'Nunito', sans-serif",
-      body: "'Roboto', sans-serif"
+      heading: "'Playfair Display', serif",
+      body: "'Crimson Text', serif"
+    },
+    styles: {
+      borderRadius: "12px",
+      containerWidth: "1400px"
+    },
+    animations: {
+      backgroundAnimation: "steamRise 8s ease-in-out infinite"
     }
   },
 
   STYLE_13: {
     id: 13,
-    name: "Eritrean Heritage",
+    name: "Desert Rose",
     colors: {
-      background: "#1B5E20",
-      text: "#FFFFFF",
-      accent: "#FFC107",
-      accentGradient: "linear-gradient(45deg, #FFC107, #FF9800)",
-      surface: "rgba(255, 193, 7, 0.2)"
+      background: "#2D1B12",
+      text: "#F7E7CE",
+      accent: "#E67E22",
+      accentGradient: "linear-gradient(135deg, #E67E22, #D35400, #C0392B)",
+      surface: "rgba(230, 126, 34, 0.15)",
+      headerBg: "rgba(45, 27, 18, 0.95)",
+      tabActiveBg: "rgba(230, 126, 34, 0.25)",
+      tabBorder: "#E67E22"
     },
     fonts: {
-      heading: "'Open Sans', sans-serif",
-      body: "'Roboto', sans-serif"
+      heading: "'Amiri', serif",
+      body: "'Lato', sans-serif"
+    },
+    styles: {
+      borderRadius: "8px",
+      containerWidth: "1400px"
+    },
+    animations: {
+      backgroundAnimation: "desertWind 25s linear infinite"
     }
   },
-
+  
   STYLE_14: {
     id: 14,
     name: "Street Art Rebellion",
@@ -227,17 +257,27 @@ export const WELCOME_STYLES = {
 
   STYLE_15: {
     id: 15,
-    name: "American Classic",
+    name: "Stars & Stripes",
     colors: {
-      background: "#1A237E",
+      background: "#1A1F3A",
       text: "#FFFFFF",
-      accent: "#1976D2",
-      accentGradient: "linear-gradient(45deg, #1976D2, #D32F2F)",
-      surface: "rgba(25, 118, 210, 0.25)"
+      accent: "#FF4757",
+      accentGradient: "linear-gradient(135deg, #FF4757, #2F3542, #F1F2F6)",
+      surface: "rgba(255, 71, 87, 0.18)",
+      headerBg: "rgba(26, 31, 58, 0.95)",
+      tabActiveBg: "rgba(255, 71, 87, 0.25)",
+      tabBorder: "#FF4757"
     },
     fonts: {
-      heading: "'Bebas Neue', cursive",
+      heading: "'Oswald', sans-serif",
       body: "'Roboto', sans-serif"
+    },
+    styles: {
+      borderRadius: "6px",
+      containerWidth: "1400px"
+    },
+    animations: {
+      backgroundAnimation: "flagWave 12s ease-in-out infinite"
     }
   },
 
@@ -479,5 +519,325 @@ export const WELCOME_STYLES = {
       heading: "'Orbitron', sans-serif",
       body: "'Exo 2', sans-serif"
     }
+  }
+};
+
+export const getComplementaryHeaderTheme = (mainTheme) => {
+  const complementaryMappings = {
+    // Style 1: Carbon Fiber -> Electric Blue Header
+    1: {
+      background: "rgba(0, 30, 60, 0.95)",
+      accent: "#00D4FF",
+      gradient: "linear-gradient(135deg, rgba(0, 30, 60, 0.9), rgba(0, 100, 150, 0.7))",
+      border: "rgba(0, 212, 255, 0.3)"
+    },
+    
+    // Style 2: Cosmic Blue -> Deep Purple Header  
+    2: {
+      background: "rgba(30, 0, 60, 0.95)",
+      accent: "#B388FF",
+      gradient: "linear-gradient(135deg, rgba(30, 0, 60, 0.9), rgba(60, 20, 100, 0.7))",
+      border: "rgba(179, 136, 255, 0.3)"
+    },
+
+    // Style 3: Royal Gold -> Deep Burgundy Header
+    3: {
+      background: "rgba(40, 0, 20, 0.95)",
+      accent: "#FFB347",
+      gradient: "linear-gradient(135deg, rgba(40, 0, 20, 0.9), rgba(80, 20, 40, 0.7))",
+      border: "rgba(255, 179, 71, 0.3)"
+    },
+
+    // Style 4: Neon Pulse -> Dark Teal Header
+    4: {
+      background: "rgba(0, 40, 40, 0.95)",
+      accent: "#00FFCC",
+      gradient: "linear-gradient(135deg, rgba(0, 40, 40, 0.9), rgba(20, 80, 80, 0.7))",
+      border: "rgba(0, 255, 204, 0.3)"
+    },
+
+    // Style 5: Sunset Horizon -> Deep Ocean Header
+    5: {
+      background: "rgba(10, 30, 60, 0.95)",
+      accent: "#FF6B9D",
+      gradient: "linear-gradient(135deg, rgba(10, 30, 60, 0.9), rgba(30, 60, 100, 0.7))",
+      border: "rgba(255, 107, 157, 0.3)"
+    },
+
+    // Style 6: Emerald Forest -> Mountain Purple Header
+    6: {
+      background: "rgba(40, 20, 60, 0.95)",
+      accent: "#7FFF7F",
+      gradient: "linear-gradient(135deg, rgba(40, 20, 60, 0.9), rgba(80, 40, 100, 0.7))",
+      border: "rgba(127, 255, 127, 0.3)"
+    },
+
+    // Style 7: Amethyst Glow -> Forest Green Header
+    7: {
+      background: "rgba(20, 40, 20, 0.95)",
+      accent: "#DA70D6",
+      gradient: "linear-gradient(135deg, rgba(20, 40, 20, 0.9), rgba(40, 80, 40, 0.7))",
+      border: "rgba(218, 112, 214, 0.3)"
+    },
+
+    // Style 8: Obsidian Volcanic -> Cool Steel Header
+    8: {
+      background: "rgba(30, 40, 50, 0.95)",
+      accent: "#FF7F50",
+      gradient: "linear-gradient(135deg, rgba(30, 40, 50, 0.9), rgba(60, 80, 100, 0.7))",
+      border: "rgba(255, 127, 80, 0.3)"
+    },
+
+    // Style 9: Arctic Frost -> Warm Amber Header
+    9: {
+      background: "rgba(60, 40, 20, 0.95)",
+      accent: "#87CEEB",
+      gradient: "linear-gradient(135deg, rgba(60, 40, 20, 0.9), rgba(100, 80, 40, 0.7))",
+      border: "rgba(135, 206, 235, 0.3)"
+    },
+
+    // Style 10: Ethereal Nebula -> Sunset Orange Header
+    10: {
+      background: "rgba(60, 30, 0, 0.95)",
+      accent: "#FF6347",
+      gradient: "linear-gradient(135deg, rgba(60, 30, 0, 0.9), rgba(100, 60, 20, 0.7))",
+      border: "rgba(255, 99, 71, 0.3)"
+    },
+
+    // Style 11: Pitch Perfect -> Stadium Lights Header
+    11: {
+      background: "rgba(0, 25, 50, 0.95)",
+      accent: "#FFFF00",
+      gradient: "linear-gradient(135deg, rgba(0, 25, 50, 0.9), rgba(20, 50, 80, 0.7))",
+      border: "rgba(255, 255, 0, 0.4)"
+    },
+
+    // Style 12: Highland Coffee -> Morning Sky Header
+    12: {
+      background: "rgba(30, 50, 70, 0.95)",
+      accent: "#FFA500",
+      gradient: "linear-gradient(135deg, rgba(30, 50, 70, 0.9), rgba(60, 90, 120, 0.7))",
+      border: "rgba(255, 165, 0, 0.3)"
+    },
+
+    // Style 13: Desert Rose -> Oasis Blue Header
+    13: {
+      background: "rgba(10, 40, 60, 0.95)",
+      accent: "#40E0D0",
+      gradient: "linear-gradient(135deg, rgba(10, 40, 60, 0.9), rgba(30, 80, 100, 0.7))",
+      border: "rgba(64, 224, 208, 0.3)"
+    },
+
+    // Style 14: Street Art -> Urban Night Header
+    14: {
+      background: "rgba(20, 20, 40, 0.95)",
+      accent: "#FF1493",
+      gradient: "linear-gradient(135deg, rgba(20, 20, 40, 0.9), rgba(40, 40, 80, 0.7))",
+      border: "rgba(255, 20, 147, 0.4)"
+    },
+
+    // Style 15: Stars & Stripes -> Liberty Blue Header
+    15: {
+      background: "rgba(10, 30, 70, 0.95)",
+      accent: "#FFD700",
+      gradient: "linear-gradient(135deg, rgba(10, 30, 70, 0.9), rgba(30, 60, 120, 0.7))",
+      border: "rgba(255, 215, 0, 0.4)"
+    },
+
+    // Continue for remaining styles 16-30...
+    16: {
+      background: "rgba(40, 20, 60, 0.95)",
+      accent: "#00CED1",
+      gradient: "linear-gradient(135deg, rgba(40, 20, 60, 0.9), rgba(80, 40, 100, 0.7))",
+      border: "rgba(0, 206, 209, 0.3)"
+    },
+
+    17: {
+      background: "rgba(60, 0, 60, 0.95)",
+      accent: "#7FFF00",
+      gradient: "linear-gradient(135deg, rgba(60, 0, 60, 0.9), rgba(100, 20, 100, 0.7))",
+      border: "rgba(127, 255, 0, 0.4)"
+    },
+
+    18: {
+      background: "rgba(40, 40, 0, 0.95)",
+      accent: "#DDA0DD",
+      gradient: "linear-gradient(135deg, rgba(40, 40, 0, 0.9), rgba(80, 80, 20, 0.7))",
+      border: "rgba(221, 160, 221, 0.3)"
+    },
+
+    19: {
+      background: "rgba(0, 40, 40, 0.95)",
+      accent: "#FF6347",
+      gradient: "linear-gradient(135deg, rgba(0, 40, 40, 0.9), rgba(20, 80, 80, 0.7))",
+      border: "rgba(255, 99, 71, 0.4)"
+    },
+
+    20: {
+      background: "rgba(60, 20, 0, 0.95)",
+      accent: "#00BFFF",
+      gradient: "linear-gradient(135deg, rgba(60, 20, 0, 0.9), rgba(100, 40, 20, 0.7))",
+      border: "rgba(0, 191, 255, 0.3)"
+    },
+
+    21: {
+      background: "rgba(20, 60, 20, 0.95)",
+      accent: "#FFB347",
+      gradient: "linear-gradient(135deg, rgba(20, 60, 20, 0.9), rgba(40, 100, 40, 0.7))",
+      border: "rgba(255, 179, 71, 0.4)"
+    },
+
+    22: {
+      background: "rgba(60, 40, 80, 0.95)",
+      accent: "#F4A460",
+      gradient: "linear-gradient(135deg, rgba(60, 40, 80, 0.9), rgba(100, 80, 120, 0.7))",
+      border: "rgba(244, 164, 96, 0.3)"
+    },
+
+    23: {
+      background: "rgba(80, 20, 20, 0.95)",
+      accent: "#87CEFA",
+      gradient: "linear-gradient(135deg, rgba(80, 20, 20, 0.9), rgba(120, 40, 40, 0.7))",
+      border: "rgba(135, 206, 250, 0.3)"
+    },
+
+    24: {
+      background: "rgba(0, 60, 60, 0.95)",
+      accent: "#FF69B4",
+      gradient: "linear-gradient(135deg, rgba(0, 60, 60, 0.9), rgba(20, 100, 100, 0.7))",
+      border: "rgba(255, 105, 180, 0.4)"
+    },
+
+    25: {
+      background: "rgba(60, 60, 20, 0.95)",
+      accent: "#FF1493",
+      gradient: "linear-gradient(135deg, rgba(60, 60, 20, 0.9), rgba(100, 100, 40, 0.7))",
+      border: "rgba(255, 20, 147, 0.3)"
+    },
+
+    26: {
+      background: "rgba(80, 40, 0, 0.95)",
+      accent: "#00FFFF",
+      gradient: "linear-gradient(135deg, rgba(80, 40, 0, 0.9), rgba(120, 80, 20, 0.7))",
+      border: "rgba(0, 255, 255, 0.4)"
+    },
+
+    27: {
+      background: "rgba(0, 50, 80, 0.95)",
+      accent: "#FFA07A",
+      gradient: "linear-gradient(135deg, rgba(0, 50, 80, 0.9), rgba(20, 90, 120, 0.7))",
+      border: "rgba(255, 160, 122, 0.3)"
+    },
+
+    28: {
+      background: "rgba(80, 80, 0, 0.95)",
+      accent: "#FF00FF",
+      gradient: "linear-gradient(135deg, rgba(80, 80, 0, 0.9), rgba(120, 120, 20, 0.7))",
+      border: "rgba(255, 0, 255, 0.4)"
+    },
+
+    29: {
+      background: "rgba(60, 80, 40, 0.95)",
+      accent: "#DA70D6",
+      gradient: "linear-gradient(135deg, rgba(60, 80, 40, 0.9), rgba(100, 120, 80, 0.7))",
+      border: "rgba(218, 112, 214, 0.3)"
+    },
+
+    30: {
+      background: "rgba(40, 0, 80, 0.95)",
+      accent: "#FFD700",
+      gradient: "linear-gradient(135deg, rgba(40, 0, 80, 0.9), rgba(80, 20, 120, 0.7))",
+      border: "rgba(255, 215, 0, 0.4)"
+    }
+  };
+
+  return complementaryMappings[mainTheme.id] || {
+    background: "rgba(30, 30, 30, 0.95)",
+    accent: mainTheme.colors.accent,
+    gradient: `linear-gradient(135deg, rgba(30, 30, 30, 0.9), rgba(50, 50, 50, 0.7))`,
+    border: `${mainTheme.colors.accent}30`
+  };
+};
+
+// Enhanced responsive sizing system
+export const getResponsiveSizes = (screenWidth) => {
+  if (screenWidth >= 1920) {
+    // 4K+ screens
+    return {
+      welcomeTitle: "5rem",
+      welcomeSubtitle: "1.4rem",
+      profileImage: "240px",
+      shopName: "6rem",
+      headerHeight: "90px",
+      logoSize: "2.2rem",
+      padding: "3rem",
+      cardSize: "320px",
+      gridGap: "2.5rem"
+    };
+  } else if (screenWidth >= 1440) {
+    // Large desktop
+    return {
+      welcomeTitle: "4.5rem",
+      welcomeSubtitle: "1.3rem", 
+      profileImage: "200px",
+      shopName: "5.4rem",
+      headerHeight: "80px",
+      logoSize: "2rem",
+      padding: "2rem",
+      cardSize: "280px",
+      gridGap: "2rem"
+    };
+  } else if (screenWidth >= 1024) {
+    // Desktop
+    return {
+      welcomeTitle: "4rem",
+      welcomeSubtitle: "1.2rem",
+      profileImage: "180px",
+      shopName: "4.8rem",
+      headerHeight: "75px",
+      logoSize: "1.8rem",
+      padding: "2rem",
+      cardSize: "250px",
+      gridGap: "1.5rem"
+    };
+  } else if (screenWidth >= 768) {
+    // Tablet
+    return {
+      welcomeTitle: "3.5rem",
+      welcomeSubtitle: "1.1rem",
+      profileImage: "160px",
+      shopName: "4rem",
+      headerHeight: "70px",
+      logoSize: "1.6rem",
+      padding: "1.5rem",
+      cardSize: "220px",
+      gridGap: "1.25rem"
+    };
+  } else if (screenWidth >= 480) {
+    // Large mobile
+    return {
+      welcomeTitle: "2.8rem",
+      welcomeSubtitle: "1rem",
+      profileImage: "140px",
+      shopName: "3.2rem",
+      headerHeight: "65px",
+      logoSize: "1.4rem",
+      padding: "1rem",
+      cardSize: "180px",
+      gridGap: "1rem"
+    };
+  } else {
+    // Small mobile
+    return {
+      welcomeTitle: "2.2rem",
+      welcomeSubtitle: "0.9rem",
+      profileImage: "120px",
+      shopName: "2.5rem",
+      headerHeight: "60px",
+      logoSize: "1.2rem",
+      padding: "1rem",
+      cardSize: "160px",
+      gridGap: "0.75rem"
+    };
   }
 };

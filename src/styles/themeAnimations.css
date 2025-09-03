@@ -66,6 +66,101 @@
   100% { background-position: 200% 0%; }
 }
 
+/* Add these animations to src/styles/themeAnimations.css */
+
+/* Pitch Perfect - Soccer field lines moving */
+@keyframes fieldShift {
+  0%, 100% { 
+    background-position: 0% 0%;
+    filter: hue-rotate(0deg);
+  }
+  25% { 
+    background-position: 25% 25%;
+    filter: hue-rotate(10deg);
+  }
+  50% { 
+    background-position: 50% 50%;
+    filter: hue-rotate(0deg);
+  }
+  75% { 
+    background-position: 75% 25%;
+    filter: hue-rotate(-10deg);
+  }
+}
+
+/* Highland Coffee - Steam and coffee essence rising */
+@keyframes steamRise {
+  0% { 
+    background-position: 0% 100%;
+    opacity: 0.8;
+    filter: blur(0px) brightness(1);
+  }
+  25% { 
+    background-position: 25% 75%;
+    opacity: 0.9;
+    filter: blur(0.5px) brightness(1.1);
+  }
+  50% { 
+    background-position: 50% 50%;
+    opacity: 1;
+    filter: blur(1px) brightness(1.2);
+  }
+  75% { 
+    background-position: 75% 25%;
+    opacity: 0.9;
+    filter: blur(0.5px) brightness(1.1);
+  }
+  100% { 
+    background-position: 100% 0%;
+    opacity: 0.8;
+    filter: blur(0px) brightness(1);
+  }
+}
+
+/* Desert Rose - Gentle desert wind with sand particles */
+@keyframes desertWind {
+  0% { 
+    background-position: 0% 50%;
+    transform: translateX(0px);
+  }
+  25% { 
+    background-position: 25% 40%;
+    transform: translateX(2px);
+  }
+  50% { 
+    background-position: 50% 60%;
+    transform: translateX(0px);
+  }
+  75% { 
+    background-position: 75% 45%;
+    transform: translateX(-2px);
+  }
+  100% { 
+    background-position: 100% 50%;
+    transform: translateX(0px);
+  }
+}
+
+/* Stars & Stripes - Patriotic flag wave effect */
+@keyframes flagWave {
+  0%, 100% { 
+    background-position: 0% 50%;
+    transform: skewX(0deg);
+  }
+  25% { 
+    background-position: 25% 60%;
+    transform: skewX(1deg);
+  }
+  50% { 
+    background-position: 50% 40%;
+    transform: skewX(0deg);
+  }
+  75% { 
+    background-position: 75% 60%;
+    transform: skewX(-1deg);
+  }
+}
+
 /* Sand storm animation */
 @keyframes sandStorm {
   0% { background-position: 0% 0%; }

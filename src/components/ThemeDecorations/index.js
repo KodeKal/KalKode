@@ -81,11 +81,29 @@ const getThemeDecorations = (themeId) => {
     10: { elements: ['✦', '◆', '◇'], dots: 8, pattern: true }, // Ethereal Nebula
 
     // Styles 11-30 (new simplified)
-    11: { elements: ['⚽'], dots: 3, pattern: 'repeating-linear-gradient(90deg, transparent, transparent 50px, rgba(255,255,255,0.05) 50px, rgba(255,255,255,0.05) 52px)' }, // Soccer
-    12: { elements: ['☕', '✦'], dots: 4, pattern: 'linear-gradient(90deg, #1A472A 33%, #FFD700 33%, #FFD700 66%, #DC143C 66%)' }, // Ethiopian
-    13: { elements: ['🌅', '✦'], dots: 4 }, // Eritrean
+    11: { 
+      elements: ['⚽', '🏆', '⭐'], 
+      dots: 6, 
+      pattern: 'repeating-linear-gradient(90deg, rgba(50,255,126,0.1) 0px, rgba(50,255,126,0.1) 30px, transparent 30px, transparent 60px)' 
+    }, // Pitch Perfect
+    
+    12: { 
+      elements: ['☕', '🌱', '✨'], 
+      dots: 5, 
+      pattern: 'radial-gradient(circle at 25% 25%, rgba(212,175,55,0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(184,134,11,0.08) 0%, transparent 50%)' 
+    }, // Highland Coffee
+    
+    13: { 
+      elements: ['🌹', '🏜️', '⭐'], 
+      dots: 7, 
+      pattern: 'linear-gradient(45deg, rgba(230,126,34,0.05) 25%, transparent 25%, transparent 50%, rgba(230,126,34,0.05) 50%, rgba(230,126,34,0.05) 75%, transparent 75%)' 
+    }, // Desert Rose
     14: { elements: ['🌵', '🎉'], dots: 5, pattern: 'repeating-linear-gradient(90deg, #FF5722 0px, #FF5722 20px, #FFC107 20px, #FFC107 40px)' }, // Mexican
-    15: { elements: ['⭐', '🦅'], dots: 6, pattern: 'repeating-linear-gradient(0deg, #D32F2F 0px, #D32F2F 3px, #FFFFFF 3px, #FFFFFF 6px)' }, // American
+    15: { 
+      elements: ['⭐', '🦅', '🇺🇸'], 
+      dots: 8, 
+      pattern: 'repeating-linear-gradient(0deg, rgba(255,71,87,0.1) 0px, rgba(255,71,87,0.1) 4px, transparent 4px, transparent 8px, rgba(47,53,66,0.05) 8px, rgba(47,53,66,0.05) 12px, transparent 12px, transparent 16px)' 
+    },    
     16: { elements: ['👨‍🍳', '🍳'], dots: 3 }, // Gourmet
     17: { elements: ['◉', '●'], dots: 8, pattern: 'repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(57,255,20,0.1) 2px, rgba(57,255,20,0.1) 4px)' }, // Code
     18: { elements: ['👑', '💎'], dots: 5 }, // Royal
