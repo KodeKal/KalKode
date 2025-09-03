@@ -1,6 +1,7 @@
 // src/pages/shop/MessagesPage.js - Refactored with enhanced features
 import React, { useState, useEffect, useReducer, useMemo } from 'react';
-import styled from 'styled-components';
+import styled, { ThemeProvider, createGlobalStyle } from 'styled-components';
+
 import { 
   MessageCircle, Search, X, Clock, Check, ArrowLeft, ChevronLeft
 } from 'lucide-react';
@@ -14,6 +15,9 @@ import { useSearchParams } from 'react-router-dom';
 import MessagesList from './components/MessagesList';
 import ChatView from './components/ChatView';
 import EmptyState from './components/EmptyState';
+import { RefreshCw, Pin } from 'lucide-react';
+import { WELCOME_STYLES } from '../../theme/welcomeStyles';
+
 
 // Filter options for chat list
 const FILTER_OPTIONS = [
@@ -56,64 +60,44 @@ const initialChatState = {
 // Styled components
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: linear-gradient(to bottom, #0B0B3B, #1A1A4C);
-  color: #FFFFFF;
+  background: ${props => props.theme?.colors?.background || 'linear-gradient(to bottom, #0B0B3B, #1A1A4C)'};
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
   display: flex;
   flex-direction: column;
   overflow: hidden;
   
-  /* Add bottom padding on mobile for bottom navigation */
   @media (max-width: 768px) {
     padding-bottom: 80px;
     min-height: calc(100vh - 80px);
   }
 `;
 
+// UPDATE PageHeader:
 const PageHeader = styled.div`
-  background: rgba(0, 0, 0, 0.6);
+  background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.6)'}CC`};
   backdrop-filter: blur(10px);
   padding: 1.5rem 2rem;
-  border-bottom: 1px solid rgba(128, 0, 0, 0.3);
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent || 'rgba(128, 0, 0, 0.3)'}30`};
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 20;
   height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 
   @media (max-width: 768px) {
     padding: 1rem;
     height: 70px;
-    
-    /* Hide or simplify header on very small screens */
-    h1 {
-      font-size: 1.4rem;
-      
-      svg {
-        width: 20px;
-        height: 20px;
-      }
-    }
-  }
-  
-  @media (max-width: 480px) {
-    padding: 0.75rem 1rem;
-    height: 60px;
-    
-    h1 {
-      font-size: 1.2rem;
-      gap: 0.5rem;
-      
-      svg {
-        width: 18px;
-        height: 18px;
-      }
-    }
   }
 `;
 
+// UPDATE HeaderContent to include theme controls:
 const HeaderContent = styled.div`
   max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -121,7 +105,7 @@ const HeaderContent = styled.div`
   
   h1 {
     font-size: 1.8rem;
-    background: linear-gradient(45deg, #800000, #4A0404);
+    background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     display: flex;
@@ -130,7 +114,7 @@ const HeaderContent = styled.div`
     margin: 0;
 
     svg {
-      color: #800000;
+      color: ${props => props.theme?.colors?.accent || '#800000'};
     }
 
     @media (max-width: 768px) {
@@ -348,10 +332,129 @@ const SearchInput = styled.div`
   }
 `;
 
+const ThemeControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const RefreshButton = styled.button`
+  background: none;
+  border: none;
+  color: ${props => props.theme?.colors?.text || "white"};
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.1) rotate(90deg);
+    color: ${props => props.theme?.colors?.accent || "#800000"};
+  }
+  
+  &.spinning {
+    animation: spin 0.5s ease-in-out;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`;
+
+const PinButton = styled.button`
+  background: none;
+  border: none;
+  color: ${props => props.isPinned ? (props.theme?.colors?.accent || '#800000') : 'white'};
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.1);
+  }
+`;
+
 const MessagesPage = () => {
   const [chatState, chatDispatch] = useReducer(chatReducer, initialChatState);
   const [searchParams] = useSearchParams();
   const [isMobile, setIsMobile] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState(null);
+  const [isPinned, setIsPinned] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState(WELCOME_STYLES.STYLE_1);
+  
+
+  useEffect(() => {
+    const pinnedStyleId = localStorage.getItem('pinnedStyleId');
+
+    if (pinnedStyleId) {
+      const pinnedStyle = Object.values(WELCOME_STYLES).find(
+        style => style.id.toString() === pinnedStyleId
+      );
+
+      if (pinnedStyle) {
+        setSelectedTheme(pinnedStyle);
+        setIsPinned(true);
+        return;
+      }
+    }
+
+    // If no pinned style, select random
+    const styles = Object.values(WELCOME_STYLES);
+    const randomStyle = styles[Math.floor(Math.random() * styles.length)];
+    setSelectedTheme(randomStyle);
+  }, []);
+
+  const refreshTheme = () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    
+    const styles = Object.values(WELCOME_STYLES);
+    const otherStyles = styles.filter(style => style.id !== selectedTheme.id);
+    
+    if (otherStyles.length > 0) {
+      const randomStyle = otherStyles[Math.floor(Math.random() * otherStyles.length)];
+      setSelectedTheme(randomStyle);
+
+      if (isPinned) {
+        localStorage.removeItem('pinnedStyleId');
+        setIsPinned(false);
+      }
+    }
+
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
+
+  const togglePinStyle = () => {
+    if (isPinned) {
+      localStorage.removeItem('pinnedStyleId');
+      setIsPinned(false);
+
+      const styles = Object.values(WELCOME_STYLES).filter(
+        style => style.id !== selectedTheme.id
+      );
+
+      if (styles.length > 0) {
+        const randomStyle = styles[Math.floor(Math.random() * styles.length)];
+        setSelectedTheme(randomStyle);
+      }
+    } else {
+      localStorage.setItem('pinnedStyleId', selectedTheme.id.toString());
+      setIsPinned(true);
+    }
+  };
+
+  // ADD this useEffect after existing ones:
+  
   
   const targetChatId = searchParams.get('chat');
 
@@ -530,13 +633,32 @@ const MessagesPage = () => {
   };
 
   return (
+    <ThemeProvider theme={selectedTheme}>
     <PageContainer>
-      <PageHeader>
-        <HeaderContent>
+      <PageHeader theme={currentTheme}>
+        <HeaderContent theme={currentTheme}>
           <h1>
             <MessageCircle size={24} />
             Messages
           </h1>
+          <ThemeControls>
+            <RefreshButton 
+              onClick={refreshTheme}
+              className={isRefreshing ? "spinning" : ""}
+              title="Get random theme"
+              theme={currentTheme}
+            >
+              <RefreshCw size={16} />
+            </RefreshButton>
+            <PinButton 
+              onClick={togglePinStyle} 
+              isPinned={isPinned}
+              title={isPinned ? "Unpin this style" : "Pin this style"}
+              theme={currentTheme}
+            >
+              <Pin size={16} fill={isPinned ? currentTheme?.colors?.accent : "none"} />
+            </PinButton>
+          </ThemeControls>
         </HeaderContent>
       </PageHeader>
       
@@ -665,6 +787,7 @@ const MessagesPage = () => {
         </ContentWrapper>
       </MainContent>
     </PageContainer>
+    </ThemeProvider>
   );
 };
 

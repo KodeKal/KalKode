@@ -12,6 +12,7 @@ import {
   Heart,
   MessageCircle,
   Share2,
+  RefreshCw, Pin,
   X
 } from 'lucide-react';
 import { useTempStore } from '../../contexts/TempStoreContext';
@@ -25,6 +26,73 @@ import AddressInput from '../../components/shop/AddressInput';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 import QuantitySelector from '../../components/shop/QuantitySelector';
 
+// ADD these styled components after existing ones:
+const RefreshButton = styled.button`
+  background: none;
+  border: none;
+  color: ${props => props.theme?.colors?.text || "white"};
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.1) rotate(90deg);
+    color: ${props => props.theme?.colors?.accent || "#800000"};
+  }
+  
+  &.spinning {
+    animation: spin 0.5s ease-in-out;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`;
+
+const PinButton = styled.button`
+  background: none;
+  border: none;
+  color: ${props => props.isPinned ? (props.theme?.colors?.accent || '#800000') : 'white'};
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.1);
+  }
+`;
+
+const ThemeControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+// REPLACE the existing ShopBanner content:
+const ShopBanner = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: ${props => `${props.theme?.colors?.background || DEFAULT_THEME.colors.background}CC`};
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  z-index: 100;
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent || DEFAULT_THEME.colors.accent}30`};
+`;
 
 const ITEM_CATEGORIES = [
   'Electronics & Tech',
@@ -55,22 +123,6 @@ const MainContent = styled.div`
   padding: 2rem;
   position: relative;
   z-index: 1;
-`;
-
-const ShopBanner = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 80px;
-  background: ${props => `${props.theme?.colors?.background || DEFAULT_THEME.colors.background}CC`};
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 2rem;
-  z-index: 100;
-  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent || DEFAULT_THEME.colors.accent}30`};
 `;
 
 const TabControlsContainer = styled.div`
@@ -502,7 +554,70 @@ const LiveShopCreation = () => {
   const [selectedTheme, setSelectedTheme] = useState(WELCOME_STYLES.STYLE_1);
   const [tabPosition, setTabPosition] = useState(TAB_POSITIONS.TOP);
   const [shopNameFontSize, setShopNameFontSize] = useState(2.5);
-  
+  const [isPinned, setIsPinned] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    const pinnedStyleId = localStorage.getItem('pinnedStyleId');
+    
+    if (pinnedStyleId) {
+      const pinnedStyle = Object.values(WELCOME_STYLES).find(
+        style => style.id.toString() === pinnedStyleId
+      );
+
+      if (pinnedStyle) {
+        setSelectedTheme(pinnedStyle);
+        setIsPinned(true);
+        return;
+      }
+    }
+
+    // If no pinned style, select random
+    const styles = Object.values(WELCOME_STYLES);
+    const randomStyle = styles[Math.floor(Math.random() * styles.length)];
+    setSelectedTheme(randomStyle);
+  }, []);
+
+  const refreshTheme = () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    
+    const styles = Object.values(WELCOME_STYLES);
+    const otherStyles = styles.filter(style => style.id !== selectedTheme.id);
+    
+    if (otherStyles.length > 0) {
+      const randomStyle = otherStyles[Math.floor(Math.random() * otherStyles.length)];
+      setSelectedTheme(randomStyle);
+
+      if (isPinned) {
+        localStorage.removeItem('pinnedStyleId');
+        setIsPinned(false);
+      }
+    }
+
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
+
+  const togglePinStyle = () => {
+    if (isPinned) {
+      localStorage.removeItem('pinnedStyleId');
+      setIsPinned(false);
+
+      const styles = Object.values(WELCOME_STYLES).filter(
+        style => style.id !== selectedTheme.id
+      );
+
+      if (styles.length > 0) {
+        const randomStyle = styles[Math.floor(Math.random() * styles.length)];
+        setSelectedTheme(randomStyle);
+      }
+    } else {
+      localStorage.setItem('pinnedStyleId', selectedTheme.id.toString());
+      setIsPinned(true);
+    }
+  };
+
   // Consolidated shop data
   const [shopData, setShopData] = useState({
     name: '',
@@ -793,6 +908,24 @@ const LiveShopCreation = () => {
           <ShopName position={shopData.layout.namePosition}>
             {shopData.name || "Your Shop Name"}
           </ShopName>
+          <ThemeControls>
+            <RefreshButton 
+              onClick={refreshTheme}
+              className={isRefreshing ? "spinning" : ""}
+              title="Get random theme"
+              theme={selectedTheme}
+            >
+              <RefreshCw size={16} />
+            </RefreshButton>
+            <PinButton 
+              onClick={togglePinStyle} 
+              isPinned={isPinned}
+              title={isPinned ? "Unpin this style" : "Pin this style"}
+              theme={selectedTheme}
+            >
+              <Pin size={16} fill={isPinned ? selectedTheme.colors.accent : "none"} />
+            </PinButton>
+          </ThemeControls>
           <KalKodeLogo onClick={() => navigate('/')}>
             KALKODE
           </KalKodeLogo>
@@ -812,13 +945,6 @@ const LiveShopCreation = () => {
             theme={selectedTheme}
           />
         </TabControlsContainer>
-
-        <ThemeContainer>
-          <ThemeSelector 
-            currentTheme={selectedTheme}
-            onThemeSelect={setSelectedTheme}
-          />
-        </ThemeContainer>
 
         <div style={{ position: 'fixed', left: '2rem', top: '45%', zIndex: 100, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <button 
