@@ -1809,8 +1809,8 @@ const WelcomePage = () => {
           ) : (
             <>
               <h1>Welcome to KalKode</h1>
-              <p>Join the underground marketplace where local creators thrive.</p>
-              <p>Build your empire and discover unique treasures.</p>
+              <p>Join the underground marketplace that strengthens communities.</p>
+              <p>A marketplace where local voices are heard and supported.</p>
 
               <ActionButtonContainer>
                 <ActionButton theme={currentStyle} onClick={handleOpenShop}>

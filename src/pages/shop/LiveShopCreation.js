@@ -13,7 +13,8 @@ import {
   MessageCircle,
   Share2,
   RefreshCw, Pin,
-  X
+  X,
+  home
 } from 'lucide-react';
 import { useTempStore } from '../../contexts/TempStoreContext';
 import EditableText from './components/EditableComponents/EditableText';
@@ -26,7 +27,221 @@ import AddressInput from '../../components/shop/AddressInput';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 import QuantitySelector from '../../components/shop/QuantitySelector';
 
-// ADD these styled components after existing ones:
+const ShopBanner = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: ${props => `${props.theme?.colors?.headerBg || 'rgba(0, 0, 0, 0.9)'}F5`};
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
+  z-index: 100;
+
+  @media (min-width: 768px) {
+    height: 80px;
+    padding: 0 2rem;
+  }
+`;
+
+// Replace the Logo styled component
+const Logo = styled.div`
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
+  font-size: 1.4rem;
+  letter-spacing: 1px;
+  transform: skew(-5deg);
+  cursor: pointer;
+  flex-shrink: 0;
+
+  @media (min-width: 768px) {
+    font-size: 2rem;
+    letter-spacing: 2px;
+  }
+`;
+
+// Add new HeaderControls styled component
+const HeaderControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+`;
+
+// Add new HeaderButton styled component
+const HeaderButton = styled.button`
+  background: transparent;
+  border: none;
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  opacity: 0.8;
+  
+  &:active {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      opacity: 1;
+      background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+    }
+  }
+  
+  &.pinned {
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    opacity: 1;
+  }
+  
+  svg {
+    width: 20px;
+    height: 20px;
+    
+    @media (min-width: 768px) {
+      width: 22px;
+      height: 22px;
+    }
+  }
+`;
+
+// Update MainContent for mobile padding
+const MainContent = styled.div`
+  max-width: ${props => props.theme?.styles?.containerWidth || '1400px'};
+  margin: 0 auto;
+  padding: 80px 1rem 100px 1rem;
+  position: relative;
+  z-index: 1;
+  
+  @media (min-width: 768px) {
+    padding: 8rem 2rem 2rem 2rem;
+  }
+`;
+
+// Update ActionButtons for mobile
+const ActionButtons = styled.div`
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 1rem;
+  z-index: 100;
+  
+  @media (min-width: 768px) {
+    bottom: 2rem;
+    right: 2rem;
+  }
+`;
+
+// Update ActionButton for mobile
+const ActionButton = styled.button`
+  background: ${props => props.theme?.colors?.accent || '#800000'};
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 30px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: ${props => props.theme?.fonts?.body || 'sans-serif'};
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+
+  @media (min-width: 768px) {
+    padding: 1rem 2.5rem;
+    font-size: 1rem;
+    letter-spacing: 2px;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+`;
+
+// Remove these old styled components (delete them):
+// - TabControlsContainer
+// - ThemeContainer
+// - FloatingFontControls (move to mobile position)
+
+// Add mobile font controls
+const MobileFontControls = styled.div`
+  position: fixed;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 100;
+  
+  @media (min-width: 768px) {
+    left: 2rem;
+  }
+`;
+
+const FontSizeButton = styled.button`
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:active {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
+`;
+
+// Update TabControlsContainer for mobile positioning
+const TabControlsContainer = styled.div`
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  @media (min-width: 768px) {
+    bottom: auto;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+`;
+
 const RefreshButton = styled.button`
   background: none;
   border: none;
@@ -77,23 +292,6 @@ const ThemeControls = styled.div`
   gap: 0.5rem;
 `;
 
-// REPLACE the existing ShopBanner content:
-const ShopBanner = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 80px;
-  background: ${props => `${props.theme?.colors?.background || DEFAULT_THEME.colors.background}CC`};
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 2rem;
-  z-index: 100;
-  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent || DEFAULT_THEME.colors.accent}30`};
-`;
-
 const ITEM_CATEGORIES = [
   'Electronics & Tech',
   'Clothing & Accessories',
@@ -115,25 +313,6 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
   color: ${props => props.theme?.colors?.text || '#FFFFFF'};
   position: relative;
   overflow-x: hidden;
-`;
-
-const MainContent = styled.div`
-  max-width: ${props => props.theme?.styles?.containerWidth || '1400px'};
-  margin: 0 auto;
-  padding: 2rem;
-  position: relative;
-  z-index: 1;
-`;
-
-const TabControlsContainer = styled.div`
-  position: fixed;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  z-index: 100;
-  top: 0.1rem;
-  left: 51%;
-  transform: translateX(-50%);
 `;
 
 const ThemeContainer = styled.div`
@@ -170,14 +349,6 @@ const ShopName = styled.div`
   padding: ${props => props.position === 'center' ? '0 80px' : '0'};
 `;
 
-const ActionButtons = styled.div`
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  display: flex;
-  gap: 1rem;
-  z-index: 100;
-`;
 
 const CategorySelect = styled.select`
   width: 100%;
@@ -197,35 +368,6 @@ const CategorySelect = styled.select`
   option {
     background: ${props => props.theme?.colors?.background || '#000000'};
     color: ${props => props.theme?.colors?.text || '#FFFFFF'};
-  }
-`;
-
-const ActionButton = styled.button`
-  background: ${props => props.theme?.colors?.accent || '#800000'};
-  color: white;
-  border: none;
-  padding: 1rem 2.5rem;
-  border-radius: 30px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-top: 2rem;
-  font-family: ${props => props.theme?.fonts?.body || 'sans-serif'};
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
   }
 `;
 
@@ -908,28 +1050,30 @@ const LiveShopCreation = () => {
           <ShopName position={shopData.layout.namePosition}>
             {shopData.name || "Your Shop Name"}
           </ShopName>
-          <ThemeControls>
-            <RefreshButton 
+          <HeaderControls>
+            <HeaderButton 
               onClick={refreshTheme}
+              theme={selectedTheme}
               className={isRefreshing ? "spinning" : ""}
-              title="Get random theme"
-              theme={selectedTheme}
+              title="Random theme"
             >
-              <RefreshCw size={16} />
-            </RefreshButton>
-            <PinButton 
+              <RefreshCw size={20} />
+            </HeaderButton>
+
+            <HeaderButton 
               onClick={togglePinStyle} 
-              isPinned={isPinned}
-              title={isPinned ? "Unpin this style" : "Pin this style"}
               theme={selectedTheme}
+              className={isPinned ? "pinned" : ""}
+              title={isPinned ? "Unpin theme" : "Pin theme"}
             >
-              <Pin size={16} fill={isPinned ? selectedTheme.colors.accent : "none"} />
-            </PinButton>
-          </ThemeControls>
-          <KalKodeLogo onClick={() => navigate('/')}>
-            KALKODE
-          </KalKodeLogo>
+              <Pin size={20} fill={isPinned ? selectedTheme.colors.accent : "none"} />
+            </HeaderButton>
+          </HeaderControls>
         </ShopBanner>
+        
+        {activeTab === 'shop' && renderShopView()}
+        {activeTab === 'home' && renderHomeView()}
+        {activeTab === 'community' && renderCommunityView()}
 
         <TabControlsContainer>
           <TabPositioner
@@ -946,24 +1090,20 @@ const LiveShopCreation = () => {
           />
         </TabControlsContainer>
 
-        <div style={{ position: 'fixed', left: '2rem', top: '45%', zIndex: 100, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <button 
+        <MobileFontControls>
+          <FontSizeButton 
             onClick={() => setShopNameFontSize(prev => Math.min(6, prev + 0.5))}
-            style={{ background: 'rgba(255, 255, 255, 0.1)', border: 'none', borderRadius: '50%', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer' }}
           >
             <Plus size={16} />
-          </button>
-          <button 
+          </FontSizeButton>
+          <FontSizeButton 
             onClick={() => setShopNameFontSize(prev => Math.max(1.5, prev - 0.5))}
-            style={{ background: 'rgba(255, 255, 255, 0.1)', border: 'none', borderRadius: '50%', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer' }}
           >
             <Minus size={16} />
-          </button>
-        </div>
+          </FontSizeButton>
+        </MobileFontControls>
 
-        {activeTab === 'shop' && renderShopView()}
-        {activeTab === 'home' && renderHomeView()}
-        {activeTab === 'community' && renderCommunityView()}
+        
 
         <ActionButtons>
           <ActionButton

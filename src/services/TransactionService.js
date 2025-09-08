@@ -205,7 +205,7 @@ export const TransactionService = {
          ` (adjusted from ${transaction.requestedQuantity} to ${finalQuantity})` : '';
        
       await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-        text: `✅ Seller approved:\n${finalQuantity}x ${transaction.itemName}${adjustmentText}.\nTotal: $${finalTotalPrice.toFixed(2)}.\nStatus: Buyer may now pay.`,
+        text: `✅ Seller approved:\n${finalQuantity}x ${transaction.itemName}${adjustmentText}.\nTotal: $${finalTotalPrice.toFixed(2)}.\nStatus: Buyer may now make payment.`,
         sender: 'system',
         senderName: 'System',
         timestamp: serverTimestamp(),
