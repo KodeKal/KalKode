@@ -1,4 +1,4 @@
-// src/pages/shop/LiveShopCreation.js
+// src/pages/shop/LiveShopCreation.js - Mobile Optimized
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -12,9 +12,14 @@ import {
   Heart,
   MessageCircle,
   Share2,
-  RefreshCw, Pin,
+  RefreshCw, 
+  Pin,
   X,
-  home
+  ChevronDown,
+  ChevronUp,
+  Grid,
+  List,
+  LogOut
 } from 'lucide-react';
 import { useTempStore } from '../../contexts/TempStoreContext';
 import EditableText from './components/EditableComponents/EditableText';
@@ -26,12 +31,68 @@ import ThemeSelector from '../../components/ThemeSelector/ThemeSelector';
 import AddressInput from '../../components/shop/AddressInput';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 import QuantitySelector from '../../components/shop/QuantitySelector';
+import { useAuth } from '../../contexts/AuthContext';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../firebase/config';
 
-const ShopBanner = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+const ITEM_CATEGORIES = [
+  'Electronics & Tech',
+  'Clothing & Accessories',
+  'Home & Garden',
+  'Sports & Outdoors',
+  'Books & Media',
+  'Toys & Games',
+  'Health & Beauty',
+  'Automotive',
+  'Collectibles & Art',
+  'Food & Beverages',
+  'Other'
+];
+
+// Mobile-first styled components
+const PageContainer = styled.div.attrs({ className: 'page-container' })`
+  min-height: 100vh;
+  background: ${props => props.theme?.colors?.background || '#000000'};
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  position: relative;
+  overflow-x: hidden;
+  
+  /* Mobile-optimized background effects */
+  &::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: ${props => props.theme?.colors?.backgroundGradient || 'radial-gradient(circle at 20% 30%, rgba(128, 0, 0, 0.2) 0%, transparent 50%)'};
+    opacity: 0.8;
+    animation: ${props => props.theme?.animations?.backgroundAnimation || 'galaxySwirl 30s linear infinite'};
+  }
+
+  /* Simplified stars for mobile performance */
+  &::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(circle 1px, ${props => props.theme?.colors?.text || '#FFF'} 1px, transparent 1px);
+    background-size: 100px 100px;
+    opacity: 0.05;
+    
+    @media (min-width: 768px) {
+      background-size: 200px 200px;
+      opacity: 0.1;
+    }
+  }
+
+  @keyframes galaxySwirl {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+// Mobile-optimized header
+const Header = styled.header`
+  width: 100%;
   height: 60px;
   padding: 0 1rem;
   display: flex;
@@ -40,6 +101,8 @@ const ShopBanner = styled.div`
   background: ${props => `${props.theme?.colors?.headerBg || 'rgba(0, 0, 0, 0.9)'}F5`};
   backdrop-filter: blur(10px);
   border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
+  position: fixed;
+  top: 0;
   z-index: 100;
 
   @media (min-width: 768px) {
@@ -48,7 +111,6 @@ const ShopBanner = styled.div`
   }
 `;
 
-// Replace the Logo styled component
 const Logo = styled.div`
   color: ${props => props.theme?.colors?.accent || '#800000'};
   font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
@@ -64,14 +126,12 @@ const Logo = styled.div`
   }
 `;
 
-// Add new HeaderControls styled component
 const HeaderControls = styled.div`
   display: flex;
   align-items: center;
   gap: 0.75rem;
 `;
 
-// Add new HeaderButton styled component
 const HeaderButton = styled.button`
   background: transparent;
   border: none;
@@ -102,6 +162,15 @@ const HeaderButton = styled.button`
     opacity: 1;
   }
   
+  &.spinning {
+    animation: spin 0.5s ease-in-out;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
   svg {
     width: 20px;
     height: 20px;
@@ -113,279 +182,20 @@ const HeaderButton = styled.button`
   }
 `;
 
-// Update MainContent for mobile padding
+// Mobile-optimized main content
 const MainContent = styled.div`
-  max-width: ${props => props.theme?.styles?.containerWidth || '1400px'};
+  max-width: 1200px;
   margin: 0 auto;
   padding: 80px 1rem 100px 1rem;
   position: relative;
   z-index: 1;
   
   @media (min-width: 768px) {
-    padding: 8rem 2rem 2rem 2rem;
+    padding: 6rem 2rem 2rem 2rem;
   }
 `;
 
-// Update ActionButtons for mobile
-const ActionButtons = styled.div`
-  position: fixed;
-  bottom: 1rem;
-  right: 1rem;
-  display: flex;
-  gap: 1rem;
-  z-index: 100;
-  
-  @media (min-width: 768px) {
-    bottom: 2rem;
-    right: 2rem;
-  }
-`;
-
-// Update ActionButton for mobile
-const ActionButton = styled.button`
-  background: ${props => props.theme?.colors?.accent || '#800000'};
-  color: white;
-  border: none;
-  padding: 0.8rem 1.5rem;
-  border-radius: 30px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-family: ${props => props.theme?.fonts?.body || 'sans-serif'};
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-
-  @media (min-width: 768px) {
-    padding: 1rem 2.5rem;
-    font-size: 1rem;
-    letter-spacing: 2px;
-  }
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
-`;
-
-// Remove these old styled components (delete them):
-// - TabControlsContainer
-// - ThemeContainer
-// - FloatingFontControls (move to mobile position)
-
-// Add mobile font controls
-const MobileFontControls = styled.div`
-  position: fixed;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  z-index: 100;
-  
-  @media (min-width: 768px) {
-    left: 2rem;
-  }
-`;
-
-const FontSizeButton = styled.button`
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  cursor: pointer;
-  transition: all 0.3s ease;
-
-  &:active {
-    transform: scale(0.9);
-    background: rgba(255, 255, 255, 0.2);
-  }
-  
-  @media (hover: hover) {
-    &:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-  }
-`;
-
-// Update TabControlsContainer for mobile positioning
-const TabControlsContainer = styled.div`
-  position: fixed;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  @media (min-width: 768px) {
-    bottom: auto;
-    top: 100px;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-`;
-
-const RefreshButton = styled.button`
-  background: none;
-  border: none;
-  color: ${props => props.theme?.colors?.text || "white"};
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 0.5rem;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    transform: scale(1.1) rotate(90deg);
-    color: ${props => props.theme?.colors?.accent || "#800000"};
-  }
-  
-  &.spinning {
-    animation: spin 0.5s ease-in-out;
-  }
-  
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-`;
-
-const PinButton = styled.button`
-  background: none;
-  border: none;
-  color: ${props => props.isPinned ? (props.theme?.colors?.accent || '#800000') : 'white'};
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 0.5rem;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    transform: scale(1.1);
-  }
-`;
-
-const ThemeControls = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-
-const ITEM_CATEGORIES = [
-  'Electronics & Tech',
-  'Clothing & Accessories',
-  'Home & Garden',
-  'Sports & Outdoors',
-  'Books & Media',
-  'Toys & Games',
-  'Health & Beauty',
-  'Automotive',
-  'Collectibles & Art',
-  'Food & Beverages',
-  'Other'
-];
-
-// Keep all existing styled components as they were
-const PageContainer = styled.div.attrs({ className: 'page-container' })`
-  min-height: 100vh;
-  background: ${props => props.theme?.colors?.background || '#000000'};
-  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
-  position: relative;
-  overflow-x: hidden;
-`;
-
-const ThemeContainer = styled.div`
-  position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  & > div > div:nth-child(2) {
-    bottom: calc(100% + 0.5rem);
-    top: auto;
-    margin-top: 0;
-    margin-bottom: 0.5rem;
-  }
-`;
-
-const KalKodeLogo = styled.div`
-  color: #A00000;
-  font-family: 'Impact', sans-serif;
-  font-size: 2rem;
-  letter-spacing: 2px;
-  transform: skew(-5deg);
-`;
-
-const ShopName = styled.div`
-  flex: 1;
-  text-align: ${props => props.position};
-  font-family: ${props => props.theme?.fonts?.heading || DEFAULT_THEME.fonts.heading};
-  font-size: 1.8rem;
-  padding: ${props => props.position === 'center' ? '0 80px' : '0'};
-`;
-
-
-const CategorySelect = styled.select`
-  width: 100%;
-  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
-  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
-  border-radius: ${props => props.theme?.styles?.borderRadius || '8px'};
-  padding: 0.75rem;
-  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
-  font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
-  margin-bottom: 1rem;
-  
-  &:focus {
-    outline: none;
-    border-color: ${props => props.theme?.colors?.accent || '#800000'};
-  }
-  
-  option {
-    background: ${props => props.theme?.colors?.background || '#000000'};
-    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
-  }
-`;
-
-const TAB_POSITIONS = {
-  TOP: 'top',
-  LEFT: 'left',
-  BOTTOM: 'bottom'
-};
-
-const SHOP_NAME_POSITIONS = {
-  LEFT: 'left',
-  CENTER: 'center'
-};
-
-const HiddenInput = styled.input`
-  display: none;
-`;
-
+// Mobile-optimized profile section
 const ShopProfileSection = styled.section`
   display: flex;
   flex-direction: column;
@@ -393,15 +203,26 @@ const ShopProfileSection = styled.section`
   text-align: center;
   max-width: 800px;
   margin: 2rem auto 4rem;
-  padding: 2rem;
+  padding: 1rem;
+
+  @media (min-width: 768px) {
+    padding: 2rem;
+  }
 
   .profile-image {
     margin-bottom: 1rem;
-    width: 150px;
-    height: 150px;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
     overflow: hidden;
     background: rgba(0, 0, 0, 0.1);
+    border: 3px solid ${props => props.theme?.colors?.accent || '#800000'};
+    box-shadow: 0 0 20px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+    
+    @media (min-width: 768px) {
+      width: 150px;
+      height: 150px;
+    }
     
     img {
       width: 100%;
@@ -419,30 +240,22 @@ const ShopProfileSection = styled.section`
       text-align: center;
       background: transparent;
       border: none;
-      font-size: ${props => props.fontSize || '2.5rem'};
+      font-size: ${props => Math.min(props.fontSize || 2.5, 2)}rem;
       font-family: ${props => props.theme?.fonts?.heading};
-      /* Replace the background gradient with direct color */
       color: ${props => props.theme?.colors?.accent || '#800000'};
-      /* Remove these two lines */
-      /* -webkit-background-clip: text; */
-      /* -webkit-text-fill-color: transparent; */
       outline: none;
       padding: 0.5rem;
+      
+      @media (min-width: 768px) {
+        font-size: ${props => props.fontSize || '2.5rem'};
+      }
 
       &:focus {
-        /* Update focus state to use normal color */
         color: ${props => props.theme?.colors?.accent || '#800000'};
-        /* Remove these if present */
-        /* -webkit-background-clip: text; */
-        /* -webkit-text-fill-color: transparent; */
       }
 
       &::placeholder {
-        /* Make placeholder more visible */
         color: ${props => `${props.theme?.colors?.accent}80` || 'rgba(128, 0, 0, 0.5)'};
-        /* Remove these if present */
-        /* -webkit-background-clip: text; */
-        /* -webkit-text-fill-color: transparent; */
       }
     }
   }
@@ -456,7 +269,7 @@ const ShopProfileSection = styled.section`
       text-align: center;
       background: transparent;
       border: none;
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-family: ${props => props.theme?.fonts?.body};
       color: ${props => props.theme?.colors?.text};
       opacity: 0.8;
@@ -464,6 +277,10 @@ const ShopProfileSection = styled.section`
       padding: 0.5rem;
       resize: none;
       min-height: 60px;
+
+      @media (min-width: 768px) {
+        font-size: 1.1rem;
+      }
 
       &:focus {
         opacity: 1;
@@ -477,41 +294,77 @@ const ShopProfileSection = styled.section`
   }
 `;
 
-const AddItemButton = styled.button`
-  background: ${props => props.theme?.colors?.primary || '#800000'};
-  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+// View toggle container
+const ViewToggleContainer = styled.div`
+  position: fixed;
+  bottom: 1rem;
+  left: 24%;
+  transform: translateX(-50%);
+  z-index: 90;
+  display: flex;
+  background: ${props => `${props.theme?.colors?.background || '#000000'}E5`};
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.4)'};
+  padding: 0.25rem;
+  
+  @media (min-width: 768px) {
+    bottom: 2rem;
+  }
+`;
+
+const ViewToggleButton = styled.button`
+  background: ${props => props.active ? props.theme?.colors?.accent || '#800000' : 'transparent'};
   border: none;
-  border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
-  padding: 1rem 2rem;
-  font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
+  color: ${props => props.active ? 'white' : props.theme?.colors?.text || '#FFFFFF'};
+  padding: 0.5rem 1rem;
+  border-radius: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  margin: 2rem auto;
+  gap: 0.5rem;
+  font-size: 0.9rem;
   transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    background: ${props => props.theme?.colors?.secondary || '#600000'};
-  }
-
-  svg {
-    transition: transform 0.3s ease;
-  }
-
-  &:hover svg {
-    transform: rotate(90deg);
+  
+  &:active {
+    transform: scale(0.95);
   }
 `;
 
-const ItemsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
+// Mobile-friendly grid container
+const ItemsContainer = styled.div`
   margin-top: 2rem;
 `;
 
+const ItemsGrid = styled.div`
+  display: ${props => props.viewMode === 'list' ? 'block' : 'grid'};
+  grid-template-columns: ${props => props.viewMode === 'gallery' ? 
+    'repeat(auto-fill, minmax(280px, 1fr))' : 
+    'repeat(2, 1fr)'
+  };
+  gap: ${props => props.viewMode === 'list' ? '1rem' : '1rem'};
+  
+  @media (min-width: 480px) {
+    gap: ${props => props.viewMode === 'list' ? '1.5rem' : '1.5rem'};
+  }
+  
+  @media (min-width: 768px) {
+    grid-template-columns: ${props => props.viewMode === 'gallery' ? 
+      'repeat(auto-fill, minmax(300px, 1fr))' : 
+      'repeat(3, 1fr)'
+    };
+    gap: 2rem;
+  }
+  
+  @media (min-width: 1024px) {
+    grid-template-columns: ${props => props.viewMode === 'gallery' ? 
+      'repeat(auto-fill, minmax(350px, 1fr))' : 
+      'repeat(4, 1fr)'
+    };
+  }
+`;
+
+// Mobile-optimized item card
 const ItemCard = styled.div`
   background: ${props => props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'};
   border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
@@ -519,6 +372,8 @@ const ItemCard = styled.div`
   border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
   position: relative;
   transition: all 0.3s;
+  width: ${props => props.viewMode === 'list' ? '100%' : 'auto'};
+  height: ${props => props.viewMode === 'list' ? 'auto' : 'fit-content'};
 
   &:hover {
     transform: translateY(-5px);
@@ -526,19 +381,25 @@ const ItemCard = styled.div`
   }
 `;
 
+// Mobile-optimized image container with swipe support
 const ItemImageContainer = styled.div`
   position: relative;
-  height: 250px;
+  height: ${props => props.viewMode === 'list' ? '200px' : '250px'};
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   background: ${props => `${props.theme?.colors?.background || '#000000'}50`};
 
+  @media (min-width: 768px) {
+    height: 250px;
+  }
+
   .image-container {
     width: 100%;
     height: 100%;
     position: relative;
+    touch-action: pan-y;
   }
 
   .placeholder {
@@ -580,9 +441,22 @@ const ItemImageContainer = styled.div`
     color: ${props => props.theme?.colors?.text || 'white'};
     cursor: pointer;
     z-index: 2;
+    opacity: 0.8;
+    transition: all 0.3s ease;
+
+    @media (max-width: 767px) {
+      width: 28px;
+      height: 28px;
+      opacity: 0.9;
+      
+      &:active {
+        transform: translateY(-50%) scale(0.9);
+      }
+    }
 
     &:hover {
       background: ${props => `${props.theme?.colors?.accent}40` || 'rgba(0, 0, 0, 0.7)'};
+      opacity: 1;
     }
 
     &.left {
@@ -593,10 +467,87 @@ const ItemImageContainer = styled.div`
       right: 10px;
     }
   }
+
+  /* Mobile image dots */
+  .image-dots {
+    position: absolute;
+    bottom: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.25rem;
+    z-index: 2;
+    
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: ${props => props.theme?.colors?.text || '#FFFFFF'};
+      opacity: 0.3;
+      transition: opacity 0.3s ease;
+      
+      &.active {
+        opacity: 1;
+      }
+    }
+  }
 `;
 
+// Collapsible item content for mobile
 const ItemContent = styled.div`
-  padding: 1.5rem;
+  padding: 1rem;
+  
+  @media (min-width: 768px) {
+    padding: 1.5rem;
+  }
+`;
+
+const ItemHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  
+  h4 {
+    margin: 0;
+    font-size: 1rem;
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+    
+    @media (min-width: 768px) {
+      font-size: 1.1rem;
+    }
+  }
+`;
+
+const ExpandButton = styled.button`
+  background: transparent;
+  border: none;
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  
+  &:active {
+    transform: scale(0.9);
+  }
+`;
+
+const ItemDetails = styled.div`
+  max-height: ${props => props.expanded ? '500px' : '0'};
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  
+  .details-content {
+    padding-top: ${props => props.expanded ? '1rem' : '0'};
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
 `;
 
 const DeleteButton = styled.button`
@@ -622,30 +573,121 @@ const DeleteButton = styled.button`
   }
 `;
 
-const CategoryTabs = styled.div`
+const AddItemButton = styled.button`
+  background: ${props => props.theme?.colors?.accent || '#800000'};
+  color: white;
+  border: none;
+  border-radius: ${props => props.theme?.styles?.borderRadius || '8px'};
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+  font-family: ${props => props.theme?.fonts?.heading || "'Space Grotesk', sans-serif"};
   display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-bottom: 3rem;
-`;
-
-const CategoryTab = styled.button`
-  background: ${props => props.active ? props.theme?.colors?.surface : 'transparent'};
-  border: 1px solid ${props => props.active ? 
-    props.theme?.colors?.accent || DEFAULT_THEME.colors.accent : 
-    'rgba(255, 255, 255, 0.1)'};
-  color: ${props => props.active ? 
-    props.theme?.colors?.text || DEFAULT_THEME.colors.text : 
-    `${props.theme?.colors?.text || DEFAULT_THEME.colors.text}80`};
-  padding: 0.8rem 1.5rem;
-  border-radius: 30px;
-  font-family: ${props => props.theme?.fonts?.heading || DEFAULT_THEME.fonts.heading};
+  align-items: center;
+  gap: 0.5rem;
   cursor: pointer;
+  margin: 1rem auto 2rem;
   transition: all 0.3s ease;
+  justify-content: center;
+  width: 100%;
+  max-width: 300px;
+
+  @media (min-width: 768px) {
+    width: auto;
+    max-width: none;
+  }
 
   &:hover {
-    background: ${props => props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'};
-    border-color: ${props => props.theme?.colors?.accent || DEFAULT_THEME.colors.accent};
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+`;
+
+const CategorySelect = styled.select`
+  width: 100%;
+  background: #1a1a1a !important;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
+  border-radius: ${props => props.theme?.styles?.borderRadius || '8px'};
+  padding: 0.75rem;
+  color: #ffffff !important;
+  font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
+  
+  &:focus {
+    outline: none;
+    border-color: ${props => props.theme?.colors?.accent || '#800000'};
+  }
+  
+  option {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+    padding: 0.5rem;
+  }
+`;
+
+// Save button container
+const SaveButtonContainer = styled.div`
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 100;
+  
+  @media (min-width: 768px) {
+    bottom: 2rem;
+    right: 2rem;
+  }
+`;
+
+const ActionButton = styled.button`
+  background: ${props => props.theme?.colors?.accent || '#800000'};
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 30px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: ${props => props.theme?.fonts?.body || 'sans-serif'};
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+
+  @media (max-width: 767px) {
+    padding: 0.8rem 1.5rem;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+`;
+
+const TabControlsContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+  padding: 0 1rem;
+  
+  @media (min-width: 768px) {
+    margin: 3rem 0;
+    padding: 0;
   }
 `;
 
@@ -657,6 +699,11 @@ const GlobalStyles = createGlobalStyle`
     border-radius: 50%;
     background: #800000;
     pointer-events: none;
+    
+    /* Disable on mobile for performance */
+    @media (max-width: 767px) {
+      display: none;
+    }
   }
 
   .ping::before {
@@ -690,15 +737,43 @@ const GlobalStyles = createGlobalStyle`
 const LiveShopCreation = () => {
   const navigate = useNavigate();
   const { saveTempStore } = useTempStore();
+  const { isAuthenticated } = useAuth();
   
-  // State management optimizations
+  // State management
   const [activeTab, setActiveTab] = useState('shop');
   const [selectedTheme, setSelectedTheme] = useState(WELCOME_STYLES.STYLE_1);
-  const [tabPosition, setTabPosition] = useState(TAB_POSITIONS.TOP);
   const [shopNameFontSize, setShopNameFontSize] = useState(2.5);
   const [isPinned, setIsPinned] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [expandedItems, setExpandedItems] = useState(new Set());
 
+  // Consolidated shop data
+  const [shopData, setShopData] = useState({
+    name: '',
+    description: '',
+    profile: null,
+    mission: '',
+    items: [{
+      id: Date.now().toString(),
+      name: '',
+      price: '',
+      description: '',
+      category: 'Other',
+      images: [null, null, null],
+      currentImageIndex: 0,
+      address: '',
+      coordinates: null,
+      tags: [],
+      quantity: 1
+    }],
+    layout: {
+      namePosition: 'left',
+      tabPosition: 'top'
+    }
+  });
+
+  // Theme management
   useEffect(() => {
     const pinnedStyleId = localStorage.getItem('pinnedStyleId');
     
@@ -714,7 +789,6 @@ const LiveShopCreation = () => {
       }
     }
 
-    // If no pinned style, select random
     const styles = Object.values(WELCOME_STYLES);
     const randomStyle = styles[Math.floor(Math.random() * styles.length)];
     setSelectedTheme(randomStyle);
@@ -760,32 +834,16 @@ const LiveShopCreation = () => {
     }
   };
 
-  // Consolidated shop data
-  const [shopData, setShopData] = useState({
-    name: '',
-    description: '',
-    profile: null,
-    mission: '',
-    items: [{
-      id: Date.now().toString(),
-      name: '',
-      price: '',
-      description: '',
-      category: 'Other',
-      images: [null, null, null],
-      currentImageIndex: 0,
-      address: '',
-      coordinates: null,
-      tags: [],
-      quantity: 1  // Add this line
-    }],
-    layout: {
-      namePosition: SHOP_NAME_POSITIONS.LEFT,
-      tabPosition: TAB_POSITIONS.TOP
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
-  });
+  };
 
-  // Optimized handlers
+  // Item management
   const handleShopDataChange = (field, value) => {
     setShopData(prev => ({
       ...prev,
@@ -807,7 +865,7 @@ const LiveShopCreation = () => {
         address: '',
         coordinates: null,
         tags: [],
-        quantity: 1 // Add this line
+        quantity: 1
       }]
     }));
   };
@@ -828,23 +886,32 @@ const LiveShopCreation = () => {
     }));
   };
 
+  const toggleItemExpansion = (itemId) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
   const handleSave = () => {
-    // Prepare data for storage
     const dataToSave = {
       ...shopData,
       theme: selectedTheme,
       layout: {
         namePosition: shopData.layout.namePosition,
-        tabPosition: tabPosition,
+        tabPosition: 'top',
         nameSize: shopNameFontSize
       },
       createdAt: new Date().toISOString()
     };
     
-    // Save to temp store
     saveTempStore(dataToSave);
     
-    // Navigate to auth with the temp data
     navigate('/auth', {
       state: { 
         mode: 'signup', 
@@ -853,10 +920,6 @@ const LiveShopCreation = () => {
     });
   };
 
-  // Background effect
-  
-
-  // Render methods
   const renderShopView = () => (
     <MainContent>
       <ShopProfileSection fontSize={shopNameFontSize}>
@@ -866,8 +929,8 @@ const LiveShopCreation = () => {
             onChange={(value) => handleShopDataChange('profile', value)}
             theme={selectedTheme}
             round
-            width="150px"
-            height="150px"
+            width="100%"
+            height="100%"
           />
         </div>
         <div className="shop-name-container">
@@ -876,7 +939,7 @@ const LiveShopCreation = () => {
             onChange={(value) => handleShopDataChange('name', value)}
             placeholder="Enter Your Shop Name"
             style={{
-              fontSize: `${shopNameFontSize}rem`,
+              fontSize: `${Math.min(shopNameFontSize, 2)}rem`,
               maxWidth: '500px',
               margin: '0 auto'
             }}
@@ -897,121 +960,158 @@ const LiveShopCreation = () => {
         Add Item
       </AddItemButton>
 
-      <ItemsGrid>
-        {shopData.items.map(item => (
-          <ItemCard key={item.id} theme={selectedTheme}>
-            <DeleteButton
-              onClick={() => handleItemDelete(item.id)}
-            >
-              <X size={16} />
-            </DeleteButton>
+      <ItemsContainer>
+        <ItemsGrid viewMode={viewMode}>
+          {shopData.items.map(item => {
+            const isExpanded = expandedItems.has(item.id);
+            const validImages = item.images.filter(Boolean);
             
-            <ItemImageContainer theme={selectedTheme}>
-              <div className="image-container">
-                <EditableImage
-                  value={item.images[item.currentImageIndex]}
-                  onChange={(value) => {
-                    const newImages = [...item.images];
-                    newImages[item.currentImageIndex] = value;
-                    handleItemUpdate(item.id, { images: newImages });
-                  }}
-                  theme={selectedTheme}
-                  height="100%"
-                  width="100%"
-                />
-              </div>
-              
-              <button 
-                className="carousel-arrow left"
-                onClick={() => {
-                  const newIndex = ((item.currentImageIndex - 1) + 3) % 3;
-                  handleItemUpdate(item.id, { currentImageIndex: newIndex });
-                }}
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <button 
-                className="carousel-arrow right"
-                onClick={() => {
-                  const newIndex = (item.currentImageIndex + 1) % 3;
-                  handleItemUpdate(item.id, { currentImageIndex: newIndex });
-                }}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </ItemImageContainer>
-            
-            <ItemContent>
-              <EditableText
-                value={item.name}
-                onChange={(value) => handleItemUpdate(item.id, { name: value })}
-                placeholder="Item Name"
-                theme={selectedTheme}
-              />
-              <EditableText
-                value={item.price}
-                onChange={(value) => handleItemUpdate(item.id, { price: value })}
-                placeholder="Price"
-                theme={selectedTheme}
-              />
-              <EditableText
-                value={item.description}
-                onChange={(value) => handleItemUpdate(item.id, { description: value })}
-                placeholder="Item Description"
-                multiline
-                theme={selectedTheme}
-              />
-               <CategorySelect
-                value={item.category || 'Other'}
-                onChange={(e) => handleItemUpdate(item.id, { category: e.target.value })}
-                theme={selectedTheme}
-              >
-                {ITEM_CATEGORIES.map(category => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </CategorySelect>
-              <QuantitySelector 
-                value={parseInt(item.quantity) || 1}
-                onChange={(value) => handleItemUpdate(item.id, { quantity: value })}
-                theme={selectedTheme}
-                min={0}
-                max={9999}
-              />
-              <AddressInput
-                address={item.address || ''}
-                onAddressChange={(value) => handleItemUpdate(item.id, { 
-                  address: value,
-                  coordinates: null // Clear coordinates when address changes
-                })}
-                onLocationSelect={(location) => {
-                  if (location?.coordinates?.latitude && location?.coordinates?.longitude) {
-                    const coords = {
-                      lat: location.coordinates.latitude,
-                      lng: location.coordinates.longitude
-                    };
-                    handleItemUpdate(item.id, {
-                      address: location.address || `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`,
-                      coordinates: coords
-                    });
-                  }
-                }}
-              />
-            </ItemContent>
-          </ItemCard>
-        ))}
-      </ItemsGrid>
+            return (
+              <ItemCard key={item.id} theme={selectedTheme} viewMode={viewMode}>
+                <DeleteButton onClick={() => handleItemDelete(item.id)}>
+                  <X size={16} />
+                </DeleteButton>
+                
+                <ItemImageContainer theme={selectedTheme} viewMode={viewMode}>
+                  <div className="image-container">
+                    <EditableImage
+                      value={item.images[item.currentImageIndex]}
+                      onChange={(value) => {
+                        const newImages = [...item.images];
+                        newImages[item.currentImageIndex] = value;
+                        handleItemUpdate(item.id, { images: newImages });
+                      }}
+                      theme={selectedTheme}
+                      height="100%"
+                      width="100%"
+                    />
+                  </div>
+                  
+                  {/* Carousel arrows */}
+                  {validImages.length > 1 && (
+                    <>
+                      <button 
+                        className="carousel-arrow left"
+                        onClick={() => {
+                          const newIndex = ((item.currentImageIndex - 1) + 3) % 3;
+                          handleItemUpdate(item.id, { currentImageIndex: newIndex });
+                        }}
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <button 
+                        className="carousel-arrow right"
+                        onClick={() => {
+                          const newIndex = (item.currentImageIndex + 1) % 3;
+                          handleItemUpdate(item.id, { currentImageIndex: newIndex });
+                        }}
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </>
+                  )}
+
+                  {/* Mobile image dots */}
+                  {validImages.length > 1 && (
+                    <div className="image-dots">
+                      {item.images.map((img, index) => (
+                        img && (
+                          <div 
+                            key={index}
+                            className={`dot ${index === item.currentImageIndex ? 'active' : ''}`}
+                            onClick={() => handleItemUpdate(item.id, { currentImageIndex: index })}
+                          />
+                        )
+                      ))}
+                    </div>
+                  )}
+                </ItemImageContainer>
+                
+                <ItemContent>
+                  <ItemHeader onClick={() => toggleItemExpansion(item.id)}>
+                    <h4>{item.name || 'New Item'}</h4>
+                    <ExpandButton>
+                      {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                    </ExpandButton>
+                  </ItemHeader>
+                  
+                  <ItemDetails expanded={isExpanded}>
+                    <div className="details-content">
+                      <EditableText
+                        value={item.name}
+                        onChange={(value) => handleItemUpdate(item.id, { name: value })}
+                        placeholder="Item Name"
+                        theme={selectedTheme}
+                      />
+                      <EditableText
+                        value={item.price}
+                        onChange={(value) => handleItemUpdate(item.id, { price: value })}
+                        placeholder="Price"
+                        theme={selectedTheme}
+                      />
+                      <EditableText
+                        value={item.description}
+                        onChange={(value) => handleItemUpdate(item.id, { description: value })}
+                        placeholder="Item Description"
+                        multiline
+                        theme={selectedTheme}
+                      />
+                      <CategorySelect
+                        value={item.category || 'Other'}
+                        onChange={(e) => handleItemUpdate(item.id, { category: e.target.value })}
+                        theme={selectedTheme}
+                      >
+                        {ITEM_CATEGORIES.map(category => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </CategorySelect>
+                      <QuantitySelector 
+                        value={parseInt(item.quantity) || 1}
+                        onChange={(value) => handleItemUpdate(item.id, { quantity: value })}
+                        theme={selectedTheme}
+                        min={0}
+                        max={9999}
+                      />
+                      <AddressInput
+                        address={item.address || ''}
+                        onAddressChange={(value) => handleItemUpdate(item.id, { 
+                          address: value,
+                          coordinates: null
+                        })}
+                        onLocationSelect={(location) => {
+                          if (location?.coordinates?.latitude && location?.coordinates?.longitude) {
+                            const coords = {
+                              lat: location.coordinates.latitude,
+                              lng: location.coordinates.longitude
+                            };
+                            handleItemUpdate(item.id, {
+                              address: location.address || `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`,
+                              coordinates: coords
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                  </ItemDetails>
+                </ItemContent>
+              </ItemCard>
+            );
+          })}
+        </ItemsGrid>
+      </ItemsContainer>
     </MainContent>
   );
 
   const renderHomeView = () => (
     <MainContent>
-      <div style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto', padding: '2rem' }}>
+      <div style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto', padding: '2rem 1rem' }}>
         <h2 style={{ 
           color: selectedTheme?.colors?.accent || '#800000',
           fontFamily: selectedTheme?.fonts?.heading || 'inherit',
-          marginBottom: '1.5rem'
+          marginBottom: '1.5rem',
+          fontSize: '1.5rem'
         }}>
           Mission Statement
         </h2>
@@ -1029,11 +1129,12 @@ const LiveShopCreation = () => {
 
   const renderCommunityView = () => (
     <MainContent>
-      <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+      <div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
         <h2 style={{ 
           color: selectedTheme?.colors?.accent || '#800000',
           fontFamily: selectedTheme?.fonts?.heading || 'inherit',
-          marginBottom: '1rem'
+          marginBottom: '1rem',
+          fontSize: '1.5rem'
         }}>
           Community
         </h2>
@@ -1046,10 +1147,11 @@ const LiveShopCreation = () => {
     <ThemeProvider theme={selectedTheme}>
       <GlobalStyles />
       <PageContainer className="page-container">
-        <ShopBanner>
-          <ShopName position={shopData.layout.namePosition}>
-            {shopData.name || "Your Shop Name"}
-          </ShopName>
+        <Header theme={selectedTheme}>
+          <Logo onClick={() => navigate('/')} theme={selectedTheme}>
+            KALKODE
+          </Logo>
+
           <HeaderControls>
             <HeaderButton 
               onClick={refreshTheme}
@@ -1059,7 +1161,7 @@ const LiveShopCreation = () => {
             >
               <RefreshCw size={20} />
             </HeaderButton>
-
+            
             <HeaderButton 
               onClick={togglePinStyle} 
               theme={selectedTheme}
@@ -1068,17 +1170,23 @@ const LiveShopCreation = () => {
             >
               <Pin size={20} fill={isPinned ? selectedTheme.colors.accent : "none"} />
             </HeaderButton>
+            
+            {isAuthenticated && (
+              <HeaderButton 
+                onClick={handleLogout}
+                theme={selectedTheme}
+                title="Logout"
+              >
+                <LogOut size={20} />
+              </HeaderButton>
+            )}
           </HeaderControls>
-        </ShopBanner>
-        
-        {activeTab === 'shop' && renderShopView()}
-        {activeTab === 'home' && renderHomeView()}
-        {activeTab === 'community' && renderCommunityView()}
+        </Header>
 
         <TabControlsContainer>
           <TabPositioner
-            position={tabPosition}
-            onPositionChange={setTabPosition}
+            position="top"
+            onPositionChange={() => {}}
             activeTab={activeTab}
             onTabChange={setActiveTab}
             tabs={[
@@ -1090,22 +1198,34 @@ const LiveShopCreation = () => {
           />
         </TabControlsContainer>
 
-        <MobileFontControls>
-          <FontSizeButton 
-            onClick={() => setShopNameFontSize(prev => Math.min(6, prev + 0.5))}
-          >
-            <Plus size={16} />
-          </FontSizeButton>
-          <FontSizeButton 
-            onClick={() => setShopNameFontSize(prev => Math.max(1.5, prev - 0.5))}
-          >
-            <Minus size={16} />
-          </FontSizeButton>
-        </MobileFontControls>
+        {activeTab === 'shop' && renderShopView()}
+        {activeTab === 'home' && renderHomeView()}
+        {activeTab === 'community' && renderCommunityView()}
 
-        
+        {/* View Toggle - Only show on shop tab */}
+        {activeTab === 'shop' && (
+          <ViewToggleContainer theme={selectedTheme}>
+            <ViewToggleButton 
+              active={viewMode === 'grid'} 
+              onClick={() => setViewMode('grid')}
+              theme={selectedTheme}
+            >
+              <Grid size={16} />
+              Grid
+            </ViewToggleButton>
+            <ViewToggleButton 
+              active={viewMode === 'list'} 
+              onClick={() => setViewMode('list')}
+              theme={selectedTheme}
+            >
+              <List size={16} />
+              List
+            </ViewToggleButton>
+          </ViewToggleContainer>
+        )}
 
-        <ActionButtons>
+        {/* Save Button */}
+        <SaveButtonContainer>
           <ActionButton
             onClick={handleSave}
             disabled={!shopData.name}
@@ -1114,7 +1234,7 @@ const LiveShopCreation = () => {
             Save Shop
             <ChevronRight size={20} />
           </ActionButton>
-        </ActionButtons>
+        </SaveButtonContainer>
       </PageContainer>
     </ThemeProvider>
   );
