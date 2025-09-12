@@ -396,7 +396,7 @@ export const WELCOME_STYLES = {
     id: 23,
     name: "Tokyo Neon District",
     colors: {
-      background: "#55627aff",
+      background: "#0b1322ff",
       text: "#F0F8FF",
       accent: "#FF3366",
       accentGradient: "linear-gradient(135deg, #FF3366, #FF6B35, #FFEB3B)",
