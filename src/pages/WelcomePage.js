@@ -567,43 +567,196 @@ const ZoomOverlay = styled.div`
   z-index: 10000;
   backdrop-filter: blur(10px);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: 1rem;
   overflow-y: auto;
   
-  @media (min-width: 768px) {
-    align-items: center;
-    padding: 2rem;
+  @media (max-width: 768px) {
+    padding: 0;
+    align-items: flex-start;
   }
 `;
 
 const ZoomContainer = styled.div`
   position: relative;
   z-index: 10001;
-  border-radius: 20px 20px 0 0;
+  border-radius: 12px;
   overflow: hidden;
-  border: none;
-  border-top: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
-  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
+  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
   background: ${props => props.theme?.colors?.background || '#000000'};
   width: 100%;
-  max-height: 85vh;
+  max-width: 500px;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   
-  @media (min-width: 768px) {
-    border-radius: 12px;
-    border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-    max-height: 80vh;
-    width: 90%;
-    max-width: 500px;
+  @media (max-width: 768px) {
+    border-radius: 20px 20px 0 0;
+    border: none;
+    border-top: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+    max-height: 85vh;
+    margin-top: auto;
   }
   
   @media (min-width: 1024px) {
     max-width: 600px;
-    max-height: 85vh;
+  }
+`;
+
+// Update ZoomContent to be scrollable
+const ZoomContent = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  -webkit-overflow-scrolling: touch;
+  
+  @media (min-width: 768px) {
+    padding: 2rem;
+  }
+`;
+
+// Add styles for better item display
+const ItemDetailsSection = styled.div`
+  margin-bottom: 1.5rem;
+`;
+
+const ItemHeader = styled.div`
+  margin-bottom: 1.5rem;
+  
+  h3 {
+    font-size: 1.5rem;
+    margin: 0 0 0.5rem 0;
+    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+    
+    @media (min-width: 768px) {
+      font-size: 1.8rem;
+    }
+  }
+
+  .price {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    margin-bottom: 1rem;
+    
+    @media (min-width: 768px) {
+      font-size: 1.5rem;
+    }
+  }
+`;
+
+const CategoryBadge = styled.div`
+  display: inline-block;
+  background: ${props => `${props.theme?.colors?.accent || '#800000'}20`};
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 1rem;
+`;
+
+const StockStatus = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  
+  .stock-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: ${props => props.inStock ? '#4CAF50' : '#FF5252'};
+  }
+  
+  .stock-text {
+    color: ${props => props.inStock ? '#4CAF50' : '#FF5252'};
+    font-weight: 500;
+  }
+`;
+
+const ItemDescription = styled.div`
+  font-size: 0.95rem;
+  opacity: 0.9;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+`;
+
+const ItemLocation = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-bottom: 1.5rem;
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+`;
+
+const ShopInfo = styled.div`
+  padding: 0.75rem;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}50`};
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  
+  strong {
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+  }
+`;
+
+// Update ActionButtons to only show Order button
+const ActionButtons = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  
+  button {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    
+    @media (min-width: 768px) {
+      padding: 1rem;
+      font-size: 1rem;
+    }
+    
+    &.order {
+      background: ${props => props.theme?.colors?.accent || '#800000'};
+      color: white;
+      
+      &:hover:not(:disabled) {
+        background: ${props => props.theme?.colors?.primary || '#4A0404'};
+        transform: translateY(-2px);
+      }
+      
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+    }
+    
+    svg {
+      width: 16px;
+      height: 16px;
+    }
   }
 `;
 
@@ -708,17 +861,6 @@ const ImageCarousel = styled.div`
       opacity: 0.3;
       cursor: not-allowed;
     }
-  }
-`;
-
-const ZoomContent = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.5rem;
-  -webkit-overflow-scrolling: touch;
-  
-  @media (min-width: 768px) {
-    padding: 2rem;
   }
 `;
 
@@ -2063,27 +2205,28 @@ const WelcomePage = () => {
         <span>{currentStyle.name}</span>
       </StyleIndicator>
 
-      {/* Zoomed Item View */}
+      {/* Zoomed Item View - Updated to match ShopPublicView */}
       {zoomedItem && (
         <ZoomOverlay onClick={handleCloseZoom} theme={currentStyle}>
           <ZoomContainer 
             theme={currentStyle}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Image Carousel with Navigation */}
+            {/* Close button header */}
+            <ZoomHeader>
+              <button 
+                className="close-button"
+                onClick={handleCloseZoom}
+              >
+                <X size={16} />
+              </button>
+            </ZoomHeader>
+
+            {/* Image Carousel */}
             <ImageCarousel 
               theme={currentStyle} 
               currentIndex={currentImageIndex}
             >
-              <ZoomHeader>
-                <button 
-                  className="close-button"
-                  onClick={handleCloseZoom}
-                >
-                  <X size={16} />
-                </button>
-              </ZoomHeader>
-              
               <div className="image-track">
                 {zoomedItem.images && zoomedItem.images.filter(Boolean).length > 0 ? (
                   zoomedItem.images.filter(Boolean).map((image, index) => (
@@ -2132,184 +2275,103 @@ const WelcomePage = () => {
                 </>
               )}
             </ImageCarousel>
-
-            {/* Content */}
+            
+            {/* Content - Full item details */}
             <ZoomContent>
-              {/* Item Name and Price */}
-              <h3 style={{ 
-                fontSize: '1.5rem', 
-                margin: '0 0 0.5rem 0',
-                fontFamily: currentStyle?.fonts?.heading || 'inherit',
-                color: currentStyle?.colors?.text || '#FFFFFF'
-              }}>
-                {zoomedItem.name}
-              </h3>
-
-              <div style={{ 
-                fontSize: '1.3rem', 
-                fontWeight: 'bold',
-                color: currentStyle?.colors?.accent || '#800000',
-                marginBottom: '1rem'
-              }}>
-                ${parseFloat(zoomedItem.price || 0).toFixed(2)} each
-              </div>
-
-              {/* Category Badge */}
-              {zoomedItem.category && zoomedItem.category !== 'Other' && (
-                <div style={{
-                  display: 'inline-block',
-                  background: `${currentStyle?.colors?.accent || '#800000'}20`,
-                  color: currentStyle?.colors?.accent || '#800000',
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '12px',
-                  fontSize: '0.75rem',
-                  fontWeight: '500',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  marginBottom: '1rem'
-                }}>
-                  {zoomedItem.category}
-                </div>
-              )}
-
-              {/* Quantity Selector */}
-              <QuantitySelector theme={currentStyle}>
-                <div className="quantity-label">Quantity:</div>
-                <div className="quantity-controls">
-                  <button 
-                    className="quantity-btn"
-                    onClick={() => adjustQuantity(-1)}
-                    disabled={orderQuantity <= 1}
-                  >
-                    <Minus size={18} />
-                  </button>
-                  
-                  <div className="quantity-display">
-                    {orderQuantity}
+              <ItemDetailsSection>
+                <ItemHeader theme={currentStyle}>
+                  <h3>{zoomedItem.name}</h3>
+                  <div className="price">
+                    ${parseFloat(zoomedItem.price || 0).toFixed(2)}
+                    {orderQuantity > 1 && (
+                      <span style={{ fontSize: '0.8em', opacity: 0.8 }}>
+                        {' '}each (${(parseFloat(zoomedItem.price || 0) * orderQuantity).toFixed(2)} total)
+                      </span>
+                    )}
                   </div>
+                </ItemHeader>
                   
+                {/* Category Badge */}
+                {zoomedItem.category && zoomedItem.category !== 'Other' && (
+                  <CategoryBadge theme={currentStyle}>
+                    {zoomedItem.category}
+                  </CategoryBadge>
+                )}
+
+                {/* Stock Status */}
+                {zoomedItem.quantity !== undefined && (
+                  <StockStatus inStock={parseInt(zoomedItem.quantity) > 0}>
+                    <div className="stock-indicator" />
+                    <span className="stock-text">
+                      {parseInt(zoomedItem.quantity) > 0 ? 
+                        `${zoomedItem.quantity} in stock` : 
+                        'Out of stock'
+                      }
+                    </span>
+                  </StockStatus>
+                )}
+
+                {/* Description */}
+                <ItemDescription theme={currentStyle}>
+                  {zoomedItem.description || 'No description available.'}
+                </ItemDescription>
+              
+                {/* Distance */}
+                {zoomedItem.formattedDistance && (
+                  <ItemLocation theme={currentStyle}>
+                    <Navigation size={16} />
+                    {zoomedItem.formattedDistance} away
+                  </ItemLocation>
+                )}
+
+                {/* Shop Info */}
+                {zoomedItem.shopName && (
+                  <ShopInfo theme={currentStyle}>
+                    <strong>Sold by:</strong> {zoomedItem.shopName}
+                  </ShopInfo>
+                )}
+
+                {/* Quantity Selector */}
+                <QuantitySelector theme={currentStyle}>
+                  <div className="quantity-label">Quantity:</div>
+                  <div className="quantity-controls">
+                    <button 
+                      className="quantity-btn"
+                      onClick={() => adjustQuantity(-1)}
+                      disabled={orderQuantity <= 1}
+                    >
+                      <Minus size={18} />
+                    </button>
+
+                    <div className="quantity-display">
+                      {orderQuantity}
+                    </div>
+
+                    <button 
+                      className="quantity-btn"
+                      onClick={() => adjustQuantity(1)}
+                      disabled={orderQuantity >= parseInt(zoomedItem.quantity || 1)}
+                    >
+                      <Plus size={18} />
+                    </button>
+                  </div>
+                </QuantitySelector>
+              
+                {/* Action buttons - Only Order button, no Inquire */}
+                <ActionButtons theme={currentStyle}>
                   <button 
-                    className="quantity-btn"
-                    onClick={() => adjustQuantity(1)}
-                    disabled={orderQuantity >= parseInt(zoomedItem.quantity || 1)}
+                    className="order"
+                    onClick={handleDirectOrder}
+                    disabled={parseInt(zoomedItem.quantity || 0) < 1 || orderQuantity > parseInt(zoomedItem.quantity || 0)}
                   >
-                    <Plus size={18} />
-                  </button>
-                </div>
-              </QuantitySelector>
-
-              <div style={{
-                fontSize: '1.2rem',
-                fontWeight: 'bold',
-                color: currentStyle?.colors?.accent || '#800000',
-                marginBottom: '1rem',
-                textAlign: 'center',
-                padding: '0.5rem',
-                background: `${currentStyle?.colors?.accent || '#800000'}10`,
-                borderRadius: '8px'
-              }}>
-                Total: ${(parseFloat(zoomedItem.price || 0) * orderQuantity).toFixed(2)}
-              </div>
-
-              {/* Stock Status */}
-              {zoomedItem.quantity !== undefined && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  marginBottom: '1rem',
-                  fontSize: '0.9rem'
-                }}>
-                  <span 
-                    style={{ 
-                      display: 'inline-block',
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      background: parseInt(zoomedItem.quantity) > 0 ? '#4CAF50' : '#FF5252'
-                    }}
-                  />
-                  <span style={{ 
-                    color: parseInt(zoomedItem.quantity) > 0 ? '#4CAF50' : '#FF5252',
-                    fontWeight: '500' 
-                  }}>
-                    {parseInt(zoomedItem.quantity) > 0 ? 
-                      `${zoomedItem.quantity} in stock` : 
-                      'Out of stock'
+                    <ShoppingCart size={16} />
+                    {parseInt(zoomedItem.quantity || 0) < 1 ? 
+                      'Out of Stock' : 
+                      `Order ${orderQuantity} item${orderQuantity > 1 ? 's' : ''} - $${(parseFloat(zoomedItem.price || 0) * orderQuantity).toFixed(2)}`
                     }
-                  </span>
-                </div>
-              )}
-            
-              {/* Description */}
-              <div style={{ 
-                fontSize: '0.95rem', 
-                opacity: 0.9,
-                marginBottom: '1rem',
-                lineHeight: '1.5',
-                color: currentStyle?.colors?.text || '#FFFFFF'
-              }}>
-                {zoomedItem.description || 'No description available.'}
-              </div>
-            
-              {/* Distance */}
-              {zoomedItem.formattedDistance && (
-                <div style={{ 
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  fontSize: '0.9rem',
-                  opacity: 0.8,
-                  marginBottom: '1.5rem',
-                  color: currentStyle?.colors?.text || '#FFFFFF'
-                }}>
-                  <Navigation size={16} />
-                  {zoomedItem.formattedDistance} away
-                </div>
-              )}
-
-              {/* Shop Info */}
-              {zoomedItem.shopName && (
-                <div style={{
-                  padding: '0.75rem',
-                  background: `${currentStyle?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}50`,
-                  borderRadius: '8px',
-                  marginBottom: '1.5rem',
-                  fontSize: '0.9rem',
-                  color: currentStyle?.colors?.text || '#FFFFFF'
-                }}>
-                  <strong>Sold by:</strong> {zoomedItem.shopName}
-                </div>
-              )}
-
-              {/* Action buttons */}
-              <div style={{ 
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.75rem'
-              }}>
-                <ActionButton 
-                  onClick={handleDirectOrder}
-                  theme={currentStyle}
-                  disabled={parseInt(zoomedItem.quantity || 0) < 1 || orderQuantity > parseInt(zoomedItem.quantity || 0)}
-                  style={{ width: '100%' }}
-                >
-                  <ShoppingCart size={16} />
-                  {parseInt(zoomedItem.quantity || 0) < 1 ? 
-                    'Out of Stock' : 
-                    `Order ${orderQuantity} item${orderQuantity > 1 ? 's' : ''}`
-                  }
-                </ActionButton>
-                <ActionButton 
-                  onClick={handleInquireClick}
-                  theme={currentStyle}
-                  variant="outline"
-                  style={{ width: '100%' }}
-                >
-                  <MessageCircle size={16} />
-                  Inquire
-                </ActionButton>
-              </div>
+                  </button>
+                </ActionButtons>
+              </ItemDetailsSection>
             </ZoomContent>
           </ZoomContainer>
         </ZoomOverlay>

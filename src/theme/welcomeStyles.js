@@ -160,30 +160,29 @@ export const WELCOME_STYLES = {
     }
   },
 
-  // Simplified new themes (11-30)
   STYLE_11: {
     id: 11,
-    name: "Pitch Perfect",
+    name: "Miami Vice Nights",
     colors: {
-      background: "#0A3D20",
+      background: "#0F0326",
       text: "#FFFFFF",
-      accent: "#32FF7E",
-      accentGradient: "linear-gradient(135deg, #32FF7E, #18FFFF, #00E676)",
-      surface: "rgba(50, 255, 126, 0.15)",
-      headerBg: "rgba(10, 61, 32, 0.95)",
-      tabActiveBg: "rgba(50, 255, 126, 0.25)",
-      tabBorder: "#32FF7E"
+      accent: "#FF0080",
+      accentGradient: "linear-gradient(135deg, #FF0080, #7928CA, #00D4FF)",
+      surface: "rgba(255, 0, 128, 0.2)",
+      headerBg: "rgba(15, 3, 38, 0.95)",
+      tabActiveBg: "rgba(255, 0, 128, 0.25)",
+      tabBorder: "#FF0080"
     },
     fonts: {
-      heading: "'Exo 2', sans-serif",
-      body: "'Roboto', sans-serif"
+      heading: "'Bebas Neue', cursive",
+      body: "'Roboto Condensed', sans-serif"
     },
     styles: {
-      borderRadius: "10px",
+      borderRadius: "8px",
       containerWidth: "1400px"
     },
     animations: {
-      backgroundAnimation: "fieldShift 20s ease-in-out infinite"
+      backgroundAnimation: "neonPulse 15s ease-in-out infinite"
     }
   },
 
@@ -215,27 +214,27 @@ export const WELCOME_STYLES = {
 
   STYLE_13: {
     id: 13,
-    name: "Desert Rose",
+    name: "Nordic Midnight",
     colors: {
-      background: "#2D1B12",
-      text: "#F7E7CE",
-      accent: "#E67E22",
-      accentGradient: "linear-gradient(135deg, #E67E22, #D35400, #C0392B)",
-      surface: "rgba(230, 126, 34, 0.15)",
-      headerBg: "rgba(45, 27, 18, 0.95)",
-      tabActiveBg: "rgba(230, 126, 34, 0.25)",
-      tabBorder: "#E67E22"
+      background: "#1B2431",
+      text: "#E8F4F8",
+      accent: "#4ECDC4",
+      accentGradient: "linear-gradient(135deg, #4ECDC4, #44A08D, #093637)",
+      surface: "rgba(78, 205, 196, 0.15)",
+      headerBg: "rgba(27, 36, 49, 0.95)",
+      tabActiveBg: "rgba(78, 205, 196, 0.25)",
+      tabBorder: "#4ECDC4"
     },
     fonts: {
-      heading: "'Amiri', serif",
-      body: "'Lato', sans-serif"
+      heading: "'Fjalla One', sans-serif",
+      body: "'Source Sans Pro', sans-serif"
     },
     styles: {
-      borderRadius: "8px",
+      borderRadius: "10px",
       containerWidth: "1400px"
     },
     animations: {
-      backgroundAnimation: "desertWind 25s linear infinite"
+      backgroundAnimation: "auroraFlow 22s ease-in-out infinite"
     }
   },
   
@@ -395,17 +394,27 @@ export const WELCOME_STYLES = {
 
   STYLE_23: {
     id: 23,
-    name: "Sports Arena",
+    name: "Tokyo Neon District",
     colors: {
-      background: "#1A237E",
-      text: "#FFFFFF",
-      accent: "#3F51B5",
-      accentGradient: "linear-gradient(45deg, #3F51B5, #2196F3)",
-      surface: "rgba(63, 81, 181, 0.3)"
+      background: "#55627aff",
+      text: "#F0F8FF",
+      accent: "#FF3366",
+      accentGradient: "linear-gradient(135deg, #FF3366, #FF6B35, #FFEB3B)",
+      surface: "rgba(255, 51, 102, 0.2)",
+      headerBg: "rgba(13, 20, 33, 0.95)",
+      tabActiveBg: "rgba(255, 51, 102, 0.25)",
+      tabBorder: "#FF3366"
     },
     fonts: {
-      heading: "'Orbitron', sans-serif",
-      body: "'Rajdhani', sans-serif"
+      heading: "'Audiowide', cursive",
+      body: "'Noto Sans', sans-serif"
+    },
+    styles: {
+      borderRadius: "6px",
+      containerWidth: "1400px"
+    },
+    animations: {
+      backgroundAnimation: "cityLights 18s linear infinite"
     }
   },
 
