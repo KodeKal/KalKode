@@ -17,6 +17,8 @@ import AddressInput from '../../components/shop/AddressInput';
 import ThemeSelector from '../../components/ThemeSelector/ThemeSelector';
 import QuantitySelector from '../../components/shop/QuantitySelector';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
+import { signOut } from 'firebase/auth';
+import { RefreshCw, Pin, LogOut } from 'lucide-react';
 
 
 const ITEM_CATEGORIES = [
@@ -438,6 +440,98 @@ const DeleteItemButton = styled.button`
   }
 `;
 
+// Mobile-optimized header
+const Header = styled.header`
+  width: 100%;
+  height: 60px;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: ${props => `${props.theme?.colors?.headerBg || 'rgba(0, 0, 0, 0.9)'}F5`};
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
+  position: fixed;
+  top: 0;
+  z-index: 100;
+
+  @media (min-width: 768px) {
+    height: 80px;
+    padding: 0 2rem;
+  }
+`;
+
+const HeaderLogo = styled.div`
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
+  font-size: 1.4rem;
+  letter-spacing: 1px;
+  transform: skew(-5deg);
+  cursor: pointer;
+  flex-shrink: 0;
+
+  @media (min-width: 768px) {
+    font-size: 2rem;
+    letter-spacing: 2px;
+  }
+`;
+
+const HeaderControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+`;
+
+const HeaderButton = styled.button`
+  background: transparent;
+  border: none;
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  opacity: 0.8;
+  
+  &:active {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      opacity: 1;
+      background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+    }
+  }
+  
+  &.pinned {
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    opacity: 1;
+  }
+  
+  &.spinning {
+    animation: spin 0.5s ease-in-out;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  svg {
+    width: 20px;
+    height: 20px;
+    
+    @media (min-width: 768px) {
+      width: 22px;
+      height: 22px;
+    }
+  }
+`;
+
 const PageContainer = styled.div`
   min-height: 100vh;
   background: ${props => props.theme?.colors?.background || DEFAULT_THEME.colors.background};
@@ -449,7 +543,11 @@ const PageContainer = styled.div`
 const MainContent = styled.div`
   max-width: ${props => props.theme?.styles?.containerWidth || '1400px'};
   margin: 0 auto;
-  padding: 8rem 2rem 2rem;
+  padding: 120px 2rem 2rem;
+  
+  @media (max-width: 768px) {
+    padding: 100px 1rem 2rem;
+  }
   position: relative;
   z-index: 1;
 
@@ -620,83 +718,9 @@ const ItemGrid = styled.div`
   margin: 4rem 0;
 `;
 
-const ShopLogoCorner = styled.div`
-  position: fixed;
-  top: 2rem;
-  left: 2rem;
-  z-index: 100;
-  cursor: pointer;
 
-  @media (max-width: 768px) {
-    top: 1rem;
-    left: 1rem;
-  }
 
-  @media (max-width: 480px) {
-    top: 0.5rem;
-    left: 0.5rem;
-  }
-`;
 
-const ShopLogo = styled.div`
-  color: #A00000;
-  font-family: 'Impact', sans-serif;
-  font-size: 2rem;
-  letter-spacing: 2px;
-  transform: skew(-5deg);
-  opacity: 0.8;
-  transition: opacity 0.3s ease;
-
-  &:hover {
-    opacity: 1;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 1.4rem;
-    letter-spacing: 1px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 1.2rem;
-    letter-spacing: 0.5px;
-  }
-`;
-
-const KalKodeCorner = styled.div`
-  position: fixed;
-  top: 2rem;
-  right: 2rem;
-  z-index: 100;
-  cursor: pointer;
-
-  @media (max-width: 768px) {
-    top: 1rem;
-    right: 1rem;
-  }
-
-  @media (max-width: 480px) {
-    top: 0.5rem;
-    right: 0.5rem;
-  }
-`;
-
-const KalKodeLogo = styled.div`
-  color: #A00000;
-  font-family: 'Impact', sans-serif;
-  font-size: 2rem;
-  letter-spacing: 2px;
-  transform: skew(-5deg);
-
-  @media (max-width: 768px) {
-    font-size: 1.4rem;
-    letter-spacing: 1px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 1.2rem;
-    letter-spacing: 0.5px;
-  }
-`;
 
 const TabButtons = styled.div`
   display: flex;
@@ -766,6 +790,8 @@ const cleanDataForFirestore = (data) => {
 
 const ShopPage = () => {
   const navigate = useNavigate();
+  const [isPinned, setIsPinned] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [shopData, setShopData] = useState(null); // Keep as null initially
   const [isReady, setIsReady] = useState(false);  // Add this state
   const [activeTab, setActiveTab] = useState('shop');
@@ -813,6 +839,70 @@ const ShopPage = () => {
     }
   };
   
+  // Theme management
+  useEffect(() => {
+    const pinnedStyleId = localStorage.getItem('pinnedStyleId');
+    
+    if (pinnedStyleId && shopData?.theme) {
+      const pinnedStyle = Object.values(WELCOME_STYLES).find(
+        style => style.id.toString() === pinnedStyleId
+      );
+      
+      if (pinnedStyle) {
+        setIsPinned(true);
+      }
+    }
+  }, [shopData?.theme]);
+
+  const refreshTheme = () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    
+    const styles = Object.values(WELCOME_STYLES);
+    const otherStyles = styles.filter(style => style.id !== shopData?.theme?.id);
+    
+    if (otherStyles.length > 0) {
+      const randomStyle = otherStyles[Math.floor(Math.random() * otherStyles.length)];
+      setShopData(prev => ({ ...prev, theme: randomStyle }));
+
+      if (isPinned) {
+        localStorage.removeItem('pinnedStyleId');
+        setIsPinned(false);
+      }
+    }
+
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
+
+  const togglePinStyle = () => {
+    if (isPinned) {
+      localStorage.removeItem('pinnedStyleId');
+      setIsPinned(false);
+
+      const styles = Object.values(WELCOME_STYLES).filter(
+        style => style.id !== shopData?.theme?.id
+      );
+
+      if (styles.length > 0) {
+        const randomStyle = styles[Math.floor(Math.random() * styles.length)];
+        setShopData(prev => ({ ...prev, theme: randomStyle }));
+      }
+    } else {
+      localStorage.setItem('pinnedStyleId', shopData?.theme?.id.toString());
+      setIsPinned(true);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   useEffect(() => {
     if (shopData?.layout?.tabPosition) {
       setTabPosition(shopData.layout.tabPosition);
@@ -1039,17 +1129,39 @@ const ShopPage = () => {
   return (
     <ThemeProvider theme={shopData?.theme || DEFAULT_THEME}>
     <PageContainer>      
-      <ShopLogoCorner>
-        <ShopLogo>
-          {shopData?.name || 'MY SHOP'}
-        </ShopLogo>
-      </ShopLogoCorner>
+        <Header theme={shopData?.theme}>
+          <HeaderLogo onClick={() => navigate('/')} theme={shopData?.theme}>
+            {shopData?.name || 'MY SHOP'}
+          </HeaderLogo>
 
-      <KalKodeCorner>
-        <KalKodeLogo onClick={() => navigate('/')}>
-          KALKODE
-        </KalKodeLogo>
-      </KalKodeCorner>  
+          <HeaderControls>
+            <HeaderButton 
+              onClick={refreshTheme}
+              theme={shopData?.theme}
+              className={isRefreshing ? "spinning" : ""}
+              title="Random theme"
+            >
+              <RefreshCw size={20} />
+            </HeaderButton>
+            
+            <HeaderButton 
+              onClick={togglePinStyle} 
+              theme={shopData?.theme}
+              className={isPinned ? "pinned" : ""}
+              title={isPinned ? "Unpin theme" : "Pin theme"}
+            >
+              <Pin size={20} fill={isPinned ? shopData?.theme?.colors?.accent : "none"} />
+            </HeaderButton>
+            
+            <HeaderButton 
+              onClick={handleLogout}
+              theme={shopData?.theme}
+              title="Logout"
+            >
+              <LogOut size={20} />
+            </HeaderButton>
+          </HeaderControls>
+        </Header>
 
       <FloatingFontControls>
         <FontSizeButton 

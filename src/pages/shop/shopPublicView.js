@@ -5,6 +5,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import styled, { ThemeProvider } from 'styled-components';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../firebase/config';
 import { DEFAULT_THEME } from '../../theme/config/themes';
 import BuyDialog from '../../components/Transaction/BuyDialog';
 import OrderChat from '../../components/Chat/OrderChat';
@@ -25,7 +27,8 @@ import {
   Columns,
   ArrowLeft,
   Home,
-  Users
+  Users,
+  LogOut
 } from 'lucide-react';
 import TabPositioner from './components/TabPositioner';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
@@ -835,6 +838,14 @@ const LoadingSpinner = styled.div`
 const ShopPublicView = () => {
   const { shopId } = useParams();
   const navigate = useNavigate();
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
   const [shopData, setShopData] = useState(null);
   const [activeTab, setActiveTab] = useState('shop');
   const [searchTerm, setSearchTerm] = useState('');
@@ -1279,6 +1290,14 @@ const ShopPublicView = () => {
               title={isPinned ? "Unpin theme" : "Pin theme"}
             >
               <Pin size={20} fill={isPinned ? shopData?.theme?.colors?.accent : "none"} />
+            </HeaderButton>
+            
+            <HeaderButton 
+              onClick={handleLogout}
+              theme={shopData?.theme}
+              title="Logout"
+            >
+              <LogOut size={20} />
             </HeaderButton>
           </HeaderControls>
         </Header>
