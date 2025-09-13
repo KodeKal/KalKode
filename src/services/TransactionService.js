@@ -117,7 +117,7 @@ export const TransactionService = {
 
      // Add system message about purchase request
      await addDoc(collection(db, 'chats', transactionId, 'messages'), {
-        text: `🛒 Purchase request sent:\n${requestedQuantity}x ${item.name} at $${unitPrice.toFixed(2)} each (Total: $${totalPrice.toFixed(2)}).\nStatus: Waiting for seller acceptance.`,
+        text: `🛒 Purchase request is pending:\n${requestedQuantity}x ${item.name} at $${unitPrice.toFixed(2)} each (Total: $${totalPrice.toFixed(2)}).\nStatus: Waiting for seller acceptance.`,
         sender: 'system',
         senderName: 'System',
         timestamp: serverTimestamp(),

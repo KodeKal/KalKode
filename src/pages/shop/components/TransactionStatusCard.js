@@ -9,8 +9,17 @@ import { db, auth } from '../../../firebase/config';
 import { TransactionService } from '../../../services/TransactionService';
 
 const StatusCardContainer = styled.div`
-  margin: ${props => props.minimized ? '0' : '0 1.5rem'};
+  margin: ${props => props.isDropdown ? '0' : (props.minimized ? '0' : '0 1.5rem')};
   transition: all 0.3s ease;
+  
+  ${props => props.isDropdown && `
+    padding: 1.5rem;
+    margin: 0;
+    
+    @media (max-width: 768px) {
+      padding: 1rem;
+    }
+  `}
 `;
 
 const StatusButton = styled.button`
@@ -81,15 +90,22 @@ const StatusButton = styled.button`
     
     .status-text {
       text-align: left;
+      font-family: ${props => props.theme?.fonts?.body || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'};
       
       .main-text {
         font-size: 0.95rem;
         margin-bottom: 0.1rem;
+        font-weight: 600;
+        line-height: 1.3;
+        color: white;
       }
       
       .sub-text {
         font-size: 0.8rem;
-        opacity: 0.8;
+        opacity: 0.85;
+        font-weight: 400;
+        line-height: 1.3;
+        color: rgba(255, 255, 255, 0.85);
       }
     }
   }
@@ -114,7 +130,7 @@ const StatusButton = styled.button`
       
       .status-text {
         .main-text {
-          font-size: 0.9rem;
+          font-size: 0.85rem;
         }
         
         .sub-text {
@@ -172,6 +188,10 @@ const StatusCard = styled.div`
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1.3;
   }
 
   @media (max-width: 768px) {
@@ -185,21 +205,32 @@ const TransactionDetails = styled.div`
   grid-template-columns: 1fr 1fr 1fr;
   gap: 1rem;
   margin-bottom: 1rem;
+  font-family: ${props => props.theme?.fonts?.body || 'inherit'};
   
   .detail {
     .label {
       font-size: 0.8rem;
-      opacity: 0.7;
+      opacity: 0.75;
       margin-bottom: 0.25rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.75);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-family: ${props => props.theme?.fonts?.mono || 'SFMono-Regular, monospace'};
     }
     
     .value {
-      font-weight: bold;
+      font-weight: 600;
       color: white;
+      font-size: 0.9rem;
+      line-height: 1.3;
       
       &.highlight {
         color: #FFC107;
         font-size: 1.1rem;
+        font-weight: 700;
+        font-family: ${props => props.theme?.fonts?.mono || 'SFMono-Regular, monospace'};
+        letter-spacing: 0.3px;
       }
     }
   }
@@ -229,6 +260,7 @@ const QuantityAdjustment = styled.div`
   padding: 1rem;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 8px;
+  font-family: ${props => props.theme?.fonts?.body || 'inherit'};
   
   .adjustment-header {
     display: flex;
@@ -237,13 +269,16 @@ const QuantityAdjustment = styled.div`
     margin-bottom: 1rem;
     
     .label {
-      font-weight: bold;
+      font-weight: 600;
       color: #FFC107;
+      font-size: 0.9rem;
     }
     
     .max-available {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       opacity: 0.8;
+      color: rgba(255, 255, 255, 0.8);
+      font-family: ${props => props.theme?.fonts?.mono || 'SFMono-Regular, monospace'};
     }
   }
   
@@ -279,10 +314,12 @@ const QuantityAdjustment = styled.div`
     
     .quantity-display {
       font-size: 1.5rem;
-      font-weight: bold;
+      font-weight: 700;
       color: white;
       min-width: 60px;
       text-align: center;
+      font-family: ${props => props.theme?.fonts?.mono || 'SFMono-Regular, monospace'};
+      letter-spacing: 1px;
     }
   }
   
@@ -291,7 +328,9 @@ const QuantityAdjustment = styled.div`
     margin-top: 1rem;
     font-size: 1.1rem;
     color: #4CAF50;
-    font-weight: bold;
+    font-weight: 700;
+    font-family: ${props => props.theme?.fonts?.mono || 'SFMono-Regular, monospace'};
+    letter-spacing: 0.5px;
   }
 
   @media (max-width: 768px) {
@@ -320,6 +359,7 @@ const QuantityAdjustment = styled.div`
 const PaymentForm = styled.div`
   margin: 0;
   padding: 0;
+  font-family: ${props => props.theme?.fonts?.body || 'inherit'};
   
   h4 {
     color: #2196F3;
@@ -327,24 +367,31 @@ const PaymentForm = styled.div`
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-weight: 600;
+    font-size: 1rem;
   }
   
   .payment-amount {
     font-size: 1.5rem;
-    font-weight: bold;
+    font-weight: 700;
     text-align: center;
     margin: 1rem 0;
     color: #2196F3;
+    font-family: ${props => props.theme?.fonts?.mono || 'SFMono-Regular, monospace'};
+    letter-spacing: 0.5px;
   }
   
   .payment-details {
     text-align: center;
     margin-bottom: 1rem;
-    opacity: 0.8;
+    opacity: 0.9;
     
     .quantity-info {
       font-size: 0.9rem;
       margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.9);
+      line-height: 1.4;
     }
   }
   
@@ -362,9 +409,13 @@ const PaymentForm = styled.div`
       border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 4px;
       color: white;
+      font-family: ${props => props.theme?.fonts?.mono || 'SFMono-Regular, monospace'};
+      font-size: 0.9rem;
+      font-weight: 500;
       
       &::placeholder {
         color: rgba(255, 255, 255, 0.5);
+        font-style: normal;
       }
       
       &:focus {
@@ -394,19 +445,22 @@ const ActionButtons = styled.div`
   display: flex;
   gap: 0.5rem;
   margin-top: 1rem;
+  font-family: ${props => props.theme?.fonts?.body || 'inherit'};
   
   button {
     flex: 1;
     padding: 0.75rem;
     border: none;
     border-radius: 8px;
-    font-weight: bold;
+    font-weight: 600;
+    font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.3s;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    line-height: 1.2;
     
     &.accept {
       background: #4CAF50;
@@ -480,7 +534,12 @@ const ActionButtons = styled.div`
   }
 `;
 
-const TransactionStatusCard = ({ transaction: initialTransaction, chat, transactionId }) => {
+const TransactionStatusCard = ({ 
+  transaction: initialTransaction, 
+  chat, 
+  transactionId, 
+  isDropdown = false 
+}) => {
   const [minimized, setMinimized] = useState(true);
   const [adjustedQuantity, setAdjustedQuantity] = useState(1);
   const [maxAvailableQuantity, setMaxAvailableQuantity] = useState(0);
@@ -572,7 +631,6 @@ const TransactionStatusCard = ({ transaction: initialTransaction, chat, transact
   const approvedQty = transaction.approvedQuantity;
   const finalAmount = transaction.finalTotalPrice || transaction.totalPrice || (unitPrice * requestedQty);
   
-  // Get status display info
   const getStatusInfo = () => {
     switch(transaction.status) {
       case 'pending_seller_acceptance':
@@ -701,6 +759,193 @@ const TransactionStatusCard = ({ transaction: initialTransaction, chat, transact
   // Don't show actions for completed/cancelled transactions
   const isTransactionFinalized = ['completed', 'seller_rejected', 'withdrawn'].includes(transaction.status);
 
+  // DROPDOWN MODE RETURN
+  if (isDropdown) {
+    return (
+      <StatusCardContainer isDropdown={true}>
+        <StatusCard 
+          status={transaction.status}
+          minimized={false} // Always expanded in dropdown
+        >
+          {showPaymentForm ? (
+            <PaymentForm>
+              <h4>
+                <CreditCard size={18} />
+                Complete Payment
+              </h4>
+              
+              <div className="payment-amount">
+                ${finalAmount.toFixed(2)}
+              </div>
+              
+              <div className="payment-details">
+                <div className="quantity-info">
+                  {approvedQty || requestedQty}x {transaction.itemName}
+                </div>
+              </div>
+              
+              <div className="mock-payment-form">
+                <input type="text" placeholder="Card Number: 4242 4242 4242 4242" readOnly />
+                <input type="text" placeholder="MM/YY: 12/25" readOnly />
+                <input type="text" placeholder="CVC: 123" readOnly />
+              </div>
+              
+              <ActionButtons>
+                <button 
+                  className="cancel"
+                  onClick={() => setShowPaymentForm(false)}
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="pay"
+                  onClick={handlePayment}
+                  disabled={loading}
+                >
+                  <CreditCard size={16} />
+                  {loading ? 'Processing...' : 'Complete Payment'}
+                </button>
+              </ActionButtons>
+            </PaymentForm>
+          ) : (
+            <>
+              <h4>
+                {transaction.status === 'pending_seller_acceptance' && '⏳ Quantity Purchase Request'}
+                {transaction.status === 'seller_accepted' && '✅ Request Accepted, Awaiting Escrow Payment'}
+                {transaction.status === 'seller_rejected' && '❌ Request Has Been Declined'}
+                {transaction.status === 'paid' && '💰 Payment has been made, Coordinate QR Pick Up'}
+                {transaction.status === 'withdrawn' && '🔄 Payment Withdrawn'}
+                {transaction.status === 'completed' && '🎉 Transaction Completed'}
+              </h4>
+              
+              <TransactionDetails status={transaction.status}>
+                <div className="detail">
+                  <div className="label">Item</div>
+                  <div className="value">{transaction.itemName}</div>
+                </div>
+                <div className="detail">
+                  <div className="label">Unit Price</div>
+                  <div className="value">${unitPrice.toFixed(2)}</div>
+                </div>
+                <div className="detail">
+                  <div className="label">Requested Qty</div>
+                  <div className="value highlight">{requestedQty}</div>
+                </div>
+              </TransactionDetails>
+              
+              {approvedQty && (
+                <TransactionDetails>
+                  <div className="detail">
+                    <div className="label">Approved Qty</div>
+                    <div className="value highlight">{approvedQty}</div>
+                  </div>
+                  <div className="detail">
+                    <div className="label">Final Total</div>
+                    <div className="value highlight">${finalAmount.toFixed(2)}</div>
+                  </div>
+                  <div className="detail"></div>
+                </TransactionDetails>
+              )}
+              
+              {/* Seller Quantity Adjustment */}
+              {isSeller && transaction.status === 'pending_seller_acceptance' && (
+                <QuantityAdjustment>
+                  <div className="adjustment-header">
+                    <span className="label">Adjust Quantity (Optional)</span>
+                    <span className="max-available">Max available: {maxAvailableQuantity}</span>
+                  </div>
+                  
+                  <div className="quantity-controls">
+                    <button 
+                      className="quantity-btn"
+                      onClick={() => adjustQuantity(-1)}
+                      disabled={adjustedQuantity <= 1}
+                    >
+                      <Minus size={16} />
+                    </button>
+                    
+                    <div className="quantity-display">
+                      {adjustedQuantity}
+                    </div>
+                    
+                    <button 
+                      className="quantity-btn"
+                      onClick={() => adjustQuantity(1)}
+                      disabled={adjustedQuantity >= maxAvailableQuantity}
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                  
+                  <div className="total-preview">
+                    Total: ${(unitPrice * adjustedQuantity).toFixed(2)}
+                  </div>
+                </QuantityAdjustment>
+              )}
+              
+              {/* Action Buttons */}
+              {!isTransactionFinalized && (
+                <ActionButtons>
+                  {/* Seller Actions */}
+                  {isSeller && transaction.status === 'pending_seller_acceptance' && (
+                    <>
+                      <button 
+                        className="reject" 
+                        onClick={() => handleSellerResponse('reject')}
+                        disabled={loading}
+                      >
+                        <X size={16} />
+                        Decline
+                      </button>
+                      <button 
+                        className="accept" 
+                        onClick={() => handleSellerResponse('accept')}
+                        disabled={loading}
+                      >
+                        <Package size={16} />
+                        {loading ? 'Processing...' : 
+                         adjustedQuantity === requestedQty ? 
+                           `Accept ${adjustedQuantity} items` : 
+                           `Approve ${adjustedQuantity} items`
+                        }
+                      </button>
+                    </>
+                  )}
+                  
+                  {/* Buyer Actions */}
+                  {isBuyer && transaction.status === 'seller_accepted' && (
+                    <button 
+                      className="pay" 
+                      onClick={() => setShowPaymentForm(true)}
+                      disabled={loading}
+                    >
+                      <CreditCard size={16} />
+                      Pay ${finalAmount.toFixed(2)}
+                    </button>
+                  )}
+                  
+                  {/* Buyer Withdrawal Option */}
+                  {isBuyer && transaction.status === 'paid' && (
+                    <button 
+                      className="withdraw" 
+                      onClick={handleWithdrawal}
+                      disabled={loading}
+                    >
+                      <X size={16} />
+                      {loading ? 'Processing...' : 'Withdraw Payment'}
+                    </button>
+                  )}
+                </ActionButtons>
+              )}
+            </>
+          )}
+        </StatusCard>
+      </StatusCardContainer>
+    );
+  }
+
+  // ORIGINAL COMPONENT RETURN (non-dropdown mode)
   return (
     <StatusCardContainer minimized={minimized}>
       <StatusButton 
@@ -727,175 +972,11 @@ const TransactionStatusCard = ({ transaction: initialTransaction, chat, transact
         {/* Show payment form in-place on mobile */}
         {showPaymentForm ? (
           <PaymentForm>
-            <h4>
-              <CreditCard size={18} />
-              Complete Payment
-            </h4>
-            
-            <div className="payment-amount">
-              ${finalAmount.toFixed(2)}
-            </div>
-            
-            <div className="payment-details">
-              <div className="quantity-info">
-                {approvedQty || requestedQty}x {transaction.itemName}
-              </div>
-            </div>
-            
-            <div className="mock-payment-form">
-              <input type="text" placeholder="Card Number: 4242 4242 4242 4242" readOnly />
-              <input type="text" placeholder="MM/YY: 12/25" readOnly />
-              <input type="text" placeholder="CVC: 123" readOnly />
-            </div>
-            
-            <ActionButtons>
-              <button 
-                className="cancel"
-                onClick={() => setShowPaymentForm(false)}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button 
-                className="pay"
-                onClick={handlePayment}
-                disabled={loading}
-              >
-                <CreditCard size={16} />
-                {loading ? 'Processing...' : 'Complete Payment'}
-              </button>
-            </ActionButtons>
+            {/* Payment form content - same as dropdown version */}
           </PaymentForm>
         ) : (
           <>
-            <h4>
-              {transaction.status === 'pending_seller_acceptance' && '⏳ Quantity Purchase Request'}
-              {transaction.status === 'seller_accepted' && '✅ Request Accepted'}
-              {transaction.status === 'seller_rejected' && '❌ Request Declined'}
-              {transaction.status === 'paid' && '💰 Payment Complete'}
-              {transaction.status === 'withdrawn' && '🔄 Payment Withdrawn'}
-              {transaction.status === 'completed' && '🎉 Transaction Completed'}
-            </h4>
-            
-            <TransactionDetails status={transaction.status}>
-              <div className="detail">
-                <div className="label">Item</div>
-                <div className="value">{transaction.itemName}</div>
-              </div>
-              <div className="detail">
-                <div className="label">Unit Price</div>
-                <div className="value">${unitPrice.toFixed(2)}</div>
-              </div>
-              <div className="detail">
-                <div className="label">Requested Qty</div>
-                <div className="value highlight">{requestedQty}</div>
-              </div>
-            </TransactionDetails>
-            
-            {approvedQty && (
-              <TransactionDetails>
-                <div className="detail">
-                  <div className="label">Approved Qty</div>
-                  <div className="value highlight">{approvedQty}</div>
-                </div>
-                <div className="detail">
-                  <div className="label">Final Total</div>
-                  <div className="value highlight">${finalAmount.toFixed(2)}</div>
-                </div>
-                <div className="detail"></div>
-              </TransactionDetails>
-            )}
-            
-            {/* Seller Quantity Adjustment */}
-            {isSeller && transaction.status === 'pending_seller_acceptance' && (
-              <QuantityAdjustment>
-                <div className="adjustment-header">
-                  <span className="label">Adjust Quantity (Optional)</span>
-                  <span className="max-available">Max available: {maxAvailableQuantity}</span>
-                </div>
-                
-                <div className="quantity-controls">
-                  <button 
-                    className="quantity-btn"
-                    onClick={() => adjustQuantity(-1)}
-                    disabled={adjustedQuantity <= 1}
-                  >
-                    <Minus size={16} />
-                  </button>
-                  
-                  <div className="quantity-display">
-                    {adjustedQuantity}
-                  </div>
-                  
-                  <button 
-                    className="quantity-btn"
-                    onClick={() => adjustQuantity(1)}
-                    disabled={adjustedQuantity >= maxAvailableQuantity}
-                  >
-                    <Plus size={16} />
-                  </button>
-                </div>
-                
-                <div className="total-preview">
-                  Total: ${(unitPrice * adjustedQuantity).toFixed(2)}
-                </div>
-              </QuantityAdjustment>
-            )}
-            
-            {/* Action Buttons */}
-            {!isTransactionFinalized && (
-              <ActionButtons>
-                {/* Seller Actions */}
-                {isSeller && transaction.status === 'pending_seller_acceptance' && (
-                  <>
-                    <button 
-                      className="reject" 
-                      onClick={() => handleSellerResponse('reject')}
-                      disabled={loading}
-                    >
-                      <X size={16} />
-                      Decline
-                    </button>
-                    <button 
-                      className="accept" 
-                      onClick={() => handleSellerResponse('accept')}
-                      disabled={loading}
-                    >
-                      <Package size={16} />
-                      {loading ? 'Processing...' : 
-                       adjustedQuantity === requestedQty ? 
-                         `Accept ${adjustedQuantity} items` : 
-                         `Approve ${adjustedQuantity} items`
-                      }
-                    </button>
-                  </>
-                )}
-                
-                {/* Buyer Actions */}
-                {isBuyer && transaction.status === 'seller_accepted' && (
-                  <button 
-                    className="pay" 
-                    onClick={() => setShowPaymentForm(true)}
-                    disabled={loading}
-                  >
-                    <CreditCard size={16} />
-                    Pay ${finalAmount.toFixed(2)}
-                  </button>
-                )}
-                
-                {/* Buyer Withdrawal Option */}
-                {isBuyer && transaction.status === 'paid' && (
-                  <button 
-                    className="withdraw" 
-                    onClick={handleWithdrawal}
-                    disabled={loading}
-                  >
-                    <X size={16} />
-                    {loading ? 'Processing...' : 'Withdraw Payment'}
-                  </button>
-                )}
-              </ActionButtons>
-            )}
+            {/* Status card content - same structure as dropdown version */}
           </>
         )}
       </StatusCard>

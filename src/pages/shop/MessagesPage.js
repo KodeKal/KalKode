@@ -1,5 +1,5 @@
 // src/pages/shop/MessagesPage.js - Refactored with enhanced features
-import React, { useState, useEffect, useReducer, useMemo } from 'react';
+import React, { useState, useEffect, useReducer, useMemo, useCallback } from 'react';
 import styled, { ThemeProvider, createGlobalStyle } from 'styled-components';
 
 import { 
@@ -94,36 +94,6 @@ const PageHeader = styled.div`
   }
 `;
 
-// UPDATE HeaderContent to include theme controls:
-const HeaderContent = styled.div`
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  
-  h1 {
-    font-size: 1.8rem;
-    background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin: 0;
-
-    svg {
-      color: ${props => props.theme?.colors?.accent || '#800000'};
-    }
-
-    @media (max-width: 768px) {
-      font-size: 1.4rem;
-      gap: 0.5rem;
-    }
-  }
-`;
-
 const MainContent = styled.div`
   position: fixed;
   top: 80px;
@@ -172,7 +142,9 @@ const MobileBackButton = styled.button`
     cursor: pointer;
     padding: 1rem;
     margin-bottom: 1rem;
-    font-size: 1rem;
+    font-size: 0.95rem;
+    font-family: ${props => props.theme?.fonts?.body || 'inherit'};
+    font-weight: 500;
     border-bottom: 1px solid rgba(128, 0, 0, 0.2);
     width: 100%;
     justify-content: flex-start;
@@ -219,6 +191,38 @@ const FilterTabs = styled.div`
   }
 `;
 
+const HeaderContent = styled.div`
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  h1 {
+    font-size: 1.8rem;
+    background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    font-family: ${props => props.theme?.fonts?.heading || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'};
+    font-weight: 700;
+    letter-spacing: -0.02em;
+
+    svg {
+      color: ${props => props.theme?.colors?.accent || '#800000'};
+    }
+
+    @media (max-width: 768px) {
+      font-size: 1.4rem;
+      gap: 0.5rem;
+    }
+  }
+`;
+
 const FilterTab = styled.button`
   background: ${props => props.active ? 'rgba(128, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.3)'};
   border: 1px solid ${props => props.active ? '#800000' : 'rgba(128, 0, 0, 0.3)'};
@@ -229,11 +233,13 @@ const FilterTab = styled.button`
   transition: all 0.3s;
   font-size: 0.85rem;
   font-weight: 500;
+  font-family: ${props => props.theme?.fonts?.body || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'};
   display: flex;
   align-items: center;
   gap: 0.5rem;
   white-space: nowrap;
   flex-shrink: 0;
+  letter-spacing: 0.02em;
 
   &:hover {
     background: rgba(128, 0, 0, 0.3);
@@ -251,10 +257,12 @@ const FilterTab = styled.button`
     color: white;
     padding: 0.1rem 0.4rem;
     border-radius: 10px;
-    font-size: 0.75rem;
-    font-weight: bold;
+    font-size: 0.7rem;
+    font-weight: 700;
     min-width: 16px;
     text-align: center;
+    font-family: ${props => props.theme?.fonts?.mono || 'SFMono-Regular, monospace'};
+    letter-spacing: 0.3px;
   }
 
   @media (max-width: 768px) {
@@ -263,7 +271,7 @@ const FilterTab = styled.button`
     
     .count {
       padding: 0.1rem 0.3rem;
-      font-size: 0.7rem;
+      font-size: 0.65rem;
     }
   }
 `;
@@ -271,6 +279,7 @@ const FilterTab = styled.button`
 const SearchInput = styled.div`
   position: relative;
   margin-bottom: 1rem;
+  font-family: ${props => props.theme?.fonts?.body || 'inherit'};
   
   input {
     width: 85%;
@@ -280,34 +289,26 @@ const SearchInput = styled.div`
     border-radius: 12px;
     color: #FFFFFF;
     font-size: 0.9rem;
+    font-family: ${props => props.theme?.fonts?.body || 'inherit'};
+    font-weight: 400;
+    line-height: 1.4;
     transition: all 0.3s ease;
     
     &:focus {
       outline: none;
       border-color: #800000;
       box-shadow: 0 0 0 2px rgba(128, 0, 0, 0.3);
+      background: rgba(0, 0, 0, 0.6);
     }
     
     &::placeholder {
       color: rgba(255, 255, 255, 0.6);
+      font-style: normal;
     }
 
     @media (max-width: 768px) {
       width: 100%;
       padding: 0.75rem 3rem 0.75rem 1rem;
-    }
-  }
-  
-  .search-icon {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: rgba(255, 255, 255, 0.6);
-    pointer-events: none;
-
-    @media (max-width: 768px) {
-      right: 1rem;
     }
   }
 
@@ -384,7 +385,7 @@ const PinButton = styled.button`
 
 const MessagesPage = () => {
   const [chatState, chatDispatch] = useReducer(chatReducer, initialChatState);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isMobile, setIsMobile] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(null);
   const [isPinned, setIsPinned] = useState(false);
@@ -567,6 +568,39 @@ const MessagesPage = () => {
     return filtered;
   }, [chatState.chats, chatState.activeFilter, chatState.searchTerm]);
 
+  // Handle navigation to chat list (for mobile back behavior)
+  const handleBackToChatList = useCallback(() => {
+    if (isMobile) {
+      chatDispatch({ type: 'SET_MOBILE_VIEW', payload: true });
+      chatDispatch({ type: 'SET_SELECTED_CHAT', payload: null });
+      // Update URL to remove chat parameter
+      setSearchParams({});
+    }
+  }, [isMobile, setSearchParams]);
+
+  // Handle browser back button navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      if (isMobile && chatState.selectedChat) {
+        handleBackToChatList();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isMobile, chatState.selectedChat, handleBackToChatList]);
+
+  // Handle chat selection with URL update
+  const handleChatSelect = useCallback((chat) => {
+    chatDispatch({ type: 'SET_SELECTED_CHAT', payload: chat });
+    if (isMobile) {
+      chatDispatch({ type: 'SET_MOBILE_VIEW', payload: false });
+      // Update URL with chat parameter and add to history
+      setSearchParams({ chat: chat.id });
+      window.history.pushState({}, '', `?chat=${chat.id}`);
+    }
+  }, [isMobile, setSearchParams]);
+
   // Get filter counts
   const getFilterCounts = useMemo(() => {
     const counts = {
@@ -589,22 +623,6 @@ const MessagesPage = () => {
 
     return counts;
   }, [chatState.chats]);
-
-  // Handle chat selection
-  const handleChatSelect = (chat) => {
-    chatDispatch({ type: 'SET_SELECTED_CHAT', payload: chat });
-    if (isMobile) {
-      chatDispatch({ type: 'SET_MOBILE_VIEW', payload: false });
-    }
-  };
-
-  // Handle back to chat list on mobile
-  const handleBackToChatList = () => {
-    if (isMobile) {
-      chatDispatch({ type: 'SET_MOBILE_VIEW', payload: true });
-      chatDispatch({ type: 'SET_SELECTED_CHAT', payload: null });
-    }
-  };
 
   // Handle chat deletion
   const handleDeleteChat = async (chatId, e) => {
@@ -663,130 +681,109 @@ const MessagesPage = () => {
       </PageHeader>
       
       <MainContent>
-        <ContentWrapper>
-          {/* Chat List */}
-          <div style={{
-            position: 'relative',
-            width: isMobile ? '100%' : '350px',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            transition: 'transform 0.3s ease-in-out',
-            ...(isMobile && {
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              background: 'linear-gradient(to bottom, #0B0B3B, #1A1A4C)',
-              zIndex: 30,
-              transform: chatState.showChatList ? 'translateX(0)' : 'translateX(-100%)',
-              padding: '1rem'
-            })
-          }}>
-            {isMobile && chatState.selectedChat && (
-              <button
-                onClick={handleBackToChatList}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#FFFFFF',
-                  padding: '1rem 0',
-                  marginBottom: '1rem',
-                  cursor: 'pointer',
-                  fontSize: '1rem'
-                }}
-              >
-                <ArrowLeft size={20} />
-                Back to Chats
-              </button>
-            )}
-            
-            {/* Filter Tabs - Always show on all devices */}
-            <FilterTabs>
-              {FILTER_OPTIONS.map(option => {
-                const Icon = option.icon;
-                const count = getFilterCounts[option.key];
-                return (
-                  <FilterTab
-                    key={option.key}
-                    active={chatState.activeFilter === option.key}
-                    onClick={() => chatDispatch({ type: 'SET_FILTER', payload: option.key })}
+          <ContentWrapper>
+            {/* Chat List */}
+            <div style={{
+              position: 'relative',
+              width: isMobile ? '100%' : '350px',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              transition: 'transform 0.3s ease-in-out',
+              ...(isMobile && {
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                background: 'linear-gradient(to bottom, #0B0B3B, #1A1A4C)',
+                zIndex: 30,
+                transform: chatState.showChatList ? 'translateX(0)' : 'translateX(-100%)',
+                padding: '1rem'
+              })
+            }}>
+              
+              {/* Search Input */}
+              <SearchInput>
+                <input
+                  type="text"
+                  placeholder="Search conversations..."
+                  value={chatState.searchTerm}
+                  onChange={(e) => chatDispatch({ type: 'SET_SEARCH_TERM', payload: e.target.value })}
+                />
+                {chatState.searchTerm && (
+                  <button 
+                    className="clear-button"
+                    onClick={() => chatDispatch({ type: 'SET_SEARCH_TERM', payload: '' })}
                   >
-                    <Icon />
-                    {option.label}
-                    {count > 0 && <span className="count">{count}</span>}
-                  </FilterTab>
-                );
-              })}
-            </FilterTabs>
-            
-            {/* Search Input */}
-            <SearchInput>
-              <Search className="search-icon" size={16} />
-              <input
-                type="text"
-                placeholder="Search conversations..."
-                value={chatState.searchTerm}
-                onChange={(e) => chatDispatch({ type: 'SET_SEARCH_TERM', payload: e.target.value })}
+                    <X size={16} />
+                  </button>
+                )}
+              </SearchInput>
+
+              {/* Filter Tabs - Always show on all devices */}
+              <FilterTabs>
+                {FILTER_OPTIONS.map(option => {
+                  const Icon = option.icon;
+                  const count = getFilterCounts[option.key];
+                  return (
+                    <FilterTab
+                      key={option.key}
+                      active={chatState.activeFilter === option.key}
+                      onClick={() => chatDispatch({ type: 'SET_FILTER', payload: option.key })}
+                    >
+                      <Icon />
+                      {option.label}
+                      {count > 0 && <span className="count">{count}</span>}
+                    </FilterTab>
+                  );
+                })}
+              </FilterTabs>
+              
+              {/* Messages List Component */}
+              <MessagesList
+                chats={getFilteredChats}
+                selectedChat={chatState.selectedChat}
+                loading={chatState.loading}
+                searchTerm={chatState.searchTerm}
+                onChatSelect={handleChatSelect}
+                onDeleteChat={handleDeleteChat}
               />
-              {chatState.searchTerm && (
-                <button 
-                  className="clear-button"
-                  onClick={() => chatDispatch({ type: 'SET_SEARCH_TERM', payload: '' })}
-                >
-                  <X size={16} />
-                </button>
+            </div>
+            
+            {/* Chat Display */}
+            <div style={{
+              flex: 1,
+              marginLeft: isMobile ? 0 : '2rem',
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+              background: 'rgba(0, 0, 0, 0.4)',
+              borderRadius: isMobile ? 0 : '10px',
+              border: isMobile ? 'none' : '1px solid rgba(128, 0, 0, 0.3)',
+              overflow: 'hidden',
+              boxShadow: isMobile ? 'none' : '0 5px 30px rgba(0, 0, 0, 0.2)',
+              ...(isMobile && {
+                position: chatState.selectedChat ? 'relative' : 'absolute',
+                left: chatState.selectedChat ? '0' : '100%',
+                width: '100%',
+                transition: 'left 0.3s ease-in-out'
+              })
+            }}>
+              {chatState.selectedChat ? (
+                <ChatView
+                  chat={chatState.selectedChat}
+                  isMobile={isMobile}
+                  onBackToList={handleBackToChatList}
+                />
+              ) : (
+                <EmptyState 
+                  isMobile={isMobile} 
+                  hasSelectedChat={!!chatState.selectedChat}
+                />
               )}
-            </SearchInput>
-            
-            {/* Messages List Component */}
-            <MessagesList
-              chats={getFilteredChats}
-              selectedChat={chatState.selectedChat}
-              loading={chatState.loading}
-              searchTerm={chatState.searchTerm}
-              onChatSelect={handleChatSelect}
-              onDeleteChat={handleDeleteChat}
-            />
-          </div>
-          
-          {/* Chat Display */}
-          <div style={{
-            flex: 1,
-            marginLeft: isMobile ? 0 : '2rem',
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            background: 'rgba(0, 0, 0, 0.4)',
-            borderRadius: isMobile ? 0 : '10px',
-            border: isMobile ? 'none' : '1px solid rgba(128, 0, 0, 0.3)',
-            overflow: 'hidden',
-            boxShadow: isMobile ? 'none' : '0 5px 30px rgba(0, 0, 0, 0.2)',
-            ...(isMobile && {
-              position: chatState.selectedChat ? 'relative' : 'absolute',
-              left: chatState.selectedChat ? '0' : '100%',
-              width: '100%',
-              transition: 'left 0.3s ease-in-out'
-            })
-          }}>
-            {chatState.selectedChat ? (
-              <ChatView
-                chat={chatState.selectedChat}
-                isMobile={isMobile}
-                onBackToList={handleBackToChatList}
-              />
-            ) : (
-              <EmptyState 
-                isMobile={isMobile} 
-                hasSelectedChat={!!chatState.selectedChat}
-              />
-            )}
-          </div>
-        </ContentWrapper>
-      </MainContent>
-    </PageContainer>
+            </div>
+          </ContentWrapper>
+        </MainContent>
+      </PageContainer>
     </ThemeProvider>
   );
 };

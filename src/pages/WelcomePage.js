@@ -2327,7 +2327,7 @@ const WelcomePage = () => {
                 {/* Shop Info */}
                 {zoomedItem.shopName && (
                   <ShopInfo theme={currentStyle}>
-                    <strong>Sold by:</strong> {zoomedItem.shopName}
+                    <strong>Seller:</strong> {zoomedItem.shopName}
                   </ShopInfo>
                 )}
 

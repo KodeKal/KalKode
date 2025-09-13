@@ -1184,10 +1184,6 @@ const ShopPublicView = () => {
                   )}
                   
                   <ActionButtons>
-                    <ActionButton className="secondary">
-                      <MessageCircle size={14} />
-                      Inquire
-                    </ActionButton>
                     <ActionButton 
                       className="primary"
                       onClick={(e) => {

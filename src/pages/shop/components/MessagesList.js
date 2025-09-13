@@ -35,6 +35,7 @@ const ChatItem = styled.div`
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
+  font-family: ${props => props.theme?.fonts?.body || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'};
   
   &:hover {
     transform: translateY(-2px);
@@ -106,41 +107,53 @@ const ChatItem = styled.div`
       margin-bottom: 0.25rem;
       
       .chat-name {
-        font-weight: bold;
+        font-weight: 600;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        color: ${props => props.active ? '#FFFFFF' : 'rgba(255, 255, 255, 0.9)'};
+        color: ${props => props.active ? '#FFFFFF' : 'rgba(255, 255, 255, 0.95)'};
         flex: 1;
         margin-right: 0.5rem;
+        font-size: 0.95rem;
+        line-height: 1.3;
+        font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
       }
       
       .transaction-amount {
         font-size: 0.8rem;
         color: #4CAF50;
-        font-weight: bold;
+        font-weight: 700;
         white-space: nowrap;
+        font-family: ${props => props.theme?.fonts?.mono || 'SFMono-Regular, monospace'};
+        letter-spacing: 0.3px;
       }
     }
     
     .chat-preview {
-      font-size: 0.9rem;
-      opacity: 0.8;
+      font-size: 0.85rem;
+      opacity: 0.85;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       margin-bottom: 0.5rem;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.3;
+      font-weight: 400;
     }
     
     .chat-meta {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       
       .chat-time {
-        opacity: 0.6;
+        opacity: 0.7;
         flex-shrink: 0;
+        color: rgba(255, 255, 255, 0.7);
+        font-family: ${props => props.theme?.fonts?.mono || 'SFMono-Regular, monospace'};
+        font-weight: 400;
+        letter-spacing: 0.2px;
       }
       
       .chat-status {
@@ -150,8 +163,10 @@ const ChatItem = styled.div`
         padding: 0.2rem 0.5rem;
         border-radius: 10px;
         font-size: 0.7rem;
-        font-weight: bold;
+        font-weight: 600;
         text-transform: uppercase;
+        letter-spacing: 0.3px;
+        font-family: ${props => props.theme?.fonts?.body || 'inherit'};
         
         &.pending {
           background: rgba(255, 193, 7, 0.2);
@@ -193,9 +208,10 @@ const ChatItem = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.75rem;
-    font-weight: bold;
+    font-size: 0.7rem;
+    font-weight: 700;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    font-family: ${props => props.theme?.fonts?.mono || 'SFMono-Regular, monospace'};
   }
   
   .delete-btn {
@@ -239,14 +255,21 @@ const EmptyMessage = styled.div`
   text-align: center;
   padding: 4rem 2rem;
   color: rgba(255, 255, 255, 0.6);
+  font-family: ${props => props.theme?.fonts?.body || 'inherit'};
   
   h3 {
     margin-bottom: 0.5rem;
     color: rgba(255, 255, 255, 0.8);
+    font-size: 1.1rem;
+    font-weight: 600;
+    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
   }
   
   p {
     line-height: 1.5;
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.7);
   }
 `;
 
