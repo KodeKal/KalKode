@@ -811,7 +811,7 @@ const TransactionStatusCard = ({
           ) : (
             <>
               <h4>
-                {transaction.status === 'pending_seller_acceptance' && '⏳ Quantity Purchase Request'}
+                {transaction.status === 'pending_seller_acceptance' && '⏳ Quantity Purchase Requested'}
                 {transaction.status === 'seller_accepted' && '✅ Request Accepted, Awaiting Escrow Payment'}
                 {transaction.status === 'seller_rejected' && '❌ Request Has Been Declined'}
                 {transaction.status === 'paid' && '💰 Payment has been made, Coordinate QR Pick Up'}
