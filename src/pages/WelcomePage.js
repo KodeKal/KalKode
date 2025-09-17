@@ -240,6 +240,52 @@ const ProfileImage = styled.div`
   }
 `;
 
+// Add to styled components section in WelcomePage.js
+const LocationIndicator = styled.div`
+  position: relative;
+  top: 90px; // Position it below the header
+  left: 2rem;
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+  backdrop-filter: blur(4px);
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  font-size: 0.9rem;
+  z-index: 10;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  max-width: 300px;
+  
+  &:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: translateY(-2px);
+  }
+  
+  .location-icon {
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    margin-right: 0.75rem;
+  }
+  
+  .location-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .updating {
+    margin-left: 0.5rem;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(128, 0, 0, 0.2);
+    border-radius: 50%;
+    border-top-color: ${props => props.theme?.colors?.accent || '#800000'};
+    animation: spin 1s linear infinite;
+  }
+`;
+
 const ShopName = styled.h2`
   font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
   font-size: 2.5rem;
@@ -1918,6 +1964,18 @@ const WelcomePage = () => {
         </HeaderControls>
       </Header>
 
+      {/* Add Location Indicator */}
+      <LocationIndicator 
+        onClick={handleLocationUpdate}
+        theme={currentStyle}
+      >
+        <Navigation size={18} className="location-icon" />
+        <span className="location-text">
+          {getLocationDisplayText()}
+        </span>
+        {updatingLocation && <div className="updating" />}
+      </LocationIndicator>
+
       <MainContent isAuthenticated={isAuthenticated}>
         <WelcomeSection theme={currentStyle}>
           {isAuthenticated && shopData ? (
@@ -1952,7 +2010,6 @@ const WelcomePage = () => {
             <>
               <h1>Welcome to KalKode</h1>
               <p>Join the underground marketplace that strengthens communities.</p>
-              <p>A marketplace where local voices are heard and supported.</p>
 
               <ActionButtonContainer>
                 <ActionButton theme={currentStyle} onClick={handleOpenShop}>
