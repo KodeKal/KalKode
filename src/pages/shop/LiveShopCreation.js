@@ -337,34 +337,28 @@ const ItemsContainer = styled.div`
 `;
 
 const ItemsGrid = styled.div`
-  display: ${props => props.viewMode === 'list' ? 'block' : 'grid'};
-  grid-template-columns: ${props => props.viewMode === 'gallery' ? 
-    'repeat(auto-fill, minmax(280px, 1fr))' : 
-    'repeat(2, 1fr)'
-  };
-  gap: ${props => props.viewMode === 'list' ? '1rem' : '1rem'};
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
   
   @media (min-width: 480px) {
-    gap: ${props => props.viewMode === 'list' ? '1.5rem' : '1.5rem'};
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   }
   
   @media (min-width: 768px) {
-    grid-template-columns: ${props => props.viewMode === 'gallery' ? 
-      'repeat(auto-fill, minmax(300px, 1fr))' : 
-      'repeat(3, 1fr)'
-    };
     gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
   }
   
   @media (min-width: 1024px) {
-    grid-template-columns: ${props => props.viewMode === 'gallery' ? 
-      'repeat(auto-fill, minmax(350px, 1fr))' : 
-      'repeat(4, 1fr)'
-    };
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   }
 `;
 
-// Mobile-optimized item card
+
+// CHANGE 3: Update ItemCard styled component (around line 346)
+// REPLACE the entire ItemCard component with:
 const ItemCard = styled.div`
   background: ${props => props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'};
   border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
@@ -372,8 +366,8 @@ const ItemCard = styled.div`
   border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
   position: relative;
   transition: all 0.3s;
-  width: ${props => props.viewMode === 'list' ? '100%' : 'auto'};
-  height: ${props => props.viewMode === 'list' ? 'auto' : 'fit-content'};
+  width: 100%;
+  min-width: 320px;
 
   &:hover {
     transform: translateY(-5px);
@@ -381,10 +375,9 @@ const ItemCard = styled.div`
   }
 `;
 
-// Mobile-optimized image container with swipe support
 const ItemImageContainer = styled.div`
   position: relative;
-  height: ${props => props.viewMode === 'list' ? '200px' : '250px'};
+  height: 250px;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -392,7 +385,7 @@ const ItemImageContainer = styled.div`
   background: ${props => `${props.theme?.colors?.background || '#000000'}50`};
 
   @media (min-width: 768px) {
-    height: 250px;
+    height: 280px;
   }
 
   .image-container {
@@ -468,7 +461,6 @@ const ItemImageContainer = styled.div`
     }
   }
 
-  /* Mobile image dots */
   .image-dots {
     position: absolute;
     bottom: 0.5rem;
@@ -493,12 +485,15 @@ const ItemImageContainer = styled.div`
   }
 `;
 
-// Collapsible item content for mobile
 const ItemContent = styled.div`
   padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   
   @media (min-width: 768px) {
     padding: 1.5rem;
+    gap: 1rem;
   }
 `;
 
@@ -745,7 +740,6 @@ const LiveShopCreation = () => {
   const [shopNameFontSize, setShopNameFontSize] = useState(2.5);
   const [isPinned, setIsPinned] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [expandedItems, setExpandedItems] = useState(new Set());
 
   // Consolidated shop data
@@ -961,18 +955,18 @@ const LiveShopCreation = () => {
       </AddItemButton>
 
       <ItemsContainer>
-        <ItemsGrid viewMode={viewMode}>
+        <ItemsGrid>
           {shopData.items.map(item => {
             const isExpanded = expandedItems.has(item.id);
             const validImages = item.images.filter(Boolean);
             
             return (
-              <ItemCard key={item.id} theme={selectedTheme} viewMode={viewMode}>
+              <ItemCard key={item.id} theme={selectedTheme}>
                 <DeleteButton onClick={() => handleItemDelete(item.id)}>
                   <X size={16} />
                 </DeleteButton>
                 
-                <ItemImageContainer theme={selectedTheme} viewMode={viewMode}>
+                <ItemImageContainer theme={selectedTheme}>
                   <div className="image-container">
                     <EditableImage
                       value={item.images[item.currentImageIndex]}
@@ -1201,28 +1195,6 @@ const LiveShopCreation = () => {
         {activeTab === 'shop' && renderShopView()}
         {activeTab === 'home' && renderHomeView()}
         {activeTab === 'community' && renderCommunityView()}
-
-        {/* View Toggle - Only show on shop tab */}
-        {activeTab === 'shop' && (
-          <ViewToggleContainer theme={selectedTheme}>
-            <ViewToggleButton 
-              active={viewMode === 'grid'} 
-              onClick={() => setViewMode('grid')}
-              theme={selectedTheme}
-            >
-              <Grid size={16} />
-              Grid
-            </ViewToggleButton>
-            <ViewToggleButton 
-              active={viewMode === 'list'} 
-              onClick={() => setViewMode('list')}
-              theme={selectedTheme}
-            >
-              <List size={16} />
-              List
-            </ViewToggleButton>
-          </ViewToggleContainer>
-        )}
 
         {/* Save Button */}
         <SaveButtonContainer>
