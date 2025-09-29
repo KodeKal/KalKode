@@ -631,11 +631,7 @@ const FeaturedItem = ({ item, showDistance, theme, onItemClick }) => {
       <ImageSection theme={itemTheme}>
         <img src={getDisplayImage()} alt={item.name} />
         
-        {item.category && item.category !== 'Other' && (
-          <CategoryBadge theme={itemTheme}>
-            {item.category}
-          </CategoryBadge>
-        )}
+        
         
         {(item.images?.filter(Boolean).length > 1) && (
           <>
