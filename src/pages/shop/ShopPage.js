@@ -1,4 +1,4 @@
-// src/pages/shop/ShopPage.js
+// src/pages/shop/ShopPage.js - Updated with Manual Save
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -12,14 +12,13 @@ import { DEFAULT_THEME } from '../../theme/config/themes';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase/config';
 import { ChevronUp, ChevronDown, Plus, Minus, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Save, RotateCcw } from 'lucide-react';
 import AddressInput from '../../components/shop/AddressInput';
 import ThemeSelector from '../../components/ThemeSelector/ThemeSelector';
 import QuantitySelector from '../../components/shop/QuantitySelector';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 import { signOut } from 'firebase/auth';
 import { RefreshCw, Pin, LogOut } from 'lucide-react';
-
 
 const ITEM_CATEGORIES = [
   'Electronics & Tech',
@@ -35,6 +34,136 @@ const ITEM_CATEGORIES = [
   'Other'
 ];
 
+// Add new styled components for save controls
+const SaveControlsContainer = styled.div`
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  z-index: 100;
+  
+  @media (max-width: 768px) {
+    bottom: 1rem;
+    right: 1rem;
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+`;
+
+const SaveButton = styled.button`
+  background: ${props => props.hasChanges ? 
+    (props.theme?.colors?.accent || '#800000') : 
+    'rgba(128, 128, 128, 0.5)'
+  };
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+  cursor: ${props => props.hasChanges ? 'pointer' : 'not-allowed'};
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: ${props => props.hasChanges ? 
+    '0 4px 15px rgba(0, 0, 0, 0.2)' : 
+    '0 2px 8px rgba(0, 0, 0, 0.1)'
+  };
+  font-family: ${props => props.theme?.fonts?.body || 'sans-serif'};
+  
+  @media (max-width: 768px) {
+    padding: 0.8rem 1.2rem;
+    font-size: 0.9rem;
+  }
+
+  &:hover {
+    transform: ${props => props.hasChanges ? 'translateY(-2px)' : 'none'};
+    box-shadow: ${props => props.hasChanges ? 
+      `0 6px 20px ${props.theme?.colors?.accent}4D` : 
+      '0 2px 8px rgba(0, 0, 0, 0.1)'
+    };
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+`;
+
+const ResetButton = styled.button`
+  background: transparent;
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  border: 1px solid ${props => props.theme?.colors?.accent || '#800000'};
+  border-radius: 50px;
+  padding: 0.8rem 1.2rem;
+  font-weight: 500;
+  cursor: ${props => props.hasChanges ? 'pointer' : 'not-allowed'};
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: ${props => props.hasChanges ? 1 : 0.5};
+  font-family: ${props => props.theme?.fonts?.body || 'sans-serif'};
+  
+  @media (max-width: 768px) {
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem;
+  }
+
+  &:hover {
+    background: ${props => props.hasChanges ? 
+      `${props.theme?.colors?.accent}20` : 
+      'transparent'
+    };
+    transform: ${props => props.hasChanges ? 'translateY(-1px)' : 'none'};
+  }
+`;
+
+const UnsavedChangesIndicator = styled.div`
+  position: fixed;
+  top: 50%;
+  left: 1rem;
+  transform: translateY(-50%);
+  background: ${props => props.theme?.colors?.accent || '#800000'};
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  opacity: ${props => props.show ? 1 : 0};
+  visibility: ${props => props.show ? 'visible' : 'hidden'};
+  transition: all 0.3s ease;
+  z-index: 99;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  @media (max-width: 768px) {
+    top: auto;
+    bottom: 6rem;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  &::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: ${props => props.show ? 'pulse 2s infinite' : 'none'};
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+`;
+
+// Keep all existing styled components
 const ShopProfileSection = styled.div`
   display: flex;
   flex-direction: column;
@@ -131,7 +260,6 @@ const ShopProfileSection = styled.div`
   }
 `;
 
-// Now, let's update the AddItemButton to better complement theme changes
 const AddItemButton = styled.button`
   background: ${props => props.theme?.colors?.accent || '#800000'};
   color: ${props => props.theme?.colors?.background || '#000000'};
@@ -184,11 +312,11 @@ const AddItemButton = styled.button`
 
 const CategorySelect = styled.select`
   width: 100%;
-  background: #1a1a1a !important; /* Force dark background */
+  background: #1a1a1a !important;
   border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
   border-radius: ${props => props.theme?.styles?.borderRadius || '8px'};
   padding: 0.75rem;
-  color: #ffffff !important; /* Force white text */
+  color: #ffffff !important;
   font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
   margin-bottom: 1rem;
   
@@ -198,20 +326,17 @@ const CategorySelect = styled.select`
   }
   
   option {
-    background: #1a1a1a !important; /* Force dark background for options */
-    color: #ffffff !important; /* Force white text for options */
+    background: #1a1a1a !important;
+    color: #ffffff !important;
     padding: 0.5rem;
   }
   
-  /* Webkit browsers (Chrome, Safari) */
   option:checked {
     background: ${props => props.theme?.colors?.accent || '#800000'} !important;
     color: #ffffff !important;
   }
 `;
 
-
-// Let's also update the ItemCard to better respond to theme changes
 const ItemCard = styled.div`
   background: ${props => props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'};
   border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
@@ -236,7 +361,6 @@ const ItemCard = styled.div`
   }
 `;
 
-// Update the DeleteButton for better theme integration
 const DeleteButton = styled.button`
   position: absolute;
   top: -15px;
@@ -263,7 +387,6 @@ const DeleteButton = styled.button`
   }
 `;
 
-// Update ItemImageContainer for better theme integration
 const ItemImageContainer = styled.div`
   position: relative;
   height: 250px;
@@ -360,7 +483,6 @@ const ItemImageContainer = styled.div`
   }
 `;
 
-// Update ItemContent for better theme integration
 const ItemContent = styled.div`
   padding: 1rem 1.5rem; 
   display: flex;
@@ -440,7 +562,6 @@ const DeleteItemButton = styled.button`
   }
 `;
 
-// Mobile-optimized header
 const Header = styled.header`
   width: 100%;
   height: 60px;
@@ -551,7 +672,6 @@ const MainContent = styled.div`
   position: relative;
   z-index: 1;
 
-  // Add gap between major sections
   > div {
     margin-bottom: 4rem;
   }
@@ -574,23 +694,10 @@ const FontSizeButton = styled.button`
   }
 `;
 
-const FontSizeControls = styled.div`
-  position: absolute;
-  right: -3rem;
-  display: flex;
-  gap: 0.5rem;
-  opacity: 0.6;
-  transition: opacity 0.3s;
-
-  &:hover {
-    opacity: 1;
-  }
-`;
-
 const FloatingFontControls = styled.div`
   position: fixed;
   left: 2rem;
-  top: 45%;  // Position it a bit higher than middle
+  top: 45%;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -632,46 +739,6 @@ const ThemeContainer = styled.div`
   }
 `;
 
-const TabControls = styled.div`
-  position: fixed;
-  top: 2rem;
-  right: 8rem; // Position it to the left of KalKode logo
-  display: flex;
-  gap: 1rem;
-  z-index: 100;
-`;
-
-const PositionButton = styled.button`
-  background: ${props => props.active ? 'rgba(255, 255, 255, 0.1)' : 'transparent'};
-  border: 1px solid ${props => props.active ? props.theme?.colors?.accent : 'transparent'};
-  border-radius: 15px;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.8rem;
-  color: ${props => props.active ? props.theme?.colors?.accent : props.theme?.colors?.text};
-  cursor: pointer;
-  backdrop-filter: blur(10px);
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
-  }
-`;
-
-const ShopBanner = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 80px;
-  background: ${props => `${props.theme?.colors?.background || DEFAULT_THEME.colors.background}CC`};
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 2rem;
-  z-index: 100;
-  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent || DEFAULT_THEME.colors.accent}30`};
-`;
-
 const UploadingOverlay = styled.div`
   position: absolute;
   top: 0;
@@ -684,16 +751,6 @@ const UploadingOverlay = styled.div`
   justify-content: center;
   color: white;
   z-index: 3;
-`;
-
-
-
-const ShopName = styled.div`
-  flex: 1;
-  text-align: ${props => props.position};
-  font-family: ${props => props.theme?.fonts?.heading || DEFAULT_THEME.fonts.heading};
-  font-size: 1.8rem;
-  padding: ${props => props.position === 'center' ? '0 80px' : '0'};
 `;
 
 const LoadingSpinner = styled.div`
@@ -718,53 +775,6 @@ const ItemGrid = styled.div`
   margin: 4rem 0;
 `;
 
-
-
-
-
-const TabButtons = styled.div`
-  display: flex;
-  gap: 2rem;
-  align-items: center;
-`;
-
-const PositionArrow = styled.button`
-  background: transparent;
-  border: none;
-  color: ${props => props.active ? props.theme?.colors?.accent : props.theme?.colors?.text};
-  opacity: 0.6;
-  cursor: pointer;
-  padding: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-
-  &:hover {
-    opacity: 1;
-    transform: scale(1.1);
-  }
-
-  &:focus {
-    outline: none;
-  }
-`;
-
-const ZipCodeInput = styled.input`
-  width: 100%;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 0.5rem 0;
-  color: ${props => props.theme?.colors?.text};
-  transition: border-color 0.3s ease;
-
-  &:focus {
-    outline: none;
-    border-bottom-color: ${props => props.theme?.colors?.accent};
-  }
-`;
-
 const cleanDataForFirestore = (data) => {
   if (!data) return data;
   
@@ -775,9 +785,7 @@ const cleanDataForFirestore = (data) => {
   if (typeof data === 'object' && !(data instanceof Date)) {
     const cleanedData = {};
     for (const [key, value] of Object.entries(data)) {
-      // Skip file objects
       if (value instanceof File) continue;
-      // Skip null/undefined values
       if (value === null || value === undefined) continue;
       cleanedData[key] = cleanDataForFirestore(value);
     }
@@ -787,58 +795,93 @@ const cleanDataForFirestore = (data) => {
   return data;
 };
 
-
 const ShopPage = () => {
   const navigate = useNavigate();
   const [isPinned, setIsPinned] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [shopData, setShopData] = useState(null); // Keep as null initially
-  const [isReady, setIsReady] = useState(false);  // Add this state
+  const [shopData, setShopData] = useState(null);
+  const [originalShopData, setOriginalShopData] = useState(null); // Track original data
+  const [isReady, setIsReady] = useState(false);
   const [activeTab, setActiveTab] = useState('shop');
   const [saving, setSaving] = useState(false);
   const [shopNameFontSize, setShopNameFontSize] = useState(2.5);
   const [uploading, setUploading] = useState({});
   const [tabPosition, setTabPosition] = useState('top');
-  const [currentTheme, setCurrentTheme] = useState(WELCOME_STYLES.STYLE_1);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  const handleDeleteItem = async (itemId) => {
-    if (!auth.currentUser) return;
+  // Deep comparison utility
+  const deepEqual = (obj1, obj2) => {
+    if (obj1 === obj2) return true;
+    if (!obj1 || !obj2) return false;
+    if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return false;
     
+    const keys1 = Object.keys(obj1);
+    const keys2 = Object.keys(obj2);
+    
+    if (keys1.length !== keys2.length) return false;
+    
+    for (let key of keys1) {
+      if (!keys2.includes(key)) return false;
+      if (!deepEqual(obj1[key], obj2[key])) return false;
+    }
+    
+    return true;
+  };
+
+  // Check for changes whenever shopData updates
+  useEffect(() => {
+    if (originalShopData && shopData) {
+      const hasChanges = !deepEqual(shopData, originalShopData);
+      setHasUnsavedChanges(hasChanges);
+    }
+  }, [shopData, originalShopData]);
+
+  // Save changes to Firestore
+  const handleSave = async () => {
+    if (!auth.currentUser || !hasUnsavedChanges) return;
+
     try {
       setSaving(true);
-      
-      // Update the UI immediately
-      const filteredItems = shopData.items.filter(item => item.id !== itemId);
-      
-      // Update local state
-      setShopData(prev => ({
-        ...prev,
-        items: filteredItems
-      }));
-      
-      // Get reference to the shop document
+      console.log('Saving shop data to Firestore...');
+
       const shopRef = doc(db, 'shops', auth.currentUser.uid);
-      
-      // Update Firestore directly without fetching first
-      await updateDoc(shopRef, {
-        items: filteredItems,
+      const updateData = cleanDataForFirestore({
+        ...shopData,
         updatedAt: new Date().toISOString()
       });
+
+      await updateDoc(shopRef, updateData);
       
-      console.log('Item successfully deleted:', itemId);
+      // Update the original data to reflect the saved state
+      setOriginalShopData(JSON.parse(JSON.stringify(shopData)));
+      setHasUnsavedChanges(false);
+      
+      console.log('Shop data saved successfully');
     } catch (error) {
-      console.error('Error deleting item:', error);
-      
-      // Revert the local state change if the update failed
-      const shopDoc = await getDoc(doc(db, 'shops', auth.currentUser.uid));
-      if (shopDoc.exists()) {
-        setShopData(shopDoc.data());
-      }
+      console.error('Error saving shop data:', error);
+      // You could add a toast notification here
     } finally {
       setSaving(false);
     }
   };
-  
+
+  // Reset changes to original state
+  const handleReset = () => {
+    if (originalShopData) {
+      setShopData(JSON.parse(JSON.stringify(originalShopData)));
+      setHasUnsavedChanges(false);
+    }
+  };
+
+  // Modified handlers that only update local state
+  const handleDeleteItem = (itemId) => {
+    const filteredItems = shopData.items.filter(item => item.id !== itemId);
+    setShopData(prev => ({
+      ...prev,
+      items: filteredItems
+    }));
+  };
+
   // Theme management
   useEffect(() => {
     const pinnedStyleId = localStorage.getItem('pinnedStyleId');
@@ -922,6 +965,7 @@ const ShopPage = () => {
           }
           
           setShopData(data);
+          setOriginalShopData(JSON.parse(JSON.stringify(data))); // Deep clone
         }
         setIsReady(true);
       } catch (error) {
@@ -946,169 +990,29 @@ const ShopPage = () => {
     return null;
   }
 
-  // In ShopPage.js, inside the component but before the return statement
-  const handleUpdateShop = async (updates) => {
-    if (!auth.currentUser) return;
-
-    try {
-      setSaving(true);
-      console.log('Updating shop with:', updates);
-
-      let finalUpdates = { ...updates };
-
-      // Handle profile image upload
-      if (updates.profile?.file instanceof File) {
-        const file = updates.profile.file;
-        const metadata = {
-          contentType: file.type || 'image/jpeg',
-          cacheControl: 'public,max-age=3600',
-          customMetadata: {
-            'Access-Control-Allow-Origin': '*'
-          }
-        };
-
-        const profileRef = ref(
-          storage, 
-          `shops/${auth.currentUser.uid}/profile/profile-${Date.now()}`
-        );
-
-        const snapshot = await uploadBytes(profileRef, file, metadata);
-        const imageUrl = await getDownloadURL(snapshot.ref);
-
-        finalUpdates = {
-          ...finalUpdates,
-          profile: imageUrl
-        };
-      } 
-
-      // Update Firestore
-      const shopRef = doc(db, 'shops', auth.currentUser.uid);
-      await updateDoc(shopRef, {
-        ...finalUpdates,
-        updatedAt: new Date().toISOString()
-      }); 
-
-      // Update local state
-      setShopData(prev => ({
-        ...prev,
-        ...finalUpdates
-      }));  
-
-      console.log('Shop update successful:', finalUpdates);
-    } catch (error) {
-      console.error('Error updating shop:', error);
-    } finally {
-      setSaving(false);
-    }
+  // Local update handlers (no Firestore writes)
+  const handleUpdateShop = (updates) => {
+    setShopData(prev => ({
+      ...prev,
+      ...updates
+    }));
   };
 
-  const handleApplyTheme = async (newTheme) => {
-    try {
-      await handleUpdateShop({ theme: newTheme });
-    } catch (error) {
-      console.error('Error applying theme:', error);
-    }
+  const handleApplyTheme = (newTheme) => {
+    setShopData(prev => ({ ...prev, theme: newTheme }));
   };
 
-  const logImageState = (image) => {
-    if (!image) return 'null';
-    if (typeof image === 'string') return `URL: ${image}`;
-    if (image instanceof File) return `File: ${image.name}`;
-    if (image?.file instanceof File) return `File Object: ${image.file.name}`;
-    return `Unknown type: ${typeof image}`;
-  };
+  // Handle item updates locally only
+  const handleItemUpdate = (itemId, updates) => {
+    const updatedItems = shopData.items.map(item =>
+      item.id === itemId ? { ...item, ...updates } : item
+    );
 
-  // Handle item updates
-  // In ShopPage.js, update handleItemUpdate
-  const handleItemUpdate = async (itemId, updates) => {
-    if (!auth.currentUser) return;
-  
-    try {
-      setSaving(true);
-      console.log('Starting item update:', {
-        itemId,
-        updates
-      });
-      
-      const currentItem = shopData.items.find(item => item.id === itemId);
-      let updatedItem = { ...currentItem, ...updates };
-  
-      console.log('Item after updates:', updatedItem);
-  
-      const shopRef = doc(db, 'shops', auth.currentUser.uid);
-      const updatedItems = shopData.items.map(item =>
-        item.id === itemId ? updatedItem : item
-      );
-  
-      await updateDoc(shopRef, {
-        items: updatedItems,
-        updatedAt: new Date().toISOString()
-      });
-  
-      console.log('Firestore update successful');
-  
-      setShopData(prev => ({
-        ...prev,
-        items: updatedItems
-      }));
-  
-      console.log('Local state updated');
-    } catch (error) {
-      console.error('Error updating item:', error);
-    } finally {
-      setSaving(false);
-    }
+    setShopData(prev => ({
+      ...prev,
+      items: updatedItems
+    }));
   };
-  
-    // Save shop data
-    const saveShopData = async (updates) => {
-      if (!auth.currentUser) return;
-      setSaving(true);
-      try {
-        const shopRef = doc(db, 'shops', auth.currentUser.uid);
-        
-        // If we're updating items array, properly mark deleted items
-        if (updates.items) {
-          // Get current shop data to compare items
-          const currentShop = await getDoc(shopRef);
-          const currentItems = currentShop.data()?.items || [];
-          
-          // Find deleted items and mark them properly
-          const deletedItemIds = currentItems
-            .filter(item => !updates.items.find(newItem => newItem.id === item.id))
-            .map(item => item.id);
-          
-          // Update the items array with deleted flags
-          updates.items = updates.items.map(item => ({
-            ...item,
-            deleted: false,
-            lastUpdated: new Date().toISOString()
-          }));
-          
-          // Add deleted items with deleted flag
-          const deletedItems = currentItems
-            .filter(item => deletedItemIds.includes(item.id))
-            .map(item => ({
-              ...item,
-              deleted: true,
-              lastUpdated: new Date().toISOString()
-            }));
-          
-          updates.items = [...updates.items, ...deletedItems];
-        }
-    
-        await updateDoc(shopRef, {
-          ...updates,
-          updatedAt: new Date().toISOString()
-        });
-        setShopData(prev => ({ ...prev, ...updates }));
-      } catch (error) {
-        console.error('Error saving shop data:', error);
-      } finally {
-        setSaving(false);
-      }
-    };
-    
 
   const handleAddItem = () => {
     const newItem = {
@@ -1119,16 +1023,48 @@ const ShopPage = () => {
       category: 'Other',
       zipCode: '',
       images: [null, null, null],
-      currentImageIndex: 0
+      currentImageIndex: 0,
+      quantity: 1
     };
 
     const updatedItems = [...(shopData.items || []), newItem];
-    saveShopData({ items: updatedItems });
+    setShopData(prev => ({ ...prev, items: updatedItems }));
+  };
+
+  // Handle image uploads (these still need to upload to storage)
+  const handleImageUpload = async (itemId, imageIndex, file) => {
+    try {
+      setUploading(prev => ({ ...prev, [itemId]: true }));
+      
+      const storageRef = ref(
+        storage, 
+        `shops/${auth.currentUser.uid}/items/${itemId}/image-${imageIndex}-${Date.now()}`
+      );
+      
+      const metadata = {
+        contentType: file.type || 'image/jpeg',
+        cacheControl: 'public,max-age=3600'
+      };
+
+      const snapshot = await uploadBytes(storageRef, file, metadata);
+      const imageUrl = await getDownloadURL(snapshot.ref);
+      
+      // Update local state only
+      const currentItem = shopData.items.find(item => item.id === itemId);
+      const newImages = [...currentItem.images];
+      newImages[imageIndex] = imageUrl;
+      
+      handleItemUpdate(itemId, { images: newImages });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+    } finally {
+      setUploading(prev => ({ ...prev, [itemId]: false }));
+    }
   };
 
   return (
     <ThemeProvider theme={shopData?.theme || DEFAULT_THEME}>
-    <PageContainer>      
+      <PageContainer>      
         <Header theme={shopData?.theme}>
           <HeaderLogo onClick={() => navigate('/')} theme={shopData?.theme}>
             {shopData?.name || 'MY SHOP'}
@@ -1163,258 +1099,262 @@ const ShopPage = () => {
           </HeaderControls>
         </Header>
 
-      <FloatingFontControls>
-        <FontSizeButton 
-          onClick={() => setShopNameFontSize(prev => Math.min(6, prev + 0.5))}
-        >
-          <Plus size={16} />
-        </FontSizeButton>
-        <FontSizeButton 
-          onClick={() => setShopNameFontSize(prev => Math.max(1.5, prev - 0.5))}
-        >
-          <Minus size={16} />
-        </FontSizeButton>
-      </FloatingFontControls>    
+        <FloatingFontControls>
+          <FontSizeButton 
+            onClick={() => setShopNameFontSize(prev => Math.min(6, prev + 0.5))}
+          >
+            <Plus size={16} />
+          </FontSizeButton>
+          <FontSizeButton 
+            onClick={() => setShopNameFontSize(prev => Math.max(1.5, prev - 0.5))}
+          >
+            <Minus size={16} />
+          </FontSizeButton>
+        </FloatingFontControls>    
 
-      <TabControlsContainer>
-        <TabPositioner
-          position="top"
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          tabs={[
-            { id: 'home', label: 'Home' },
-            { id: 'community', label: 'Community' },
-            { id: 'shop', label: 'Shop' }
-          ]}
-          theme={shopData?.theme}
-        />
-      </TabControlsContainer>
+        <TabControlsContainer>
+          <TabPositioner
+            position="top"
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            tabs={[
+              { id: 'home', label: 'Home' },
+              { id: 'community', label: 'Community' },
+              { id: 'shop', label: 'Shop' }
+            ]}
+            theme={shopData?.theme}
+          />
+        </TabControlsContainer>
 
-      <ThemeContainer>
-        <ThemeSelector 
-          currentTheme={shopData?.theme || DEFAULT_THEME}
-          onThemeSelect={(theme) => setShopData(prev => ({ ...prev, theme }))}
-          isAuthenticated={true}
-          onApplyTheme={handleApplyTheme}
-        />
-      </ThemeContainer>
+        <ThemeContainer>
+          <ThemeSelector 
+            currentTheme={shopData?.theme || DEFAULT_THEME}
+            onThemeSelect={(theme) => setShopData(prev => ({ ...prev, theme }))}
+            isAuthenticated={true}
+            onApplyTheme={handleApplyTheme}
+          />
+        </ThemeContainer>
+
+        {/* Unsaved Changes Indicator */}
+        <UnsavedChangesIndicator show={hasUnsavedChanges} theme={shopData?.theme}>
+          <span>Unsaved changes</span>
+        </UnsavedChangesIndicator>
+
+        {/* Save Controls */}
+        <SaveControlsContainer>
+          <SaveButton
+            onClick={handleSave}
+            disabled={!hasUnsavedChanges || saving}
+            hasChanges={hasUnsavedChanges}
+            theme={shopData?.theme}
+          >
+            {saving ? <LoadingSpinner /> : <Save size={20} />}
+            {saving ? 'Saving...' : 'Save Changes'}
+          </SaveButton>
+          
+          <ResetButton
+            onClick={handleReset}
+            disabled={!hasUnsavedChanges}
+            hasChanges={hasUnsavedChanges}
+            theme={shopData?.theme}
+          >
+            <RotateCcw size={18} />
+            Reset
+          </ResetButton>
+        </SaveControlsContainer>
 
         <MainContent>
-        {activeTab === 'shop' && (
-          <>
-            <ShopProfileSection>
-            <div className="profile-image">
-              {shopData?.profile && typeof shopData.profile === 'string' ? (
-                // If we have a URL string, show the image directly
-                <img 
-                  src={shopData.profile} 
-                  alt="Profile" 
-                  style={{ 
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => {
-                    // Allow changing the image by clicking on it
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'image/*';
-                    input.onchange = (e) => {
-                      if (e.target.files?.[0]) {
-                        handleUpdateShop({ 
-                          profile: {
-                            file: e.target.files[0],
-                            type: e.target.files[0].type
+          {activeTab === 'shop' && (
+            <>
+              <ShopProfileSection>
+                <div className="profile-image">
+                  {shopData?.profile && typeof shopData.profile === 'string' ? (
+                    <img 
+                      src={shopData.profile} 
+                      alt="Profile" 
+                      style={{ 
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = async (e) => {
+                          if (e.target.files?.[0]) {
+                            try {
+                              const file = e.target.files[0];
+                              const profileRef = ref(
+                                storage, 
+                                `shops/${auth.currentUser.uid}/profile/profile-${Date.now()}`
+                              );
+                              const metadata = {
+                                contentType: file.type || 'image/jpeg',
+                                cacheControl: 'public,max-age=3600'
+                              };
+                              const snapshot = await uploadBytes(profileRef, file, metadata);
+                              const imageUrl = await getDownloadURL(snapshot.ref);
+                              handleUpdateShop({ profile: imageUrl });
+                            } catch (error) {
+                              console.error('Error uploading profile image:', error);
+                            }
                           }
-                        });
-                      }
-                    };
-                    input.click();
-                  }}
-                />
-              ) : (
-                // If no image URL, show the EditableImage component
-                <EditableImage
-                  value={null}
-                  onChange={(value) => {
-                    console.log('Profile image update:', value);
-                    if (value instanceof File) {
-                      handleUpdateShop({ 
-                        profile: {
-                          file: value,
-                          type: value.type
+                        };
+                        input.click();
+                      }}
+                    />
+                  ) : (
+                    <EditableImage
+                      value={null}
+                      onChange={async (value) => {
+                        if (value instanceof File) {
+                          try {
+                            const profileRef = ref(
+                              storage, 
+                              `shops/${auth.currentUser.uid}/profile/profile-${Date.now()}`
+                            );
+                            const metadata = {
+                              contentType: value.type || 'image/jpeg',
+                              cacheControl: 'public,max-age=3600'
+                            };
+                            const snapshot = await uploadBytes(profileRef, value, metadata);
+                            const imageUrl = await getDownloadURL(snapshot.ref);
+                            handleUpdateShop({ profile: imageUrl });
+                          } catch (error) {
+                            console.error('Error uploading profile image:', error);
+                          }
                         }
-                      });
-                    }
-                  }}
-                  theme={shopData?.theme}
-                  round
-                  width="150px"
-                  height="150px"
-                  style={{ 
-                    width: '150px',
-                    height: '150px',
-                    borderRadius: '50%',
-                    objectFit: 'cover'
-                  }}
-                />
-              )}
-            </div>
-            <div className="shop-name-container">
-              <EditableText
-                value={shopData?.name}
-                onChange={(value) => handleUpdateShop({ name: value })}
-                placeholder="Shop Name"
-                style={{
-                  fontSize: `${shopNameFontSize}rem`,
-                  maxWidth: '500px',
-                  margin: '0 auto'
-                }}
-              />
-            </div>
-            <div className="shop-description-container">
-              <EditableText
-                value={shopData?.description}
-                onChange={(value) => handleUpdateShop({ description: value })}
-                placeholder="Shop Description"
-                multiline={false} 
-              />
-            </div>
-            </ShopProfileSection>
+                      }}
+                      theme={shopData?.theme}
+                      round
+                      width="150px"
+                      height="150px"
+                      style={{ 
+                        width: '150px',
+                        height: '150px',
+                        borderRadius: '50%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  )}
+                </div>
+                <div className="shop-name-container">
+                  <EditableText
+                    value={shopData?.name}
+                    onChange={(value) => handleUpdateShop({ name: value })}
+                    placeholder="Shop Name"
+                    style={{
+                      fontSize: `${shopNameFontSize}rem`,
+                      maxWidth: '500px',
+                      margin: '0 auto'
+                    }}
+                  />
+                </div>
+                <div className="shop-description-container">
+                  <EditableText
+                    value={shopData?.description}
+                    onChange={(value) => handleUpdateShop({ description: value })}
+                    placeholder="Shop Description"
+                    multiline={false} 
+                  />
+                </div>
+              </ShopProfileSection>
 
-            <AddItemButton onClick={handleAddItem} theme={shopData?.theme}>
+              <AddItemButton onClick={handleAddItem} theme={shopData?.theme}>
                 <Plus size={20} />
                 Add Item
               </AddItemButton>
 
-            <ItemGrid>
-              {shopData?.items?.map(item => (
-                <ItemCard key={item.id}>
-                  
-                  <ItemImageContainer>
-                    {uploading[item.id] && (
-                      <UploadingOverlay>
-                        <LoadingSpinner />
-                      </UploadingOverlay>
-                    )}
-                    <div 
-                      className="image-container"
-                      onClick={() => {
-                        if (!item.images[item.currentImageIndex]) {
-                          document.getElementById(`image-upload-${item.id}-${item.currentImageIndex}`).click();
-                        }
-                      }}
-                    >
-                      {item.images[item.currentImageIndex] ? (
-                        <img 
-                          src={item.images[item.currentImageIndex]} 
-                          alt={item.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          onError={(e) => {
-                            console.error('Image failed to load:', {
-                              src: e.target.src,
-                              itemId: item.id,
-                              currentIndex: item.currentImageIndex
-                            });
-                          }}
-                        />
-                      ) : (
-                        <div className="placeholder">
-                          <Plus size={24} />
-                          <span>Upload Image</span>
-                        </div>
-                      )}
-                    </div>
+              <ItemGrid>
+                {shopData?.items?.map(item => (
+                  <ItemCard key={item.id}>
                     
-                    {/* Only show carousel arrows if there are images */}
-                    {item.images.some(img => img) && (
-                      <>
-                        <button 
-                          className="carousel-arrow left"
-                          onClick={() => {
-                            const newIndex = ((item.currentImageIndex - 1) + 3) % 3;
-                            handleItemUpdate(item.id, { currentImageIndex: newIndex });
-                          }}
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-                        <button 
-                          className="carousel-arrow right"
-                          onClick={() => {
-                            const newIndex = (item.currentImageIndex + 1) % 3;
-                            handleItemUpdate(item.id, { currentImageIndex: newIndex });
-                          }}
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-                      </>
-                    )}
-
-                    {/* Add/Remove button */}
-                    {item.images[item.currentImageIndex] && (
-                      <button 
-                        className="add-image"
+                    <ItemImageContainer>
+                      {uploading[item.id] && (
+                        <UploadingOverlay>
+                          <LoadingSpinner />
+                        </UploadingOverlay>
+                      )}
+                      <div 
+                        className="image-container"
                         onClick={() => {
-                          const newImages = [...item.images];
-                          newImages[item.currentImageIndex] = null;
-                          handleItemUpdate(item.id, { images: newImages });
+                          if (!item.images[item.currentImageIndex]) {
+                            document.getElementById(`image-upload-${item.id}-${item.currentImageIndex}`).click();
+                          }
                         }}
                       >
-                        <X size={16} />
-                      </button>
-                    )}
+                        {item.images[item.currentImageIndex] ? (
+                          <img 
+                            src={item.images[item.currentImageIndex]} 
+                            alt={item.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={(e) => {
+                              console.error('Image failed to load:', {
+                                src: e.target.src,
+                                itemId: item.id,
+                                currentIndex: item.currentImageIndex
+                              });
+                            }}
+                          />
+                        ) : (
+                          <div className="placeholder">
+                            <Plus size={24} />
+                            <span>Upload Image</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {item.images.some(img => img) && (
+                        <>
+                          <button 
+                            className="carousel-arrow left"
+                            onClick={() => {
+                              const newIndex = ((item.currentImageIndex - 1) + 3) % 3;
+                              handleItemUpdate(item.id, { currentImageIndex: newIndex });
+                            }}
+                          >
+                            <ChevronLeft size={16} />
+                          </button>
+                          <button 
+                            className="carousel-arrow right"
+                            onClick={() => {
+                              const newIndex = (item.currentImageIndex + 1) % 3;
+                              handleItemUpdate(item.id, { currentImageIndex: newIndex });
+                            }}
+                          >
+                            <ChevronRight size={16} />
+                          </button>
+                        </>
+                      )}
 
-                    <input
-                      type="file"
-                      id={`image-upload-${item.id}-${item.currentImageIndex}`}
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={async (e) => {
-                        if (e.target.files?.[0]) {
-                          try {
-                            setUploading(prev => ({ ...prev, [item.id]: true }));
-                            
-                            const file = e.target.files[0];
-                            console.log('File selected:', {
-                              name: file.name,
-                              type: file.type,
-                              size: file.size
-                            });
-                      
-                            const storageRef = ref(
-                              storage, 
-                              `shops/${auth.currentUser.uid}/items/${item.id}/image-${item.currentImageIndex}-${Date.now()}`
-                            );
-                            
-                            const metadata = {
-                              contentType: file.type || 'image/jpeg',
-                              cacheControl: 'public,max-age=3600'
-                            };
-                      
-                            const snapshot = await uploadBytes(storageRef, file, metadata);
-                            const imageUrl = await getDownloadURL(snapshot.ref);
-                            
-                            console.log('Image uploaded, got URL:', imageUrl);
-                      
+                      {item.images[item.currentImageIndex] && (
+                        <button 
+                          className="add-image"
+                          onClick={() => {
                             const newImages = [...item.images];
-                            newImages[item.currentImageIndex] = imageUrl;
-                            
-                            console.log('Updating images array:', {
-                              oldImages: item.images,
-                              newImages: newImages
-                            });
-                      
-                            await handleItemUpdate(item.id, { images: newImages });
-                          } catch (error) {
-                            console.error('Error uploading image:', error);
-                          } finally {
-                            setUploading(prev => ({ ...prev, [item.id]: false }));
+                            newImages[item.currentImageIndex] = null;
+                            handleItemUpdate(item.id, { images: newImages });
+                          }}
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+
+                      <input
+                        type="file"
+                        id={`image-upload-${item.id}-${item.currentImageIndex}`}
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            handleImageUpload(item.id, item.currentImageIndex, e.target.files[0]);
                           }
-                        }
-                      }}
-                    />
-                  </ItemImageContainer>
+                        }}
+                      />
+                    </ItemImageContainer>
+
                     <ItemContent>
                       <div className="editable-text">
                         <EditableText
@@ -1468,7 +1408,7 @@ const ShopPage = () => {
                         address={item.address || ''}
                         onAddressChange={(value) => handleItemUpdate(item.id, { 
                           address: value,
-                          coordinates: null // Clear coordinates when address changes
+                          coordinates: null
                         })}
                         onLocationSelect={(location) => {
                           if (location?.coordinates?.latitude && location?.coordinates?.longitude) {
@@ -1483,21 +1423,22 @@ const ShopPage = () => {
                           }
                         }}
                       />
+                      
                       <DeleteSection>
-                      <DeleteItemButton
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteItem(item.id);
-                        }}
-                      >
-                        <Trash2 size={16} />
-                        Remove Item
-                      </DeleteItemButton>
+                        <DeleteItemButton
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteItem(item.id);
+                          }}
+                        >
+                          <Trash2 size={16} />
+                          Remove Item
+                        </DeleteItemButton>
                       </DeleteSection>
                     </ItemContent>
-                </ItemCard>
-              ))}
-            </ItemGrid>              
+                  </ItemCard>
+                ))}
+              </ItemGrid>              
             </>
           )}
 
@@ -1505,12 +1446,11 @@ const ShopPage = () => {
             <div>
               <EditableText
                 value={shopData?.mission}
-                onChange={(value) => saveShopData({ mission: value })}
+                onChange={(value) => handleUpdateShop({ mission: value })}
                 placeholder="Your Shop's Mission"
                 multiline
                 theme={shopData?.theme}
               />
-              {/* Add more home page customization options */}
             </div>
           )}
 
