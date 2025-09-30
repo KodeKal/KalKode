@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { ThemeProvider } from 'styled-components';
+import ValidatedEditableText from '../../components/common/ValidatedEditableText';
+import { VALIDATION_RULES, validateShopData, validateAllItems } from '../../utils/inputValidation';
 import { auth, db } from '../../firebase/config';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import TabPositioner from './components/TabPositioner';
@@ -859,6 +861,7 @@ const ShopPage = () => {
   const [uploading, setUploading] = useState({});
   const [tabPosition, setTabPosition] = useState('top');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
 
   // Deep comparison utility
   const deepEqual = (obj1, obj2) => {
@@ -889,32 +892,45 @@ const ShopPage = () => {
 
   // Save changes to Firestore
   const handleSave = async () => {
-    if (!auth.currentUser || !hasUnsavedChanges) return;
+  if (!auth.currentUser || !hasUnsavedChanges) return;
 
-    try {
-      setSaving(true);
-      console.log('Saving shop data to Firestore...');
+  // Validate before saving
+  const shopValidation = validateShopData(shopData);
+  const itemsValidation = validateAllItems(shopData.items);
+  
+  if (!shopValidation.isValid || !itemsValidation.isValid) {
+    setValidationErrors({
+      shop: shopValidation.errors,
+      items: itemsValidation.itemErrors
+    });
+    
+    alert('Please fix validation errors before saving');
+    return;
+  }
 
-      const shopRef = doc(db, 'shops', auth.currentUser.uid);
-      const updateData = cleanDataForFirestore({
-        ...shopData,
-        updatedAt: new Date().toISOString()
-      });
+  try {
+    setSaving(true);
+    console.log('Saving shop data to Firestore...');
 
-      await updateDoc(shopRef, updateData);
-      
-      // Update the original data to reflect the saved state
-      setOriginalShopData(JSON.parse(JSON.stringify(shopData)));
-      setHasUnsavedChanges(false);
-      
-      console.log('Shop data saved successfully');
-    } catch (error) {
-      console.error('Error saving shop data:', error);
-      // You could add a toast notification here
-    } finally {
-      setSaving(false);
-    }
-  };
+    const shopRef = doc(db, 'shops', auth.currentUser.uid);
+    const updateData = cleanDataForFirestore({
+      ...shopData,
+      updatedAt: new Date().toISOString()
+    });
+
+    await updateDoc(shopRef, updateData);
+    
+    setOriginalShopData(JSON.parse(JSON.stringify(shopData)));
+    setHasUnsavedChanges(false);
+    setValidationErrors({}); // Clear errors
+    
+    console.log('Shop data saved successfully');
+  } catch (error) {
+    console.error('Error saving shop data:', error);
+  } finally {
+    setSaving(false);
+  }
+};
 
   // Reset changes to original state
   const handleReset = () => {
@@ -1292,10 +1308,11 @@ const ShopPage = () => {
                   )}
                 </div>
                 <div className="shop-name-container">
-                  <EditableText
+                  <ValidatedEditableText
                     value={shopData?.name}
                     onChange={(value) => handleUpdateShop({ name: value })}
                     placeholder="Shop Name"
+                    validationRules={VALIDATION_RULES.shop.name}
                     style={{
                       fontSize: `${shopNameFontSize}rem`,
                       maxWidth: '500px',
@@ -1304,10 +1321,11 @@ const ShopPage = () => {
                   />
                 </div>
                 <div className="shop-description-container">
-                  <EditableText
+                  <ValidatedEditableText
                     value={shopData?.description}
                     onChange={(value) => handleUpdateShop({ description: value })}
                     placeholder="Shop Description"
+                    validationRules={VALIDATION_RULES.shop.description}
                     multiline={false} 
                   />
                 </div>
@@ -1408,7 +1426,7 @@ const ShopPage = () => {
 
                     <ItemContent>
                       <div className="editable-text">
-                        <EditableText
+                        <ValidatedEditableText
                           value={item.name}
                           onChange={(value) => handleItemUpdate(item.id, { name: value })}
                           placeholder="Item Name"
@@ -1417,7 +1435,7 @@ const ShopPage = () => {
                       </div>
 
                       <div className="editable-text">
-                        <EditableText
+                        <ValidatedEditableText
                           value={item.price}
                           onChange={(value) => handleItemUpdate(item.id, { price: value })}
                           placeholder="Price"
@@ -1426,7 +1444,7 @@ const ShopPage = () => {
                       </div>
 
                       <div className="editable-text">
-                        <EditableText
+                        <ValidatedEditableText
                           value={item.description}
                           onChange={(value) => handleItemUpdate(item.id, { description: value })}
                           placeholder="Item Description"
@@ -1495,11 +1513,12 @@ const ShopPage = () => {
 
           {activeTab === 'home' && (
             <div>
-              <EditableText
+              <ValidatedEditableText
                 value={shopData?.mission}
                 onChange={(value) => handleUpdateShop({ mission: value })}
                 placeholder="Your Shop's Mission"
                 multiline
+                validationRules={VALIDATION_RULES.shop.mission}
                 theme={shopData?.theme}
               />
             </div>

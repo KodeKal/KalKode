@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { ThemeProvider, createGlobalStyle } from 'styled-components';
+import ValidatedEditableText from '../../components/common/ValidatedEditableText';
+import { VALIDATION_RULES, validateShopData, validateAllItems } from '../../utils/inputValidation';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -741,6 +743,7 @@ const LiveShopCreation = () => {
   const [isPinned, setIsPinned] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [expandedItems, setExpandedItems] = useState(new Set());
+  const [validationErrors, setValidationErrors] = useState({});
 
   // Consolidated shop data
   const [shopData, setShopData] = useState({
@@ -893,26 +896,42 @@ const LiveShopCreation = () => {
   };
 
   const handleSave = () => {
-    const dataToSave = {
-      ...shopData,
-      theme: selectedTheme,
-      layout: {
-        namePosition: shopData.layout.namePosition,
-        tabPosition: 'top',
-        nameSize: shopNameFontSize
-      },
-      createdAt: new Date().toISOString()
-    };
-    
-    saveTempStore(dataToSave);
-    
-    navigate('/auth', {
-      state: { 
-        mode: 'signup', 
-        tempData: dataToSave 
-      }
+  // Validate shop data
+  const shopValidation = validateShopData(shopData);
+  const itemsValidation = validateAllItems(shopData.items);
+  
+  if (!shopValidation.isValid || !itemsValidation.isValid) {
+    setValidationErrors({
+      shop: shopValidation.errors,
+      items: itemsValidation.itemErrors
     });
+    
+    // Scroll to first error
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    alert('Please fix validation errors before saving');
+    return;
+  }
+
+  const dataToSave = {
+    ...shopData,
+    theme: selectedTheme,
+    layout: {
+      namePosition: shopData.layout.namePosition,
+      tabPosition: 'top',
+      nameSize: shopNameFontSize
+    },
+    createdAt: new Date().toISOString()
   };
+  
+  saveTempStore(dataToSave);
+  
+  navigate('/auth', {
+    state: { 
+      mode: 'signup', 
+      tempData: dataToSave 
+    }
+  });
+};
 
   const renderShopView = () => (
     <MainContent>
@@ -928,10 +947,12 @@ const LiveShopCreation = () => {
           />
         </div>
         <div className="shop-name-container">
-          <EditableText
+          <ValidatedEditableText
             value={shopData.name}
             onChange={(value) => handleShopDataChange('name', value)}
             placeholder="Enter Your Shop Name"
+            validationRules={VALIDATION_RULES.shop.name}
+            theme={selectedTheme}
             style={{
               fontSize: `${Math.min(shopNameFontSize, 2)}rem`,
               maxWidth: '500px',
@@ -940,13 +961,15 @@ const LiveShopCreation = () => {
           />
         </div>
         <div className="shop-description-container">
-          <EditableText
-            value={shopData.description}
-            onChange={(value) => handleShopDataChange('description', value)}
-            placeholder="Shop Description"
-            multiline={false}
-          />
-        </div>
+        <ValidatedEditableText
+          value={shopData.description}
+          onChange={(value) => handleShopDataChange('description', value)}
+          placeholder="Shop Description"
+          multiline={false}
+          validationRules={VALIDATION_RULES.shop.description}
+          theme={selectedTheme}
+        />
+      </div>
       </ShopProfileSection>
 
       <AddItemButton onClick={handleItemAdd} theme={selectedTheme}>
@@ -1031,22 +1054,25 @@ const LiveShopCreation = () => {
                   
                   <ItemDetails expanded={isExpanded}>
                     <div className="details-content">
-                      <EditableText
+                      <ValidatedEditableText
                         value={item.name}
                         onChange={(value) => handleItemUpdate(item.id, { name: value })}
                         placeholder="Item Name"
+                        validationRules={VALIDATION_RULES.item.name}
                         theme={selectedTheme}
                       />
-                      <EditableText
+                      <ValidatedEditableText
                         value={item.price}
                         onChange={(value) => handleItemUpdate(item.id, { price: value })}
                         placeholder="Price"
+                        validationRules={VALIDATION_RULES.item.price}
                         theme={selectedTheme}
                       />
-                      <EditableText
+                      <ValidatedEditableText
                         value={item.description}
                         onChange={(value) => handleItemUpdate(item.id, { description: value })}
                         placeholder="Item Description"
+                        validationRules={VALIDATION_RULES.item.description}
                         multiline
                         theme={selectedTheme}
                       />
@@ -1109,12 +1135,12 @@ const LiveShopCreation = () => {
         }}>
           Mission Statement
         </h2>
-        <EditableText
+        <ValidatedEditableText
           value={shopData.mission}
           onChange={(value) => handleShopDataChange('mission', value)}
           placeholder="What's your shop's mission?"
           multiline
-          maxLength={500}
+          validationRules={VALIDATION_RULES.shop.mission}
           theme={selectedTheme}
         />
       </div>
