@@ -1206,6 +1206,92 @@ const MotivationalMessage = styled.p`
   }
 `;
 
+// 1. Replace the CategoryGrid styled component with these two new components:
+
+const CategoryGridWrapper = styled.div`
+  margin-bottom: 2rem;
+  
+  /* Desktop: Regular grid */
+  @media (min-width: 769px) {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+  }
+  
+  @media (max-width: 1200px) and (min-width: 769px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  @media (max-width: 900px) and (min-width: 769px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  /* Mobile: Scrollable rows */
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+`;
+
+// Replace the CategoryScrollableGrid styled component with this corrected version:
+
+const CategoryScrollableGrid = styled.div`
+  display: none;
+  
+  @media (max-width: 768px) {
+    display: grid;
+    grid-auto-flow: column; /* Changed: Make items flow in columns */
+    grid-template-rows: repeat(2, 1fr); /* 2 rows */
+    grid-template-columns: repeat(5, minmax(200px, 1fr)); /* 5 columns with min-width */
+    gap: 0.75rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.5rem;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
+      border-radius: 10px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: ${props => props.theme?.colors?.accent || '#800000'};
+      border-radius: 10px;
+    }
+    
+    > * {
+      scroll-snap-align: start;
+      min-width: 0; /* Allow items to shrink */
+    }
+  }
+  
+  @media (max-width: 480px) {
+    grid-template-columns: repeat(5, minmax(160px, 1fr));
+    gap: 0.5rem;
+  }
+`;
+
+// 4. Add this CSS to handle responsive display (add to your styled components section):
+const GlobalStyle = styled.div`
+  @media (min-width: 769px) {
+    .mobile-only {
+      display: none !important;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .desktop-only {
+      display: none !important;
+    }
+  }
+`;
+
 const CategoryHeader = styled.div`
   display: flex;
   justify-content: space-between;
@@ -1484,7 +1570,20 @@ const WelcomePage = () => {
     }
   };
 
-  // Clear featured search
+  const handleRowScroll = (categoryName, rowNumber, scrollLeft) => {
+  const row1Id = `${categoryName}-row1`;
+  const row2Id = `${categoryName}-row2`;
+  
+  const row1Element = document.getElementById(row1Id);
+  const row2Element = document.getElementById(row2Id);
+  
+  if (rowNumber === 1 && row2Element) {
+    row2Element.scrollLeft = scrollLeft;
+  } else if (rowNumber === 2 && row1Element) {
+    row1Element.scrollLeft = scrollLeft;
+  }
+};
+
   const handleClearFeaturedSearch = () => {
     setFeaturedSearchTerm('');
     setSearchResults([]);
@@ -1552,11 +1651,11 @@ const WelcomePage = () => {
       });
 
       Object.keys(categorizedItems).forEach(category => {
-        categorizedItems[category] = categorizedItems[category].slice(0, 8);
+        categorizedItems[category] = categorizedItems[category].slice(0, 10);
       });
 
       setCategories(categorizedItems);
-      setFeaturedItems(itemsWithDistance.slice(0, 8));
+      setFeaturedItems(itemsWithDistance.slice(0, 10));
       setTotalItems(filteredItems.length);
 
       setLoading(false);
@@ -2265,7 +2364,6 @@ const WelcomePage = () => {
                 )}
               </div>
             ) : (
-              // Default categorized view
               <div>
                 {/* Featured Items Slider */}
                 <CategoryHeader theme={currentStyle}>
@@ -2275,51 +2373,80 @@ const WelcomePage = () => {
                   </span>
                 </CategoryHeader>
 
-                <SliderContainer theme={currentStyle}>
-                  <Slider ref={sliderRef}>
-                    {featuredItems.map(item => (
-                      <SlideItem key={`featured-${item.shopId}-${item.id}`}>
-                        <FeaturedItem
-                          item={item}
-                          theme={currentStyle}
-                          onItemClick={handleItemClick}
-                          showDistance={true}
-                        />
-                      </SlideItem>
-                    ))}
-                  </Slider>
-                </SliderContainer>
-                
-                {/* Category Sliders */}
-                {Object.entries(categories).map(([categoryName, items]) => {
-                  if (items.length === 0) return null;
-
-                  return (
-                    <div key={categoryName} style={{ marginTop: '2rem' }}>
-                      <CategoryHeader theme={currentStyle}>
-                        <h2>{categoryName}</h2>
-                        <span className="view-all">
-                          {items.length} items
-                        </span>
-                      </CategoryHeader>
-
-                      <SliderContainer theme={currentStyle}>
-                        <Slider>
-                          {items.map(item => (
-                            <SlideItem key={`${categoryName}-${item.shopId}-${item.id}`}>
-                              <FeaturedItem
-                                item={item}
-                                theme={currentStyle}
-                                onItemClick={handleItemClick}
-                                showDistance={true}
-                              />
-                            </SlideItem>
-                          ))}
-                        </Slider>
-                      </SliderContainer>
+                <CategoryGridWrapper>
+                {/* Desktop: Show all items in grid */}
+                <div className="desktop-grid" style={{ display: 'contents' }}>
+                  {featuredItems.map(item => (
+                    <div key={`featured-${item.shopId}-${item.id}`} className="desktop-only" 
+                         style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
+                      <FeaturedItem
+                        item={item}
+                        theme={currentStyle}
+                        onItemClick={handleItemClick}
+                        showDistance={true}
+                      />
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
+                
+                {/* Mobile: Show all 10 items in a 2-row scrollable grid */}
+                <CategoryScrollableGrid theme={currentStyle} className="mobile-only">
+                  {featuredItems.map(item => (
+                    <FeaturedItem
+                      key={`featured-mobile-${item.shopId}-${item.id}`}
+                      item={item}
+                      theme={currentStyle}
+                      onItemClick={handleItemClick}
+                      showDistance={true}
+                    />
+                  ))}
+                </CategoryScrollableGrid>
+              </CategoryGridWrapper>
+                
+              {Object.entries(categories).map(([categoryName, items]) => {
+          if (items.length === 0) return null;
+                      
+          return (
+            <div key={categoryName} style={{ marginTop: '3rem' }}>
+              <CategoryHeader theme={currentStyle}>
+                <h2>{categoryName}</h2>
+                <span className="view-all">
+                  {items.length} items
+                </span>
+              </CategoryHeader>
+          
+              <CategoryGridWrapper>
+                {/* Desktop: Show all items in grid */}
+                <div className="desktop-grid" style={{ display: 'contents' }}>
+                  {items.map(item => (
+                    <div key={`${categoryName}-${item.shopId}-${item.id}`} className="desktop-only"
+                         style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
+                      <FeaturedItem
+                        item={item}
+                        theme={currentStyle}
+                        onItemClick={handleItemClick}
+                        showDistance={true}
+                      />
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Mobile: Show all items in a scrollable grid (1 or 2 rows based on count) */}
+                <CategoryScrollableGrid theme={currentStyle} className="mobile-only" itemCount={items.length}>
+                  {items.map(item => (
+                    <FeaturedItem
+                      key={`${categoryName}-mobile-${item.shopId}-${item.id}`}
+                      item={item}
+                      theme={currentStyle}
+                      onItemClick={handleItemClick}
+                      showDistance={true}
+                    />
+                  ))}
+                </CategoryScrollableGrid>
+              </CategoryGridWrapper>
+            </div>
+          );
+        })}
               </div>
             )}
           </>
