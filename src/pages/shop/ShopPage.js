@@ -34,21 +34,36 @@ const ITEM_CATEGORIES = [
   'Other'
 ];
 
-// Add new styled components for save controls
+// Updated styled components for ShopPage.js
+// Reuse the existing SaveControlsContainer but make it mobile-friendly
+
 const SaveControlsContainer = styled.div`
   position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
   z-index: 100;
+  display: flex;
+  gap: 0.75rem;
   
-  @media (max-width: 768px) {
-    bottom: 1rem;
-    right: 1rem;
+  /* Mobile: center bottom, above theme selector */
+  @media (max-width: 767px) {
+    bottom: 6rem;
+    left: 50%;
+    transform: translateX(-50%);
     flex-direction: row;
     gap: 0.5rem;
+  }
+  
+  /* Tablet: right side */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    bottom: 8rem;
+    right: 1rem;
+    flex-direction: column;
+  }
+  
+  /* Desktop: right side */
+  @media (min-width: 1024px) {
+    bottom: 2rem;
+    right: 2rem;
+    flex-direction: column;
   }
 `;
 
@@ -68,14 +83,20 @@ const SaveButton = styled.button`
   align-items: center;
   gap: 0.5rem;
   box-shadow: ${props => props.hasChanges ? 
-    '0 4px 15px rgba(0, 0, 0, 0.2)' : 
+    '0 4px 15px rgba(0, 0, 0, 0.3)' : 
     '0 2px 8px rgba(0, 0, 0, 0.1)'
   };
   font-family: ${props => props.theme?.fonts?.body || 'sans-serif'};
+  white-space: nowrap;
   
-  @media (max-width: 768px) {
-    padding: 0.8rem 1.2rem;
-    font-size: 0.9rem;
+  @media (max-width: 767px) {
+    padding: 0.75rem 1.2rem;
+    font-size: 0.85rem;
+  }
+
+  @media (min-width: 768px) {
+    min-width: 160px;
+    justify-content: center;
   }
 
   &:hover {
@@ -84,6 +105,10 @@ const SaveButton = styled.button`
       `0 6px 20px ${props.theme?.colors?.accent}4D` : 
       '0 2px 8px rgba(0, 0, 0, 0.1)'
     };
+  }
+
+  &:active {
+    transform: ${props => props.hasChanges ? 'scale(0.98)' : 'none'};
   }
 
   &:disabled {
@@ -107,10 +132,16 @@ const ResetButton = styled.button`
   gap: 0.5rem;
   opacity: ${props => props.hasChanges ? 1 : 0.5};
   font-family: ${props => props.theme?.fonts?.body || 'sans-serif'};
+  white-space: nowrap;
   
-  @media (max-width: 768px) {
+  @media (max-width: 767px) {
     padding: 0.6rem 1rem;
     font-size: 0.8rem;
+  }
+
+  @media (min-width: 768px) {
+    min-width: 160px;
+    justify-content: center;
   }
 
   &:hover {
@@ -120,13 +151,14 @@ const ResetButton = styled.button`
     };
     transform: ${props => props.hasChanges ? 'translateY(-1px)' : 'none'};
   }
+
+  &:active {
+    transform: ${props => props.hasChanges ? 'scale(0.98)' : 'none'};
+  }
 `;
 
 const UnsavedChangesIndicator = styled.div`
   position: fixed;
-  top: 50%;
-  left: 1rem;
-  transform: translateY(-50%);
   background: ${props => props.theme?.colors?.accent || '#800000'};
   color: white;
   padding: 0.5rem 1rem;
@@ -140,12 +172,20 @@ const UnsavedChangesIndicator = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  pointer-events: none;
   
-  @media (max-width: 768px) {
-    top: auto;
-    bottom: 6rem;
+  /* Mobile: top center below header */
+  @media (max-width: 767px) {
+    top: 4.5rem;
     left: 50%;
     transform: translateX(-50%);
+  }
+  
+  /* Desktop: left side middle */
+  @media (min-width: 768px) {
+    top: 50%;
+    left: 1rem;
+    transform: translateY(-50%);
   }
 
   &::before {
@@ -160,6 +200,35 @@ const UnsavedChangesIndicator = styled.div`
   @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
+  }
+`;
+
+const ThemeContainer = styled.div`
+  position: fixed;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Mobile: bottom center */
+  @media (max-width: 767px) {
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* Desktop: bottom center */
+  @media (min-width: 768px) {
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  & > div > div:nth-child(2) {
+    bottom: calc(100% + 0.5rem);
+    top: auto;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
   }
 `;
 
@@ -719,24 +788,6 @@ const TabControlsContainer = styled.div`
   top: 0.1rem;
   left: 51%;
   transform: translateX(-50%);
-`;
-
-const ThemeContainer = styled.div`
-  position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  & > div > div:nth-child(2) {
-    bottom: calc(100% + 0.5rem);
-    top: auto;
-    margin-top: 0;
-    margin-bottom: 0.5rem;
-  }
 `;
 
 const UploadingOverlay = styled.div`

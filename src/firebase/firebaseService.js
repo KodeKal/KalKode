@@ -234,7 +234,7 @@ const uploadImageWithCORS = async (file, path) => {
   }
 };
 
-// Updated saveShopData function with batch operations
+// Updated saveShopData function with coordinates fix
 export const saveShopData = async (userId, data) => {
   try {
     const hasShop = await checkExistingShop(userId);
@@ -248,6 +248,7 @@ export const saveShopData = async (userId, data) => {
     let shopData = {
       name: data.name || '',
       description: data.description || '',
+      mission: data.mission || '',
       theme: cleanDataForFirestore(data.theme) || {},
       layout: cleanDataForFirestore(data.layout) || {},
       createdAt: new Date().toISOString(),
@@ -258,12 +259,25 @@ export const saveShopData = async (userId, data) => {
         name: item.name || '',
         price: item.price || '',
         description: item.description || '',
+        category: item.category || 'Other',
         quantity: item.quantity || 1,
         currentImageIndex: item.currentImageIndex || 0,
+        address: item.address || '', // FIXED: Added address
+        coordinates: item.coordinates || null, // FIXED: Added coordinates
+        tags: item.tags || [],
         images: [] // Initialize empty, will be updated after upload
       })) || [],
       profile: null // Initialize as null, will be updated after upload
     };
+
+    console.log('Items with coordinates before save:', 
+      shopData.items.filter(i => i.coordinates).map(i => ({
+        id: i.id,
+        name: i.name,
+        address: i.address,
+        coordinates: i.coordinates
+      }))
+    );
 
     // Save initial clean data
     const shopRef = doc(db, 'shops', userId);
@@ -289,21 +303,6 @@ export const saveShopData = async (userId, data) => {
       }
     }
 
-    const items = data.items.map(item => ({
-      ...item,
-      address: item.address || '',
-      coordinates: item.coordinates || null,
-      quantity: item.quantity || 1,
-      views: 0,
-      likes: 0,
-      status: 'active',
-      deleted: false,
-      createdAt: item.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      tags: item.tags || [],
-      searchTerms: item.name ? item.name.toLowerCase().split(' ') : []
-    }));
-
     // Try uploading item images
     if (Array.isArray(data.items)) {
       const processedItems = await Promise.all(data.items.map(async (item) => {
@@ -312,8 +311,12 @@ export const saveShopData = async (userId, data) => {
           name: item.name || '',
           price: item.price || '',
           description: item.description || '',
+          category: item.category || 'Other',
           currentImageIndex: item.currentImageIndex || 0,
           quantity: item.quantity || 1,
+          address: item.address || '', // FIXED: Preserve address
+          coordinates: item.coordinates || null, // FIXED: Preserve coordinates
+          tags: item.tags || [],
           images: []
         };
       
@@ -335,6 +338,15 @@ export const saveShopData = async (userId, data) => {
       
       shopData.items = processedItems;
     
+      console.log('Final items with coordinates:', 
+        processedItems.filter(i => i.coordinates).map(i => ({
+          id: i.id,
+          name: i.name,
+          address: i.address,
+          coordinates: i.coordinates
+        }))
+      );
+
       // Update items in Firestore
       await updateDoc(shopRef, {
         items: processedItems,
@@ -342,7 +354,7 @@ export const saveShopData = async (userId, data) => {
       });
     }
 
-    console.log('Shop data saved successfully:', shopData);
+    console.log('Shop data saved successfully with coordinates');
     return shopData;
 
   } catch (error) {
