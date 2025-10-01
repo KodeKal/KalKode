@@ -2186,7 +2186,7 @@ const WelcomePage = () => {
           ) : (
             <>
               <h1>Welcome to KalKode</h1>
-              <p>Join the underground marketplace that strengthens communities.</p>
+              <p>Trade with Your Community.</p>
 
               <ActionButtonContainer>
                 <ActionButton theme={currentStyle} onClick={handleOpenShop}>
