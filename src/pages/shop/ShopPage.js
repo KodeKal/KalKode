@@ -21,6 +21,18 @@ import QuantitySelector from '../../components/shop/QuantitySelector';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 import { signOut } from 'firebase/auth';
 import { RefreshCw, Pin, LogOut } from 'lucide-react';
+import HomePageEditor from './HomePageEditor';
+import { saveHomePageConfig } from '../../firebase/firebaseService';
+import {
+  NewsletterWidget,
+  CountdownWidget,
+  TestimonialsWidget,
+  GalleryWidget,
+  SocialFeedWidget,
+  VideoWidget,
+  FAQWidget,
+  TeamWidget
+} from './HomePageWidgets';
 
 const ITEM_CATEGORIES = [
   'Electronics & Tech',
@@ -724,6 +736,27 @@ const HeaderButton = styled.button`
   }
 `;
 
+const HomePageEditorButton = styled.button`
+  position: fixed;
+  bottom: 2rem;
+  left: 2rem;
+  background: ${props => props.theme?.colors?.accent};
+  color: white;
+  border: none;
+  padding: 1rem;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  
+  &:hover {
+    transform: scale(1.1);
+  }
+`;
+
 const PageContainer = styled.div`
   min-height: 100vh;
   background: ${props => props.theme?.colors?.background || DEFAULT_THEME.colors.background};
@@ -828,6 +861,66 @@ const ItemGrid = styled.div`
   margin: 4rem 0;
 `;
 
+const HeroBannerWidget = ({ config, theme }) => (
+  <div style={{
+    height: '400px',
+    background: `linear-gradient(135deg, ${theme?.colors?.accent}20 0%, ${theme?.colors?.background} 100%)`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '2rem',
+    fontWeight: 'bold'
+  }}>
+    {config.headline || "Welcome"}
+  </div>
+);
+
+const ProductCarouselWidget = ({ config, theme, items = [] }) => (
+  <div style={{ padding: '2rem 0' }}>
+    <h2 style={{ marginBottom: '1.5rem', color: theme?.colors?.accent }}>
+      Featured Products
+    </h2>
+    <div style={{ 
+      display: 'grid', 
+      gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+      gap: '1rem'
+    }}>
+      {items.slice(0, config.itemsToShow || 4).map((item, i) => (
+        <div key={i} style={{
+          background: `${theme?.colors?.surface}80`,
+          borderRadius: '8px',
+          padding: '1rem'
+        }}>
+          <h4>{item.name}</h4>
+          <p>${item.price}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const StatsWidget = ({ config, theme }) => (
+  <div style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '2rem',
+    padding: '3rem'
+  }}>
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ fontSize: '2rem', color: theme?.colors?.accent }}>100+</div>
+      <div>Products</div>
+    </div>
+  </div>
+);
+
+const AnnouncementBar = styled.div`
+  background: ${props => props.theme?.colors?.accent || '#800000'};
+  color: white;
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+`;
+
 const cleanDataForFirestore = (data) => {
   if (!data) return data;
   
@@ -862,6 +955,7 @@ const ShopPage = () => {
   const [tabPosition, setTabPosition] = useState('top');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [showHomeEditor, setShowHomeEditor] = useState(false);
 
   // Deep comparison utility
   const deepEqual = (obj1, obj2) => {
@@ -1079,6 +1173,66 @@ const ShopPage = () => {
       ...prev,
       items: updatedItems
     }));
+  };
+
+  const renderPublicWidget = (widget) => {
+      const props = {
+        config: widget.config,
+        theme: shopData?.theme
+      };
+  
+      switch (widget.type) {
+        case 'hero-banner':
+          return <HeroBannerWidget {...props} />;
+        case 'product-carousel':
+          return <ProductCarouselWidget {...props} items={shopData?.items || []} />;
+        case 'stats-dashboard':
+          return <StatsWidget {...props} stats={shopData?.stats} />;
+        case 'newsletter':
+          return <NewsletterWidget {...props} />;
+        case 'countdown-timer':
+          return <CountdownWidget {...props} />;
+        case 'testimonials':
+          return <TestimonialsWidget {...props} />;
+        case 'gallery':
+          return <GalleryWidget {...props} />;
+        case 'social-feed':
+          return <SocialFeedWidget {...props} />;
+        case 'video-section':
+          return <VideoWidget {...props} />;
+        case 'faq-section':
+          return <FAQWidget {...props} />;
+        case 'team-section':
+          return <TeamWidget {...props} />;
+        case 'announcement-bar':
+          return <AnnouncementBar {...props} />;
+        default:
+          return null;
+      }
+    };
+
+  const renderHomePageWidgets = () => {
+    if (!shopData?.homeWidgets || shopData.homeWidgets.length === 0) {
+      return (
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '4rem 1rem',
+          background: `${shopData?.theme?.colors?.surface}50`,
+          borderRadius: '12px'
+        }}>
+          <h2>Welcome to {shopData?.name || 'Our Shop'}</h2>
+          <p>{shopData?.mission || 'Start customizing your home page by adding widgets.'}</p>
+        </div>
+      );
+    }
+
+    return shopData.homeWidgets
+      .filter(widget => widget.visible)
+      .map(widget => (
+        <div key={widget.id} style={{ marginBottom: '2rem' }}>
+          {renderPublicWidget(widget)}
+        </div>
+      ));
   };
 
   const handleAddItem = () => {
@@ -1512,17 +1666,38 @@ const ShopPage = () => {
           )}
 
           {activeTab === 'home' && (
-            <div>
-              <ValidatedEditableText
-                value={shopData?.mission}
-                onChange={(value) => handleUpdateShop({ mission: value })}
-                placeholder="Your Shop's Mission"
-                multiline
-                validationRules={VALIDATION_RULES.shop.mission}
+          <>
+            {showHomeEditor ? (
+              <HomePageEditor 
+                shopData={shopData}
                 theme={shopData?.theme}
+                onSave={async (data) => {
+                  await saveHomePageConfig(auth.currentUser.uid, data.homeWidgets);
+                  setShopData(prev => ({ ...prev, ...data }));
+                  setShowHomeEditor(false);
+                }}
               />
-            </div>
-          )}
+            ) : (
+              <div>
+                {/* Existing home content */}
+                <button 
+                  onClick={() => setShowHomeEditor(true)}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: shopData?.theme?.colors?.accent,
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    marginTop: '2rem'
+                  }}
+                >
+                  Edit Home Page Layout
+                </button>
+              </div>
+            )}
+          </>
+        )}
 
           {activeTab === 'community' && (
             <div>

@@ -30,6 +30,16 @@ import {
   Users,
   LogOut
 } from 'lucide-react';
+import {
+  NewsletterWidget,
+  CountdownWidget,
+  TestimonialsWidget,
+  GalleryWidget,
+  SocialFeedWidget,
+  VideoWidget,
+  FAQWidget,
+  TeamWidget
+} from './HomePageWidgets';
 import TabPositioner from './components/TabPositioner';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 
@@ -805,6 +815,67 @@ const EmptyStateMessage = styled.div`
   }
 `;
 
+// Add these specific widget components
+const HeroBannerWidget = ({ config, theme }) => (
+  <div style={{
+    height: '400px',
+    background: `linear-gradient(135deg, ${theme?.colors?.accent}20 0%, ${theme?.colors?.background} 100%)`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '2rem',
+    fontWeight: 'bold'
+  }}>
+    {config.headline || "Welcome"}
+  </div>
+);
+
+const ProductCarouselWidget = ({ config, theme, items = [] }) => (
+  <div style={{ padding: '2rem 0' }}>
+    <h2 style={{ marginBottom: '1.5rem', color: theme?.colors?.accent }}>
+      Featured Products
+    </h2>
+    <div style={{ 
+      display: 'grid', 
+      gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+      gap: '1rem'
+    }}>
+      {items.slice(0, config.itemsToShow || 4).map((item, i) => (
+        <div key={i} style={{
+          background: `${theme?.colors?.surface}80`,
+          borderRadius: '8px',
+          padding: '1rem'
+        }}>
+          <h4>{item.name}</h4>
+          <p>${item.price}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const StatsWidget = ({ config, theme }) => (
+  <div style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '2rem',
+    padding: '3rem'
+  }}>
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ fontSize: '2rem', color: theme?.colors?.accent }}>100+</div>
+      <div>Products</div>
+    </div>
+  </div>
+);
+
+const AnnouncementBar = styled.div`
+  background: ${props => props.theme?.colors?.accent || '#800000'};
+  color: white;
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+`;
+
 const ChatOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -893,6 +964,42 @@ const ShopPublicView = () => {
     }
 
     setTimeout(() => setIsRefreshing(false), 500);
+  };
+
+  const renderPublicWidget = (widget) => {
+    const props = {
+      config: widget.config,
+      theme: shopData?.theme
+    };
+
+    switch (widget.type) {
+      case 'hero-banner':
+        return <HeroBannerWidget {...props} />;
+      case 'product-carousel':
+        return <ProductCarouselWidget {...props} items={shopData?.items || []} />;
+      case 'stats-dashboard':
+        return <StatsWidget {...props} stats={shopData?.stats} />;
+      case 'newsletter':
+        return <NewsletterWidget {...props} />;
+      case 'countdown-timer':
+        return <CountdownWidget {...props} />;
+      case 'testimonials':
+        return <TestimonialsWidget {...props} />;
+      case 'gallery':
+        return <GalleryWidget {...props} />;
+      case 'social-feed':
+        return <SocialFeedWidget {...props} />;
+      case 'video-section':
+        return <VideoWidget {...props} />;
+      case 'faq-section':
+        return <FAQWidget {...props} />;
+      case 'team-section':
+        return <TeamWidget {...props} />;
+      case 'announcement-bar':
+        return <AnnouncementBar {...props} />;
+      default:
+        return null;
+    }
   };
 
   const togglePinStyle = () => {
@@ -1215,28 +1322,42 @@ const ShopPublicView = () => {
     </>
   );
 
-  const renderHomeView = () => (
-    <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-      <h2 style={{ 
-        color: shopData?.theme?.colors?.accent || '#800000',
-        fontFamily: shopData?.theme?.fonts?.heading || "'Space Grotesk', sans-serif",
-        marginBottom: '1rem',
-        fontSize: '1.5rem'
-      }}>
-        Welcome to our Shop
-      </h2>
-      <p style={{ 
-        maxWidth: '800px',
-        margin: '0 auto',
-        lineHeight: '1.6',
-        color: shopData?.theme?.colors?.text || '#FFFFFF',
-        fontFamily: shopData?.theme?.fonts?.body || "'Inter', sans-serif",
-        fontSize: '1rem'
-      }}>
-        {shopData?.mission || 'Our mission is to provide quality products and excellent service to our customers.'}
-      </p>
-    </div>
-  );
+  const renderHomeView = () => {
+    if (shopData?.homeWidgets && shopData.homeWidgets.length > 0) {
+      return (
+        <div>
+          {shopData.homeWidgets
+            .filter(widget => widget.visible)
+            .map(widget => (
+              <div key={widget.id} style={{ marginBottom: '2rem' }}>
+                {renderPublicWidget(widget)}
+              </div>
+            ))}
+        </div>
+      );
+    }
+  
+    // Fallback to existing home view content
+    return (
+      <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+        <h2 style={{ 
+          color: shopData?.theme?.colors?.accent || '#800000',
+          fontFamily: shopData?.theme?.fonts?.heading,
+          marginBottom: '1rem',
+          fontSize: '1.5rem'
+        }}>
+          Welcome to our Shop
+        </h2>
+        <p style={{ 
+          maxWidth: '800px',
+          margin: '0 auto',
+          lineHeight: '1.6'
+        }}>
+          {shopData?.mission || 'Our mission is to provide quality products and excellent service.'}
+        </p>
+      </div>
+    );
+  };
 
   const renderCommunityView = () => (
     <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>

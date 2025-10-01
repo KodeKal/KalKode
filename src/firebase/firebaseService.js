@@ -57,6 +57,43 @@ export const getFeaturedItems = async (limitCount = 6) => {
   }
 };
 
+export const saveHomePageConfig = async (userId, widgets) => {
+  try {
+    const shopRef = doc(db, 'shops', userId);
+    const cleanWidgets = widgets.map(widget => ({
+      ...widget,
+      config: cleanDataForFirestore(widget.config)
+    }));
+    
+    await updateDoc(shopRef, {
+      homeWidgets: cleanWidgets,
+      homePageUpdated: new Date().toISOString()
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error saving home page config:', error);
+    throw error;
+  }
+};
+
+export const loadHomePageConfig = async (userId) => {
+  try {
+    const shopRef = doc(db, 'shops', userId);
+    const shopDoc = await getDoc(shopRef);
+    
+    if (shopDoc.exists()) {
+      const data = shopDoc.data();
+      return data.homeWidgets || [];
+    }
+    
+    return [];
+  } catch (error) {
+    console.error('Error loading home page config:', error);
+    return [];
+  }
+};
+
 export const checkExistingShop = async (userId) => {
   try {
     const shopRef = doc(db, 'shops', userId);
