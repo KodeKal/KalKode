@@ -1589,79 +1589,93 @@ const WelcomePage = () => {
   };
 
   // Load categorized items
-  const loadCategorizedItems = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Load categorized items
+const loadCategorizedItems = async () => {
+  try {
+    setLoading(true);
+    setError(null);
 
-      const allItems = await getFeaturedItems(48);
-      const currentUserId = user?.uid;
-      const filteredItems = allItems.filter(item => item.shopId !== currentUserId);
+    const allItems = await getFeaturedItems(48);
+    const currentUserId = user?.uid;
+    const filteredItems = allItems.filter(item => item.shopId !== currentUserId);
 
-      let itemsWithDistance = filteredItems;
-      if (userLocation) {
-        itemsWithDistance = filteredItems.map(item => {
-          if (item.coordinates && item.coordinates.lat && item.coordinates.lng) {
-            try {
-              const distanceInMeters = getDistance(
-                { latitude: userLocation.latitude, longitude: userLocation.longitude },
-                { latitude: item.coordinates.lat, longitude: item.coordinates.lng }
-              );
-              const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
-
-              return {
-                ...item,
-                distance: distanceInMeters,
-                distanceInMiles,
-                formattedDistance: `${distanceInMiles} mi`
-              };
-            } catch (e) {
-              console.warn('Error calculating distance for item:', e);
-              return item;
-            }
+    let itemsWithDistance = filteredItems;
+    if (userLocation) {
+      itemsWithDistance = filteredItems.map(item => {
+        // Use the same coordinate extraction logic as nearby tab
+        let itemCoords = item.coordinates;
+        if (!itemCoords && item.address) {
+          const coordsMatch = item.address.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+          if (coordsMatch) {
+            itemCoords = {
+              lat: parseFloat(coordsMatch[1]),
+              lng: parseFloat(coordsMatch[2])
+            };
           }
-          return item;
-        });
-      }
-
-      const categorizedItems = {
-        'Electronics & Tech': [],
-        'Clothing & Accessories': [],
-        'Home & Garden': [],
-        'Sports & Outdoors': [],
-        'Books & Media': [],
-        'Toys & Games': [],
-        'Health & Beauty': [],
-        'Automotive': [],
-        'Collectibles & Art': [],
-        'Food & Beverages': [],
-        'Other': []
-      };
-
-      itemsWithDistance.forEach(item => {
-        const category = item.category || 'Other';
-        if (categorizedItems[category]) {
-          categorizedItems[category].push(item);
-        } else {
-          categorizedItems['Other'].push(item);
         }
+
+        if (itemCoords?.lat && itemCoords?.lng) {
+          try {
+            const distanceInMeters = getDistance(
+              { latitude: userLocation.latitude, longitude: userLocation.longitude },
+              { latitude: itemCoords.lat, longitude: itemCoords.lng }
+            );
+            const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
+
+            return {
+              ...item,
+              coordinates: itemCoords,
+              distance: distanceInMeters,
+              distanceInMiles,
+              formattedDistance: `${distanceInMiles} mi`
+            };
+          } catch (e) {
+            console.warn('Error calculating distance for item:', e);
+            return item;
+          }
+        }
+        return item;
       });
-
-      Object.keys(categorizedItems).forEach(category => {
-        categorizedItems[category] = categorizedItems[category].slice(0, 10);
-      });
-
-      setCategories(categorizedItems);
-      setFeaturedItems(itemsWithDistance.slice(0, 10));
-      setTotalItems(filteredItems.length);
-
-      setLoading(false);
-    } catch (error) {
-      console.error('Error loading categorized items:', error);
-      setError('Failed to load items. Please try again later.');
-      setLoading(false);
     }
-  };
+
+    const categorizedItems = {
+      'Electronics & Tech': [],
+      'Clothing & Accessories': [],
+      'Home & Garden': [],
+      'Sports & Outdoors': [],
+      'Books & Media': [],
+      'Toys & Games': [],
+      'Health & Beauty': [],
+      'Automotive': [],
+      'Collectibles & Art': [],
+      'Food & Beverages': [],
+      'Other': []
+    };
+
+    itemsWithDistance.forEach(item => {
+      const category = item.category || 'Other';
+      if (categorizedItems[category]) {
+        categorizedItems[category].push(item);
+      } else {
+        categorizedItems['Other'].push(item);
+      }
+    });
+
+    Object.keys(categorizedItems).forEach(category => {
+      categorizedItems[category] = categorizedItems[category].slice(0, 10);
+    });
+
+    setCategories(categorizedItems);
+    setFeaturedItems(itemsWithDistance.slice(0, 10));
+    setTotalItems(filteredItems.length);
+
+    setLoading(false);
+  } catch (error) {
+    console.error('Error loading categorized items:', error);
+    setError('Failed to load items. Please try again later.');
+    setLoading(false);
+  }
+};
 
   // Fetch nearby items
   const fetchNearbyItems = async () => {

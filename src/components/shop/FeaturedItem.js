@@ -31,55 +31,6 @@ const CategoryBadge = styled.div`
   }
 `;
 
-// Updated ItemCard with mobile responsiveness
-const ItemCard = styled.div`
-  background: ${props => props.theme?.colors?.surface || 'rgba(0, 0, 0, 0.4)'};
-  border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
-  overflow: hidden;
-  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
-  cursor: pointer;
-  transition: all 0.3s ease;
-  min-height: 390px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  z-index: 1;
-  
-  &:hover {
-    transform: translateY(-5px);
-    border-color: ${props => props.theme?.colors?.accent || '#800000'};
-    box-shadow: 0 5px 15px ${props => `${props.theme?.colors?.accent || 'rgba(128, 0, 0, 0.2)'}40`};
-  }
-  
-  /* Mobile responsive adjustments */
-  @media (max-width: 768px) {
-    min-height: 320px;
-    border-radius: 10px;
-    
-    &:hover {
-      transform: translateY(-3px);
-    }
-  }
-  
-  @media (max-width: 480px) {
-    min-height: 280px;
-    border-radius: 8px;
-    
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 3px 10px ${props => `${props.theme?.colors?.accent || 'rgba(128, 0, 0, 0.2)'}30`};
-    }
-  }
-  
-  @media (max-width: 360px) {
-    min-height: 260px;
-    
-    &:hover {
-      transform: none; /* Disable hover transform on very small screens */
-      box-shadow: 0 2px 8px ${props => `${props.theme?.colors?.accent || 'rgba(128, 0, 0, 0.2)'}20`};
-    }
-  }
-`;
 
 const ExpandedActionButtons = styled.div`
   position: absolute;
@@ -111,115 +62,182 @@ const ChatOverlay = styled.div`
   transition: opacity 0.3s ease;
 `;
 
-const ItemInfo = styled.div`
-  padding: 1.5rem;
-  flex: 1;
+// Updated ItemCard with exact needed size
+const ItemCard = styled.div`
+  background: ${props => props.theme?.colors?.surface || 'rgba(0, 0, 0, 0.4)'};
+  border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
+  overflow: hidden;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
+  cursor: pointer;
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  position: relative;
+  z-index: 1;
+  height: fit-content;
+  
+  &:hover {
+    transform: translateY(-5px);
+    border-color: ${props => props.theme?.colors?.accent || '#800000'};
+    box-shadow: 0 5px 15px ${props => `${props.theme?.colors?.accent || 'rgba(128, 0, 0, 0.2)'}40`};
+  }
+  
+  /* Mobile responsive adjustments */
+  @media (max-width: 768px) {
+    border-radius: 10px;
+    
+    &:hover {
+      transform: translateY(-3px);
+    }
+  }
+  
+  @media (max-width: 480px) {
+    border-radius: 8px;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 3px 10px ${props => `${props.theme?.colors?.accent || 'rgba(128, 0, 0, 0.2)'}30`};
+    }
+  }
+  
+  @media (max-width: 360px) {
+    &:hover {
+      transform: none; /* Disable hover transform on very small screens */
+      box-shadow: 0 2px 8px ${props => `${props.theme?.colors?.accent || 'rgba(128, 0, 0, 0.2)'}20`};
+    }
+  }
+`;
+
+const ItemInfo = styled.div`
+  padding: 0.75rem 1rem;
+  height: 25%;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
   background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}`};
 
-  h3 {
-    font-size: 1.2rem;
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .item-name {
+    font-size: 1rem;
     color: ${props => props.theme?.colors?.text || '#FFFFFF'};
     margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    white-space: nowrap;
     font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
-    line-height: 1.3;
+    font-weight: 600;
+    flex: 1;
   }
 
   .price {
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: ${props => props.theme?.colors?.accent || '#800000'};
     font-weight: bold;
+    white-space: nowrap;
+  }
+
+  .shop-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: ${props => props.theme?.colors?.text || 'rgba(255, 255, 255, 0.7)'};
+    opacity: 0.8;
   }
 
   .shop-name {
-    font-size: 0.9rem;
-    color: ${props => props.theme?.colors?.text || 'rgba(255, 255, 255, 0.7)'};
-    margin-top: auto;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    
+    &:hover {
+      color: ${props => props.theme?.colors?.accent || '#800000'};
+      opacity: 1;
+    }
+  }
+
+  .divider {
+    opacity: 0.5;
   }
 
   .distance {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-    font-size: 0.85rem;
-    color: ${props => props.theme?.colors?.accent || '#800000'};
+    gap: 0.3rem;
+    white-space: nowrap;
   }
   
   /* Mobile responsive adjustments */
   @media (max-width: 768px) {
-    padding: 1.2rem;
-    gap: 0.6rem;
+    padding: 0.6rem 0.85rem;
+    min-height: 70px;
+    gap: 0.4rem;
     
-    h3 {
-      font-size: 1.1rem;
+    .item-name {
+      font-size: 0.95rem;
     }
     
     .price {
-      font-size: 1.05rem;
+      font-size: 0.95rem;
     }
     
-    .shop-name {
-      font-size: 0.85rem;
+    .shop-info {
+      font-size: 0.8rem;
     }
   }
   
   @media (max-width: 480px) {
-    padding: 1rem;
-    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    min-height: 60px;
+    gap: 0.35rem;
     
-    h3 {
-      font-size: 1rem;
-      -webkit-line-clamp: 2; /* Limit to 2 lines on mobile */
+    .item-name {
+      font-size: 0.9rem;
     }
     
     .price {
-      font-size: 1rem;
+      font-size: 0.9rem;
     }
     
-    .shop-name {
-      font-size: 0.8rem;
-    }
-    
-    .distance {
-      font-size: 0.8rem;
+    .shop-info {
+      font-size: 0.75rem;
       gap: 0.4rem;
     }
   }
   
   @media (max-width: 360px) {
-    padding: 0.75rem;
-    gap: 0.4rem;
+    padding: 0.4rem 0.6rem;
+    min-height: 55px;
     
-    h3 {
-      font-size: 0.95rem;
-      -webkit-line-clamp: 1; /* Limit to 1 line on very small screens */
+    .item-name {
+      font-size: 0.85rem;
     }
     
     .price {
-      font-size: 0.95rem;
+      font-size: 0.85rem;
     }
     
-    .shop-name {
-      font-size: 0.75rem;
-    }
-    
-    .distance {
-      font-size: 0.75rem;
+    .shop-info {
+      font-size: 0.7rem;
+      gap: 0.3rem;
     }
   }
 `;
 
 const ImageSection = styled.div`
   position: relative;
-  height: ${props => props.isExpanded ? '100%' : '200px'};
+  width: 100%;
+  aspect-ratio: 1 / 1; /* Square image */
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -270,8 +288,6 @@ const ImageSection = styled.div`
   
   /* Mobile responsive adjustments */
   @media (max-width: 768px) {
-    height: ${props => props.isExpanded ? '100%' : '180px'};
-    
     .carousel-arrow {
       width: 28px;
       height: 28px;
@@ -287,8 +303,6 @@ const ImageSection = styled.div`
   }
   
   @media (max-width: 480px) {
-    height: ${props => props.isExpanded ? '100%' : '150px'};
-    
     .carousel-arrow {
       width: 24px;
       height: 24px;
@@ -314,8 +328,6 @@ const ImageSection = styled.div`
   }
   
   @media (max-width: 360px) {
-    height: ${props => props.isExpanded ? '100%' : '130px'};
-    
     .carousel-arrow {
       width: 20px;
       height: 20px;
@@ -327,6 +339,8 @@ const ImageSection = styled.div`
     }
   }
 `;
+
+
 
 const Distance = styled.div`
   position: absolute;
@@ -650,63 +664,34 @@ const FeaturedItem = ({ item, showDistance, theme, onItemClick }) => {
       </ImageSection>
 
       <ItemInfo theme={itemTheme}>
-        <h3>{item.name}</h3>
-        <div className="price">${formatPrice(item.price)}</div>
-        <div 
-          className="shop-name"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/shop/${item.shopId}/view`);
-          }}
-          style={{ 
-            cursor: 'pointer',
-            textDecoration: 'none',
-            transition: 'color 0.2s ease',
-          }}
-          onMouseOver={(e) => e.currentTarget.style.color = itemTheme?.colors?.accent || '#800000'}
-          onMouseOut={(e) => e.currentTarget.style.opacity = '0.7'}
-        >
-          {item.shopName || 'Unknown Shop'}
+        {/* First Row: Item Name & Price */}
+        <div className="info-row">
+          <h3 className="item-name">{item.name}</h3>
+          <div className="price">${formatPrice(item.price)}</div>
         </div>
-        {item.quantity !== undefined && (
-          <div className="item-availability">
-            <span 
-              className="status-indicator" 
-              style={{ 
-                display: 'inline-block',
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: parseInt(item.quantity) > 0 ? '#4CAF50' : '#FF5252',
-                marginRight: '6px'
-              }}
-            ></span>
-            <span 
-              className="status-text"
-              style={{ 
-                fontSize: '0.85rem',
-                fontWeight: '500',
-                color: parseInt(item.quantity) > 0 ? '#4CAF50' : '#FF5252' 
-              }}
-            >
-              {parseInt(item.quantity) > 0 ? 'In Stock' : 'Out of Stock'}
-            </span>
-          </div>
-        )}
-      
-        {item.formattedDistance && (
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '0.5rem',
-            marginTop: '0.5rem',
-            fontSize: '0.85rem',
-            color: itemTheme?.colors?.accent || '#800000'
-          }}>
-            <Navigation size={14} />
-            {item.formattedDistance} away
-          </div>
-        )}
+
+        {/* Second Row: Shop Name & Distance */}
+        <div className="shop-info">
+          <span 
+            className="shop-name"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/shop/${item.shopId}/view`);
+            }}
+          >
+            {item.shopName || 'Unknown Shop'}
+          </span>
+          
+          {item.formattedDistance && (
+            <>
+              <span className="divider">•</span>
+              <div className="distance">
+                <Navigation size={12} />
+                {item.formattedDistance}
+              </div>
+            </>
+          )}
+        </div>
       </ItemInfo>
     </ItemCard>
   );      
