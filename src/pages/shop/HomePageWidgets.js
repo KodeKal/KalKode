@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, X, ChevronLeft, ChevronRight, Heart, MessageCircle, Star, Clock, Mail, Instagram, TrendingUp } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, X, ChevronLeft, ChevronRight, Heart, MessageCircle, Star, Clock, Mail, Instagram, TrendingUp, Upload, Play, Pause, Phone, MapPin, Calendar, FileText, Image as ImageIcon } from 'lucide-react';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../firebase/config';
+import { auth } from '../../firebase/config';
 
 // Newsletter Widget Component
 export const NewsletterWidget = ({ config, theme }) => {
@@ -294,13 +297,48 @@ export const TestimonialsWidget = ({ config, theme }) => {
   );
 };
 
-// Gallery Widget
-export const GalleryWidget = ({ config, theme }) => {
-  const images = Array(6).fill(null).map((_, i) => ({
-    id: i,
-    likes: Math.floor(Math.random() * 1000),
-    comments: Math.floor(Math.random() * 100)
-  }));
+// Enhanced Gallery Widget with Image Upload
+export const GalleryWidget = ({ config, theme, editable, onUpdate }) => {
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [uploadingIndex, setUploadingIndex] = useState(null);
+  
+  const images = config.images || Array(6).fill(null);
+
+  const handleImageUpload = async (index, file) => {
+    if (!file || !editable || !auth.currentUser) return;
+    
+    setUploadingIndex(index);
+    
+    try {
+      const storageRef = ref(
+        storage,
+        `shops/${auth.currentUser.uid}/gallery/image-${Date.now()}-${index}`
+      );
+      
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      
+      const newImages = [...images];
+      newImages[index] = { url, likes: 0, comments: 0 };
+      
+      if (onUpdate) {
+        onUpdate({ ...config, images: newImages });
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image');
+    } finally {
+      setUploadingIndex(null);
+    }
+  };
+
+  const handleRemoveImage = (index) => {
+    const newImages = [...images];
+    newImages[index] = null;
+    if (onUpdate) {
+      onUpdate({ ...config, images: newImages });
+    }
+  };
 
   const styles = {
     instagram: {
@@ -324,55 +362,168 @@ export const GalleryWidget = ({ config, theme }) => {
     <div>
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
-          Follow Us on Instagram
+          {config.title || 'Photo Gallery'}
         </h2>
-        <a href="#" style={{ 
-          color: theme?.colors?.accent, 
-          display: 'inline-flex', 
-          alignItems: 'center', 
-          gap: '0.5rem',
-          textDecoration: 'none'
-        }}>
-          <Instagram size={20} />
-          @yourshop
-        </a>
+        {config.subtitle && (
+          <p style={{ opacity: 0.8 }}>{config.subtitle}</p>
+        )}
       </div>
       
       <div style={styles[config.style || 'instagram']}>
-        {images.map((img) => (
-          <div key={img.id} style={{
+        {images.map((img, index) => (
+          <div key={index} style={{
             position: 'relative',
             aspectRatio: '1',
             background: `${theme?.colors?.surface}50`,
             borderRadius: config.style === 'masonry' ? '8px' : '0',
             overflow: 'hidden',
-            cursor: 'pointer',
+            cursor: editable ? 'pointer' : 'default',
             marginBottom: config.style === 'pinterest' ? '1rem' : '0'
           }}>
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'rgba(0,0,0,0.7)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '1.5rem',
-              opacity: 0,
-              transition: 'opacity 0.3s',
-              color: 'white'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
-            onMouseLeave={(e) => e.currentTarget.style.opacity = 0}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Heart size={20} /> {img.likes}
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <MessageCircle size={20} /> {img.comments}
-              </span>
-            </div>
+            {img?.url ? (
+              <>
+                <img 
+                  src={img.url} 
+                  alt={`Gallery ${index}`}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onClick={() => !editable && setSelectedImage(img.url)}
+                />
+                {editable && (
+                  <button
+                    onClick={() => handleRemoveImage(index)}
+                    style={{
+                      position: 'absolute',
+                      top: '0.5rem',
+                      right: '0.5rem',
+                      background: 'rgba(0,0,0,0.7)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '32px',
+                      height: '32px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: 'white',
+                      zIndex: 2
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'rgba(0,0,0,0.7)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '1.5rem',
+                  opacity: 0,
+                  transition: 'opacity 0.3s',
+                  color: 'white'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = 0}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Heart size={20} /> {img.likes || 0}
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <MessageCircle size={20} /> {img.comments || 0}
+                  </span>
+                </div>
+              </>
+            ) : editable ? (
+              <>
+                <input
+                  type="file"
+                  accept="image/*"
+                  id={`gallery-upload-${index}`}
+                  style={{ display: 'none' }}
+                  onChange={(e) => e.target.files?.[0] && handleImageUpload(index, e.target.files[0])}
+                />
+                <label
+                  htmlFor={`gallery-upload-${index}`}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    gap: '0.5rem'
+                  }}
+                >
+                  {uploadingIndex === index ? (
+                    <div>Uploading...</div>
+                  ) : (
+                    <>
+                      <Upload size={32} opacity={0.5} />
+                      <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>Upload Image</span>
+                    </>
+                  )}
+                </label>
+              </>
+            ) : (
+              <div style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: 0.3
+              }}>
+                <ImageIcon size={32} />
+              </div>
+            )}
           </div>
         ))}
       </div>
+
+      {selectedImage && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            cursor: 'pointer'
+          }}
+          onClick={() => setSelectedImage(null)}
+        >
+          <img 
+            src={selectedImage} 
+            alt="Full size"
+            style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }}
+          />
+          <button
+            onClick={() => setSelectedImage(null)}
+            style={{
+              position: 'absolute',
+              top: '2rem',
+              right: '2rem',
+              background: 'white',
+              border: 'none',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <X size={20} />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -432,8 +583,23 @@ export const SocialFeedWidget = ({ config, theme }) => {
   );
 };
 
-// Video Section Widget
-export const VideoWidget = ({ config, theme }) => {
+// Enhanced Video Widget with YouTube support
+export const VideoWidget = ({ config, theme, editable, onUpdate }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  
+  const getYouTubeEmbedUrl = (url) => {
+    if (!url) return null;
+    
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    
+    if (match && match[2].length === 11) {
+      return `https://www.youtube.com/embed/${match[2]}`;
+    }
+    
+    return url;
+  };
+
   const styles = {
     vimeo: {
       position: 'relative',
@@ -461,23 +627,45 @@ export const VideoWidget = ({ config, theme }) => {
     }
   };
 
+  const embedUrl = getYouTubeEmbedUrl(config.videoUrl);
+
   return (
-    <div style={styles[config.style || 'vimeo']}>
+    <div style={styles[config.style || 'youtube']}>
       {config.style === 'modal' ? (
         <>
-          <h2 style={{ marginBottom: '1rem' }}>Watch Our Story</h2>
-          <button style={{
-            padding: '1rem 2rem',
-            background: theme?.colors?.accent,
-            color: 'white',
-            border: 'none',
-            borderRadius: '50px',
-            fontSize: '1.1rem',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
+          <h2 style={{ marginBottom: '1rem' }}>{config.title || 'Watch Our Story'}</h2>
+          {editable && (
+            <input
+              type="text"
+              placeholder="Enter YouTube URL"
+              value={config.videoUrl || ''}
+              onChange={(e) => onUpdate && onUpdate({ ...config, videoUrl: e.target.value })}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                marginBottom: '1rem',
+                borderRadius: '8px',
+                border: `1px solid ${theme?.colors?.accent}30`,
+                background: 'transparent',
+                color: theme?.colors?.text
+              }}
+            />
+          )}
+          <button
+            onClick={() => setIsPlaying(true)}
+            style={{
+              padding: '1rem 2rem',
+              background: theme?.colors?.accent,
+              color: 'white',
+              border: 'none',
+              borderRadius: '50px',
+              fontSize: '1.1rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
             <div style={{
               width: '40px',
               height: '40px',
@@ -487,11 +675,57 @@ export const VideoWidget = ({ config, theme }) => {
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              ▶
+              <Play size={20} />
             </div>
             Play Video
           </button>
         </>
+      ) : embedUrl ? (
+        <iframe
+          src={embedUrl}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            border: 'none'
+          }}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      ) : editable ? (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: `${theme?.colors?.surface}50`,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem'
+        }}>
+          <Play size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+          <input
+            type="text"
+            placeholder="Enter YouTube URL"
+            value={config.videoUrl || ''}
+            onChange={(e) => onUpdate && onUpdate({ ...config, videoUrl: e.target.value })}
+            style={{
+              width: '100%',
+              maxWidth: '400px',
+              padding: '0.75rem',
+              borderRadius: '8px',
+              border: `1px solid ${theme?.colors?.accent}30`,
+              background: 'transparent',
+              color: theme?.colors?.text,
+              textAlign: 'center'
+            }}
+          />
+        </div>
       ) : (
         <div style={{
           position: 'absolute',
@@ -504,20 +738,7 @@ export const VideoWidget = ({ config, theme }) => {
           alignItems: 'center',
           justifyContent: 'center'
         }}>
-          <div style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '50%',
-            background: theme?.colors?.accent,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: '2rem',
-            cursor: 'pointer'
-          }}>
-            ▶
-          </div>
+          <Play size={48} style={{ opacity: 0.3 }} />
         </div>
       )}
     </div>
@@ -654,7 +875,6 @@ export const TeamWidget = ({ config, theme }) => {
       textAlign: 'center'
     }
   };
-
   return (
     <div style={styles[config.style || 'slack']}>
       <h2 style={{ 
@@ -692,6 +912,516 @@ export const TeamWidget = ({ config, theme }) => {
           {config.showBio && <p style={{ opacity: 0.8 }}>{member.bio}</p>}
         </div>
       ))}
+    </div>
+  );
+};
+
+// NEW: Contact Form Widget
+export const ContactFormWidget = ({ config, theme }) => {
+  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setSubmitted(true);
+    setTimeout(() => {
+      setFormData({ name: '', email: '', message: '' });
+      setSubmitted(false);
+    }, 3000);
+  };
+
+  return (
+    <div style={{
+      maxWidth: '600px',
+      margin: '0 auto',
+      padding: '3rem 2rem',
+      background: `${theme?.colors?.surface}50`,
+      borderRadius: '16px'
+    }}>
+      <h2 style={{ 
+        textAlign: 'center', 
+        marginBottom: '1rem',
+        color: theme?.colors?.accent 
+      }}>
+        {config.title || 'Get In Touch'}
+      </h2>
+      <p style={{ 
+        textAlign: 'center', 
+        marginBottom: '2rem',
+        opacity: 0.8 
+      }}>
+        {config.subtitle || 'We\'d love to hear from you'}
+      </p>
+
+      {submitted ? (
+        <div style={{
+          textAlign: 'center',
+          padding: '2rem',
+          color: theme?.colors?.accent
+        }}>
+          <h3>✓ Message Sent!</h3>
+          <p>We'll get back to you soon.</p>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder="Your Name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            required
+            style={{
+              width: '100%',
+              padding: '1rem',
+              marginBottom: '1rem',
+              borderRadius: '8px',
+              border: `1px solid ${theme?.colors?.accent}30`,
+              background: 'transparent',
+              color: theme?.colors?.text
+            }}
+          />
+          <input
+            type="email"
+            placeholder="Your Email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            required
+            style={{
+              width: '100%',
+              padding: '1rem',
+              marginBottom: '1rem',
+              borderRadius: '8px',
+              border: `1px solid ${theme?.colors?.accent}30`,
+              background: 'transparent',
+              color: theme?.colors?.text
+            }}
+          />
+          <textarea
+            placeholder="Your Message"
+            value={formData.message}
+            onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+            required
+            rows={5}
+            style={{
+              width: '100%',
+              padding: '1rem',
+              marginBottom: '1rem',
+              borderRadius: '8px',
+              border: `1px solid ${theme?.colors?.accent}30`,
+              background: 'transparent',
+              color: theme?.colors?.text,
+              resize: 'vertical'
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              width: '100%',
+              padding: '1rem',
+              background: theme?.colors?.accent,
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            Send Message
+          </button>
+        </form>
+      )}
+    </div>
+  );
+};
+
+// NEW: Hours/Schedule Widget
+export const HoursWidget = ({ config, theme }) => {
+  const defaultHours = [
+    { day: 'Monday', hours: '9:00 AM - 5:00 PM', open: true },
+    { day: 'Tuesday', hours: '9:00 AM - 5:00 PM', open: true },
+    { day: 'Wednesday', hours: '9:00 AM - 5:00 PM', open: true },
+    { day: 'Thursday', hours: '9:00 AM - 5:00 PM', open: true },
+    { day: 'Friday', hours: '9:00 AM - 5:00 PM', open: true },
+    { day: 'Saturday', hours: '10:00 AM - 3:00 PM', open: true },
+    { day: 'Sunday', hours: 'Closed', open: false }
+  ];
+
+  const hours = config.hours || defaultHours;
+
+  return (
+    <div style={{
+      maxWidth: '500px',
+      margin: '0 auto',
+      padding: '2rem',
+      background: `${theme?.colors?.surface}50`,
+      borderRadius: '16px'
+    }}>
+      <div style={{ 
+        textAlign: 'center', 
+        marginBottom: '2rem',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '0.5rem'
+      }}>
+        <Clock size={32} color={theme?.colors?.accent} />
+        <h2 style={{ color: theme?.colors?.accent }}>
+          {config.title || 'Hours of Operation'}
+        </h2>
+      </div>
+
+      {hours.map((schedule, index) => (
+        <div key={index} style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          padding: '1rem',
+          borderBottom: `1px solid ${theme?.colors?.accent}20`,
+          opacity: schedule.open ? 1 : 0.6
+        }}>
+          <span style={{ fontWeight: '600' }}>{schedule.day}</span>
+          <span style={{ 
+            color: schedule.open ? theme?.colors?.text : theme?.colors?.accent 
+          }}>
+            {schedule.hours}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// NEW: Location/Map Widget
+export const LocationWidget = ({ config, theme }) => {
+  return (
+    <div style={{
+      padding: '2rem',
+      background: `${theme?.colors?.surface}50`,
+      borderRadius: '16px'
+    }}>
+      <div style={{ 
+        textAlign: 'center', 
+        marginBottom: '2rem',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '0.5rem'
+      }}>
+        <MapPin size={32} color={theme?.colors?.accent} />
+        <h2 style={{ color: theme?.colors?.accent }}>
+          {config.title || 'Visit Us'}
+        </h2>
+      </div>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+        gap: '2rem',
+        marginBottom: '2rem'
+      }}>
+        <div>
+          <h4 style={{ marginBottom: '1rem', color: theme?.colors?.accent }}>Address</h4>
+          <p>{config.address || '123 Main Street'}</p>
+          <p>{config.city || 'Houston, TX 77001'}</p>
+        </div>
+        
+        <div>
+          <h4 style={{ marginBottom: '1rem', color: theme?.colors?.accent }}>Contact</h4>
+          <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <Phone size={16} /> {config.phone || '(555) 123-4567'}
+          </p>
+          <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Mail size={16} /> {config.email || 'info@shop.com'}
+          </p>
+        </div>
+      </div>
+
+      {config.mapUrl && (
+        <div style={{
+          width: '100%',
+          height: '400px',
+          borderRadius: '12px',
+          overflow: 'hidden'
+        }}>
+          <iframe
+            src={config.mapUrl}
+            style={{
+              width: '100%',
+              height: '100%',
+              border: 'none'
+            }}
+            allowFullScreen
+            loading="lazy"
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+// NEW: Services/Features Widget
+export const ServicesWidget = ({ config, theme }) => {
+  const defaultServices = [
+    { icon: '🚚', title: 'Free Shipping', description: 'On orders over $50' },
+    { icon: '🔒', title: 'Secure Payment', description: '100% secure transactions' },
+    { icon: '↩️', title: 'Easy Returns', description: '30-day return policy' },
+    { icon: '💬', title: '24/7 Support', description: 'Dedicated customer service' }
+  ];
+
+  const services = config.services || defaultServices;
+
+  return (
+    <div style={{
+      padding: '3rem 2rem',
+      background: `linear-gradient(135deg, ${theme?.colors?.background} 0%, ${theme?.colors?.surface}50 100%)`
+    }}>
+      <h2 style={{ 
+        textAlign: 'center', 
+        marginBottom: '3rem',
+        color: theme?.colors?.accent 
+      }}>
+        {config.title || 'Why Choose Us'}
+      </h2>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '2rem',
+        maxWidth: '1200px',
+        margin: '0 auto'
+      }}>
+        {services.map((service, index) => (
+          <div key={index} style={{
+            textAlign: 'center',
+            padding: '2rem',
+            background: `${theme?.colors?.surface}50`,
+            borderRadius: '12px',
+            border: `1px solid ${theme?.colors?.accent}20`
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
+              {service.icon}
+            </div>
+            <h3 style={{ 
+              marginBottom: '0.5rem',
+              color: theme?.colors?.accent 
+            }}>
+              {service.title}
+            </h3>
+            <p style={{ opacity: 0.8, fontSize: '0.9rem' }}>
+              {service.description}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// NEW: Blog/News Widget
+export const BlogWidget = ({ config, theme }) => {
+  const posts = [
+    {
+      title: 'Our New Product Launch',
+      excerpt: 'Excited to announce our latest collection...',
+      date: 'Jan 15, 2025',
+      image: null
+    },
+    {
+      title: 'Behind the Scenes',
+      excerpt: 'Take a look at how we create our products...',
+      date: 'Jan 10, 2025',
+      image: null
+    },
+    {
+      title: 'Customer Success Stories',
+      excerpt: 'Hear from our amazing customers...',
+      date: 'Jan 5, 2025',
+      image: null
+    }
+  ];
+
+  return (
+    <div style={{ padding: '3rem 2rem' }}>
+      <h2 style={{ 
+        textAlign: 'center', 
+        marginBottom: '3rem',
+        color: theme?.colors?.accent 
+      }}>
+        {config.title || 'Latest News'}
+      </h2>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gap: '2rem',
+        maxWidth: '1200px',
+        margin: '0 auto'
+      }}>
+        {posts.map((post, index) => (
+          <article key={index} style={{
+            background: `${theme?.colors?.surface}50`,
+            borderRadius: '12px',
+            overflow: 'hidden',
+            border: `1px solid ${theme?.colors?.accent}20`,
+            cursor: 'pointer',
+            transition: 'transform 0.3s'
+          }}>
+            <div style={{
+              height: '200px',
+              background: `${theme?.colors?.background}80`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <FileText size={48} opacity={0.3} />
+            </div>
+            <div style={{ padding: '1.5rem' }}>
+              <div style={{ 
+                fontSize: '0.8rem', 
+                color: theme?.colors?.accent,
+                marginBottom: '0.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <Calendar size={14} />
+                {post.date}
+              </div>
+              <h3 style={{ marginBottom: '0.5rem' }}>{post.title}</h3>
+              <p style={{ opacity: 0.8, fontSize: '0.9rem' }}>
+                {post.excerpt}
+              </p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// NEW: Pricing/Plans Widget
+export const PricingWidget = ({ config, theme }) => {
+  const plans = [
+    {
+      name: 'Basic',
+      price: '$9',
+      period: '/month',
+      features: ['Feature 1', 'Feature 2', 'Feature 3'],
+      popular: false
+    },
+    {
+      name: 'Pro',
+      price: '$29',
+      period: '/month',
+      features: ['All Basic features', 'Feature 4', 'Feature 5', 'Priority support'],
+      popular: true
+    },
+    {
+      name: 'Enterprise',
+      price: '$99',
+      period: '/month',
+      features: ['All Pro features', 'Feature 6', 'Feature 7', 'Dedicated manager'],
+      popular: false
+    }
+  ];
+
+  return (
+    <div style={{ padding: '3rem 2rem' }}>
+      <h2 style={{ 
+        textAlign: 'center', 
+        marginBottom: '3rem',
+        color: theme?.colors?.accent 
+      }}>
+        {config.title || 'Choose Your Plan'}
+      </h2>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: '2rem',
+        maxWidth: '1200px',
+        margin: '0 auto'
+      }}>
+        {plans.map((plan, index) => (
+          <div key={index} style={{
+            background: plan.popular ? 
+              `linear-gradient(135deg, ${theme?.colors?.accent}20 0%, ${theme?.colors?.surface}50 100%)` :
+              `${theme?.colors?.surface}50`,
+            borderRadius: '16px',
+            padding: '2rem',
+            border: plan.popular ? 
+              `2px solid ${theme?.colors?.accent}` : 
+              `1px solid ${theme?.colors?.accent}20`,
+            position: 'relative',
+            textAlign: 'center'
+          }}>
+            {plan.popular && (
+              <div style={{
+                position: 'absolute',
+                top: '-12px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: theme?.colors?.accent,
+                color: 'white',
+                padding: '0.25rem 1rem',
+                borderRadius: '12px',
+                fontSize: '0.8rem',
+                fontWeight: 'bold'
+              }}>
+                POPULAR
+              </div>
+            )}
+
+            <h3 style={{ 
+              marginBottom: '1rem',
+              color: theme?.colors?.accent 
+            }}>
+              {plan.name}
+            </h3>
+            
+            <div style={{ marginBottom: '2rem' }}>
+              <span style={{ 
+                fontSize: '3rem', 
+                fontWeight: 'bold',
+                color: theme?.colors?.accent 
+              }}>
+                {plan.price}
+              </span>
+              <span style={{ opacity: 0.7 }}>{plan.period}</span>
+            </div>
+
+            <ul style={{ 
+              listStyle: 'none', 
+              padding: 0,
+              marginBottom: '2rem',
+              textAlign: 'left'
+            }}>
+              {plan.features.map((feature, i) => (
+                <li key={i} style={{
+                  padding: '0.75rem 0',
+                  borderBottom: `1px solid ${theme?.colors?.accent}10`
+                }}>
+                  ✓ {feature}
+                </li>
+              ))}
+            </ul>
+
+            <button style={{
+              width: '100%',
+              padding: '1rem',
+              background: plan.popular ? theme?.colors?.accent : 'transparent',
+              color: plan.popular ? 'white' : theme?.colors?.accent,
+              border: `2px solid ${theme?.colors?.accent}`,
+              borderRadius: '8px',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}>
+              Get Started
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

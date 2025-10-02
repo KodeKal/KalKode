@@ -48,6 +48,392 @@ const ITEM_CATEGORIES = [
   'Other'
 ];
 
+// Replace the existing styled components with these zoom-aware versions:
+
+const PageContainer = styled.div`
+  min-height: 100vh;
+  background: ${props => props.theme?.colors?.background || '#000000'};
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  position: relative;
+  overflow-x: hidden;
+  
+  /* Zoom level adjustments */
+  @media (min-resolution: 1.5dppx) {
+    font-size: 14px;
+  }
+  
+  @media (min-resolution: 2dppx) {
+    font-size: 13px;
+  }
+`;
+
+const EditorHeader = styled.div`
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: ${props => `${props.theme?.colors?.headerBg || 'rgba(0, 0, 0, 0.9)'}F5`};
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
+  padding: clamp(0.5rem, 1.5vw, 1rem) clamp(0.75rem, 2vw, 1.5rem);
+  
+  /* Handle different zoom levels */
+  @media (max-width: 1600px) and (min-width: 1024px) {
+    padding: 0.75rem 1.25rem;
+  }
+  
+  @media (max-width: 1366px) and (min-width: 1024px) {
+    padding: 0.6rem 1rem;
+  }
+`;
+
+const EditorControls = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: clamp(0.5rem, 1vw, 1rem);
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  /* Zoom adjustments */
+  @media (max-width: 1366px) and (min-width: 1024px) {
+    gap: 0.5rem;
+  }
+`;
+
+const IconButton = styled.button`
+  background: ${props => props.active ? 
+    props.theme?.colors?.accent || '#800000' : 
+    'transparent'};
+  border: 1px solid ${props => props.theme?.colors?.accent || '#800000'};
+  color: ${props => props.active ? 
+    'white' : 
+    props.theme?.colors?.accent || '#800000'};
+  padding: clamp(0.4rem, 0.8vw, 0.6rem);
+  border-radius: clamp(6px, 1vw, 8px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  min-width: clamp(32px, 5vw, 40px);
+  min-height: clamp(32px, 5vw, 40px);
+  
+  &:hover {
+    background: ${props => props.active ? 
+      props.theme?.colors?.accent || '#800000' : 
+      `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+    transform: scale(1.05);
+  }
+  
+  svg {
+    width: clamp(14px, 2.5vw, 18px);
+    height: clamp(14px, 2.5vw, 18px);
+  }
+`;
+
+const SaveButton = styled.button`
+  background: ${props => props.theme?.colors?.accent || '#800000'};
+  color: white;
+  border: none;
+  padding: clamp(0.5rem, 1.2vw, 0.75rem) clamp(0.8rem, 2vw, 1.5rem);
+  border-radius: clamp(6px, 1vw, 8px);
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.3rem, 0.8vw, 0.5rem);
+  transition: all 0.3s ease;
+  font-size: clamp(0.8rem, 1.5vw, 1rem);
+  white-space: nowrap;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
+  }
+
+  svg {
+    width: clamp(14px, 2.5vw, 16px);
+    height: clamp(14px, 2.5vw, 16px);
+  }
+  
+  /* Zoom level specific */
+  @media (max-width: 1366px) and (min-width: 1024px) {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+`;
+
+const EditorContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.75rem, 1.5vw, 1.5rem);
+  padding: clamp(0.75rem, 2vw, 2rem);
+  min-height: calc(100vh - clamp(60px, 10vh, 100px));
+  max-width: 100vw;
+  overflow-x: hidden;
+  
+  @media (min-width: 1024px) {
+    display: grid;
+    grid-template-columns: ${props => props.showLibrary ? 
+      'minmax(240px, 280px) 1fr' : '1fr'};
+    gap: clamp(1rem, 2vw, 2rem);
+  }
+
+  @media (min-width: 1440px) and (max-width: 1920px) {
+    grid-template-columns: ${props => props.showLibrary ? 
+      'minmax(260px, 300px) 1fr' : '1fr'};
+    max-width: 95vw;
+    margin: 0 auto;
+  }
+
+  @media (min-width: 1921px) {
+    grid-template-columns: ${props => props.showLibrary ? 
+      '320px 1fr' : '1fr'};
+    max-width: 1800px;
+    margin: 0 auto;
+  }
+  
+  /* Handle zoomed-in displays */
+  @media (max-width: 1366px) and (min-width: 1024px) {
+    grid-template-columns: ${props => props.showLibrary ? 
+      '220px 1fr' : '1fr'};
+    gap: 1rem;
+    padding: 1rem;
+  }
+`;
+
+const WidgetLibrary = styled.div`
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}50`};
+  border-radius: clamp(8px, 1.5vw, 12px);
+  padding: clamp(0.75rem, 1.5vw, 1.5rem);
+  height: fit-content;
+  max-height: calc(100vh - clamp(100px, 15vh, 140px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  
+  @media (min-width: 1024px) {
+    position: sticky;
+    top: clamp(80px, 12vh, 110px);
+  }
+
+  /* Zoom adjustments */
+  @media (max-width: 1366px) and (min-width: 1024px) {
+    padding: 0.75rem;
+    max-height: calc(100vh - 110px);
+  }
+
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+    width: clamp(4px, 0.8vw, 6px);
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${props => props.theme?.colors?.accent || '#800000'};
+    border-radius: 3px;
+  }
+`;
+
+const LibraryTitle = styled.h3`
+  font-size: clamp(0.9rem, 1.8vw, 1.1rem);
+  margin-bottom: clamp(0.75rem, 1.5vw, 1rem);
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  display: flex;
+  align-items: center;
+  gap: clamp(0.3rem, 0.8vw, 0.5rem);
+  
+  svg {
+    width: clamp(16px, 2.5vw, 20px);
+    height: clamp(16px, 2.5vw, 20px);
+  }
+`;
+
+const WidgetItem = styled.div`
+  background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+  border-radius: clamp(6px, 1vw, 8px);
+  padding: clamp(0.6rem, 1.2vw, 1rem);
+  margin-bottom: clamp(0.4rem, 0.8vw, 0.75rem);
+  cursor: grab;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    border-color: ${props => props.theme?.colors?.accent || '#800000'};
+    transform: translateX(clamp(2px, 0.5vw, 4px));
+  }
+  
+  &:active {
+    cursor: grabbing;
+  }
+`;
+
+const WidgetInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: clamp(0.4rem, 0.8vw, 0.75rem);
+  margin-bottom: 0.5rem;
+  
+  .icon {
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    flex-shrink: 0;
+    width: clamp(16px, 2.5vw, 18px);
+    height: clamp(16px, 2.5vw, 18px);
+  }
+  
+  .name {
+    font-weight: 600;
+    font-size: clamp(0.8rem, 1.5vw, 0.95rem);
+    line-height: 1.2;
+  }
+`;
+
+const WidgetDescription = styled.p`
+  font-size: clamp(0.7rem, 1.3vw, 0.8rem);
+  color: ${props => `${props.theme?.colors?.text}99` || 'rgba(255, 255, 255, 0.6)'};
+  margin: 0;
+  line-height: 1.3;
+`;
+
+const PreviewArea = styled.div`
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}30`};
+  border-radius: clamp(8px, 1.5vw, 12px);
+  overflow: hidden;
+  min-height: 400px;
+  width: 100%;
+  max-width: 100%;
+`;
+
+const PreviewHeader = styled.div`
+  background: ${props => `${props.theme?.colors?.headerBg || 'rgba(0, 0, 0, 0.9)'}F5`};
+  backdrop-filter: blur(10px);
+  padding: clamp(0.6rem, 1.2vw, 1rem) clamp(0.75rem, 1.5vw, 1.5rem);
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: clamp(0.3rem, 0.8vw, 0.5rem);
+
+  h3 {
+    margin: 0;
+    font-size: clamp(0.85rem, 1.6vw, 1rem);
+  }
+
+  span {
+    font-size: clamp(0.75rem, 1.4vw, 0.9rem);
+    opacity: 0.7;
+  }
+`;
+
+const WidgetContainer = styled.div`
+  padding: ${props => props.noPadding ? '0' : 'clamp(0.75rem, 2vw, 2rem)'};
+  position: relative;
+  opacity: ${props => props.isHidden ? 0.5 : 1};
+  transition: all 0.3s ease;
+  max-width: 100%;
+  overflow-x: hidden;
+  
+  ${props => props.isDragging && `
+    background: ${props.theme?.colors?.accent}10;
+    border: 2px dashed ${props.theme?.colors?.accent};
+    border-radius: clamp(6px, 1vw, 8px);
+  `}
+`;
+
+const WidgetControls = styled.div`
+  position: absolute;
+  top: clamp(0.4rem, 1vw, 1rem);
+  right: clamp(0.4rem, 1vw, 1rem);
+  display: flex;
+  gap: clamp(0.2rem, 0.5vw, 0.5rem);
+  background: ${props => `${props.theme?.colors?.background || '#000000'}E5`};
+  backdrop-filter: blur(10px);
+  padding: clamp(0.2rem, 0.5vw, 0.5rem);
+  border-radius: clamp(6px, 1vw, 8px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+  
+  ${WidgetContainer}:hover & {
+    opacity: 1;
+  }
+`;
+
+const WidgetButton = styled.button`
+  background: transparent;
+  border: none;
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  padding: clamp(0.2rem, 0.5vw, 0.4rem);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  min-width: clamp(24px, 4vw, 32px);
+  min-height: clamp(24px, 4vw, 32px);
+  
+  &:hover {
+    background: ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+  }
+  
+  svg {
+    width: clamp(12px, 2vw, 16px);
+    height: clamp(12px, 2vw, 16px);
+  }
+`;
+
+const EmptyState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: clamp(250px, 40vh, 400px);
+  padding: clamp(1.5rem, 3vw, 3rem) clamp(1rem, 2vw, 2rem);
+  text-align: center;
+  
+  svg {
+    width: clamp(36px, 6vw, 48px);
+    height: clamp(36px, 6vw, 48px);
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    margin-bottom: clamp(0.75rem, 1.5vw, 1rem);
+    opacity: 0.5;
+  }
+  
+  h3 {
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    margin-bottom: clamp(0.4rem, 0.8vw, 0.5rem);
+  }
+  
+  p {
+    color: ${props => `${props.theme?.colors?.text}99` || 'rgba(255, 255, 255, 0.6)'};
+    font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+  }
+`;
+
+const AnnouncementBar = styled.div`
+  background: ${props => props.style === 'supreme' ? 
+    props.theme?.colors?.accent || '#FF0000' : 
+    props.theme?.colors?.accentGradient || 'linear-gradient(90deg, #FF006E 0%, #8338EC 50%, #3A86FF 100%)'};
+  color: white;
+  padding: clamp(0.6rem, 1.2vw, 0.75rem);
+  text-align: center;
+  font-weight: 600;
+  position: ${props => props.position === 'fixed' ? 'fixed' : 'relative'};
+  top: ${props => props.position === 'fixed' ? '0' : 'auto'};
+  width: 100%;
+  z-index: 1000;
+  font-size: clamp(0.8rem, 1.6vw, 1rem);
+`;
+
 // Updated styled components for ShopPage.js
 // Reuse the existing SaveControlsContainer but make it mobile-friendly
 
@@ -78,57 +464,6 @@ const SaveControlsContainer = styled.div`
     bottom: 2rem;
     right: 2rem;
     flex-direction: column;
-  }
-`;
-
-const SaveButton = styled.button`
-  background: ${props => props.hasChanges ? 
-    (props.theme?.colors?.accent || '#800000') : 
-    'rgba(128, 128, 128, 0.5)'
-  };
-  color: white;
-  border: none;
-  border-radius: 50px;
-  padding: 1rem 1.5rem;
-  font-weight: 600;
-  cursor: ${props => props.hasChanges ? 'pointer' : 'not-allowed'};
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: ${props => props.hasChanges ? 
-    '0 4px 15px rgba(0, 0, 0, 0.3)' : 
-    '0 2px 8px rgba(0, 0, 0, 0.1)'
-  };
-  font-family: ${props => props.theme?.fonts?.body || 'sans-serif'};
-  white-space: nowrap;
-  
-  @media (max-width: 767px) {
-    padding: 0.75rem 1.2rem;
-    font-size: 0.85rem;
-  }
-
-  @media (min-width: 768px) {
-    min-width: 160px;
-    justify-content: center;
-  }
-
-  &:hover {
-    transform: ${props => props.hasChanges ? 'translateY(-2px)' : 'none'};
-    box-shadow: ${props => props.hasChanges ? 
-      `0 6px 20px ${props.theme?.colors?.accent}4D` : 
-      '0 2px 8px rgba(0, 0, 0, 0.1)'
-    };
-  }
-
-  &:active {
-    transform: ${props => props.hasChanges ? 'scale(0.98)' : 'none'};
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
   }
 `;
 
@@ -757,14 +1092,6 @@ const HomePageEditorButton = styled.button`
   }
 `;
 
-const PageContainer = styled.div`
-  min-height: 100vh;
-  background: ${props => props.theme?.colors?.background || DEFAULT_THEME.colors.background};
-  color: ${props => props.theme?.colors?.text || DEFAULT_THEME.colors.text};
-  position: relative;
-  overflow-x: hidden;
-`;
-
 const MainContent = styled.div`
   max-width: ${props => props.theme?.styles?.containerWidth || '1400px'};
   margin: 0 auto;
@@ -798,21 +1125,7 @@ const FontSizeButton = styled.button`
   }
 `;
 
-const FloatingFontControls = styled.div`
-  position: fixed;
-  left: 2rem;
-  top: 45%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  opacity: 0.6;
-  transition: opacity 0.3s;
-  z-index: 100;
 
-  &:hover {
-    opacity: 1;
-  }
-`;
 
 const TabControlsContainer = styled.div`
   position: fixed;
@@ -861,65 +1174,142 @@ const ItemGrid = styled.div`
   margin: 4rem 0;
 `;
 
-const HeroBannerWidget = ({ config, theme }) => (
-  <div style={{
-    height: '400px',
-    background: `linear-gradient(135deg, ${theme?.colors?.accent}20 0%, ${theme?.colors?.background} 100%)`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '2rem',
-    fontWeight: 'bold'
-  }}>
-    {config.headline || "Welcome"}
-  </div>
-);
+// Update HeroBannerWidget
+const HeroBannerWidget = ({ config, theme, editable, onUpdate }) => {
+  const styles = {
+    apple: {
+      height: config.height === 'fullscreen' ? '100vh' : 
+              config.height === 'large' ? 'clamp(50vh, 60vh, 70vh)' : 
+              'clamp(30vh, 40vh, 50vh)',
+      background: `linear-gradient(135deg, ${theme?.colors?.accent}20 0%, ${theme?.colors?.background} 100%)`,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+      padding: 'clamp(1rem, 3vw, 2rem)'
+    }
+  };
 
-const ProductCarouselWidget = ({ config, theme, items = [] }) => (
-  <div style={{ padding: '2rem 0' }}>
-    <h2 style={{ marginBottom: '1.5rem', color: theme?.colors?.accent }}>
-      Featured Products
-    </h2>
-    <div style={{ 
-      display: 'grid', 
-      gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-      gap: '1rem'
-    }}>
-      {items.slice(0, config.itemsToShow || 4).map((item, i) => (
-        <div key={i} style={{
-          background: `${theme?.colors?.surface}80`,
-          borderRadius: '8px',
-          padding: '1rem'
+  return (
+    <div style={styles[config.style]}>
+      {editable ? (
+        <ValidatedEditableText
+          value={config.headline || "Welcome to Our Shop"}
+          onChange={(value) => onUpdate({ ...config, headline: value })}
+          placeholder="Enter headline"
+          style={{
+            fontSize: 'clamp(1.5rem, 5vw, 3.5rem)',
+            fontWeight: 'bold',
+            textAlign: 'center',
+            color: theme?.colors?.text,
+            lineHeight: 1.2
+          }}
+        />
+      ) : (
+        <h1 style={{ 
+          fontSize: 'clamp(1.5rem, 5vw, 3.5rem)', 
+          fontWeight: 'bold', 
+          textAlign: 'center',
+          lineHeight: 1.2,
+          maxWidth: '90%'
         }}>
-          <h4>{item.name}</h4>
-          <p>${item.price}</p>
+          {config.headline || "Welcome to Our Shop"}
+        </h1>
+      )}
+    </div>
+  );
+};
+
+// Update ProductCarouselWidget
+const ProductCarouselWidget = ({ config, theme, items = [], editable }) => {
+  return (
+    <div style={{ padding: 'clamp(0.75rem, 2vw, 2rem) 0' }}>
+      <h2 style={{ 
+        marginBottom: 'clamp(0.75rem, 1.5vw, 1.5rem)', 
+        color: theme?.colors?.accent, 
+        fontSize: 'clamp(1.1rem, 2.5vw, 1.8rem)',
+        paddingLeft: 'clamp(0.5rem, 1vw, 1rem)'
+      }}>
+        Featured Products
+      </h2>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(150px, 20vw, 220px), 1fr))',
+        gap: 'clamp(0.75rem, 1.5vw, 1.5rem)',
+        padding: '0 clamp(0.5rem, 1vw, 1rem)'
+      }}>
+        {items.slice(0, config.itemsToShow).map((item, index) => (
+          <div key={index} style={{
+            background: `${theme?.colors?.surface}80`,
+            borderRadius: 'clamp(6px, 1vw, 8px)',
+            padding: 'clamp(0.75rem, 1.5vw, 1rem)',
+            border: `1px solid ${theme?.colors?.accent}30`
+          }}>
+            <div style={{ 
+              height: 'clamp(120px, 20vw, 180px)', 
+              background: `${theme?.colors?.background}50`, 
+              borderRadius: '4px', 
+              marginBottom: 'clamp(0.5rem, 1vw, 1rem)' 
+            }} />
+            <h3 style={{ 
+              fontSize: 'clamp(0.85rem, 1.5vw, 0.95rem)', 
+              marginBottom: '0.5rem' 
+            }}>
+              {item.name || `Product ${index + 1}`}
+            </h3>
+            <p style={{ 
+              color: theme?.colors?.accent, 
+              fontWeight: 'bold',
+              fontSize: 'clamp(0.9rem, 1.6vw, 1.1rem)'
+            }}>
+              ${item.price || '0.00'}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Update StatsWidget
+const StatsWidget = ({ config, theme, stats = {} }) => {
+  const defaultStats = {
+    totalSales: stats.totalSales || 0,
+    customers: stats.customers || 0,
+    rating: stats.rating || 4.5,
+    products: stats.products || 0
+  };
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(clamp(120px, 20vw, 180px), 1fr))',
+      gap: 'clamp(1rem, 2vw, 2rem)',
+      padding: 'clamp(1.5rem, 3vw, 3rem)'
+    }}>
+      {Object.entries(defaultStats).map(([key, value]) => (
+        <div key={key} style={{ textAlign: 'center' }}>
+          <div style={{ 
+            fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', 
+            fontWeight: 'bold', 
+            color: theme?.colors?.accent,
+            lineHeight: 1.2
+          }}>
+            {key === 'rating' ? `${value}★` : value}
+          </div>
+          <div style={{ 
+            fontSize: 'clamp(0.75rem, 1.5vw, 0.9rem)', 
+            opacity: 0.7, 
+            textTransform: 'capitalize',
+            marginTop: 'clamp(0.25rem, 0.5vw, 0.5rem)'
+          }}>
+            {key.replace(/([A-Z])/g, ' $1').trim()}
+          </div>
         </div>
       ))}
     </div>
-  </div>
-);
-
-const StatsWidget = ({ config, theme }) => (
-  <div style={{
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '2rem',
-    padding: '3rem'
-  }}>
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: '2rem', color: theme?.colors?.accent }}>100+</div>
-      <div>Products</div>
-    </div>
-  </div>
-);
-
-const AnnouncementBar = styled.div`
-  background: ${props => props.theme?.colors?.accent || '#800000'};
-  color: white;
-  padding: 0.75rem;
-  text-align: center;
-  font-weight: 600;
-`;
+  );
+};
 
 const cleanDataForFirestore = (data) => {
   if (!data) return data;
@@ -1320,19 +1710,6 @@ const ShopPage = () => {
           </HeaderControls>
         </Header>
 
-        <FloatingFontControls>
-          <FontSizeButton 
-            onClick={() => setShopNameFontSize(prev => Math.min(6, prev + 0.5))}
-          >
-            <Plus size={16} />
-          </FontSizeButton>
-          <FontSizeButton 
-            onClick={() => setShopNameFontSize(prev => Math.max(1.5, prev - 0.5))}
-          >
-            <Minus size={16} />
-          </FontSizeButton>
-        </FloatingFontControls>    
-
         <TabControlsContainer>
           <TabPositioner
             position="top"
@@ -1666,38 +2043,15 @@ const ShopPage = () => {
           )}
 
           {activeTab === 'home' && (
-          <>
-            {showHomeEditor ? (
-              <HomePageEditor 
-                shopData={shopData}
-                theme={shopData?.theme}
-                onSave={async (data) => {
-                  await saveHomePageConfig(auth.currentUser.uid, data.homeWidgets);
-                  setShopData(prev => ({ ...prev, ...data }));
-                  setShowHomeEditor(false);
-                }}
-              />
-            ) : (
-              <div>
-                {/* Existing home content */}
-                <button 
-                  onClick={() => setShowHomeEditor(true)}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    background: shopData?.theme?.colors?.accent,
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    marginTop: '2rem'
-                  }}
-                >
-                  Edit Home Page Layout
-                </button>
-              </div>
-            )}
-          </>
-        )}
+            <HomePageEditor 
+              shopData={shopData}
+              theme={shopData?.theme}
+              onSave={async (data) => {
+                setShopData(prev => ({ ...prev, ...data }));
+                setOriginalShopData(prev => ({ ...prev, ...data }));
+              }}
+            />
+          )}
 
           {activeTab === 'community' && (
             <div>
