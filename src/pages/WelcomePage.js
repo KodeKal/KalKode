@@ -210,7 +210,7 @@ const WelcomeSection = styled.section`
   }
 `;
 
-// Update ZoomOverlay styled component
+// Completely redesigned ZoomOverlay - Responsive to zoom level
 const ZoomOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -223,107 +223,52 @@ const ZoomOverlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  
-  @media (max-width: 768px) {
-    align-items: flex-end;
-    padding: 0;
-  }
-`;
-
-// Update ZoomContainer styled component
-const ZoomContainer = styled.div`
-  position: relative;
-  z-index: 10001;
-  border-radius: 12px;
+  padding: 2rem;
   overflow: hidden;
-  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-  background: ${props => props.theme?.colors?.background || '#000000'};
-  width: 100%;
-  max-width: 600px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  margin: auto;
-  
-  @media (max-width: 768px) {
-    border-radius: 20px 20px 0 0;
-    border: none;
-    border-top: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
-    max-height: 85vh;
-    height: auto;
-    max-width: 100%;
-    margin: 0;
-  }
-  
-  @media (min-width: 1024px) {
-    max-width: 650px;
-    max-height: 85vh;
-  }
-`;
-
-// Update ZoomContent for better scrolling
-const ZoomContent = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 1.5rem;
-  -webkit-overflow-scrolling: touch;
-  
-  /* Custom scrollbar */
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-  
-  &::-webkit-scrollbar-track {
-    background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background: ${props => `${props.theme?.colors?.accent || '#800000'}60`};
-    border-radius: 4px;
-    
-    &:hover {
-      background: ${props => props.theme?.colors?.accent || '#800000'};
-    }
-  }
   
   @media (max-width: 768px) {
     padding: 1rem;
   }
   
   @media (max-width: 480px) {
-    padding: 0.875rem;
+    padding: 0.5rem;
   }
 `;
 
-// Update ImageCarousel for consistent sizing
-// Update ZoomHeader - Remove it entirely or hide it
-const ZoomHeader = styled.div`
-  display: none; // Hide the header completely
-`;
-
-// Update ImageCarousel for border-to-border image
-const ImageCarousel = styled.div`
+// Redesigned ZoomContainer - 2:5 aspect ratio card, centered with ample space
+const ZoomContainer = styled.div`
   position: relative;
   width: 100%;
-  height: 280px;
-  background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
+  max-width: 500px;
+  aspect-ratio: 2 / 5;
+  max-height: 85vh;
+  background: ${props => props.theme?.colors?.background || '#000000'};
+  border-radius: 16px;
   overflow: hidden;
-  flex-shrink: 0;
-  border-radius: 12px 12px 0 0; // Only round top corners
+  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
   
   @media (max-width: 768px) {
-    height: 240px;
-    border-radius: 20px 20px 0 0; // Match container top radius on mobile
+    max-width: 420px;
+    border-radius: 12px;
   }
   
   @media (max-width: 480px) {
-    height: 200px;
+    max-width: 95%;
+    border-radius: 10px;
   }
+`;
+
+// Image section - 70% of card height
+const ImageCarousel = styled.div`
+  position: relative;
+  width: 100%;
+  height: 70%;
+  background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
+  overflow: hidden;
+  flex-shrink: 0;
   
   .image-track {
     display: flex;
@@ -342,7 +287,7 @@ const ImageCarousel = styled.div`
     img {
       width: 100%;
       height: 100%;
-      object-fit: cover; // Changed from contain to cover for border-to-border
+      object-fit: cover;
       background: ${props => `${props.theme?.colors?.background || '#000000'}40`};
     }
     
@@ -352,11 +297,11 @@ const ImageCarousel = styled.div`
       align-items: center;
       gap: 0.75rem;
       color: ${props => props.theme?.colors?.text || '#FFFFFF'};
-      opacity: 0.5;
+      opacity: 0.3;
       
       p {
         margin: 0;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
       }
     }
   }
@@ -367,64 +312,63 @@ const ImageCarousel = styled.div`
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 0.5rem;
+    gap: 0.4rem;
     z-index: 2;
-    padding: 0.5rem;
-    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.5)'}80`};
+    padding: 0.4rem 0.75rem;
+    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.6)'}CC`};
     border-radius: 20px;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
   }
   
   .dot {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: ${props => props.theme?.colors?.text || '#FFFFFF'};
     border: none;
     padding: 0;
     cursor: pointer;
-    transition: opacity 0.3s ease;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      transform: scale(1.2);
+    }
   }
   
   .carousel-button {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.7)'}90`};
+    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.7)'}DD`};
     border: 1px solid ${props => `${props.theme?.colors?.accent}40` || 'rgba(255, 255, 255, 0.2)'};
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: ${props => props.theme?.colors?.text || 'white'};
     cursor: pointer;
-    opacity: 0.7;
-    transition: all 0.2s;
+    opacity: 0;
+    transition: all 0.3s ease;
     z-index: 2;
     
-    &:active {
-      transform: translateY(-50%) scale(0.9);
-    }
-    
-    @media (hover: hover) {
-      &:hover {
-        opacity: 1;
-        background: ${props => props.theme?.colors?.accent || '#800000'};
-      }
+    &:hover {
+      opacity: 1 !important;
+      background: ${props => props.theme?.colors?.accent || '#800000'};
+      transform: translateY(-50%) scale(1.1);
     }
     
     &.prev {
-      left: 0.5rem;
+      left: 1rem;
     }
     
     &.next {
-      right: 0.5rem;
+      right: 1rem;
     }
     
     &:disabled {
-      opacity: 0.3;
+      opacity: 0 !important;
       cursor: not-allowed;
     }
     
@@ -432,41 +376,53 @@ const ImageCarousel = styled.div`
       width: 32px;
       height: 32px;
       
+      &.prev {
+        left: 0.5rem;
+      }
+      
+      &.next {
+        right: 0.5rem;
+      }
+      
       svg {
-        width: 18px;
-        height: 18px;
+        width: 16px;
+        height: 16px;
       }
     }
   }
   
-  /* Add close button overlay on image */
+  &:hover .carousel-button {
+    opacity: 0.7;
+  }
+  
   .close-overlay-button {
     position: absolute;
     top: 1rem;
     right: 1rem;
-    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.8)'}CC`};
-    border: 1px solid ${props => `${props.theme?.colors?.accent}40` || 'rgba(255, 255, 255, 0.2)'};
+    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.8)'}DD`};
+    border: 1px solid ${props => `${props.theme?.colors?.accent}60` || 'rgba(255, 255, 255, 0.3)'};
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     cursor: pointer;
     transition: all 0.2s ease;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
     z-index: 3;
+    opacity: 0.8;
     
-    &:active {
-      transform: scale(0.9);
+    &:hover {
+      opacity: 1;
+      background: ${props => props.theme?.colors?.accent || '#800000'};
+      border-color: ${props => props.theme?.colors?.accent || '#800000'};
+      transform: scale(1.1);
     }
     
-    @media (hover: hover) {
-      &:hover {
-        background: ${props => props.theme?.colors?.accent || '#800000'};
-        border-color: ${props => props.theme?.colors?.accent || '#800000'};
-      }
+    &:active {
+      transform: scale(0.95);
     }
     
     @media (max-width: 480px) {
@@ -476,13 +432,54 @@ const ImageCarousel = styled.div`
       right: 0.75rem;
       
       svg {
-        width: 18px;
-        height: 18px;
+        width: 16px;
+        height: 16px;
       }
     }
   }
 `;
 
+// Details section - 30% of card height
+const ZoomContent = styled.div`
+  height: 30%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: ${props => props.theme?.colors?.background || '#000000'};
+  
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: ${props => `${props.theme?.colors?.accent || '#800000'}60`};
+    border-radius: 2px;
+    
+    &:hover {
+      background: ${props => props.theme?.colors?.accent || '#800000'};
+    }
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.875rem;
+    gap: 0.625rem;
+  }
+`;
+
+
+// Update ZoomHeader - Remove it entirely or hide it
+const ZoomHeader = styled.div`
+  display: none; // Hide the header completely
+`;
 
 // Mobile-optimized profile section
 const ProfileSection = styled.div`
@@ -2468,389 +2465,286 @@ const WelcomePage = () => {
       </StyleIndicator>
 
       {/* Zoomed Item View - Updated to match ShopPublicView */}
+      {/* Zoomed Item View - 75/25 Split */}
+      {/* Zoomed Item View - 70/30 Split with 2:5 Card */}
       {zoomedItem && (
-      <ZoomOverlay onClick={handleCloseZoom} theme={currentStyle}>
-        <ZoomContainer 
-          theme={currentStyle}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Remove ZoomHeader entirely */}
-          
-          {/* Image Carousel with close button overlay */}
-          <ImageCarousel 
-            theme={currentStyle} 
-            currentIndex={currentImageIndex}
+        <ZoomOverlay onClick={handleCloseZoom} theme={currentStyle}>
+          <ZoomContainer 
+            theme={currentStyle}
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* Close button overlaid on image */}
-            <button 
-              className="close-overlay-button"
-              onClick={handleCloseZoom}
-              aria-label="Close"
+            {/* 70% - Image Carousel */}
+            <ImageCarousel 
+              theme={currentStyle} 
+              currentIndex={currentImageIndex}
             >
-              <X size={20} />
-            </button>
-          
-            <div className="image-track">
-              {zoomedItem.images && zoomedItem.images.filter(Boolean).length > 0 ? (
-                zoomedItem.images.filter(Boolean).map((image, index) => (
-                  <div key={index} className="image-slide">
-                    <img src={image} alt={`${zoomedItem.name} ${index + 1}`} />
-                  </div>
-                ))
-              ) : (
-                <div className="image-slide">
-                  <div className="no-image">
-                    <Package size={48} style={{ opacity: 0.3 }} />
-                    <p>No image available</p>
-                  </div>
-                </div>
-              )}
-            </div>
+              {/* Close button */}
+              <button 
+                className="close-overlay-button"
+                onClick={handleCloseZoom}
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
             
-            {/* Navigation Arrows */}
-            {zoomedItem.images && zoomedItem.images.filter(Boolean).length > 1 && (
-              <>
-                <button 
-                  className="carousel-button prev"
-                  onClick={() => setCurrentImageIndex(prev => 
-                    prev === 0 ? zoomedItem.images.filter(Boolean).length - 1 : prev - 1
-                  )}
-                  aria-label="Previous image"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <button 
-                  className="carousel-button next"
-                  onClick={() => setCurrentImageIndex(prev => 
-                    prev === zoomedItem.images.filter(Boolean).length - 1 ? 0 : prev + 1
-                  )}
-                  aria-label="Next image"
-                >
-                  <ChevronRight size={20} />
-                </button>
-                
-                {/* Dots Indicator */}
-                <div className="carousel-dots">
-                  {zoomedItem.images.filter(Boolean).map((_, index) => (
-                    <button
-                      key={index}
-                      className="dot"
-                      style={{ opacity: index === currentImageIndex ? 1 : 0.3 }}
-                      onClick={() => setCurrentImageIndex(index)}
-                      aria-label={`View image ${index + 1}`}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </ImageCarousel>
-          
-          {/* Scrollable Content - rest remains the same */}
-          <ZoomContent theme={currentStyle}>
-            {/* All your existing content here */}
-            {/* Item Header */}
-            <div style={{ marginBottom: '1rem' }}>
-              <h3 style={{
-                fontSize: '1.4rem',
-                margin: '0 0 0.5rem 0',
-                lineHeight: '1.3',
-                color: currentStyle?.colors?.text || '#FFFFFF',
-                fontFamily: currentStyle?.fonts?.heading || 'inherit'
-              }}>
-                {zoomedItem.name}
-              </h3>
+              <div className="image-track">
+                {zoomedItem.images && zoomedItem.images.filter(Boolean).length > 0 ? (
+                  zoomedItem.images.filter(Boolean).map((image, index) => (
+                    <div key={index} className="image-slide">
+                      <img src={image} alt={`${zoomedItem.name} ${index + 1}`} />
+                    </div>
+                  ))
+                ) : (
+                  <div className="image-slide">
+                    <div className="no-image">
+                      <Package size={40} />
+                      <p>No image</p>
+                    </div>
+                  </div>
+                )}
+              </div>
               
-              {/* Category Badge */}
-              {zoomedItem.category && zoomedItem.category !== 'Other' && (
-                <CategoryBadge theme={currentStyle}>
-                  {zoomedItem.category}
-                </CategoryBadge>
+              {/* Navigation */}
+              {zoomedItem.images && zoomedItem.images.filter(Boolean).length > 1 && (
+                <>
+                  <button 
+                    className="carousel-button prev"
+                    onClick={() => setCurrentImageIndex(prev => 
+                      prev === 0 ? zoomedItem.images.filter(Boolean).length - 1 : prev - 1
+                    )}
+                    aria-label="Previous"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button 
+                    className="carousel-button next"
+                    onClick={() => setCurrentImageIndex(prev => 
+                      prev === zoomedItem.images.filter(Boolean).length - 1 ? 0 : prev + 1
+                    )}
+                    aria-label="Next"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                  
+                  <div className="carousel-dots">
+                    {zoomedItem.images.filter(Boolean).map((_, index) => (
+                      <button
+                        key={index}
+                        className="dot"
+                        style={{ opacity: index === currentImageIndex ? 1 : 0.3 }}
+                        onClick={() => setCurrentImageIndex(index)}
+                        aria-label={`Image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                </>
               )}
-            </div>
+            </ImageCarousel>
             
-            {/* Price Section - Compact */}
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'baseline', 
-              gap: '0.5rem',
-              marginBottom: '0.75rem',
-              flexWrap: 'wrap'
-            }}>
-              <div style={{
-                fontSize: '1.6rem',
-                fontWeight: 'bold',
-                color: currentStyle?.colors?.accent || '#800000',
-                lineHeight: '1'
+            {/* 30% - Compact Details */}
+            <ZoomContent theme={currentStyle}>
+              {/* Name & Price Row */}
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'baseline',
+                gap: '0.75rem'
               }}>
-                ${parseFloat(zoomedItem.price || 0).toFixed(2)}
-              </div>
-              {orderQuantity > 1 && (
-                <div style={{ 
-                  fontSize: '0.85rem', 
-                  opacity: 0.7,
-                  color: currentStyle?.colors?.text || '#FFFFFF'
-                }}>
-                  × {orderQuantity} = ${(parseFloat(zoomedItem.price || 0) * orderQuantity).toFixed(2)}
-                </div>
-              )}
-            </div>
-            
-            {/* Stock Status - Compact */}
-            {zoomedItem.quantity !== undefined && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                marginBottom: '1rem',
-                fontSize: '0.9rem'
-              }}>
-                <div style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: parseInt(zoomedItem.quantity) > 0 ? '#4CAF50' : '#FF5252'
-                }} />
-                <span style={{
-                  color: parseInt(zoomedItem.quantity) > 0 ? '#4CAF50' : '#FF5252',
-                  fontWeight: '500'
-                }}>
-                  {parseInt(zoomedItem.quantity) > 0 ? 
-                    `${zoomedItem.quantity} available` : 
-                    'Out of stock'
-                  }
-                </span>
-              </div>
-            )}
-    
-            {/* Description */}
-            {zoomedItem.description && (
-              <div style={{ marginBottom: '1rem' }}>
-                <div style={{
-                  fontSize: '0.75rem',
+                <h3 style={{
+                  fontSize: '1.1rem',
+                  margin: 0,
                   fontWeight: '600',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  opacity: 0.5,
-                  marginBottom: '0.5rem',
-                  color: currentStyle?.colors?.text || '#FFFFFF'
+                  color: currentStyle?.colors?.text || '#FFFFFF',
+                  flex: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
                 }}>
-                  Description
-                </div>
-                <div style={{
-                  fontSize: '0.9rem',
-                  lineHeight: '1.6',
-                  opacity: 0.9,
-                  color: currentStyle?.colors?.text || '#FFFFFF'
-                }}>
-                  {zoomedItem.description}
-                </div>
-              </div>
-            )}
-    
-            {/* Location & Shop Info - Combined */}
-            <div style={{
-              background: `${currentStyle?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}40`,
-              borderRadius: '8px',
-              padding: '0.875rem',
-              marginBottom: '1rem'
-            }}>
-              {/* Distance */}
-              {zoomedItem.formattedDistance && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  marginBottom: zoomedItem.shopName ? '0.75rem' : '0',
-                  fontSize: '0.85rem',
-                  color: currentStyle?.colors?.text || '#FFFFFF'
-                }}>
-                  <Navigation size={14} style={{ opacity: 0.7 }} />
-                  <span style={{ fontWeight: '500' }}>
-                    {zoomedItem.formattedDistance} away
-                  </span>
-                </div>
-              )}
-              
-              {/* Shop Name - Now clickable */}
-              {zoomedItem.shopName && (
-                <div 
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/shop/${zoomedItem.shopId}/view`);
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = currentStyle?.colors?.accent || '#800000';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = currentStyle?.colors?.text || '#FFFFFF';
-                  }}
-                >
-                  <Store size={14} style={{ opacity: 0.7 }} />
-                  <div>
-                    <span style={{ opacity: 0.6, marginRight: '0.375rem' }}>by</span>
-                    <strong style={{ 
-                      textDecoration: 'underline',
-                      textDecorationColor: 'transparent',
-                      transition: 'text-decoration-color 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.textDecorationColor = currentStyle?.colors?.accent || '#800000';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.textDecorationColor = 'transparent';
-                    }}
-                    >
-                      {zoomedItem.shopName}
-                    </strong>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* Quantity Selector - Compact */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              background: `${currentStyle?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}40`,
-              borderRadius: '10px',
-              padding: '0.75rem 1rem',
-              marginBottom: '1rem'
-            }}>
-              <div style={{
-                fontWeight: '600',
-                fontSize: '0.9rem',
-                color: currentStyle?.colors?.text || '#FFFFFF'
-              }}>
-                Quantity
-              </div>
-              
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1rem'
-              }}>
-                <button 
-                  onClick={() => adjustQuantity(-1)}
-                  disabled={orderQuantity <= 1}
-                  aria-label="Decrease quantity"
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    border: `2px solid ${currentStyle?.colors?.accent || '#800000'}`,
-                    background: 'transparent',
-                    color: currentStyle?.colors?.accent || '#800000',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: orderQuantity <= 1 ? 'not-allowed' : 'pointer',
-                    opacity: orderQuantity <= 1 ? 0.3 : 1,
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <Minus size={16} />
-                </button>
+                  {zoomedItem.name}
+                </h3>
                 
                 <div style={{
                   fontSize: '1.2rem',
                   fontWeight: 'bold',
-                  color: currentStyle?.colors?.text || 'white',
-                  minWidth: '32px',
-                  textAlign: 'center'
+                  color: currentStyle?.colors?.accent || '#800000',
+                  whiteSpace: 'nowrap'
                 }}>
-                  {orderQuantity}
+                  ${parseFloat(zoomedItem.price || 0).toFixed(2)}
                 </div>
-              
-                <button 
-                  onClick={() => adjustQuantity(1)}
-                  disabled={orderQuantity >= parseInt(zoomedItem.quantity || 1)}
-                  aria-label="Increase quantity"
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    border: `2px solid ${currentStyle?.colors?.accent || '#800000'}`,
-                    background: 'transparent',
-                    color: currentStyle?.colors?.accent || '#800000',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: orderQuantity >= parseInt(zoomedItem.quantity || 1) ? 'not-allowed' : 'pointer',
-                    opacity: orderQuantity >= parseInt(zoomedItem.quantity || 1) ? 0.3 : 1,
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <Plus size={16} />
-                </button>
               </div>
-            </div>
-                
-            {/* Order Button */}
-            <button 
-              onClick={handleDirectOrder}
-              disabled={parseInt(zoomedItem.quantity || 0) < 1 || orderQuantity > parseInt(zoomedItem.quantity || 0)}
-              style={{
-                width: '100%',
-                padding: '1rem',
-                borderRadius: '10px',
-                border: 'none',
-                background: parseInt(zoomedItem.quantity || 0) < 1 ? 
-                  `${currentStyle?.colors?.accent || '#800000'}40` : 
-                  currentStyle?.colors?.accent || '#800000',
-                color: 'white',
-                fontSize: '1rem',
-                fontWeight: '600',
+              
+              {/* Info Row: Distance • Shop • Stock */}
+              <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                cursor: parseInt(zoomedItem.quantity || 0) < 1 ? 'not-allowed' : 'pointer',
-                transition: 'all 0.3s',
-                marginBottom: '1rem'
-              }}
-            >
-              {parseInt(zoomedItem.quantity || 0) < 1 ? (
-                <>
-                  <X size={18} />
-                  Out of Stock
-                </>
-              ) : (
-                <>
-                  <ShoppingCart size={18} />
-                  Order {orderQuantity > 1 ? `${orderQuantity} items` : '1 item'} · ${(parseFloat(zoomedItem.price || 0) * orderQuantity).toFixed(2)}
-                </>
-              )}
-            </button>
-            
-            {/* Info Footer - Compact */}
-            <div style={{
-              padding: '0.75rem',
-              background: `${currentStyle?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}20`,
-              borderRadius: '8px',
-              fontSize: '0.75rem',
-              opacity: 0.6,
-              lineHeight: '1.5',
-              color: currentStyle?.colors?.text || '#FFFFFF',
-              display: 'flex',
-              gap: '0.5rem',
-              alignItems: 'flex-start'
-            }}>
-              <MessageCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
-              <span>Orders start a conversation with the seller to arrange details.</span>
-            </div>
-          </ZoomContent>
-        </ZoomContainer>
-      </ZoomOverlay>
-    )}
+                gap: '0.75rem',
+                fontSize: '0.75rem',
+                flexWrap: 'wrap',
+                color: currentStyle?.colors?.text || '#FFFFFF',
+                opacity: 0.8
+              }}>
+                {zoomedItem.formattedDistance && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <Navigation size={11} />
+                      <span>{zoomedItem.formattedDistance}</span>
+                    </div>
+                    <span>•</span>
+                  </>
+                )}
+                
+                {zoomedItem.shopName && (
+                  <>
+                    <div 
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '0.25rem',
+                        cursor: 'pointer',
+                        textDecoration: 'underline'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/shop/${zoomedItem.shopId}/view`);
+                      }}
+                    >
+                      <Store size={11} />
+                      <span>{zoomedItem.shopName}</span>
+                    </div>
+                    <span>•</span>
+                  </>
+                )}
+                
+                {zoomedItem.quantity !== undefined && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <div style={{
+                      width: '5px',
+                      height: '5px',
+                      borderRadius: '50%',
+                      background: parseInt(zoomedItem.quantity) > 0 ? '#4CAF50' : '#FF5252'
+                    }} />
+                    <span style={{
+                      color: parseInt(zoomedItem.quantity) > 0 ? '#4CAF50' : '#FF5252',
+                      fontWeight: '500'
+                    }}>
+                      {parseInt(zoomedItem.quantity) > 0 ? 
+                        `${zoomedItem.quantity} in stock` : 
+                        'Out of stock'
+                      }
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Quantity Selector */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: `${currentStyle?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}20`,
+                borderRadius: '6px',
+                padding: '0.5rem 0.75rem'
+              }}>
+                <span style={{
+                  fontSize: '0.8rem',
+                  fontWeight: '600',
+                  color: currentStyle?.colors?.text || '#FFFFFF'
+                }}>
+                  Qty
+                </span>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <button 
+                    onClick={() => adjustQuantity(-1)}
+                    disabled={orderQuantity <= 1}
+                    style={{
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      border: `1.5px solid ${currentStyle?.colors?.accent || '#800000'}`,
+                      background: 'transparent',
+                      color: currentStyle?.colors?.accent || '#800000',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: orderQuantity <= 1 ? 'not-allowed' : 'pointer',
+                      opacity: orderQuantity <= 1 ? 0.3 : 1
+                    }}
+                  >
+                    <Minus size={12} />
+                  </button>
+                  
+                  <div style={{
+                    fontSize: '1rem',
+                    fontWeight: 'bold',
+                    color: currentStyle?.colors?.text || 'white',
+                    minWidth: '24px',
+                    textAlign: 'center'
+                  }}>
+                    {orderQuantity}
+                  </div>
+                
+                  <button 
+                    onClick={() => adjustQuantity(1)}
+                    disabled={orderQuantity >= parseInt(zoomedItem.quantity || 1)}
+                    style={{
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      border: `1.5px solid ${currentStyle?.colors?.accent || '#800000'}`,
+                      background: 'transparent',
+                      color: currentStyle?.colors?.accent || '#800000',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: orderQuantity >= parseInt(zoomedItem.quantity || 1) ? 'not-allowed' : 'pointer',
+                      opacity: orderQuantity >= parseInt(zoomedItem.quantity || 1) ? 0.3 : 1
+                    }}
+                  >
+                    <Plus size={12} />
+                  </button>
+                </div>
+              </div>
+                  
+              {/* Order Button */}
+              <button 
+                onClick={handleDirectOrder}
+                disabled={parseInt(zoomedItem.quantity || 0) < 1 || orderQuantity > parseInt(zoomedItem.quantity || 0)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: parseInt(zoomedItem.quantity || 0) < 1 ? 
+                    `${currentStyle?.colors?.accent || '#800000'}40` : 
+                    currentStyle?.colors?.accent || '#800000',
+                  color: 'white',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  cursor: parseInt(zoomedItem.quantity || 0) < 1 ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.3s'
+                }}
+              >
+                {parseInt(zoomedItem.quantity || 0) < 1 ? (
+                  <>
+                    <X size={16} />
+                    Out of Stock
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart size={16} />
+                    Order {orderQuantity > 1 && `${orderQuantity} `}· ${(parseFloat(zoomedItem.price || 0) * orderQuantity).toFixed(2)}
+                  </>
+                )}
+              </button>
+            </ZoomContent>
+          </ZoomContainer>
+        </ZoomOverlay>
+      )}
 
       {/* Chat Overlay */}
       <ChatOverlay isOpen={chatOpen} onClick={handleCloseChat} />
