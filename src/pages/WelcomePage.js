@@ -2484,7 +2484,6 @@ const loadCategorizedItems = async () => {
               </ActionButtonContainer>
             </>
           )}
-        </WelcomeSection>
 
 {/* Place this after ActionButtonContainer and before TabContainer */}
 {isAuthenticated && (
@@ -2526,6 +2525,7 @@ const loadCategorizedItems = async () => {
     </button>
   </LocationIndicator2>
 )}
+        </WelcomeSection>
 
         <TabContainer>
           <Tab 
