@@ -112,6 +112,126 @@ const Logo = styled.div`
   }
 `;
 
+const LocationIndicator2 = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(0, 0, 0, 0.4)'}CC`};
+  backdrop-filter: blur(10px);
+  padding: 0.75rem 1.5rem;
+  border-radius: 25px;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.4)'};
+  margin: 1.5rem auto;
+  max-width: 500px;
+  width: 90%;
+  transition: all 0.3s ease;
+  position: relative;
+  
+  @media (max-width: 768px) {
+    width: 95%;
+    padding: 0.6rem 1rem;
+    gap: 0.5rem;
+  }
+  
+  .location-icon-btn {
+    background: transparent;
+    border: none;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+    }
+    
+    &:active {
+      transform: scale(0.9);
+    }
+    
+    svg {
+      width: 20px;
+      height: 20px;
+      
+      @media (max-width: 768px) {
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+  
+  .location-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+    font-size: 0.95rem;
+    outline: none;
+    text-align: center;
+    
+    &::placeholder {
+      color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.6)'};
+    }
+    
+    @media (max-width: 768px) {
+      font-size: 0.85rem;
+    }
+  }
+  
+  .updating-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+    border-radius: 50%;
+    border-top-color: ${props => props.theme?.colors?.accent || '#800000'};
+    animation: spin 1s linear infinite;
+  }
+  
+  .pin-icon-btn {
+    background: transparent;
+    border: none;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    opacity: ${props => props.isPinned ? 1 : 0.5};
+    
+    &:hover {
+      background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+      opacity: 1;
+    }
+    
+    &:active {
+      transform: scale(0.9);
+    }
+    
+    svg {
+      width: 18px;
+      height: 18px;
+      
+      @media (max-width: 768px) {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
 const HeaderControls = styled.div`
   display: flex;
   align-items: center;
@@ -513,8 +633,8 @@ const ProfileImage = styled.div`
 
 // Add to styled components section in WelcomePage.js
 const LocationIndicator = styled.div`
-  position: relative;
-  top: 90px; // Position it below the header
+  position: fixed;
+  top: 90px;
   left: 2rem;
   display: flex;
   align-items: center;
@@ -529,6 +649,11 @@ const LocationIndicator = styled.div`
   cursor: pointer;
   transition: all 0.3s ease;
   max-width: 300px;
+  
+  /* Hide on mobile, show only on desktop for debugging */
+  @media (max-width: 768px) {
+    display: none;
+  } 
   
   &:hover {
     background: rgba(0, 0, 0, 0.8);
@@ -1385,6 +1510,10 @@ const WelcomePage = () => {
   const [isPinned, setIsPinned] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [orderQuantity, setOrderQuantity] = useState(1);
+const [zipCode, setZipCode] = useState('');
+const [isZipPinned, setIsZipPinned] = useState(false);
+const [isConvertingToZip, setIsConvertingToZip] = useState(false);
+const [zipInputValue, setZipInputValue] = useState('');
   
   const { user, isAuthenticated } = useAuth();
   const [shopData, setShopData] = useState(null);
@@ -1417,6 +1546,17 @@ const WelcomePage = () => {
     'Food & Beverages': [],
     'Other': []
   });
+
+useEffect(() => {
+  const pinnedZip = localStorage.getItem('pinnedZipCode');
+  if (pinnedZip) {
+    setZipCode(pinnedZip);
+    setZipInputValue(pinnedZip);
+    setIsZipPinned(true);
+    // Optionally convert to coords and update location
+    convertZipToCoords(pinnedZip);
+  }
+}, []);
 
   // Handle opening shop
   const handleOpenShop = () => {
@@ -1561,6 +1701,135 @@ const WelcomePage = () => {
       setIsSearching(false);
     }
   };
+
+// Convert coordinates to ZIP code
+const convertCoordsToZip = async (lat, lon) => {
+  try {
+    setIsConvertingToZip(true);
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+      {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'KalKode Marketplace'
+        }
+      }
+    );
+    
+    const data = await response.json();
+    
+    if (data && data.address && data.address.postcode) {
+      const zip = data.address.postcode;
+      setZipCode(zip);
+      setZipInputValue(zip);
+      return zip;
+    } else {
+      setZipCode('Not available');
+      setZipInputValue('');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error converting coordinates to ZIP:', error);
+    setZipCode('Error');
+    setZipInputValue('');
+    return null;
+  } finally {
+    setIsConvertingToZip(false);
+  }
+};
+
+// Convert ZIP code to coordinates
+const convertZipToCoords = async (zip) => {
+  if (!zip || zip.length < 5) {
+    setError('Please enter a valid ZIP code');
+    return null;
+  }
+  
+  try {
+    setIsConvertingToZip(true);
+    setError(null);
+    
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?postalcode=${zip}&country=US&format=json&limit=1`,
+      {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'KalKode Marketplace'
+        }
+      }
+    );
+    
+    const data = await response.json();
+    
+    if (data && data[0]) {
+      const coords = {
+        latitude: parseFloat(data[0].lat),
+        longitude: parseFloat(data[0].lon)
+      };
+      
+      // Update the location context with new coordinates
+      // You'll need to add an updateLocation method to your LocationContext
+      return coords;
+    } else {
+      setError('ZIP code not found');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error converting ZIP to coordinates:', error);
+    setError('Failed to lookup ZIP code');
+    return null;
+  } finally {
+    setIsConvertingToZip(false);
+  }
+};
+
+// Handle location icon click - convert current location to ZIP
+const handleLocationToZip = async () => {
+  if (userLocation) {
+    await convertCoordsToZip(userLocation.latitude, userLocation.longitude);
+  } else {
+    setError('Location not available. Please enable location services.');
+  }
+};
+
+// Handle ZIP code input submission
+const handleZipSubmit = async (e) => {
+  if (e.key === 'Enter' || e.type === 'blur') {
+    const zip = zipInputValue.trim();
+    if (zip) {
+      const coords = await convertZipToCoords(zip);
+      if (coords) {
+        // Store the coordinates - you may need to update your location context
+        setZipCode(zip);
+        
+        // If on nearby tab, trigger refresh with new coordinates
+        if (activeTab === 'nearby') {
+          await fetchNearbyItems();
+        }
+        
+        // Update the original location indicator
+        if (activeTab === 'featured') {
+          loadCategorizedItems();
+        }
+      }
+    }
+  }
+};
+
+// Toggle ZIP pin
+const handleToggleZipPin = () => {
+  if (isZipPinned) {
+    localStorage.removeItem('pinnedZipCode');
+    setIsZipPinned(false);
+    setZipCode('');
+    setZipInputValue('');
+  } else {
+    if (zipCode && zipCode !== 'Not available' && zipCode !== 'Error') {
+      localStorage.setItem('pinnedZipCode', zipCode);
+      setIsZipPinned(true);
+    }
+  }
+};
 
   // Handle featured search
   const handleFeaturedSearch = () => {
@@ -2216,6 +2485,47 @@ const loadCategorizedItems = async () => {
             </>
           )}
         </WelcomeSection>
+
+{/* Place this after ActionButtonContainer and before TabContainer */}
+{isAuthenticated && (
+  <LocationIndicator2 theme={currentStyle} isPinned={isZipPinned}>
+    <button 
+      className="location-icon-btn"
+      onClick={handleLocationToZip}
+      disabled={isConvertingToZip}
+      title="Get ZIP from current location"
+    >
+      {isConvertingToZip ? (
+        <div className="updating-spinner" />
+      ) : (
+        <Navigation size={20} />
+      )}
+    </button>
+    
+    <input
+      type="text"
+      className="location-input"
+      value={zipInputValue}
+      onChange={(e) => setZipInputValue(e.target.value)}
+      onKeyPress={handleZipSubmit}
+      onBlur={handleZipSubmit}
+      placeholder={zipCode || "Enter ZIP code or click icon"}
+      maxLength={10}
+    />
+    
+    <button
+      className="pin-icon-btn"
+      onClick={handleToggleZipPin}
+      disabled={!zipCode || zipCode === 'Not available' || zipCode === 'Error'}
+      title={isZipPinned ? "Unpin ZIP code" : "Pin ZIP code"}
+    >
+      <Pin 
+        size={18} 
+        fill={isZipPinned ? currentStyle.colors.accent : "none"}
+      />
+    </button>
+  </LocationIndicator2>
+)}
 
         <TabContainer>
           <Tab 
