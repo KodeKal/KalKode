@@ -62,7 +62,6 @@ const ChatOverlay = styled.div`
   transition: opacity 0.3s ease;
 `;
 
-// Updated ItemCard with exact needed size
 const ItemCard = styled.div`
   background: ${props => props.theme?.colors?.surface || 'rgba(0, 0, 0, 0.4)'};
   border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
@@ -82,9 +81,9 @@ const ItemCard = styled.div`
     box-shadow: 0 5px 15px ${props => `${props.theme?.colors?.accent || 'rgba(128, 0, 0, 0.2)'}40`};
   }
   
-  /* Mobile responsive adjustments */
   @media (max-width: 768px) {
     border-radius: 10px;
+    height: 100%; /* Stretch to full available height */
     
     &:hover {
       transform: translateY(-3px);
@@ -102,7 +101,7 @@ const ItemCard = styled.div`
   
   @media (max-width: 360px) {
     &:hover {
-      transform: none; /* Disable hover transform on very small screens */
+      transform: none;
       box-shadow: 0 2px 8px ${props => `${props.theme?.colors?.accent || 'rgba(128, 0, 0, 0.2)'}20`};
     }
   }
@@ -196,40 +195,40 @@ const ItemInfo = styled.div`
     }
   }
   
-  @media (max-width: 480px) {
-    padding: 0.5rem 0.75rem;
-    min-height: 60px;
-    gap: 0.35rem;
+  @media (max-width: 768px) {
+    padding: 1rem 1.25rem; /* Increased padding */
+    min-height: 100px; /* Increased from 70px */
+    gap: 0.6rem;
     
     .item-name {
-      font-size: 0.9rem;
+      font-size: 1.1rem; /* Increased from 0.95rem */
     }
     
     .price {
-      font-size: 0.9rem;
+      font-size: 1.1rem; /* Increased from 0.95rem */
     }
     
     .shop-info {
-      font-size: 0.75rem;
-      gap: 0.4rem;
+      font-size: 0.9rem; /* Increased from 0.8rem */
     }
   }
   
-  @media (max-width: 360px) {
-    padding: 0.4rem 0.6rem;
-    min-height: 55px;
+  @media (max-width: 480px) {
+    padding: 0.875rem 1rem; /* Increased */
+    min-height: 90px; /* Increased from 60px */
+    gap: 0.5rem;
     
     .item-name {
-      font-size: 0.85rem;
+      font-size: 1rem; /* Increased from 0.9rem */
     }
     
     .price {
-      font-size: 0.85rem;
+      font-size: 1rem; /* Increased from 0.9rem */
     }
     
     .shop-info {
-      font-size: 0.7rem;
-      gap: 0.3rem;
+      font-size: 0.85rem; /* Increased from 0.75rem */
+      gap: 0.5rem;
     }
   }
 `;
@@ -237,7 +236,7 @@ const ItemInfo = styled.div`
 const ImageSection = styled.div`
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1; /* Square image */
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -248,6 +247,11 @@ const ImageSection = styled.div`
     width: 100%;
     height: 100%;
     object-fit: ${props => props.isExpanded ? 'contain' : 'cover'};
+  }
+  
+  @media (max-width: 768px) {
+    aspect-ratio: 4 / 3; /* Make images taller on mobile */
+    flex: 1; /* Allow image to grow within card */
   }
 
   .carousel-arrow {
@@ -286,11 +290,10 @@ const ImageSection = styled.div`
     opacity: 0.7;
   }
   
-  /* Mobile responsive adjustments */
   @media (max-width: 768px) {
     .carousel-arrow {
-      width: 28px;
-      height: 28px;
+      width: 32px; /* Increased from 28px */
+      height: 32px;
       
       &.left {
         left: 0.75rem;
@@ -299,13 +302,18 @@ const ImageSection = styled.div`
       &.right {
         right: 0.75rem;
       }
+      
+      svg {
+        width: 16px;
+        height: 16px;
+      }
     }
   }
   
   @media (max-width: 480px) {
     .carousel-arrow {
-      width: 24px;
-      height: 24px;
+      width: 28px; /* Increased from 24px */
+      height: 28px;
       
       &.left {
         left: 0.5rem;
@@ -316,31 +324,16 @@ const ImageSection = styled.div`
       }
       
       svg {
-        width: 14px;
-        height: 14px;
+        width: 16px; /* Increased from 14px */
+        height: 16px;
       }
     }
     
-    /* Always show arrows on mobile for better UX */
     &:not(:hover) .carousel-arrow {
       opacity: 0.5;
     }
   }
-  
-  @media (max-width: 360px) {
-    .carousel-arrow {
-      width: 20px;
-      height: 20px;
-      
-      svg {
-        width: 12px;
-        height: 12px;
-      }
-    }
-  }
 `;
-
-
 
 const Distance = styled.div`
   position: absolute;

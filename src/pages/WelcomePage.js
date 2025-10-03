@@ -1238,15 +1238,16 @@ const CategoryScrollableGrid = styled.div`
   
   @media (max-width: 768px) {
     display: grid;
-    grid-auto-flow: column; /* Changed: Make items flow in columns */
-    grid-template-rows: repeat(2, 1fr); /* 2 rows */
-    grid-template-columns: repeat(5, minmax(200px, 1fr)); /* 5 columns with min-width */
-    gap: 0.75rem;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(2, 1fr);
+    grid-template-columns: repeat(5, minmax(280px, 1fr)); /* Increased from 200px */
+    gap: 1rem; /* Increased from 0.75rem */
     overflow-x: auto;
     overflow-y: hidden;
     padding-bottom: 0.5rem;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
+    min-height: 85vh; /* Add minimum height to stretch vertically */
     
     &::-webkit-scrollbar {
       height: 4px;
@@ -1264,13 +1265,14 @@ const CategoryScrollableGrid = styled.div`
     
     > * {
       scroll-snap-align: start;
-      min-width: 0; /* Allow items to shrink */
+      min-width: 0;
+      height: 100%; /* Make items stretch to full height */
     }
   }
   
   @media (max-width: 480px) {
-    grid-template-columns: repeat(5, minmax(160px, 1fr));
-    gap: 0.5rem;
+    grid-template-columns: repeat(5, minmax(240px, 1fr)); /* Increased from 160px */
+    gap: 0.75rem;
   }
 `;
 
