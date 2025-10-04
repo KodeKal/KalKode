@@ -1940,32 +1940,6 @@ useEffect(() => {
   };
 
 
-
-// Handle ZIP code input submission
-const handleZipSubmit = async (e) => {
-  if (e.key === 'Enter' || e.type === 'blur') {
-    const zip = zipInputValue.trim();
-    if (zip) {
-      const coords = await convertZipToCoords(zip);
-      if (coords) {
-        // Store the coordinates - you may need to update your location context
-        setZipCode(zip);
-        
-        // If on nearby tab, trigger refresh with new coordinates
-        if (activeTab === 'nearby') {
-          await fetchNearbyItems();
-        }
-        
-        // Update the original location indicator
-        if (activeTab === 'featured') {
-          loadCategorizedItems();
-        }
-      }
-    }
-  }
-};
-
-
   // Handle featured search
   const handleFeaturedSearch = () => {
     if (featuredSearchTerm.trim()) {
