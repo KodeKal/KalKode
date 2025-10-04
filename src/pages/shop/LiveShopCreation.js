@@ -21,7 +21,9 @@ import {
   ChevronUp,
   Grid,
   List,
-  LogOut
+  LogOut,
+  Check,
+  Package
 } from 'lucide-react';
 import { useTempStore } from '../../contexts/TempStoreContext';
 import EditableText from './components/EditableComponents/EditableText';
@@ -89,6 +91,252 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
   @keyframes galaxySwirl {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+  }
+`;
+
+const EditModal = styled.div`
+  display: none;
+
+  @media (max-width: 767px) {
+    display: flex;
+    position: fixed;
+    top: 95px; /* Start 1 inch below tab buttons (assuming tabs are around 60px + header 80px) */
+    left: 0;
+    right: 0;
+    bottom: 30px; /* 1 inch from bottom (96px = 1 inch) */
+    background: rgba(0, 0, 0, 0.9);
+    align-items: center;
+    justify-content: center;
+    z-index: 999; /* Changed from 1000 to be below save button */
+    padding: 1rem;
+    overflow: hidden;
+  }
+`;
+
+const EditModalContent = styled.div`
+  background: ${props => props.theme?.colors?.background || '#000000'};
+  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  height: 100%; /* Take full available height */
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  margin: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+`;
+
+// Add new action buttons for the image overlay
+const ImageActionButtons = styled.div`
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.75rem;
+  z-index: 10;
+`;
+
+const ImageActionButton = styled.button`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  
+  &.check {
+    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.8)'}E5`};
+    color: #4CAF50;
+    
+    &:active {
+      background: #4CAF50;
+      color: white;
+      transform: scale(0.95);
+    }
+  }
+  
+  &.close {
+    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.8)'}E5`};
+    color: #ff4444;
+    
+    &:active {
+      background: #ff4444;
+      color: white;
+      transform: scale(0.95);
+    }
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+`;
+
+const EditModalImageSection = styled.div`
+  height: 50%;
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
+`;
+
+const EditModalBody = styled.div`
+  height: 50%;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${props => props.theme?.colors?.accent || '#800000'};
+    border-radius: 2px;
+  }
+`;
+
+const SaveButtonContainer = styled.div`
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 1000; /* Changed from 100 to 1000 to be above modal */
+  
+  @media (min-width: 768px) {
+    bottom: 2rem;
+    right: 2rem;
+  }
+`;
+
+const ModalButtons = styled.div`
+  position: sticky;
+  bottom: 0;
+  background: ${props => props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'};
+  padding: 0.8rem 1.2rem; /* Changed from 1rem 1.5rem */
+  border-top: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
+  display: flex;
+  gap: 0.8rem; /* Changed from 1rem */
+  justify-content: flex-end;
+  z-index: 1;
+`;
+
+const CancelButton = styled.button`
+  background: transparent;
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  border: 1px solid ${props => `${props.theme?.colors?.accent}60` || 'rgba(255, 255, 255, 0.4)'};
+  padding: 0.6rem 1.2rem; /* Changed from 0.75rem 1.5rem */
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem; /* Added */
+
+  &:active {
+    background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(255, 255, 255, 0.1)'};
+    transform: scale(0.98);
+  }
+`;
+
+// Add these new components
+const TemplateCard = styled.div`
+  background: ${props => props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'};
+  border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
+  overflow: hidden;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
+  position: relative;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+
+  &:hover {
+    transform: translateY(-5px);
+    border-color: ${props => props.theme?.colors?.accent};
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+
+    .delete-button {
+      opacity: 1;
+    }
+  }
+
+  @media (max-width: 640px) {
+    min-height: 260px;
+  }
+`;
+
+const TemplateImageContainer = styled.div`
+  position: relative;
+  height: 180px;
+  overflow: hidden;
+  background: ${props => `${props.theme?.colors?.background || '#000000'}50`};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .placeholder {
+    color: ${props => props.theme?.colors?.text || '#fff'};
+    opacity: 0.3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  @media (max-width: 640px) {
+    height: 160px;
+  }
+`;
+
+const TemplateContent = styled.div`
+  padding: 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  .item-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .item-price {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    text-align: right;
+  }
+
+  .empty-text {
+    font-size: 0.9rem;
+    color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.4)'};
+    font-style: italic;
   }
 `;
 
@@ -337,27 +585,6 @@ const ViewToggleButton = styled.button`
 const ItemsContainer = styled.div`
   margin-top: 2rem;
 `;
-
-const ItemsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1rem;
-  
-  @media (min-width: 480px) {
-    gap: 1.5rem;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  }
-  
-  @media (min-width: 768px) {
-    gap: 2rem;
-    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  }
-  
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  }
-`;
-
 
 // CHANGE 3: Update ItemCard styled component (around line 346)
 // REPLACE the entire ItemCard component with:
@@ -624,18 +851,6 @@ const CategorySelect = styled.select`
   }
 `;
 
-// Save button container
-const SaveButtonContainer = styled.div`
-  position: fixed;
-  bottom: 1rem;
-  right: 1rem;
-  z-index: 100;
-  
-  @media (min-width: 768px) {
-    bottom: 2rem;
-    right: 2rem;
-  }
-`;
 
 const ActionButton = styled.button`
   background: ${props => props.theme?.colors?.accent || '#800000'};
@@ -730,6 +945,222 @@ const GlobalStyles = createGlobalStyle`
   }
 `;
 
+const ItemsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+  
+  @media (min-width: 480px) {
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  }
+  
+  @media (min-width: 768px) {
+    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  }
+  
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  }
+
+  /* Mobile template card grid - 2 items per row */
+  @media (max-width: 767px) {
+    grid-template-columns: repeat(2, 1fr); /* Changed from repeat(3, 1fr) */
+    gap: 0.75rem;
+    padding: 0 0.5rem;
+  }
+`;
+
+const MobileTemplateImageContainer = styled.div`
+  position: relative;
+  height: 120px;
+  overflow: hidden;
+  background: ${props => `${props.theme?.colors?.background || '#000000'}50`};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .placeholder {
+    color: ${props => props.theme?.colors?.text || '#fff'};
+    opacity: 0.3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    span {
+      font-size: 0.75rem; /* Changed from 0.7rem and made slightly larger */
+      font-weight: 500; /* Added for better readability */
+    }
+  }
+
+  .mobile-carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.7)'}DD`};
+    border: 1px solid ${props => `${props.theme?.colors?.accent}40` || 'rgba(255, 255, 255, 0.2)'};
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${props => props.theme?.colors?.text || 'white'};
+    cursor: pointer;
+    z-index: 3;
+    opacity: 0.8;
+    transition: all 0.2s ease;
+
+    &:active {
+      opacity: 1;
+      transform: translateY(-50%) scale(0.9);
+      background: ${props => props.theme?.colors?.accent || '#800000'};
+    }
+
+    &.left {
+      left: 0.25rem;
+    }
+
+    &.right {
+      right: 0.25rem;
+    }
+
+    svg {
+      width: 12px;
+      height: 12px;
+    }
+  }
+
+  .image-dots {
+    position: absolute;
+    bottom: 0.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.2rem;
+    z-index: 2;
+    
+    .dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: ${props => props.theme?.colors?.text || '#FFFFFF'};
+      opacity: 0.3;
+      transition: opacity 0.3s ease;
+      
+      &.active {
+        opacity: 1;
+      }
+    }
+  }
+`;
+
+// Mobile Template Card (only shows on mobile)
+const MobileTemplateCard = styled.div`
+  display: none;
+
+  @media (max-width: 767px) {
+    display: flex;
+    flex-direction: column;
+    background: ${props => props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'};
+    border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
+    overflow: hidden;
+    border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-height: 200px;
+
+    &:active {
+      transform: scale(0.98);
+      border-color: ${props => props.theme?.colors?.accent};
+    }
+  }
+`;
+
+const MobileTemplateContent = styled.div`
+  padding: 0.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  .item-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+    margin-bottom: 0.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.2;
+  }
+
+  .item-price {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    text-align: right;
+  }
+
+  .empty-text {
+    font-size: 0.7rem;
+    color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.4)'};
+    font-style: italic;
+  }
+`;
+
+const MobileDeleteButton = styled.button`
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.7)'}DD`};
+  border: 1px solid ${props => `${props.theme?.colors?.accent}60` || 'rgba(255, 255, 255, 0.3)'};
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff4444;
+  cursor: pointer;
+  z-index: 4;
+  opacity: 0.9;
+  transition: all 0.2s ease;
+
+  &:active {
+    transform: scale(0.9);
+    background: ${props => props.theme?.colors?.accent || '#800000'};
+    color: white;
+  }
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+`;
+
+
+// Desktop card - hide on mobile
+const DesktopItemCard = styled(ItemCard)`
+  @media (max-width: 767px) {
+    display: none;
+  }
+`;
+
 // Main Component
 const LiveShopCreation = () => {
   const navigate = useNavigate();
@@ -744,6 +1175,7 @@ const LiveShopCreation = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [validationErrors, setValidationErrors] = useState({});
+  const [editingItem, setEditingItem] = useState(null);
 
   // Consolidated shop data
   const [shopData, setShopData] = useState({
@@ -769,6 +1201,55 @@ const LiveShopCreation = () => {
       tabPosition: 'top'
     }
   });
+
+  // Add this useEffect for browser back button handling
+  useEffect(() => {
+    const handlePopState = (event) => {
+      if (editingItem) {
+        event.preventDefault();
+        setEditingItem(null);
+        // Push state again so user doesn't accidentally leave the page
+        window.history.pushState(null, '', window.location.pathname);
+      }
+    };
+
+    // Push initial state when modal opens
+    if (editingItem) {
+      window.history.pushState(null, '', window.location.pathname);
+      window.addEventListener('popstate', handlePopState);
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [editingItem]);
+
+  // Add these handler functions inside your component
+  const handleMobileNextImage = (e, itemId) => {
+    e.stopPropagation();
+    const item = shopData.items.find(i => i.id === itemId);
+    if (item && item.images) {
+      const validImages = item.images.filter(Boolean);
+      if (validImages.length > 1) {
+        const currentIndex = item.currentImageIndex || 0;
+        const newIndex = (currentIndex + 1) % validImages.length;
+        handleItemUpdate(itemId, { currentImageIndex: newIndex });
+      }
+    }
+  };
+
+  const handleMobilePrevImage = (e, itemId) => {
+    e.stopPropagation();
+    const item = shopData.items.find(i => i.id === itemId);
+    if (item && item.images) {
+      const validImages = item.images.filter(Boolean);
+      if (validImages.length > 1) {
+        const currentIndex = item.currentImageIndex || 0;
+        const newIndex = (currentIndex - 1 + validImages.length) % validImages.length;
+        handleItemUpdate(itemId, { currentImageIndex: newIndex });
+      }
+    }
+  };
 
   // Theme management
   useEffect(() => {
@@ -849,22 +1330,30 @@ const LiveShopCreation = () => {
   };
 
   const handleItemAdd = () => {
+    const newItem = {
+      id: Date.now().toString(),
+      name: '',
+      price: '',
+      description: '',
+      category: 'Other',
+      images: [null, null, null],
+      currentImageIndex: 0,
+      address: '',
+      coordinates: null,
+      tags: [],
+      quantity: 1
+    };
+
+    // Add to beginning instead of end
     setShopData(prev => ({
       ...prev,
-      items: [...prev.items, {
-        id: Date.now().toString(),
-        name: '',
-        price: '',
-        description: '',
-        category: 'Other',
-        images: [null, null, null],
-        currentImageIndex: 0,
-        address: '',
-        coordinates: null,
-        tags: [],
-        quantity: 1
-      }]
+      items: [newItem, ...prev.items]
     }));
+
+    // Auto-expand on desktop
+    if (window.innerWidth >= 768) {
+      setExpandedItems(new Set([newItem.id]));
+    }
   };
 
   const handleItemUpdate = (itemId, updates) => {
@@ -975,15 +1464,15 @@ const LiveShopCreation = () => {
           />
         </div>
         <div className="shop-description-container">
-        <ValidatedEditableText
-          value={shopData.description}
-          onChange={(value) => handleShopDataChange('description', value)}
-          placeholder="Shop Description"
-          multiline={false}
-          validationRules={VALIDATION_RULES.shop.description}
-          theme={selectedTheme}
-        />
-      </div>
+          <ValidatedEditableText
+            value={shopData.description}
+            onChange={(value) => handleShopDataChange('description', value)}
+            placeholder="Shop Description"
+            multiline={false}
+            validationRules={VALIDATION_RULES.shop.description}
+            theme={selectedTheme}
+          />
+        </div>
       </ShopProfileSection>
 
       <AddItemButton onClick={handleItemAdd} theme={selectedTheme}>
@@ -995,146 +1484,387 @@ const LiveShopCreation = () => {
         <ItemsGrid>
           {shopData.items.map(item => {
             const isExpanded = expandedItems.has(item.id);
-            const validImages = item.images.filter(Boolean);
-            
+                    
+            // FIX: Get the item directly from shopData.items each time to ensure fresh data
+            const currentItem = shopData.items.find(i => i.id === item.id);
+            const validImages = currentItem.images.filter(Boolean);
+            const currentImageIndex = currentItem.currentImageIndex || 0;
+            const currentImage = validImages[currentImageIndex] || null;
+                    
             return (
-              <ItemCard key={item.id} theme={selectedTheme}>
-                <DeleteButton onClick={() => handleItemDelete(item.id)}>
-                  <X size={16} />
-                </DeleteButton>
+              <React.Fragment key={item.id}>
+                {/* Mobile Template Card */}
+                <MobileTemplateCard 
+                  theme={selectedTheme}
+                  onClick={() => {
+                    // Create a deep copy of the current item
+                    const itemToEdit = shopData.items.find(i => i.id === item.id);
+                    console.log('Opening item for edit:', itemToEdit);
+                    setEditingItem({
+                      ...itemToEdit,
+                      // Ensure all arrays are properly copied
+                      images: [...itemToEdit.images],
+                      currentImageIndex: itemToEdit.currentImageIndex || 0
+                    });
+                  }}
+                >
+                  <MobileTemplateImageContainer theme={selectedTheme}>
+                    {currentImage ? (
+                      <img src={currentImage} alt={currentItem.name || 'Item'} />
+                    ) : (
+                      <div className="placeholder">
+                        <Package size={24} />
+                        <span>Image</span>
+                      </div>
+                    )}
                 
-                <ItemImageContainer theme={selectedTheme}>
-                  <div className="image-container">
-                    <EditableImage
-                      value={item.images[item.currentImageIndex]}
-                      onChange={(value) => {
-                        const newImages = [...item.images];
-                        newImages[item.currentImageIndex] = value;
-                        handleItemUpdate(item.id, { images: newImages });
+                    {/* Carousel arrows for mobile */}
+                    {validImages.length > 1 && (
+                      <>
+                        <button 
+                          className="mobile-carousel-arrow left"
+                          onClick={(e) => handleMobilePrevImage(e, currentItem.id)}
+                        >
+                          <ChevronLeft size={12} />
+                        </button>
+                        <button 
+                          className="mobile-carousel-arrow right"
+                          onClick={(e) => handleMobileNextImage(e, currentItem.id)}
+                        >
+                          <ChevronRight size={12} />
+                        </button>
+                    
+                        {/* Image dots */}
+                        <div className="image-dots">
+                          {validImages.map((_, index) => (
+                            <div 
+                              key={index}
+                              className={`dot ${index === currentImageIndex ? 'active' : ''}`}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                
+                    <MobileDeleteButton 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleItemDelete(currentItem.id);
                       }}
-                      theme={selectedTheme}
-                      height="100%"
-                      width="100%"
-                    />
-                  </div>
-                  
-                  {/* Carousel arrows */}
-                  {validImages.length > 1 && (
-                    <>
-                      <button 
-                        className="carousel-arrow left"
-                        onClick={() => {
-                          const newIndex = ((item.currentImageIndex - 1) + 3) % 3;
-                          handleItemUpdate(item.id, { currentImageIndex: newIndex });
-                        }}
-                      >
-                        <ChevronLeft size={16} />
-                      </button>
-                      <button 
-                        className="carousel-arrow right"
-                        onClick={() => {
-                          const newIndex = (item.currentImageIndex + 1) % 3;
-                          handleItemUpdate(item.id, { currentImageIndex: newIndex });
-                        }}
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                    </>
-                  )}
+                    >
+                      <X size={12} />
+                    </MobileDeleteButton>
+                  </MobileTemplateImageContainer>
+                    
+                  <MobileTemplateContent theme={selectedTheme}>
+                    <div className="item-name">
+                      {currentItem.name || <span className="empty-text">Item Name</span>}
+                    </div>
+                    <div className="item-price">
+                      {currentItem.price ? `$${parseFloat(currentItem.price).toFixed(2)}` : 
+                        <span className="empty-text">$0.00</span>}
+                    </div>
+                  </MobileTemplateContent>
+                </MobileTemplateCard>
 
-                  {/* Mobile image dots */}
-                  {validImages.length > 1 && (
-                    <div className="image-dots">
-                      {item.images.map((img, index) => (
-                        img && (
-                          <div 
-                            key={index}
-                            className={`dot ${index === item.currentImageIndex ? 'active' : ''}`}
-                            onClick={() => handleItemUpdate(item.id, { currentImageIndex: index })}
-                          />
-                        )
-                      ))}
-                    </div>
-                  )}
-                </ItemImageContainer>
-                
-                <ItemContent>
-                  <ItemHeader onClick={() => toggleItemExpansion(item.id)}>
-                    <h4>{item.name || 'New Item'}</h4>
-                    <ExpandButton>
-                      {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                    </ExpandButton>
-                  </ItemHeader>
-                  
-                  <ItemDetails expanded={isExpanded}>
-                    <div className="details-content">
-                      <ValidatedEditableText
-                        value={item.name}
-                        onChange={(value) => handleItemUpdate(item.id, { name: value })}
-                        placeholder="Item Name"
-                        validationRules={VALIDATION_RULES.item.name}
-                        theme={selectedTheme}
-                      />
-                      <ValidatedEditableText
-                        value={item.price}
-                        onChange={(value) => handleItemUpdate(item.id, { price: value })}
-                        placeholder="Price"
-                        validationRules={VALIDATION_RULES.item.price}
-                        theme={selectedTheme}
-                      />
-                      <ValidatedEditableText
-                        value={item.description}
-                        onChange={(value) => handleItemUpdate(item.id, { description: value })}
-                        placeholder="Item Description"
-                        validationRules={VALIDATION_RULES.item.description}
-                        multiline
-                        theme={selectedTheme}
-                      />
-                      <CategorySelect
-                        value={item.category || 'Other'}
-                        onChange={(e) => handleItemUpdate(item.id, { category: e.target.value })}
-                        theme={selectedTheme}
-                      >
-                        {ITEM_CATEGORIES.map(category => (
-                          <option key={category} value={category}>
-                            {category}
-                          </option>
-                        ))}
-                      </CategorySelect>
-                      <QuantitySelector 
-                        value={parseInt(item.quantity) || 1}
-                        onChange={(value) => handleItemUpdate(item.id, { quantity: value })}
-                        theme={selectedTheme}
-                        min={0}
-                        max={9999}
-                      />
-                      <AddressInput
-                        address={item.address || ''}
-                        onAddressChange={(value) => handleItemUpdate(item.id, { 
-                          address: value,
-                          coordinates: null
-                        })}
-                        onLocationSelect={(location) => {
-                          if (location?.coordinates?.latitude && location?.coordinates?.longitude) {
-                            const coords = {
-                              lat: location.coordinates.latitude,
-                              lng: location.coordinates.longitude
-                            };
-                            handleItemUpdate(item.id, {
-                              address: location.address || `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`,
-                              coordinates: coords
-                            });
-                          }
+                {/* Desktop Card - Original Design */}
+                <DesktopItemCard theme={selectedTheme}>
+                  <DeleteButton onClick={() => handleItemDelete(item.id)}>
+                    <X size={16} />
+                  </DeleteButton>
+                    
+                  <ItemImageContainer theme={selectedTheme}>
+                    <div className="image-container">
+                      <EditableImage
+                        value={item.images[item.currentImageIndex]}
+                        onChange={(value) => {
+                          const newImages = [...item.images];
+                          newImages[item.currentImageIndex] = value;
+                          handleItemUpdate(item.id, { images: newImages });
                         }}
+                        theme={selectedTheme}
+                        height="100%"
+                        width="100%"
                       />
                     </div>
-                  </ItemDetails>
-                </ItemContent>
-              </ItemCard>
+                      
+                    {validImages.length > 0 && (
+                      <>
+                        <button 
+                          className="carousel-arrow left"
+                          onClick={() => {
+                            const newIndex = ((item.currentImageIndex - 1) + 3) % 3;
+                            handleItemUpdate(item.id, { currentImageIndex: newIndex });
+                          }}
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <button 
+                          className="carousel-arrow right"
+                          onClick={() => {
+                            const newIndex = (item.currentImageIndex + 1) % 3;
+                            handleItemUpdate(item.id, { currentImageIndex: newIndex });
+                          }}
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                      </>
+                    )}
+                  </ItemImageContainer>
+
+                  <ItemContent>
+                    <ItemHeader onClick={() => toggleItemExpansion(item.id)}>
+                      <h4>{item.name || 'New Item'}</h4>
+                      <ExpandButton>
+                        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                      </ExpandButton>
+                    </ItemHeader>
+
+                    <ItemDetails expanded={isExpanded}>
+                      <div className="details-content">
+                        <ValidatedEditableText
+                          value={item.name}
+                          onChange={(value) => handleItemUpdate(item.id, { name: value })}
+                          placeholder="Item Name"
+                          validationRules={VALIDATION_RULES.item.name}
+                          theme={selectedTheme}
+                        />
+                        <ValidatedEditableText
+                          value={item.price}
+                          onChange={(value) => handleItemUpdate(item.id, { price: value })}
+                          placeholder="Price"
+                          validationRules={VALIDATION_RULES.item.price}
+                          theme={selectedTheme}
+                        />
+                        <ValidatedEditableText
+                          value={item.description}
+                          onChange={(value) => handleItemUpdate(item.id, { description: value })}
+                          placeholder="Item Description"
+                          validationRules={VALIDATION_RULES.item.description}
+                          multiline
+                          theme={selectedTheme}
+                        />
+                        <CategorySelect
+                          value={item.category || 'Other'}
+                          onChange={(e) => handleItemUpdate(item.id, { category: e.target.value })}
+                          theme={selectedTheme}
+                        >
+                          {ITEM_CATEGORIES.map(category => (
+                            <option key={category} value={category}>
+                              {category}
+                            </option>
+                          ))}
+                        </CategorySelect>
+                        <QuantitySelector 
+                          value={parseInt(item.quantity) || 1}
+                          onChange={(value) => handleItemUpdate(item.id, { quantity: value })}
+                          theme={selectedTheme}
+                          min={0}
+                          max={9999}
+                        />
+                        <AddressInput
+                          address={item.address || ''}
+                          onAddressChange={(value) => handleItemUpdate(item.id, { 
+                            address: value,
+                            coordinates: null
+                          })}
+                          onLocationSelect={(location) => {
+                            if (location?.coordinates?.latitude && location?.coordinates?.longitude) {
+                              const coords = {
+                                lat: location.coordinates.latitude,
+                                lng: location.coordinates.longitude
+                              };
+                              handleItemUpdate(item.id, {
+                                address: location.address || `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`,
+                                coordinates: coords
+                              });
+                            }
+                          }}
+                        />
+                      </div>
+                    </ItemDetails>
+                  </ItemContent>
+                </DesktopItemCard>
+              </React.Fragment>
             );
           })}
         </ItemsGrid>
       </ItemsContainer>
+
+      {/* Mobile Edit Modal */}
+      {editingItem && (
+        <EditModal onClick={() => setEditingItem(null)}>
+          <EditModalContent 
+            theme={selectedTheme}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Image Section - 50% */}
+      <EditModalImageSection>
+              {/* Action Buttons on Image */}
+              <ImageActionButtons>
+                <ImageActionButton 
+                  className="check"
+                  onClick={async () => {
+                    console.log('Saving item:', editingItem);
+                    
+                    // Process images if they're File objects
+                    const processedImages = await Promise.all(
+                      editingItem.images.map(async (img) => {
+                        // If it's already a URL string, keep it
+                        if (typeof img === 'string') return img;
+                        
+                        // If it's null or undefined, keep it
+                        if (!img) return null;
+                        
+                        // If it's a File object, convert to blob URL for preview
+                        // (In real app, you'd upload to Firebase here)
+                        if (img instanceof File) {
+                          return URL.createObjectURL(img);
+                        }
+                        
+                        // If it has a file property (your EditableImage format)
+                        if (img.file instanceof File) {
+                          return URL.createObjectURL(img.file);
+                        }
+                        
+                        return img;
+                      })
+                    );
+                    
+                    const updatedItem = {
+                      ...editingItem,
+                      images: processedImages
+                    };
+                    
+                    console.log('Processed item with images:', updatedItem);
+                    handleItemUpdate(editingItem.id, updatedItem);
+                    setEditingItem(null);
+                  }}
+                  title="Save changes"
+                >
+                  <Check size={20} />
+                </ImageActionButton>
+                <ImageActionButton 
+                  className="close"
+                  onClick={() => setEditingItem(null)}
+                  title="Discard changes"
+                >
+                  <X size={20} />
+                </ImageActionButton>
+              </ImageActionButtons>
+                
+              <ItemImageContainer theme={selectedTheme} style={{ height: '100%' }}>
+                <div className="image-container">
+                  <EditableImage
+                    value={editingItem.images[editingItem.currentImageIndex]}
+              onChange={(value) => {
+                const newImages = [...editingItem.images];
+                newImages[editingItem.currentImageIndex] = value;
+                setEditingItem({ ...editingItem, images: newImages });
+              }}
+              theme={selectedTheme}
+              height="100%"
+              width="100%"
+                  />
+                </div>
+
+                {editingItem.images.filter(Boolean).length > 1 && (
+                  <>
+              <button 
+                className="carousel-arrow left"
+                onClick={() => {
+                  const newIndex = ((editingItem.currentImageIndex - 1) + 3) % 3;
+                  setEditingItem({ ...editingItem, currentImageIndex: newIndex });
+                }}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button 
+                className="carousel-arrow right"
+                onClick={() => {
+                  const newIndex = (editingItem.currentImageIndex + 1) % 3;
+                  setEditingItem({ ...editingItem, currentImageIndex: newIndex });
+                }}
+              >
+                <ChevronRight size={16} />
+              </button>
+                  </>
+                )}
+              </ItemImageContainer>
+            </EditModalImageSection>
+              
+            {/* Scrollable Info Section - 50% */}
+      <EditModalBody>
+        <ValidatedEditableText
+          value={editingItem.name}
+          onChange={(value) => setEditingItem({ ...editingItem, name: value })}
+          placeholder="Item Name"
+                validationRules={VALIDATION_RULES.item.name}
+                theme={selectedTheme}
+              />
+
+              <ValidatedEditableText
+          value={editingItem.price}
+          onChange={(value) => setEditingItem({ ...editingItem, price: value })}
+          placeholder="Price"
+          validationRules={VALIDATION_RULES.item.price}
+          theme={selectedTheme}
+              />
+
+              <ValidatedEditableText
+                value={editingItem.description}
+          onChange={(value) => setEditingItem({ ...editingItem, description: value })}
+          placeholder="Item Description"
+          validationRules={VALIDATION_RULES.item.description}
+          multiline
+                theme={selectedTheme}
+        />
+
+        <CategorySelect
+          value={editingItem.category || 'Other'}
+          onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+                theme={selectedTheme}
+              >
+                {ITEM_CATEGORIES.map(category => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+                ))}
+              </CategorySelect>
+              
+              <QuantitySelector 
+                value={parseInt(editingItem.quantity) || 1}
+                onChange={(value) => setEditingItem({ ...editingItem, quantity: value })}
+                theme={selectedTheme}
+                min={0}
+                max={9999}
+              />
+
+              <AddressInput
+                address={editingItem.address || ''}
+                onAddressChange={(value) => setEditingItem({ 
+            ...editingItem, 
+            address: value,
+            coordinates: null
+                })}
+                onLocationSelect={(location) => {
+            if (location?.coordinates?.latitude && location?.coordinates?.longitude) {
+              const coords = {
+                lat: location.coordinates.latitude,
+                lng: location.coordinates.longitude
+              };
+              setEditingItem({
+                ...editingItem,
+                address: location.address || `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`,
+                coordinates: coords
+              });
+            }
+                }}
+              />
+            </EditModalBody>
+          </EditModalContent>
+        </EditModal>
+      )}
     </MainContent>
   );
 
