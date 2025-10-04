@@ -652,7 +652,9 @@ const LocationIndicator = styled.div`
   
   /* Hide on mobile, show only on desktop for debugging */
   @media (max-width: 768px) {
-    display: none;
+  width: auto;
+    padding: 1rem 2.5rem;
+    font-size: 1rem;
   } 
   
   &:hover {
