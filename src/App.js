@@ -1,7 +1,7 @@
 // src/App.js - Complete with Subdomain Support
 
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate  } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TempStoreProvider } from './contexts/TempStoreContext';
 import { LocationProvider } from './contexts/LocationContext';
@@ -23,6 +23,7 @@ import ProfilePage from './pages/shop/ProfilePage.js';
 import NotificationsPage from './pages/shop/NotificationsPage.js';
 import ShopPublicView from './pages/shop/shopPublicView.js';
 import MessagesPage from './pages/shop/MessagesPage';
+
 
 // Updated SubdomainHandler Component for App.js
 
@@ -187,7 +188,7 @@ const SubdomainHandler = ({ shopUsername }) => {
     );
   }
 
-  return <ShopPublicView key={shopId} shopId={shopId} />;
+  return <Navigate to={`/shop/${shopId}/view`} replace />;
 };
 
 // Route Guard for Subdomain
@@ -234,12 +235,28 @@ const AppRoutes = () => {
         {/* Desktop Navigation - Hidden on mobile and subdomains */}
         {showDesktopNavMenu && <NavMenu theme={DEFAULT_THEME} />}
         
+        // OLD:
+{subdomainInfo.isSubdomain ? (
+  // Subdomain Mode: Only show public shop view
+  <Routes>
+    <Route 
+      path="/*" 
+      element={<SubdomainHandler shopUsername={subdomainInfo.shopUsername} />} 
+    />
+  </Routes>
+) : (
+
+        // NEW:
         {subdomainInfo.isSubdomain ? (
           // Subdomain Mode: Only show public shop view
           <Routes>
             <Route 
               path="/*" 
               element={<SubdomainHandler shopUsername={subdomainInfo.shopUsername} />} 
+            />
+            <Route 
+              path="/shop/:shopId/view" 
+              element={<ShopPublicView />} 
             />
           </Routes>
         ) : (
