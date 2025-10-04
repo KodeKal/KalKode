@@ -1512,10 +1512,7 @@ const WelcomePage = () => {
   const [isPinned, setIsPinned] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [orderQuantity, setOrderQuantity] = useState(1);
-const [zipCode, setZipCode] = useState('');
-const [isZipPinned, setIsZipPinned] = useState(false);
-const [isConvertingToZip, setIsConvertingToZip] = useState(false);
-const [zipInputValue, setZipInputValue] = useState('');
+
   
   const { user, isAuthenticated } = useAuth();
   const [shopData, setShopData] = useState(null);
@@ -1943,130 +1940,6 @@ useEffect(() => {
   };
 
 
-
-
-// Alternative: Use ZIP Code API (US-specific, free, no API key needed)
-const convertCoordsToZipViaZipCodeAPI = async (lat, lon) => {
-  try {
-    setIsConvertingToZip(true);
-    setError(null);
-    
-    // This API returns the nearest ZIP code for given coordinates
-    const response = await fetch(
-      `https://api.zippopotam.us/us/${lat},${lon}`
-    );
-    
-    if (!response.ok) {
-      throw new Error('ZIP code not found');
-    }
-    
-    const data = await response.json();
-    
-    if (data && data.places && data.places.length > 0) {
-      const zip = data.places[0]['post code'];
-      setZipCode(zip);
-      setZipInputValue(zip);
-      
-      console.log(`Found ZIP ${zip} for coordinates ${lat}, ${lon}`);
-      console.log('Place:', data.places[0]['place name']);
-      
-      return zip;
-    }
-    
-    setZipCode('Not available');
-    setZipInputValue('');
-    return null;
-    
-  } catch (error) {
-    console.error('Error with Zippopotam API:', error);
-    // Fall back to Nominatim if this fails
-    return convertCoordsToZip(lat, lon);
-  } finally {
-    setIsConvertingToZip(false);
-  }
-};
-
-// Recommended: Fallback chain approach
-const convertCoordsToZipWithFallback = async (lat, lon) => {
-  // Try method 1: Nominatim (improved)
-  let zip = await convertCoordsToZip(lat, lon);
-  
-  if (zip) return zip;
-  
-  // Try method 2: Zippopotam (US-specific, more accurate)
-  console.log('Nominatim failed, trying Zippopotam...');
-  zip = await convertCoordsToZipViaZipCodeAPI(lat, lon);
-  
-  if (zip) return zip;
-  
-  // If all fail
-  setError('Unable to determine ZIP code for this location');
-  return null;
-};
-
-// Convert ZIP code to coordinates
-const convertZipToCoords = async (zip) => {
-  if (!zip || zip.length < 5) {
-    setError('Please enter a valid ZIP code');
-    return null;
-  }
-  
-  try {
-    setIsConvertingToZip(true);
-    setError(null);
-    
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?postalcode=${zip}&country=US&format=json&limit=1`,
-      {
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'KalKode Marketplace'
-        }
-      }
-    );
-    
-    const data = await response.json();
-    
-    if (data && data[0]) {
-      const coords = {
-        latitude: parseFloat(data[0].lat),
-        longitude: parseFloat(data[0].lon)
-      };
-      
-      // Update the location context with new coordinates
-      // You'll need to add an updateLocation method to your LocationContext
-      return coords;
-    } else {
-      setError('ZIP code not found');
-      return null;
-    }
-  } catch (error) {
-    console.error('Error converting ZIP to coordinates:', error);
-    setError('Failed to lookup ZIP code');
-    return null;
-  } finally {
-    setIsConvertingToZip(false);
-  }
-};
-
-
-    // Convert fresh coordinates to ZIP
-    await convertCoordsToZip(freshLocation.latitude, freshLocation.longitude);
-    
-  } catch (error) {
-    console.error('Error getting fresh location:', error);
-    
-    // Fallback: use stored location if available
-    if (userLocation) {
-      console.log('Using stored location as fallback');
-      await convertCoordsToZip(userLocation.latitude, userLocation.longitude);
-    } else {
-      setError('Location not available. Please enable location services.');
-    }
-  } finally {
-    setIsConvertingToZip(false);
-  }
-};
 
 // Handle ZIP code input submission
 const handleZipSubmit = async (e) => {
