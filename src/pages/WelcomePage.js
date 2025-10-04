@@ -1704,12 +1704,15 @@ useEffect(() => {
     }
   };
 
-// Convert coordinates to ZIP code
+// Improved ZIP code conversion with better validation
 const convertCoordsToZip = async (lat, lon) => {
   try {
     setIsConvertingToZip(true);
+    setError(null);
+    
+    // Add zoom parameter to get more precise results
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=18&addressdetails=1`,
       {
         headers: {
           'Accept': 'application/json',
@@ -1718,26 +1721,122 @@ const convertCoordsToZip = async (lat, lon) => {
       }
     );
     
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error('Failed to fetch location data');
+    }
     
-    if (data && data.address && data.address.postcode) {
-      const zip = data.address.postcode;
-      setZipCode(zip);
-      setZipInputValue(zip);
-      return zip;
-    } else {
+    const data = await response.json();
+    console.log('Nominatim response:', data); // Debug log
+    
+    if (!data || !data.address) {
       setZipCode('Not available');
       setZipInputValue('');
       return null;
     }
+    
+    // Extract ZIP with priority order
+    const zip = 
+      data.address.postcode ||           // Standard postcode field
+      data.address.postal_code ||        // Alternative field name
+      data.address['ISO3166-2-lvl6'] ||  // Some regions use this
+      null;
+    
+    if (zip) {
+      // Clean and validate ZIP code format
+      const cleanedZip = zip.trim().split('-')[0]; // Handle ZIP+4 format (12345-6789)
+      
+      // Validate US ZIP format (5 digits)
+      if (/^\d{5}$/.test(cleanedZip)) {
+        setZipCode(cleanedZip);
+        setZipInputValue(cleanedZip);
+        
+        // Log for verification
+        console.log(`Coordinates ${lat}, ${lon} → ZIP ${cleanedZip}`);
+        console.log('Location:', data.display_name);
+        
+        return cleanedZip;
+      } else {
+        console.warn('Invalid ZIP format:', zip);
+        setZipCode('Invalid format');
+        setZipInputValue('');
+        return null;
+      }
+    } else {
+      console.warn('No postcode found in response');
+      setZipCode('Not available');
+      setZipInputValue('');
+      return null;
+    }
+    
   } catch (error) {
     console.error('Error converting coordinates to ZIP:', error);
     setZipCode('Error');
     setZipInputValue('');
+    setError('Failed to get ZIP code from location');
     return null;
   } finally {
     setIsConvertingToZip(false);
   }
+};
+
+
+// Alternative: Use ZIP Code API (US-specific, free, no API key needed)
+const convertCoordsToZipViaZipCodeAPI = async (lat, lon) => {
+  try {
+    setIsConvertingToZip(true);
+    setError(null);
+    
+    // This API returns the nearest ZIP code for given coordinates
+    const response = await fetch(
+      `https://api.zippopotam.us/us/${lat},${lon}`
+    );
+    
+    if (!response.ok) {
+      throw new Error('ZIP code not found');
+    }
+    
+    const data = await response.json();
+    
+    if (data && data.places && data.places.length > 0) {
+      const zip = data.places[0]['post code'];
+      setZipCode(zip);
+      setZipInputValue(zip);
+      
+      console.log(`Found ZIP ${zip} for coordinates ${lat}, ${lon}`);
+      console.log('Place:', data.places[0]['place name']);
+      
+      return zip;
+    }
+    
+    setZipCode('Not available');
+    setZipInputValue('');
+    return null;
+    
+  } catch (error) {
+    console.error('Error with Zippopotam API:', error);
+    // Fall back to Nominatim if this fails
+    return convertCoordsToZip(lat, lon);
+  } finally {
+    setIsConvertingToZip(false);
+  }
+};
+
+// Recommended: Fallback chain approach
+const convertCoordsToZipWithFallback = async (lat, lon) => {
+  // Try method 1: Nominatim (improved)
+  let zip = await convertCoordsToZip(lat, lon);
+  
+  if (zip) return zip;
+  
+  // Try method 2: Zippopotam (US-specific, more accurate)
+  console.log('Nominatim failed, trying Zippopotam...');
+  zip = await convertCoordsToZipViaZipCodeAPI(lat, lon);
+  
+  if (zip) return zip;
+  
+  // If all fail
+  setError('Unable to determine ZIP code for this location');
+  return null;
 };
 
 // Convert ZIP code to coordinates
