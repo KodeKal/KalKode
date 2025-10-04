@@ -1887,7 +1887,7 @@ const convertZipToCoords = async (zip) => {
 // Handle location icon click - convert current location to ZIP
 const handleLocationToZip = async () => {
   if (userLocation) {
-    await convertCoordsToZip(userLocation.latitude, userLocation.longitude);
+    await convertCoordsToZipWithFallback(userLocation.latitude, userLocation.longitude);
   } else {
     setError('Location not available. Please enable location services.');
   }
