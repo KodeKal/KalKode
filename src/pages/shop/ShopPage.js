@@ -23,6 +23,7 @@ import { signOut } from 'firebase/auth';
 import { RefreshCw, Pin, LogOut } from 'lucide-react';
 import HomePageEditor from './HomePageEditor';
 import { saveHomePageConfig } from '../../firebase/firebaseService';
+import SubdomainInfo from '../../components/SubdomainDisplay';
 import {
   NewsletterWidget,
   CountdownWidget,
@@ -1861,6 +1862,12 @@ const ShopPage = () => {
                   />
                 </div>
               </ShopProfileSection>
+
+              {/* Add Subdomain Display */}
+              <SubdomainInfo 
+                username={shopData?.username} 
+                theme={shopData?.theme}
+              />
 
               <AddItemButton onClick={handleAddItem} theme={shopData?.theme}>
                 <Plus size={20} />

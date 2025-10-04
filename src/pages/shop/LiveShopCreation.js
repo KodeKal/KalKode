@@ -895,43 +895,57 @@ const LiveShopCreation = () => {
     });
   };
 
-  const handleSave = () => {
-  // Validate shop data
-  const shopValidation = validateShopData(shopData);
-  const itemsValidation = validateAllItems(shopData.items);
-  
-  if (!shopValidation.isValid || !itemsValidation.isValid) {
-    setValidationErrors({
-      shop: shopValidation.errors,
-      items: itemsValidation.itemErrors
-    });
-    
-    // Scroll to first error
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    alert('Please fix validation errors before saving');
-    return;
-  }
+  const handleSave = async () => {
+    // Validate shop data
+    const shopValidation = validateShopData(shopData);
+    const itemsValidation = validateAllItems(shopData.items);
 
-  const dataToSave = {
-    ...shopData,
-    theme: selectedTheme,
-    layout: {
-      namePosition: shopData.layout.namePosition,
-      tabPosition: 'top',
-      nameSize: shopNameFontSize
-    },
-    createdAt: new Date().toISOString()
-  };
-  
-  saveTempStore(dataToSave);
-  
-  navigate('/auth', {
-    state: { 
-      mode: 'signup', 
-      tempData: dataToSave 
+    if (!shopValidation.isValid || !itemsValidation.isValid) {
+      setValidationErrors({
+        shop: shopValidation.errors,
+        items: itemsValidation.itemErrors
+      });
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      alert('Please fix validation errors before saving');
+      return;
     }
-  });
-};
+
+    const dataToSave = {
+      ...shopData,
+      theme: selectedTheme,
+      layout: {
+        namePosition: shopData.layout.namePosition,
+        tabPosition: 'top',
+        nameSize: shopNameFontSize
+      },
+      createdAt: new Date().toISOString()
+    };
+
+    // Generate username if shop name exists
+    if (dataToSave.name) {
+      try {
+        const { generateUsername } = await import('../../firebase/firebaseService');
+        dataToSave.username = await generateUsername(dataToSave.name);
+      } catch (error) {
+        console.error('Error generating username:', error);
+        // Fallback username generation
+        dataToSave.username = dataToSave.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '')
+          .substring(0, 20) || 'shop';
+      }
+    }
+
+    saveTempStore(dataToSave);
+
+    navigate('/auth', {
+      state: { 
+        mode: 'signup', 
+        tempData: dataToSave 
+      }
+    });
+  };
 
   const renderShopView = () => (
     <MainContent>

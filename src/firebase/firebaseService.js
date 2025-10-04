@@ -8,6 +8,7 @@ import {
   collection,
   query,
   where,
+  items,
   getDocs,
   limit,
   writeBatch // Add batch import
@@ -18,6 +19,384 @@ import {
   getDownloadURL 
 } from 'firebase/storage';
 import { db, storage } from './config';
+
+// src/firebase/firebaseService.js
+
+// ============= NEW USERNAME FUNCTIONS =============
+
+/**
+ * Generate a unique username from shop name
+ * @param {string} shopName 
+ * @returns {Promise<string>}
+ */
+export const generateUsername = async (shopName) => {
+  // Create base username from shop name
+  let baseUsername = shopName
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '') // Remove special characters
+    .substring(0, 20); // Limit length
+  
+  if (!baseUsername) {
+    baseUsername = 'shop';
+  }
+  
+  // Check if username exists
+  let username = baseUsername;
+  let counter = 1;
+  
+  while (await usernameExists(username)) {
+    username = `${baseUsername}${counter}`;
+    counter++;
+  }
+  
+  return username;
+};
+
+/**
+ * Check if username already exists
+ * @param {string} username 
+ * @returns {Promise<boolean>}
+ */
+export const usernameExists = async (username) => {
+  try {
+    const shopsRef = collection(db, 'shops');
+    const q = query(shopsRef, where('username', '==', username));
+    const querySnapshot = await getDocs(q);
+    return !querySnapshot.empty;
+  } catch (error) {
+    console.error('Error checking username:', error);
+    return false;
+  }
+};
+
+/**
+ * Get shop data by username
+ * @param {string} username 
+ * @returns {Promise<Object>}
+ */
+export const getShopByUsername = async (username) => {
+  try {
+    const shopsRef = collection(db, 'shops');
+    const q = query(shopsRef, where('username', '==', username));
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+      return null;
+    }
+    
+    const shopDoc = querySnapshot.docs[0];
+    return {
+      id: shopDoc.id,
+      ...shopDoc.data()
+    };
+  } catch (error) {
+    console.error('Error getting shop by username:', error);
+    throw error;
+  }
+};
+
+// ============= UPDATE EXISTING FUNCTIONS =============
+
+// UPDATE: saveShopData function to include username
+export const saveShopData = async (userId, data) => {
+  try {
+    const hasShop = await checkExistingShop(userId);
+    if (hasShop) {
+      throw new Error('User already has a shop');
+    }  
+    
+    console.log('Starting shop data save:', { userId, data });
+
+    // Generate username if not provided
+    let username = data.username;
+    if (!username && data.name) {
+      username = await generateUsername(data.name);
+    }
+
+    // Clean data before saving to Firestore
+    let shopData = {
+      name: data.name || '',
+      description: data.description || '',
+      mission: data.mission || '',
+      username: username, // ADD USERNAME
+      theme: cleanDataForFirestore(data.theme) || {},
+      layout: cleanDataForFirestore(data.layout) || {},
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      userId: userId,
+      items: data.items?.map(item => ({
+        id: item.id || Date.now().toString(),
+        name: item.name || '',
+        price: item.price || '',
+        description: item.description || '',
+        category: item.category || 'Other',
+        quantity: item.quantity || 1,
+        currentImageIndex: item.currentImageIndex || 0,
+        address: item.address || '',
+        coordinates: item.coordinates || null,
+        tags: item.tags || [],
+        images: []
+      })) || [],
+      profile: null
+    };
+
+    console.log('Shop data with username:', {
+      userId,
+      username: shopData.username,
+      name: shopData.name
+    });
+
+    // Save initial clean data
+    const shopRef = doc(db, 'shops', userId);
+    await setDoc(shopRef, shopData);
+
+    // Profile image upload
+    if (data.profile?.file) {
+      try {
+        const profileUrl = await uploadImageWithCORS(
+          data.profile.file,
+          `shops/${userId}/profile/profile-${Date.now()}`
+        );
+
+        if (profileUrl) {
+          shopData.profile = profileUrl;
+          await updateDoc(shopRef, {
+            profile: profileUrl,
+            updatedAt: new Date().toISOString()
+          });
+        }
+      } catch (profileError) {
+        console.error('Profile upload failed:', profileError);
+      }
+    }
+
+    // Item images upload
+    if (Array.isArray(data.items)) {
+      const processedItems = await Promise.all(data.items.map(async (item) => {
+        const processedItem = {
+          id: item.id || Date.now().toString(),
+          name: item.name || '',
+          price: item.price || '',
+          description: item.description || '',
+          category: item.category || 'Other',
+          currentImageIndex: item.currentImageIndex || 0,
+          quantity: item.quantity || 1,
+          address: item.address || '',
+          coordinates: item.coordinates || null,
+          tags: item.tags || [],
+          images: []
+        };
+      
+        if (Array.isArray(item.images)) {
+          const imageUrls = await Promise.all(item.images.map(async (image, index) => {
+            if (!image?.file) return null;
+
+            return await uploadImageWithCORS(
+              image.file,
+              `shops/${userId}/items/${processedItem.id}/image-${index}-${Date.now()}`
+            );
+          }));
+
+          processedItem.images = imageUrls.filter(Boolean);
+        }
+      
+        return processedItem;
+      }));
+      
+      shopData.items = processedItems;
+
+      // Update items in Firestore
+      await updateDoc(shopRef, {
+        items: processedItems,
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    console.log('Shop data saved successfully with username:', shopData.username);
+    return { ...shopData, username }; // Return username in response
+    
+  } catch (error) {
+    console.error('Error in saveShopData:', error);
+    throw error;
+  }
+};
+
+// UPDATE: saveInitialShop to include username
+// UPDATE: saveInitialShop to include username and fix locations
+export const saveInitialShop = async (userId, data) => {
+  try {
+    const batch = writeBatch(db);
+    
+    // Generate username if not provided
+    let username = data.username;
+    if (!username && data.name) {
+      username = await generateUsername(data.name);
+    }
+    
+    // 1. Create main shop document
+    const shopRef = doc(db, 'shops', userId);
+    const shopDoc = {
+      ownerId: userId,
+      name: data.name || '',
+      description: data.description || '',
+      mission: data.mission || '',
+      username: username, // ADD USERNAME
+      theme: cleanDataForFirestore(data.theme) || {},
+      layout: cleanDataForFirestore(data.layout) || {},
+      status: 'active',
+      profile: null,
+      searchTerms: generateSearchTerms({ shopName: data.name }),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      stats: {
+        items: 0,
+        views: 0,
+        likes: 0
+      }
+    };
+
+    batch.set(shopRef, shopDoc);
+
+    // 2. Process items - DECLARE items and locations here
+    const items = [];
+    const locations = []; // FIX: Declare locations array
+
+    if (Array.isArray(data.items)) {
+      for (const item of data.items) {
+        const itemId = `${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const itemRef = doc(db, 'items', itemId);
+
+        // Process images
+        const imageUrls = await Promise.all(item.images.map(async (image, index) => {
+          if (!image?.file) return null;
+          return await uploadImageWithCORS(
+            image.file,
+            `shops/${userId}/items/${itemId}/image-${index}-${Date.now()}`
+          );
+        }));
+
+        const itemDoc = {
+          id: itemId,
+          shopId: userId,
+          name: item.name || '',
+          price: item.price || '',
+          description: item.description || '',
+          category: item.category || 'Other',
+          images: imageUrls.filter(Boolean),
+          status: 'active',
+          address: item.address || '',
+          coordinates: item.coordinates || null,
+          quantity: item.quantity || 1,
+          views: 0,
+          likes: 0,
+          deleted: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        batch.set(itemRef, itemDoc);
+        items.push(itemDoc);
+
+        // If item has location, create location document
+        if (item.coordinates) {
+          const locationRef = doc(db, 'locations', itemId);
+          const locationDoc = {
+            itemId,
+            shopId: userId,
+            address: item.address,
+            coordinates: item.coordinates,
+            createdAt: new Date().toISOString()
+          };
+          batch.set(locationRef, locationDoc);
+          locations.push(locationDoc);
+        }
+      }
+    }
+
+    // 3. Upload and set profile image if exists
+    if (data.profile?.file) {
+      const profileUrl = await uploadImageWithCORS(
+        data.profile.file,
+        `shops/${userId}/profile/profile-${Date.now()}`
+      );
+      if (profileUrl) {
+        shopDoc.profile = profileUrl;
+      }
+    }
+
+    // 4. Update stats
+    const statsRef = doc(db, 'stats', userId);
+    batch.set(statsRef, {
+      shopId: userId,
+      views: 0,
+      likes: 0,
+      items: items.length,
+      lastUpdated: new Date().toISOString()
+    });
+
+    // 5. Commit everything
+    await batch.commit();
+
+    console.log('Initial shop saved with username:', username);
+
+    return {
+      ...shopDoc,
+      items,
+      locations // Now this is properly defined
+    };
+
+  } catch (error) {
+    console.error('Error saving initial shop:', error);
+    throw error;
+  }
+};
+
+// UPDATE: batchUpdateShopData to preserve username
+export const batchUpdateShopData = async (userId, updateData) => {
+  try {
+    console.log('Starting batch update for shop:', userId);
+    
+    const batch = writeBatch(db);
+    const shopRef = doc(db, 'shops', userId);
+    
+    // Get current shop data to preserve username
+    const currentShop = await getDoc(shopRef);
+    const currentData = currentShop.data();
+    
+    // Clean the update data
+    const cleanedData = cleanDataForFirestore({
+      ...updateData,
+      username: currentData?.username, // Preserve existing username
+      updatedAt: new Date().toISOString()
+    });
+    
+    // Update the main shop document
+    batch.update(shopRef, cleanedData);
+    
+    // If updating items, we might need to update individual item documents
+    if (updateData.items && Array.isArray(updateData.items)) {
+      // Update stats
+      const statsRef = doc(db, 'stats', userId);
+      batch.update(statsRef, {
+        items: updateData.items.filter(item => !item.deleted).length,
+        lastUpdated: new Date().toISOString()
+      });
+    }
+    
+    // Commit all updates in a single batch
+    await batch.commit();
+    
+    console.log('Batch update completed successfully');
+    return true;
+    
+  } catch (error) {
+    console.error('Error in batch update:', error);
+    throw error;
+  }
+};
+
+// Keep all other existing functions unchanged...
+// (getFeaturedItems, uploadShopImages, getShopData, etc.)
 
 // Shop Operations
 export const getFeaturedItems = async (limitCount = 6) => {
@@ -128,125 +507,6 @@ const cleanDataForFirestore = (data) => {
   return data;
 };
 
-// Add to firebaseService.js
-export const saveInitialShop = async (userId, data) => {
-  try {
-    const batch = writeBatch(db);
-    
-    // 1. Create main shop document
-    const shopRef = doc(db, 'shops', userId);
-    const shopDoc = {
-      ownerId: userId,
-      name: data.name || '',
-      description: data.description || '',
-      mission: data.mission || '',
-      theme: cleanDataForFirestore(data.theme) || {},
-      layout: cleanDataForFirestore(data.layout) || {},
-      status: 'active',
-      profile: null, // Will update after upload
-      searchTerms: generateSearchTerms({ shopName: data.name }),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      stats: {
-        items: 0,
-        views: 0,
-        likes: 0
-      }
-    };
-
-    batch.set(shopRef, shopDoc);
-
-    // 2. Process items
-    const items = [];
-    const locations = [];
-
-    if (Array.isArray(data.items)) {
-      for (const item of data.items) {
-        const itemId = `${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const itemRef = doc(db, 'items', itemId);
-
-        // Process images
-        const imageUrls = await Promise.all(item.images.map(async (image, index) => {
-          if (!image?.file) return null;
-          return await uploadImageWithCORS(
-            image.file,
-            `shops/${userId}/items/${itemId}/image-${index}-${Date.now()}`
-          );
-        }));
-
-        const itemDoc = {
-          id: itemId,
-          shopId: userId,
-          name: item.name || '',
-          price: item.price || '',
-          description: item.description || '',
-          images: imageUrls.filter(Boolean),
-          status: 'active',
-          address: item.address || '',
-          coordinates: item.coordinates || null,
-          quantity: item.quantity || 1,
-          views: 0,
-          likes: 0,
-          deleted: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-
-        batch.set(itemRef, itemDoc);
-        items.push(itemDoc);
-
-        // If item has location, create location document
-        if (item.coordinates) {
-          const locationRef = doc(db, 'locations', itemId);
-          const locationDoc = {
-            itemId,
-            shopId: userId,
-            address: item.address,
-            coordinates: item.coordinates,
-            createdAt: new Date().toISOString()
-          };
-          batch.set(locationRef, locationDoc);
-          locations.push(locationDoc);
-        }
-      }
-    }
-
-    // 3. Upload and set profile image if exists
-    if (data.profile?.file) {
-      const profileUrl = await uploadImageWithCORS(
-        data.profile.file,
-        `shops/${userId}/profile/profile-${Date.now()}`
-      );
-      if (profileUrl) {
-        shopDoc.profile = profileUrl;
-      }
-    }
-
-    // 4. Update stats
-    const statsRef = doc(db, 'stats', userId);
-    batch.set(statsRef, {
-      shopId: userId,
-      views: 0,
-      likes: 0,
-      items: items.length,
-      lastUpdated: new Date().toISOString()
-    });
-
-    // 5. Commit everything
-    await batch.commit();
-
-    return {
-      ...shopDoc,
-      items,
-      locations
-    };
-
-  } catch (error) {
-    console.error('Error saving initial shop:', error);
-    throw error;
-  }
-};
-
 // Add this helper function at the top
 const uploadImageWithCORS = async (file, path) => {
   if (!file) return null;
@@ -268,175 +528,6 @@ const uploadImageWithCORS = async (file, path) => {
   } catch (error) {
     console.error('Error uploading image:', error);
     return null;
-  }
-};
-
-// Updated saveShopData function with coordinates fix
-export const saveShopData = async (userId, data) => {
-  try {
-    const hasShop = await checkExistingShop(userId);
-    if (hasShop) {
-      throw new Error('User already has a shop');
-    }  
-    
-    console.log('Starting shop data save:', { userId, data });
-
-    // Clean data before saving to Firestore
-    let shopData = {
-      name: data.name || '',
-      description: data.description || '',
-      mission: data.mission || '',
-      theme: cleanDataForFirestore(data.theme) || {},
-      layout: cleanDataForFirestore(data.layout) || {},
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      userId: userId,
-      items: data.items?.map(item => ({
-        id: item.id || Date.now().toString(),
-        name: item.name || '',
-        price: item.price || '',
-        description: item.description || '',
-        category: item.category || 'Other',
-        quantity: item.quantity || 1,
-        currentImageIndex: item.currentImageIndex || 0,
-        address: item.address || '', // FIXED: Added address
-        coordinates: item.coordinates || null, // FIXED: Added coordinates
-        tags: item.tags || [],
-        images: [] // Initialize empty, will be updated after upload
-      })) || [],
-      profile: null // Initialize as null, will be updated after upload
-    };
-
-    console.log('Items with coordinates before save:', 
-      shopData.items.filter(i => i.coordinates).map(i => ({
-        id: i.id,
-        name: i.name,
-        address: i.address,
-        coordinates: i.coordinates
-      }))
-    );
-
-    // Save initial clean data
-    const shopRef = doc(db, 'shops', userId);
-    await setDoc(shopRef, shopData);
-
-    // Now try image uploads with new CORS configuration
-    if (data.profile?.file) {
-      try {
-        const profileUrl = await uploadImageWithCORS(
-          data.profile.file,
-          `shops/${userId}/profile/profile-${Date.now()}`
-        );
-
-        if (profileUrl) {
-          shopData.profile = profileUrl;
-          await updateDoc(shopRef, {
-            profile: profileUrl,
-            updatedAt: new Date().toISOString()
-          });
-        }
-      } catch (profileError) {
-        console.error('Profile upload failed:', profileError);
-      }
-    }
-
-    // Try uploading item images
-    if (Array.isArray(data.items)) {
-      const processedItems = await Promise.all(data.items.map(async (item) => {
-        const processedItem = {
-          id: item.id || Date.now().toString(),
-          name: item.name || '',
-          price: item.price || '',
-          description: item.description || '',
-          category: item.category || 'Other',
-          currentImageIndex: item.currentImageIndex || 0,
-          quantity: item.quantity || 1,
-          address: item.address || '', // FIXED: Preserve address
-          coordinates: item.coordinates || null, // FIXED: Preserve coordinates
-          tags: item.tags || [],
-          images: []
-        };
-      
-        if (Array.isArray(item.images)) {
-          const imageUrls = await Promise.all(item.images.map(async (image, index) => {
-            if (!image?.file) return null;
-
-            return await uploadImageWithCORS(
-              image.file,
-              `shops/${userId}/items/${processedItem.id}/image-${index}-${Date.now()}`
-            );
-          }));
-
-          processedItem.images = imageUrls.filter(Boolean);
-        }
-      
-        return processedItem;
-      }));
-      
-      shopData.items = processedItems;
-    
-      console.log('Final items with coordinates:', 
-        processedItems.filter(i => i.coordinates).map(i => ({
-          id: i.id,
-          name: i.name,
-          address: i.address,
-          coordinates: i.coordinates
-        }))
-      );
-
-      // Update items in Firestore
-      await updateDoc(shopRef, {
-        items: processedItems,
-        updatedAt: new Date().toISOString()
-      });
-    }
-
-    console.log('Shop data saved successfully with coordinates');
-    return shopData;
-
-  } catch (error) {
-    console.error('Error in saveShopData:', error);
-    throw error;
-  }
-};
-
-// New batch update function for existing shops
-export const batchUpdateShopData = async (userId, updateData) => {
-  try {
-    console.log('Starting batch update for shop:', userId);
-    
-    const batch = writeBatch(db);
-    const shopRef = doc(db, 'shops', userId);
-    
-    // Clean the update data
-    const cleanedData = cleanDataForFirestore({
-      ...updateData,
-      updatedAt: new Date().toISOString()
-    });
-    
-    // Update the main shop document
-    batch.update(shopRef, cleanedData);
-    
-    // If updating items, we might need to update individual item documents
-    // This depends on your data structure - if items are stored as subcollections
-    if (updateData.items && Array.isArray(updateData.items)) {
-      // Update stats
-      const statsRef = doc(db, 'stats', userId);
-      batch.update(statsRef, {
-        items: updateData.items.filter(item => !item.deleted).length,
-        lastUpdated: new Date().toISOString()
-      });
-    }
-    
-    // Commit all updates in a single batch
-    await batch.commit();
-    
-    console.log('Batch update completed successfully');
-    return true;
-    
-  } catch (error) {
-    console.error('Error in batch update:', error);
-    throw error;
   }
 };
 

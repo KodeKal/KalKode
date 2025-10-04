@@ -1,13 +1,16 @@
-// Updated src/App.js
-import React from 'react';
+// src/App.js - Complete with Subdomain Support
+
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TempStoreProvider } from './contexts/TempStoreContext';
+import { LocationProvider } from './contexts/LocationContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import NavMenu from './pages/shop/components/NavMenu';
 import BottomNavigation from './components/BottomNavigation/BottomNavigation';
 import { DEFAULT_THEME } from './theme/config/themes';
 import { GlobalStyles } from './styles/GlobalStyles';
+import { parseSubdomain, redirectToMainApp, isSubdomainAllowedRoute } from './utils/subdomainRouter';
 
 // Pages
 import WelcomePage from './pages/WelcomePage';
@@ -19,85 +22,200 @@ import ShopDashboard from './pages/shop/ShopDashboard';
 import ProfilePage from './pages/shop/ProfilePage.js';
 import NotificationsPage from './pages/shop/NotificationsPage.js';
 import ShopPublicView from './pages/shop/shopPublicView.js';
-import { LocationProvider } from './contexts/LocationContext';
-
-// Update in src/App.js to add the notification routes
 import MessagesPage from './pages/shop/MessagesPage';
 
-// Then update the Routes component to ensure these routes are properly included
+// Subdomain Handler Component
+const SubdomainHandler = ({ shopUsername }) => {
+  const [shopId, setShopId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchShopByUsername = async () => {
+      try {
+        setLoading(true);
+        
+        const { collection, query, where, getDocs } = await import('firebase/firestore');
+        const { db } = await import('./firebase/config');
+        
+        // Query shops collection for matching username
+        const shopsRef = collection(db, 'shops');
+        const q = query(shopsRef, where('username', '==', shopUsername));
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
+          setError('Shop not found');
+          setLoading(false);
+          return;
+        }
+        
+        // Get first matching shop
+        const shopDoc = querySnapshot.docs[0];
+        setShopId(shopDoc.id);
+        setLoading(false);
+        
+      } catch (err) {
+        console.error('Error fetching shop by username:', err);
+        setError('Failed to load shop');
+        setLoading(false);
+      }
+    };
+
+    fetchShopByUsername();
+  }, [shopUsername]);
+
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        background: '#000',
+        color: '#fff'
+      }}>
+        <div>Loading shop...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        background: '#000',
+        color: '#fff',
+        gap: '1rem'
+      }}>
+        <div>{error}</div>
+        <button
+          onClick={() => redirectToMainApp()}
+          style={{
+            background: '#800000',
+            color: 'white',
+            border: 'none',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}
+        >
+          Go to Main Site
+        </button>
+      </div>
+    );
+  }
+
+  return <ShopPublicView key={shopId} shopId={shopId} />;
+};
+
+// Route Guard for Subdomain
+const SubdomainRouteGuard = ({ children }) => {
+  const location = useLocation();
+  const subdomainInfo = parseSubdomain();
+
+  // If on subdomain and trying to access non-allowed route, redirect to main app
+  if (subdomainInfo.isSubdomain && !isSubdomainAllowedRoute(location.pathname)) {
+    redirectToMainApp(location.pathname);
+    return null;
+  }
+
+  return children;
+};
+
+// Main App Routes Component
 const AppRoutes = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
+  const subdomainInfo = parseSubdomain();
   
-  // Show desktop nav menu only on desktop and authenticated
-  const showDesktopNavMenu = isAuthenticated && !['/auth', '/verify-email', '/shop/create/template'].some(
+  // Don't show navigation on subdomains or certain routes
+  const hideNavRoutes = ['/auth', '/verify-email', '/shop/create/template'];
+  const isHideNavRoute = hideNavRoutes.some(
     path => location.pathname === path || location.pathname.includes(path)
   );
+  
+  // Show desktop nav menu only on desktop, authenticated, and not on subdomain
+  const showDesktopNavMenu = !subdomainInfo.isSubdomain && isAuthenticated && !isHideNavRoute;
 
-  // Show bottom navigation on mobile when authenticated
-  const showBottomNav = isAuthenticated && !['/auth', '/verify-email', '/shop/create/template'].some(
-    path => location.pathname === path || location.pathname.includes(path)
-  );
+  // Show bottom navigation on mobile when authenticated and not on subdomain
+  const showBottomNav = !subdomainInfo.isSubdomain && isAuthenticated && !isHideNavRoute;
 
   // Determine if we should add bottom padding for mobile nav
   const needsBottomPadding = showBottomNav && window.innerWidth <= 768;
 
   return (
-    <div style={{ 
-      paddingBottom: needsBottomPadding ? '80px' : '0',
-      minHeight: '100vh'
-    }}>
-      {/* Desktop Navigation - Hidden on mobile */}
-      {showDesktopNavMenu && <NavMenu theme={DEFAULT_THEME} />}
-      
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<WelcomePage />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/shop/create/template" element={<LiveShopCreation />} />
-        <Route path="/shop/:userId" element={<ShopPage />} />
-        <Route path="/shop/:shopId/view" element={<ShopPublicView />} />
+    <SubdomainRouteGuard>
+      <div style={{ 
+        paddingBottom: needsBottomPadding ? '80px' : '0',
+        minHeight: '100vh'
+      }}>
+        {/* Desktop Navigation - Hidden on mobile and subdomains */}
+        {showDesktopNavMenu && <NavMenu theme={DEFAULT_THEME} />}
         
-        {/* Messages Page */}
-        <Route path="/messages" element={
-          <ProtectedRoute>
-            <MessagesPage />
-          </ProtectedRoute>
-        } />
+        {subdomainInfo.isSubdomain ? (
+          // Subdomain Mode: Only show public shop view
+          <Routes>
+            <Route 
+              path="/*" 
+              element={<SubdomainHandler shopUsername={subdomainInfo.shopUsername} />} 
+            />
+          </Routes>
+        ) : (
+          // Main App Mode: Normal routing
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<WelcomePage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/shop/create/template" element={<LiveShopCreation />} />
+            <Route path="/shop/:userId" element={<ShopPage />} />
+            <Route path="/shop/:shopId/view" element={<ShopPublicView />} />
+            
+            {/* Messages Page */}
+            <Route path="/messages" element={
+              <ProtectedRoute>
+                <MessagesPage />
+              </ProtectedRoute>
+            } />
 
-        {/* Notifications Page */}
-        <Route path="/notifications" element={
-          <ProtectedRoute>
-            <NotificationsPage />
-          </ProtectedRoute>
-        } />
+            {/* Notifications Page */}
+            <Route path="/notifications" element={
+              <ProtectedRoute>
+                <NotificationsPage />
+              </ProtectedRoute>
+            } />
 
-        {/* Protected Routes */}
-        <Route path="/shop/dashboard" element={
-          <ProtectedRoute>
-            <ShopDashboard />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/verify-email" element={
-          <ProtectedRoute requireVerification={false}>
-            <VerifyEmail />
-          </ProtectedRoute>
-        } />
+            {/* Protected Routes */}
+            <Route path="/shop/dashboard" element={
+              <ProtectedRoute>
+                <ShopDashboard />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/verify-email" element={
+              <ProtectedRoute requireVerification={false}>
+                <VerifyEmail />
+              </ProtectedRoute>
+            } />
 
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } />
 
-        {/* Discover route - can point to welcome page for now */}
-        <Route path="/discover" element={<WelcomePage />} />
-      </Routes>
+            {/* Discover route - can point to welcome page for now */}
+            <Route path="/discover" element={<WelcomePage />} />
+          </Routes>
+        )}
 
-      {/* Bottom Navigation - Only shown on mobile when authenticated */}
-      {showBottomNav && <BottomNavigation theme={DEFAULT_THEME} />}
-    </div>
+        {/* Bottom Navigation - Only shown on mobile when authenticated and not on subdomain */}
+        {showBottomNav && <BottomNavigation theme={DEFAULT_THEME} />}
+      </div>
+    </SubdomainRouteGuard>
   );
 };
 

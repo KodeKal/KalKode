@@ -247,27 +247,89 @@ const AuthPage = () => {
     }
   };
 
-  const handleEmailSignup = async (e) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      setError(null);
+  // src/pages/auth/AuthPage.js
+
+// Update the handleEmailSignup function (around line 150):
+const handleEmailSignup = async (e) => {
+  e.preventDefault();
+  try {
+    setLoading(true);
+    setError(null);
+    
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    await sendEmailVerification(result.user);
+    
+    if (tempData) {
+      // Generate username if not present
+      let dataToSave = { ...tempData };
       
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      await sendEmailVerification(result.user);
-      
-      if (tempData) {
-        await saveShopData(result.user.uid, tempData);
+      if (!dataToSave.username && dataToSave.name) {
+        const { generateUsername } = await import('../../firebase/firebaseService');
+        dataToSave.username = await generateUsername(dataToSave.name);
+        console.log('Generated username for new user:', dataToSave.username);
       }
       
-      navigate('/verify-email');
-    } catch (err) {
-      console.error('Email signup error:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      await saveShopData(result.user.uid, dataToSave);
+      console.log('Shop saved with username:', dataToSave.username);
     }
-  };
+    
+    navigate('/verify-email');
+  } catch (err) {
+    console.error('Email signup error:', err);
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Update the handleGoogleSignup function (around line 250):
+const handleGoogleSignup = async () => {
+  try {
+    setLoading(true);
+    setError(null);
+    
+    if (tempData) {
+      sessionStorage.setItem('tempShopData', JSON.stringify(tempData));
+    }
+
+    const user = await signInWithGoogle();
+    
+    if (tempData) {
+      try {
+        // Generate username if not present
+        let dataToSave = { ...tempData };
+        
+        if (!dataToSave.username && dataToSave.name) {
+          const { generateUsername } = await import('../../firebase/firebaseService');
+          dataToSave.username = await generateUsername(dataToSave.name);
+          console.log('Generated username for Google signup:', dataToSave.username);
+        }
+        
+        await saveShopData(user.uid, dataToSave);
+        console.log('Shop saved via Google signup with username:', dataToSave.username);
+        
+        navigate(`/shop/${user.uid}`, { replace: true });
+      } catch (saveError) {
+        console.error('Error saving shop data:', saveError);
+        setError('Failed to save shop data. Please try again.');
+      }
+    } else {
+      navigate('/shop/dashboard', { replace: true });
+    }
+  } catch (err) {
+    if (err.code === 'auth/popup-blocked') {
+      setError('Popup was blocked. Please allow popups for this site and try again.');
+    } else {
+      console.error('Google signup error:', err);
+      setError(err.message || 'Failed to sign up with Google');
+    }
+  } finally {
+    setLoading(false);
+    if (tempData && error) {
+      sessionStorage.removeItem('tempShopData');
+    }
+  }
+};
 
   // Handle normal email login
   const handleEmailLogin = async (e) => {
@@ -310,43 +372,6 @@ const AuthPage = () => {
     });
   };
   
-  const handleGoogleSignup = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      if (tempData) {
-        sessionStorage.setItem('tempShopData', JSON.stringify(tempData));
-      }
-  
-      const user = await signInWithGoogle();
-      
-      if (tempData) {
-        try {
-          await saveShopData(user.uid, tempData);
-          navigate(`/shop/${user.uid}`, { replace: true });
-        } catch (saveError) {
-          console.error('Error saving shop data:', saveError);
-          setError('Failed to save shop data. Please try again.');
-        }
-      } else {
-        navigate('/shop/dashboard', { replace: true });
-      }
-    } catch (err) {
-      if (err.code === 'auth/popup-blocked') {
-        setError('Popup was blocked. Please allow popups for this site and try again.');
-      } else {
-        console.error('Google signup error:', err);
-        setError(err.message || 'Failed to sign up with Google');
-      }
-    } finally {
-      setLoading(false);
-      if (tempData && error) {
-        sessionStorage.removeItem('tempShopData');
-      }
-    }
-  };
-
   return (
     <PageContainer>
       <AuthForm>
