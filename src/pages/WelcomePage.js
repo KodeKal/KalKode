@@ -2487,8 +2487,37 @@ const loadCategorizedItems = async () => {
             </>
           )}
 
+
+        </WelcomeSection>
+
+        <TabContainer>
+          <Tab 
+            theme={currentStyle}
+            active={activeTab === 'featured'} 
+            onClick={() => setActiveTab('featured')}
+          >
+            <Package size={16} />
+            Featured
+          </Tab>
+          <Tab
+            theme={currentStyle} 
+            active={activeTab === 'nearby'} 
+            onClick={() => setActiveTab('nearby')}
+          >
+            <Navigation size={16} />
+            Nearby
+          </Tab>
+          <Tab
+            theme={currentStyle} 
+            active={activeTab === 'media'} 
+            onClick={() => setActiveTab('media')}
+          >
+            <Film size={16} />
+            Media
+          </Tab>
+        </TabContainer>
+
 {/* Place this after ActionButtonContainer and before TabContainer */}
-{isAuthenticated && (
   <LocationIndicator2 theme={currentStyle} isPinned={isZipPinned}>
     <button 
       className="location-icon-btn"
@@ -2526,35 +2555,7 @@ const loadCategorizedItems = async () => {
       />
     </button>
   </LocationIndicator2>
-)}
-        </WelcomeSection>
 
-        <TabContainer>
-          <Tab 
-            theme={currentStyle}
-            active={activeTab === 'featured'} 
-            onClick={() => setActiveTab('featured')}
-          >
-            <Package size={16} />
-            Featured
-          </Tab>
-          <Tab
-            theme={currentStyle} 
-            active={activeTab === 'nearby'} 
-            onClick={() => setActiveTab('nearby')}
-          >
-            <Navigation size={16} />
-            Nearby
-          </Tab>
-          <Tab
-            theme={currentStyle} 
-            active={activeTab === 'media'} 
-            onClick={() => setActiveTab('media')}
-          >
-            <Film size={16} />
-            Media
-          </Tab>
-        </TabContainer>
 
         {/* Nearby Items Tab */}
         {activeTab === 'nearby' && (
