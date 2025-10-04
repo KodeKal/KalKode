@@ -1707,29 +1707,24 @@ const LiveShopCreation = () => {
                   onClick={async () => {
                     console.log('Saving item:', editingItem);
                     
-                    // Process images if they're File objects
-                    const processedImages = await Promise.all(
-                      editingItem.images.map(async (img) => {
-                        // If it's already a URL string, keep it
-                        if (typeof img === 'string') return img;
-                        
-                        // If it's null or undefined, keep it
-                        if (!img) return null;
-                        
-                        // If it's a File object, convert to blob URL for preview
-                        // (In real app, you'd upload to Firebase here)
-                        if (img instanceof File) {
-                          return URL.createObjectURL(img);
-                        }
-                        
-                        // If it has a file property (your EditableImage format)
-                        if (img.file instanceof File) {
-                          return URL.createObjectURL(img.file);
-                        }
-                        
-                        return img;
-                      })
-                    );
+                    // Process images - extract the preview URL or keep string URLs
+                    const processedImages = editingItem.images.map((img) => {
+                      // If it's already a string URL, keep it
+                      if (typeof img === 'string') return img;
+                      
+                      // If it's null or undefined, keep it
+                      if (!img) return null;
+                      
+                      // If it's the EditableImage format with preview, use the preview
+                      if (img?.preview) return img.preview;
+                      
+                      // If it's a File object, create blob URL
+                      if (img instanceof File) {
+                        return URL.createObjectURL(img);
+                      }
+                      
+                      return img;
+                    });
                     
                     const updatedItem = {
                       ...editingItem,
