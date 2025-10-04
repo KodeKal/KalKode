@@ -1,4 +1,4 @@
-633-23-422// src/pages/WelcomePage.js - Mobile-Optimized Version
+// src/pages/WelcomePage.js - Mobile-Optimized Version
 import React from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
