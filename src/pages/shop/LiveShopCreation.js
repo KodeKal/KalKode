@@ -964,7 +964,7 @@ const LiveShopCreation = () => {
           <ValidatedEditableText
             value={shopData.name}
             onChange={(value) => handleShopDataChange('name', value)}
-            placeholder="Enter Your Shop Name"
+            placeholder="Site Store Name:"
             validationRules={VALIDATION_RULES.shop.name}
             theme={selectedTheme}
             style={{
