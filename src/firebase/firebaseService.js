@@ -395,10 +395,8 @@ export const batchUpdateShopData = async (userId, updateData) => {
   }
 };
 
-// Keep all other existing functions unchanged...
-// (getFeaturedItems, uploadShopImages, getShopData, etc.)
+// src/firebase/firebaseService.js - Update getFeaturedItems
 
-// Shop Operations
 export const getFeaturedItems = async (limitCount = 6) => {
   try {
     const shopsRef = collection(db, 'shops');
@@ -414,6 +412,7 @@ export const getFeaturedItems = async (limitCount = 6) => {
             ...item,
             shopId: doc.id,
             shopName: shopData.name || 'Unknown Shop',
+            shopUsername: shopData.username, // ADD THIS LINE
             shopTheme: shopData.theme || {},
             quantity: item.quantity || 1
           }));
@@ -428,7 +427,6 @@ export const getFeaturedItems = async (limitCount = 6) => {
       return dateB - dateA;
     });
 
-    // Return only the requested number of items
     return allItems.slice(0, limitCount);
   } catch (error) {
     console.error('Error fetching featured items:', error);

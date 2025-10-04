@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { Users, Package, Navigation, Store, Edit, ChevronLeft, ChevronRight, X, MessageCircle, ShoppingCart } from 'lucide-react';
 import OrderChat from '../../components/Chat/OrderChat';
+import { getSubdomainUrl } from '../../utils/subdomainRouter';
 
 const CategoryBadge = styled.div`
   position: absolute;
@@ -665,15 +666,22 @@ const FeaturedItem = ({ item, showDistance, theme, onItemClick }) => {
 
         {/* Second Row: Shop Name & Distance */}
         <div className="shop-info">
-          <span 
+          <div 
             className="shop-name"
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/shop/${item.shopId}/view`);
+              if (item.shopUsername) {
+                // Navigate to subdomain
+                window.location.href = getSubdomainUrl(item.shopUsername);
+              } else {
+                // Fallback to old route if no username
+                navigate(`/shop/${item.shopId}/view`);
+              }
             }}
+            style={{ cursor: 'pointer' }}
           >
-            {item.shopName || 'Unknown Shop'}
-          </span>
+            {item.shopName}
+          </div>
           
           {item.formattedDistance && (
             <>
