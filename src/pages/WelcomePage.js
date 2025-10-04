@@ -1,4 +1,4 @@
-// src/pages/WelcomePage.js - Mobile-Optimized Version
+633-23-422// src/pages/WelcomePage.js - Mobile-Optimized Version
 import React from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
@@ -1884,12 +1884,52 @@ const convertZipToCoords = async (zip) => {
   }
 };
 
-// Handle location icon click - convert current location to ZIP
+
 const handleLocationToZip = async () => {
-  if (userLocation) {
-    await convertCoordsToZipWithFallback(userLocation.latitude, userLocation.longitude);
-  } else {
-    setError('Location not available. Please enable location services.');
+  try {
+    setIsConvertingToZip(true);
+    setError(null);
+    
+    // Request fresh location from browser
+    const freshLocation = await new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation not supported'));
+        return;
+      }
+      
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => {
+          reject(error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0  // Don't use cached position
+        }
+      );
+    });
+    
+    // Convert fresh coordinates to ZIP
+    await convertCoordsToZip(freshLocation.latitude, freshLocation.longitude);
+    
+  } catch (error) {
+    console.error('Error getting fresh location:', error);
+    
+    // Fallback: use stored location if available
+    if (userLocation) {
+      console.log('Using stored location as fallback');
+      await convertCoordsToZip(userLocation.latitude, userLocation.longitude);
+    } else {
+      setError('Location not available. Please enable location services.');
+    }
+  } finally {
+    setIsConvertingToZip(false);
   }
 };
 
