@@ -235,18 +235,6 @@ const AppRoutes = () => {
         {/* Desktop Navigation - Hidden on mobile and subdomains */}
         {showDesktopNavMenu && <NavMenu theme={DEFAULT_THEME} />}
         
-        // OLD:
-{subdomainInfo.isSubdomain ? (
-  // Subdomain Mode: Only show public shop view
-  <Routes>
-    <Route 
-      path="/*" 
-      element={<SubdomainHandler shopUsername={subdomainInfo.shopUsername} />} 
-    />
-  </Routes>
-) : (
-
-        // NEW:
         {subdomainInfo.isSubdomain ? (
           // Subdomain Mode: Only show public shop view
           <Routes>
