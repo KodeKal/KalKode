@@ -1548,17 +1548,255 @@ const [zipInputValue, setZipInputValue] = useState('');
     'Food & Beverages': [],
     'Other': []
   });
+// Replace the existing state variables related to ZIP with city/region states
+const [cityRegion, setCityRegion] = useState('');
+const [isCityPinned, setIsCityPinned] = useState(false);
+const [isConvertingToCity, setIsConvertingToCity] = useState(false);
+const [cityInputValue, setCityInputValue] = useState('');
 
+// Replace convertCoordsToZip with this new function
+const convertCoordsToCity = async (lat, lon) => {
+  try {
+    setIsConvertingToCity(true);
+    setError(null);
+    
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&addressdetails=1`,
+      {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'KalKode Marketplace'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch location data');
+    }
+    
+    const data = await response.json();
+    console.log('Nominatim response:', data);
+    
+    if (!data || !data.address) {
+      setCityRegion('Not available');
+      setCityInputValue('');
+      return null;
+    }
+    
+    const address = data.address;
+    const city = address.city || address.town || address.village || address.county;
+    const state = address.state;
+    
+    // Major cities list (you can expand this)
+    const majorCities = [
+      'Houston', 'Dallas', 'Austin', 'San Antonio', 'Fort Worth',
+      'Los Angeles', 'New York', 'Chicago', 'Phoenix', 'Philadelphia',
+      'San Diego', 'San Jose', 'Jacksonville', 'Columbus', 'Charlotte'
+    ];
+    
+    let locationString = '';
+    
+    if (city && majorCities.some(major => city.includes(major))) {
+      // For major cities, determine direction from city center
+      const cityName = majorCities.find(major => city.includes(major));
+      
+      // Get city center coordinates (you could make this more precise with a lookup table)
+      const cityCenterResponse = await fetch(
+        `https://nominatim.openstreetmap.org/search?city=${cityName}&state=${state}&format=json&limit=1`,
+        {
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'KalKode Marketplace'
+          }
+        }
+      );
+      
+      const cityCenterData = await cityCenterResponse.json();
+      
+      if (cityCenterData && cityCenterData[0]) {
+        const centerLat = parseFloat(cityCenterData[0].lat);
+        const centerLon = parseFloat(cityCenterData[0].lon);
+        
+        // Calculate direction
+        const direction = getDirection(lat, lon, centerLat, centerLon);
+        locationString = `${direction} ${cityName}, ${getStateAbbreviation(state)}`;
+      } else {
+        locationString = `${cityName}, ${getStateAbbreviation(state)}`;
+      }
+    } else if (state) {
+      // For non-major cities, use state with direction
+      // Get state center (approximate)
+      const stateCenterResponse = await fetch(
+        `https://nominatim.openstreetmap.org/search?state=${state}&country=USA&format=json&limit=1`,
+        {
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'KalKode Marketplace'
+          }
+        }
+      );
+      
+      const stateCenterData = await stateCenterResponse.json();
+      
+      if (stateCenterData && stateCenterData[0]) {
+        const centerLat = parseFloat(stateCenterData[0].lat);
+        const centerLon = parseFloat(stateCenterData[0].lon);
+        
+        const direction = getDirection(lat, lon, centerLat, centerLon);
+        locationString = city ? 
+          `${city}, ${direction} ${getStateAbbreviation(state)}` :
+          `${direction} ${getStateAbbreviation(state)}`;
+      } else {
+        locationString = city ? 
+          `${city}, ${getStateAbbreviation(state)}` :
+          getStateAbbreviation(state);
+      }
+    } else {
+      locationString = city || 'Unknown Location';
+    }
+    
+    setCityRegion(locationString);
+    setCityInputValue(locationString);
+    
+    console.log(`Coordinates ${lat}, ${lon} → ${locationString}`);
+    
+    return locationString;
+    
+  } catch (error) {
+    console.error('Error converting coordinates to city:', error);
+    setCityRegion('Error');
+    setCityInputValue('');
+    setError('Failed to get location information');
+    return null;
+  } finally {
+    setIsConvertingToCity(false);
+  }
+};
+
+// Helper function to determine direction (N, S, E, W, NE, NW, SE, SW)
+const getDirection = (lat1, lon1, lat2, lon2) => {
+  const latDiff = lat1 - lat2;
+  const lonDiff = lon1 - lon2;
+  
+  const absLatDiff = Math.abs(latDiff);
+  const absLonDiff = Math.abs(lonDiff);
+  
+  // If differences are very small, consider it center
+  if (absLatDiff < 0.1 && absLonDiff < 0.1) {
+    return '';
+  }
+  
+  // Determine primary direction
+  let direction = '';
+  
+  // North/South
+  if (absLatDiff > absLonDiff * 0.5) {
+    direction += latDiff > 0 ? 'N' : 'S';
+  }
+  
+  // East/West
+  if (absLonDiff > absLatDiff * 0.5) {
+    direction += lonDiff > 0 ? 'E' : 'W';
+  }
+  
+  return direction || 'Central';
+};
+
+// Helper function to get state abbreviations
+const getStateAbbreviation = (stateName) => {
+  const stateMap = {
+    'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR',
+    'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE',
+    'Florida': 'FL', 'Georgia': 'GA', 'Hawaii': 'HI', 'Idaho': 'ID',
+    'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA', 'Kansas': 'KS',
+    'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+    'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS',
+    'Missouri': 'MO', 'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV',
+    'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY',
+    'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH', 'Oklahoma': 'OK',
+    'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+    'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT',
+    'Vermont': 'VT', 'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV',
+    'Wisconsin': 'WI', 'Wyoming': 'WY'
+  };
+  
+  return stateMap[stateName] || stateName;
+};
+
+// Replace handleLocationToZip with handleLocationToCity
+const handleLocationToCity = async () => {
+  try {
+    setIsConvertingToCity(true);
+    setError(null);
+    
+    // Request fresh location from browser
+    const freshLocation = await new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation not supported'));
+        return;
+      }
+      
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => {
+          reject(error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    });
+    
+    // Convert fresh coordinates to city/region
+    await convertCoordsToCity(freshLocation.latitude, freshLocation.longitude);
+    
+  } catch (error) {
+    console.error('Error getting fresh location:', error);
+    
+    // Fallback: use stored location if available
+    if (userLocation) {
+      console.log('Using stored location as fallback');
+      await convertCoordsToCity(userLocation.latitude, userLocation.longitude);
+    } else {
+      setError('Location not available. Please enable location services.');
+    }
+  } finally {
+    setIsConvertingToCity(false);
+  }
+};
+
+// Replace handleToggleZipPin with handleToggleCityPin
+const handleToggleCityPin = () => {
+  if (isCityPinned) {
+    localStorage.removeItem('pinnedCityRegion');
+    setIsCityPinned(false);
+    setCityRegion('');
+    setCityInputValue('');
+  } else {
+    if (cityRegion && cityRegion !== 'Not available' && cityRegion !== 'Error') {
+      localStorage.setItem('pinnedCityRegion', cityRegion);
+      setIsCityPinned(true);
+    }
+  }
+};
+
+// Update the useEffect that loads pinned location on mount
 useEffect(() => {
-  const pinnedZip = localStorage.getItem('pinnedZipCode');
-  if (pinnedZip) {
-    setZipCode(pinnedZip);
-    setZipInputValue(pinnedZip);
-    setIsZipPinned(true);
-    // Optionally convert to coords and update location
-    convertZipToCoords(pinnedZip);
+  const pinnedCity = localStorage.getItem('pinnedCityRegion');
+  if (pinnedCity) {
+    setCityRegion(pinnedCity);
+    setCityInputValue(pinnedCity);
+    setIsCityPinned(true);
   }
 }, []);
+
 
   // Handle opening shop
   const handleOpenShop = () => {
@@ -1704,80 +1942,7 @@ useEffect(() => {
     }
   };
 
-// Improved ZIP code conversion with better validation
-const convertCoordsToZip = async (lat, lon) => {
-  try {
-    setIsConvertingToZip(true);
-    setError(null);
-    
-    // Add zoom parameter to get more precise results
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=18&addressdetails=1`,
-      {
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'KalKode Marketplace'
-        }
-      }
-    );
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch location data');
-    }
-    
-    const data = await response.json();
-    console.log('Nominatim response:', data); // Debug log
-    
-    if (!data || !data.address) {
-      setZipCode('Not available');
-      setZipInputValue('');
-      return null;
-    }
-    
-    // Extract ZIP with priority order
-    const zip = 
-      data.address.postcode ||           // Standard postcode field
-      data.address.postal_code ||        // Alternative field name
-      data.address['ISO3166-2-lvl6'] ||  // Some regions use this
-      null;
-    
-    if (zip) {
-      // Clean and validate ZIP code format
-      const cleanedZip = zip.trim().split('-')[0]; // Handle ZIP+4 format (12345-6789)
-      
-      // Validate US ZIP format (5 digits)
-      if (/^\d{5}$/.test(cleanedZip)) {
-        setZipCode(cleanedZip);
-        setZipInputValue(cleanedZip);
-        
-        // Log for verification
-        console.log(`Coordinates ${lat}, ${lon} → ZIP ${cleanedZip}`);
-        console.log('Location:', data.display_name);
-        
-        return cleanedZip;
-      } else {
-        console.warn('Invalid ZIP format:', zip);
-        setZipCode('Invalid format');
-        setZipInputValue('');
-        return null;
-      }
-    } else {
-      console.warn('No postcode found in response');
-      setZipCode('Not available');
-      setZipInputValue('');
-      return null;
-    }
-    
-  } catch (error) {
-    console.error('Error converting coordinates to ZIP:', error);
-    setZipCode('Error');
-    setZipInputValue('');
-    setError('Failed to get ZIP code from location');
-    return null;
-  } finally {
-    setIsConvertingToZip(false);
-  }
-};
+
 
 
 // Alternative: Use ZIP Code API (US-specific, free, no API key needed)
@@ -1885,36 +2050,6 @@ const convertZipToCoords = async (zip) => {
 };
 
 
-const handleLocationToZip = async () => {
-  try {
-    setIsConvertingToZip(true);
-    setError(null);
-    
-    // Request fresh location from browser
-    const freshLocation = await new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Geolocation not supported'));
-        return;
-      }
-      
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          });
-        },
-        (error) => {
-          reject(error);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0  // Don't use cached position
-        }
-      );
-    });
-    
     // Convert fresh coordinates to ZIP
     await convertCoordsToZip(freshLocation.latitude, freshLocation.longitude);
     
@@ -1957,20 +2092,6 @@ const handleZipSubmit = async (e) => {
   }
 };
 
-// Toggle ZIP pin
-const handleToggleZipPin = () => {
-  if (isZipPinned) {
-    localStorage.removeItem('pinnedZipCode');
-    setIsZipPinned(false);
-    setZipCode('');
-    setZipInputValue('');
-  } else {
-    if (zipCode && zipCode !== 'Not available' && zipCode !== 'Error') {
-      localStorage.setItem('pinnedZipCode', zipCode);
-      setIsZipPinned(true);
-    }
-  }
-};
 
   // Handle featured search
   const handleFeaturedSearch = () => {
@@ -2656,44 +2777,44 @@ const loadCategorizedItems = async () => {
           </Tab>
         </TabContainer>
 
-{/* Place this after ActionButtonContainer and before TabContainer */}
-  <LocationIndicator2 theme={currentStyle} isPinned={isZipPinned}>
-    <button 
-      className="location-icon-btn"
-      onClick={handleLocationToZip}
-      disabled={isConvertingToZip}
-      title="Get ZIP from current location"
-    >
-      {isConvertingToZip ? (
-        <div className="updating-spinner" />
-      ) : (
-        <Navigation size={20} />
-      )}
-    </button>
-    
-    <input
-      type="text"
-      className="location-input"
-      value={zipInputValue}
-      onChange={(e) => setZipInputValue(e.target.value)}
-      onKeyPress={handleZipSubmit}
-      onBlur={handleZipSubmit}
-      placeholder={zipCode || "Enter ZIP code or click icon"}
-      maxLength={10}
+<LocationIndicator2 theme={currentStyle} isPinned={isCityPinned}>
+  <button 
+    className="location-icon-btn"
+    onClick={handleLocationToCity}
+    disabled={isConvertingToCity}
+    title="Get region from current location"
+  >
+    {isConvertingToCity ? (
+      <div className="updating-spinner" />
+    ) : (
+      <Navigation size={20} />
+    )}
+  </button>
+  
+  <input
+    type="text"
+    className="location-input"
+    value={cityInputValue}
+    onChange={(e) => setCityInputValue(e.target.value)}
+    placeholder={userLocation ? 
+      `${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}` : 
+      "Click icon for location"
+    }
+    readOnly
+  />
+  
+  <button
+    className="pin-icon-btn"
+    onClick={handleToggleCityPin}
+    disabled={!cityRegion || cityRegion === 'Not available' || cityRegion === 'Error'}
+    title={isCityPinned ? "Unpin location" : "Pin location"}
+  >
+    <Pin 
+      size={18} 
+      fill={isCityPinned ? currentStyle.colors.accent : "none"}
     />
-    
-    <button
-      className="pin-icon-btn"
-      onClick={handleToggleZipPin}
-      disabled={!zipCode || zipCode === 'Not available' || zipCode === 'Error'}
-      title={isZipPinned ? "Unpin ZIP code" : "Pin ZIP code"}
-    >
-      <Pin 
-        size={18} 
-        fill={isZipPinned ? currentStyle.colors.accent : "none"}
-      />
-    </button>
-  </LocationIndicator2>
+  </button>
+</LocationIndicator2>
 
 
         {/* Nearby Items Tab */}
