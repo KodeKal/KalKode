@@ -2532,18 +2532,6 @@ const loadCategorizedItems = async () => {
         </HeaderControls>
       </Header>
 
-      {/* Add Location Indicator */}
-      <LocationIndicator 
-        onClick={handleLocationUpdate}
-        theme={currentStyle}
-      >
-        <Navigation size={18} className="location-icon" />
-        <span className="location-text">
-          {getLocationDisplayText()}
-        </span>
-        {updatingLocation && <div className="updating" />}
-      </LocationIndicator>
-
       <MainContent isAuthenticated={isAuthenticated}>
         <WelcomeSection theme={currentStyle}>
           {isAuthenticated && shopData ? (
