@@ -24,7 +24,8 @@ import NotificationsPage from './pages/shop/NotificationsPage.js';
 import ShopPublicView from './pages/shop/shopPublicView.js';
 import MessagesPage from './pages/shop/MessagesPage';
 
-// Subdomain Handler Component
+// Updated SubdomainHandler Component for App.js
+
 const SubdomainHandler = ({ shopUsername }) => {
   const [shopId, setShopId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,33 +36,72 @@ const SubdomainHandler = ({ shopUsername }) => {
       try {
         setLoading(true);
         
+        console.log('🔍 Searching for shop with username:', shopUsername);
+        
         const { collection, query, where, getDocs } = await import('firebase/firestore');
         const { db } = await import('./firebase/config');
         
         // Query shops collection for matching username
         const shopsRef = collection(db, 'shops');
         const q = query(shopsRef, where('username', '==', shopUsername));
+        
+        console.log('📡 Executing Firestore query...');
         const querySnapshot = await getDocs(q);
         
+        console.log('📊 Query results:', {
+          empty: querySnapshot.empty,
+          size: querySnapshot.size,
+          docs: querySnapshot.docs.map(doc => ({ id: doc.id, username: doc.data().username }))
+        });
+        
         if (querySnapshot.empty) {
-          setError('Shop not found');
+          console.error('❌ No shop found with username:', shopUsername);
+          
+          // Additional debugging: List all shops to verify data
+          const allShopsQuery = query(shopsRef);
+          const allShops = await getDocs(allShopsQuery);
+          console.log('📋 All shops in database:', 
+            allShops.docs.map(doc => ({ 
+              id: doc.id, 
+              name: doc.data().name,
+              username: doc.data().username 
+            }))
+          );
+          
+          setError(`Shop "${shopUsername}" not found`);
           setLoading(false);
           return;
         }
         
         // Get first matching shop
         const shopDoc = querySnapshot.docs[0];
+        console.log('✅ Shop found:', {
+          id: shopDoc.id,
+          data: shopDoc.data()
+        });
+        
         setShopId(shopDoc.id);
         setLoading(false);
         
       } catch (err) {
-        console.error('Error fetching shop by username:', err);
-        setError('Failed to load shop');
+        console.error('💥 Error fetching shop by username:', err);
+        console.error('Error details:', {
+          code: err.code,
+          message: err.message,
+          stack: err.stack
+        });
+        setError('Failed to load shop: ' + err.message);
         setLoading(false);
       }
     };
 
-    fetchShopByUsername();
+    if (shopUsername) {
+      fetchShopByUsername();
+    } else {
+      console.error('❌ No shopUsername provided to SubdomainHandler');
+      setError('Invalid shop URL');
+      setLoading(false);
+    }
   }, [shopUsername]);
 
   if (loading) {
@@ -72,9 +112,24 @@ const SubdomainHandler = ({ shopUsername }) => {
         alignItems: 'center',
         height: '100vh',
         background: '#000',
-        color: '#fff'
+        color: '#fff',
+        flexDirection: 'column',
+        gap: '1rem'
       }}>
-        <div>Loading shop...</div>
+        <div className="spinner" style={{
+          width: '40px',
+          height: '40px',
+          border: '3px solid rgba(128, 0, 0, 0.1)',
+          borderRadius: '50%',
+          borderTopColor: '#800000',
+          animation: 'spin 1s linear infinite'
+        }}></div>
+        <div>Loading shop "{shopUsername}"...</div>
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
@@ -89,9 +144,15 @@ const SubdomainHandler = ({ shopUsername }) => {
         height: '100vh',
         background: '#000',
         color: '#fff',
-        gap: '1rem'
+        gap: '1rem',
+        padding: '2rem',
+        textAlign: 'center'
       }}>
-        <div>{error}</div>
+        <div style={{ fontSize: '3rem' }}>🔍</div>
+        <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{error}</div>
+        <div style={{ opacity: 0.7, maxWidth: '500px' }}>
+          Looking for username: "{shopUsername}"
+        </div>
         <button
           onClick={() => redirectToMainApp()}
           style={{
@@ -100,10 +161,27 @@ const SubdomainHandler = ({ shopUsername }) => {
             border: 'none',
             padding: '0.75rem 1.5rem',
             borderRadius: '8px',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            fontSize: '1rem',
+            fontWeight: '600',
+            marginTop: '1rem'
           }}
         >
           Go to Main Site
+        </button>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            background: 'transparent',
+            color: '#800000',
+            border: '1px solid #800000',
+            padding: '0.5rem 1rem',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '0.9rem'
+          }}
+        >
+          Retry
         </button>
       </div>
     );
