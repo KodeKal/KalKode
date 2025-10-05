@@ -73,60 +73,61 @@ export const parseSubdomain = () => {
   
   console.log('✓ Base domain detected:', baseDomain);
   
-  // For vercel.app: format is usually [project]-[hash].vercel.app or [subdomain]-[project]-[hash].vercel.app
-if (baseDomain === 'vercel.app') {
-  // Check for subdomain query parameter on Vercel
-  const params = new URLSearchParams(window.location.search);
-  const subdomainParam = params.get('subdomain');
-  
-  if (subdomainParam) {
-    console.log('✅ Vercel subdomain from query param:', subdomainParam);
+  // For vercel.app: use query parameter approach
+  if (baseDomain === 'vercel.app') {
+    // Check for subdomain query parameter on Vercel
+    const params = new URLSearchParams(window.location.search);
+    const subdomainParam = params.get('subdomain');
+    
+    if (subdomainParam) {
+      console.log('✅ Vercel subdomain from query param:', subdomainParam);
+      return {
+        isSubdomain: true,
+        shopUsername: subdomainParam,
+        originalHost: hostname,
+        isDevelopment: false
+      };
+    }
+    
+    console.log('❌ No valid subdomain on Vercel domain');
     return {
-      isSubdomain: true,
-      shopUsername: subdomainParam,
+      isSubdomain: false,
+      shopUsername: null,
       originalHost: hostname,
       isDevelopment: false
     };
   }
   
-  console.log('❌ No valid subdomain on Vercel domain');
+  // For custom domain: standard subdomain detection
+  if (parts.length < 3) {
+    console.log('❌ Not enough parts for subdomain');
+    return {
+      isSubdomain: false,
+      shopUsername: null,
+      originalHost: hostname,
+      isDevelopment: false
+    };
+  }
+  
+  const potentialSubdomain = parts[0];
+  
+  if (ALLOWED_SUBDOMAINS.includes(potentialSubdomain.toLowerCase())) {
+    console.log('❌ Reserved subdomain:', potentialSubdomain);
+    return {
+      isSubdomain: false,
+      shopUsername: null,
+      originalHost: hostname,
+      isDevelopment: false
+    };
+  }
+  
+  console.log('✅ Custom domain subdomain detected:', potentialSubdomain);
   return {
-    isSubdomain: false,
-    shopUsername: null,
+    isSubdomain: true,
+    shopUsername: potentialSubdomain,
     originalHost: hostname,
     isDevelopment: false
   };
-}
-
-// For custom domain: standard subdomain detection
-if (parts.length < 3) {
-  console.log('❌ Not enough parts for subdomain');
-  return {
-    isSubdomain: false,
-    shopUsername: null,
-    originalHost: hostname,
-    isDevelopment: false
-  };
-}
-
-const potentialSubdomain = parts[0];
-
-if (ALLOWED_SUBDOMAINS.includes(potentialSubdomain.toLowerCase())) {
-  console.log('❌ Reserved subdomain:', potentialSubdomain);
-  return {
-    isSubdomain: false,
-    shopUsername: null,
-    originalHost: hostname,
-    isDevelopment: false
-  };
-}
-
-console.log('✅ Custom domain subdomain detected:', potentialSubdomain);
-return {
-  isSubdomain: true,
-  shopUsername: potentialSubdomain,
-  originalHost: hostname,
-  isDevelopment: false
 };
 
 /**
@@ -143,13 +144,8 @@ export const getMainAppUrl = () => {
   
   // For Vercel, redirect to the main Vercel URL
   if (baseDomain === 'vercel.app') {
-    // Extract project name from hostname (usually project-hash.vercel.app)
-    const parts = hostname.split('.');
-    if (parts.length >= 3) {
-      // Remove subdomain if present
-      const mainParts = parts.slice(-3); // Get last 3 parts (project-hash.vercel.app)
-      return `${protocol}//${mainParts.join('.')}`;
-    }
+    // Remove subdomain query param if present
+    return `${protocol}//${hostname}`;
   }
   
   // For custom domain
@@ -169,10 +165,9 @@ export const getSubdomainUrl = (username) => {
   const baseDomain = getBaseDomain(hostname);
   
   if (baseDomain === 'vercel.app') {
-    // For Vercel, we need to use the full project URL
-    const parts = hostname.split('.');
-    const projectParts = parts.slice(-3).join('.'); // project-hash.vercel.app
-    return `${protocol}//${username}-${projectParts}`;
+    // For Vercel preview deployments, use query parameter instead
+    // Because Vercel preview URLs are complex: project-hash-scope.vercel.app
+    return `${protocol}//${hostname}?subdomain=${username}`;
   }
   
   return `${protocol}//${username}.kalkode.com`;
