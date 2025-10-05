@@ -1175,6 +1175,10 @@ const ShopPublicView = () => {
     }
   };
 
+const handleGoHome = () => {
+  window.location.href = 'https://kalkode.com';
+};
+
   const handlePrevImage = (e, itemId) => {
     e.stopPropagation();
     const item = shopData.items.find(i => i.id === itemId);
@@ -1514,14 +1518,12 @@ const ShopPublicView = () => {
             </HeaderButton>
 
             <HeaderButton 
-              onClick={handleLogout}
-              theme={shopData?.theme}
-              title="Logout"
-            >
-              <LogOut size={20} />
-            </HeaderButton>
-          </HeaderControls>
-        </Header>
+  onClick={handleGoHome}
+  theme={shopData?.theme}
+  title="Go to Kalkode"
+>
+  <Home size={20} />
+</HeaderButton>
         
         <MainContent>
           {/* Mobile Tabs - keep these for mobile */}
