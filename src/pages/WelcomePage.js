@@ -18,6 +18,13 @@ import LocationDialog from '../components/LocationDialog';
 import ThemeDecorations from '../components/ThemeDecorations';
 import { TransactionService } from '../services/TransactionService';
 import { signOut } from 'firebase/auth';
+// Add this import at the top with other imports
+import MediaFeed from '../components/MediaFeed';
+
+// Then in the component, update the media tab section:
+
+
+
 
 // Mobile-first styled components
 const PageContainer = styled.div.attrs({ className: 'page-container' })`
@@ -2874,12 +2881,9 @@ const loadCategorizedItems = async () => {
         )}
 
         {/* Media Tab */}
-        {activeTab === 'media' && (
-          <EmptyGridMessage>
-            <h3>Featured Media</h3>
-            <p>Coming soon! Discover videos and content from local creators.</p>
-          </EmptyGridMessage>
-        )}
+{activeTab === 'media' && (
+  <MediaFeed theme={currentStyle} />
+)}
       </MainContent>
 
       {/* Style Indicator Only */}
