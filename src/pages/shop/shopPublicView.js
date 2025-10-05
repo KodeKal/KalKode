@@ -1524,6 +1524,7 @@ const handleGoHome = () => {
 >
   <Home size={20} />
 </HeaderButton>
+</HeaderControls>
         
         <MainContent>
           {/* Mobile Tabs - keep these for mobile */}
