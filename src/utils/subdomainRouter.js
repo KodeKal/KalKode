@@ -74,9 +74,9 @@ export const parseSubdomain = () => {
   console.log('✓ Base domain detected:', baseDomain);
   
   // For vercel.app: format is usually [project]-[hash].vercel.app or [subdomain]-[project]-[hash].vercel.app
-  if (baseDomain === 'vercel.app') {
-    // Need at least 4 parts for subdomain on Vercel: subdomain.project.hash.vercel.app
-    const params = new URLSearchParams(window.location.search);
+if (baseDomain === 'vercel.app') {
+  // Check for subdomain query parameter on Vercel
+  const params = new URLSearchParams(window.location.search);
   const subdomainParam = params.get('subdomain');
   
   if (subdomainParam) {
@@ -88,7 +88,8 @@ export const parseSubdomain = () => {
       isDevelopment: false
     };
   }
- console.log('❌ No valid subdomain on Vercel domain');
+  
+  console.log('❌ No valid subdomain on Vercel domain');
   return {
     isSubdomain: false,
     shopUsername: null,
@@ -96,46 +97,36 @@ export const parseSubdomain = () => {
     isDevelopment: false
   };
 }
-    
-    console.log('❌ No valid subdomain on Vercel domain');
-    return {
-      isSubdomain: false,
-      shopUsername: null,
-      originalHost: hostname,
-      isDevelopment: false
-    };
-  }
-  
-  // For custom domain: standard subdomain detection
-  if (parts.length < 3) {
-    console.log('❌ Not enough parts for subdomain');
-    return {
-      isSubdomain: false,
-      shopUsername: null,
-      originalHost: hostname,
-      isDevelopment: false
-    };
-  }
-  
-  const potentialSubdomain = parts[0];
-  
-  if (ALLOWED_SUBDOMAINS.includes(potentialSubdomain.toLowerCase())) {
-    console.log('❌ Reserved subdomain:', potentialSubdomain);
-    return {
-      isSubdomain: false,
-      shopUsername: null,
-      originalHost: hostname,
-      isDevelopment: false
-    };
-  }
-  
-  console.log('✅ Custom domain subdomain detected:', potentialSubdomain);
+
+// For custom domain: standard subdomain detection
+if (parts.length < 3) {
+  console.log('❌ Not enough parts for subdomain');
   return {
-    isSubdomain: true,
-    shopUsername: potentialSubdomain,
+    isSubdomain: false,
+    shopUsername: null,
     originalHost: hostname,
     isDevelopment: false
   };
+}
+
+const potentialSubdomain = parts[0];
+
+if (ALLOWED_SUBDOMAINS.includes(potentialSubdomain.toLowerCase())) {
+  console.log('❌ Reserved subdomain:', potentialSubdomain);
+  return {
+    isSubdomain: false,
+    shopUsername: null,
+    originalHost: hostname,
+    isDevelopment: false
+  };
+}
+
+console.log('✅ Custom domain subdomain detected:', potentialSubdomain);
+return {
+  isSubdomain: true,
+  shopUsername: potentialSubdomain,
+  originalHost: hostname,
+  isDevelopment: false
 };
 
 /**
