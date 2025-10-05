@@ -76,20 +76,26 @@ export const parseSubdomain = () => {
   // For vercel.app: format is usually [project]-[hash].vercel.app or [subdomain]-[project]-[hash].vercel.app
   if (baseDomain === 'vercel.app') {
     // Need at least 4 parts for subdomain on Vercel: subdomain.project.hash.vercel.app
-    if (parts.length >= 4) {
-      const potentialSubdomain = parts[0];
-      
-      // Check if it's not a reserved subdomain
-      if (!ALLOWED_SUBDOMAINS.includes(potentialSubdomain.toLowerCase())) {
-        console.log('✅ Vercel subdomain detected:', potentialSubdomain);
-        return {
-          isSubdomain: true,
-          shopUsername: potentialSubdomain,
-          originalHost: hostname,
-          isDevelopment: false
-        };
-      }
-    }
+    const params = new URLSearchParams(window.location.search);
+  const subdomainParam = params.get('subdomain');
+  
+  if (subdomainParam) {
+    console.log('✅ Vercel subdomain from query param:', subdomainParam);
+    return {
+      isSubdomain: true,
+      shopUsername: subdomainParam,
+      originalHost: hostname,
+      isDevelopment: false
+    };
+  }
+ console.log('❌ No valid subdomain on Vercel domain');
+  return {
+    isSubdomain: false,
+    shopUsername: null,
+    originalHost: hostname,
+    isDevelopment: false
+  };
+}
     
     console.log('❌ No valid subdomain on Vercel domain');
     return {
