@@ -41,7 +41,6 @@ import {
   TrendingUp
 } from 'lucide-react';
 import {
-  NewsletterWidget,
   CountdownWidget,
   TestimonialsWidget,
   GalleryWidget,
