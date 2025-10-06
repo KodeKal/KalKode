@@ -4,6 +4,103 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase/config';
 import { auth } from '../../firebase/config';
 
+export const NewsletterWidget = ({ config, theme }) => {
+  const [email, setEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
+
+  const styles = {
+    medium: {
+      background: `linear-gradient(135deg, ${theme?.colors?.background}F5 0%, ${theme?.colors?.surface}80 100%)`,
+      padding: '3rem 2rem',
+      borderRadius: '16px',
+      textAlign: 'center'
+    },
+    substack: {
+      background: 'white',
+      color: '#000',
+      padding: '3rem 2rem',
+      borderRadius: '8px',
+      border: '1px solid #e1e1e1'
+    },
+    minimal: {
+      padding: '2rem',
+      borderTop: `1px solid ${theme?.colors?.accent}30`,
+      borderBottom: `1px solid ${theme?.colors?.accent}30`
+    },
+    bold: {
+      background: theme?.colors?.accent,
+      color: 'white',
+      padding: '4rem 2rem',
+      position: 'relative',
+      overflow: 'hidden'
+    }
+  };
+
+  return (
+    <div style={styles[config.style || 'medium']}>
+      {!subscribed ? (
+        <>
+          <h3 style={{ 
+            fontSize: '1.8rem', 
+            marginBottom: '1rem',
+            color: config.style === 'substack' ? '#000' : theme?.colors?.text 
+          }}>
+            {config.title || 'Stay Updated'}
+          </h3>
+          <p style={{ 
+            marginBottom: '2rem', 
+            opacity: 0.8,
+            fontSize: '1.1rem' 
+          }}>
+            {config.incentive || 'Get 10% off your first order'}
+          </p>
+          <div style={{ 
+            display: 'flex', 
+            gap: '1rem', 
+            maxWidth: '400px', 
+            margin: '0 auto' 
+          }}>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              style={{
+                flex: 1,
+                padding: '1rem',
+                borderRadius: '8px',
+                border: config.style === 'bold' ? 'none' : `1px solid ${theme?.colors?.accent}30`,
+                background: config.style === 'bold' ? 'rgba(255,255,255,0.9)' : 'transparent',
+                color: config.style === 'bold' ? '#000' : theme?.colors?.text
+              }}
+            />
+            <button
+              onClick={() => setSubscribed(true)}
+              style={{
+                padding: '1rem 2rem',
+                background: config.style === 'bold' ? 'white' : theme?.colors?.accent,
+                color: config.style === 'bold' ? theme?.colors?.accent : 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Subscribe
+            </button>
+          </div>
+        </>
+      ) : (
+        <div style={{ padding: '2rem' }}>
+          <h3 style={{ color: theme?.colors?.accent, marginBottom: '1rem' }}>
+            ✓ Subscribed!
+          </h3>
+          <p>Thank you for subscribing. Check your email for confirmation.</p>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Add to HomePageWidgets.js
 export const CalendarWidget = ({ config, theme, editable, onUpdate }) => {
