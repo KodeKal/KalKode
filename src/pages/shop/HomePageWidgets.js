@@ -4,104 +4,243 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase/config';
 import { auth } from '../../firebase/config';
 
-// Newsletter Widget Component
-export const NewsletterWidget = ({ config, theme }) => {
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
 
-  const styles = {
-    medium: {
-      background: `linear-gradient(135deg, ${theme?.colors?.background}F5 0%, ${theme?.colors?.surface}80 100%)`,
-      padding: '3rem 2rem',
-      borderRadius: '16px',
-      textAlign: 'center'
-    },
-    substack: {
-      background: 'white',
-      color: '#000',
-      padding: '3rem 2rem',
-      borderRadius: '8px',
-      border: '1px solid #e1e1e1'
-    },
-    minimal: {
-      padding: '2rem',
-      borderTop: `1px solid ${theme?.colors?.accent}30`,
-      borderBottom: `1px solid ${theme?.colors?.accent}30`
-    },
-    bold: {
-      background: theme?.colors?.accent,
-      color: 'white',
-      padding: '4rem 2rem',
-      position: 'relative',
-      overflow: 'hidden'
+export const HeroBannerWidget = ({ config, theme, editable, onUpdate }) => {
+  const [uploading, setUploading] = useState(false);
+
+  const handleBackgroundUpload = async (file) => {
+    if (!file || !auth.currentUser) return;
+    
+    setUploading(true);
+    try {
+      const storageRef = ref(
+        storage,
+        `shops/${auth.currentUser.uid}/hero/background-${Date.now()}`
+      );
+      
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      
+      onUpdate({ ...config, backgroundImage: url });
+    } catch (error) {
+      console.error('Error uploading background:', error);
+      alert('Failed to upload background image');
+    } finally {
+      setUploading(false);
     }
   };
 
+  const heightOptions = {
+    small: '40vh',
+    medium: '60vh',
+    large: '80vh',
+    fullscreen: '100vh'
+  };
+
+  const heightValue = heightOptions[config.height] || heightOptions.large;
+
   return (
-    <div style={styles[config.style || 'medium']}>
-      {!subscribed ? (
-        <>
-          <h3 style={{ 
-            fontSize: '1.8rem', 
-            marginBottom: '1rem',
-            color: config.style === 'substack' ? '#000' : theme?.colors?.text 
-          }}>
-            {config.title || 'Stay Updated'}
-          </h3>
-          <p style={{ 
-            marginBottom: '2rem', 
-            opacity: 0.8,
-            fontSize: '1.1rem' 
-          }}>
-            {config.incentive || 'Get 10% off your first order'}
-          </p>
-          <div style={{ 
-            display: 'flex', 
-            gap: '1rem', 
-            maxWidth: '400px', 
-            margin: '0 auto' 
-          }}>
+    <div style={{
+      position: 'relative',
+      height: heightValue,
+      background: config.backgroundImage ? 
+        `url(${config.backgroundImage})` : 
+        `linear-gradient(135deg, ${theme?.colors?.accent}20 0%, ${theme?.colors?.background} 100%)`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden'
+    }}>
+      {/* Overlay for better text readability */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: config.overlay ? 
+          'linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.6))' : 
+          'transparent'
+      }} />
+
+      {/* Content */}
+      <div style={{
+        position: 'relative',
+        zIndex: 2,
+        textAlign: 'center',
+        padding: '2rem',
+        maxWidth: '800px',
+        width: '100%'
+      }}>
+        {editable ? (
+          <>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
+              type="text"
+              value={config.headline || ''}
+              onChange={(e) => onUpdate({ ...config, headline: e.target.value })}
+              placeholder="Enter headline"
               style={{
-                flex: 1,
-                padding: '1rem',
-                borderRadius: '8px',
-                border: config.style === 'bold' ? 'none' : `1px solid ${theme?.colors?.accent}30`,
-                background: config.style === 'bold' ? 'rgba(255,255,255,0.9)' : 'transparent',
-                color: config.style === 'bold' ? '#000' : theme?.colors?.text
+                fontSize: 'clamp(2rem, 5vw, 4rem)',
+                fontWeight: 'bold',
+                textAlign: 'center',
+                color: 'white',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: '2px solid rgba(255,255,255,0.5)',
+                width: '100%',
+                padding: '0.5rem',
+                marginBottom: '1rem',
+                textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                outline: 'none'
               }}
             />
-            <button
-              onClick={() => setSubscribed(true)}
+            <textarea
+              value={config.subtitle || ''}
+              onChange={(e) => onUpdate({ ...config, subtitle: e.target.value })}
+              placeholder="Enter subtitle"
               style={{
-                padding: '1rem 2rem',
-                background: config.style === 'bold' ? 'white' : theme?.colors?.accent,
-                color: config.style === 'bold' ? theme?.colors?.accent : 'white',
+                fontSize: 'clamp(1rem, 2vw, 1.5rem)',
+                textAlign: 'center',
+                color: 'white',
+                background: 'transparent',
                 border: 'none',
-                borderRadius: '8px',
-                fontWeight: 'bold',
-                cursor: 'pointer'
+                borderBottom: '2px solid rgba(255,255,255,0.5)',
+                width: '100%',
+                padding: '0.5rem',
+                resize: 'none',
+                textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+                outline: 'none'
               }}
+              rows={2}
+            />
+            <input
+              type="text"
+              value={config.ctaText || ''}
+              onChange={(e) => onUpdate({ ...config, ctaText: e.target.value })}
+              placeholder="Button text (optional)"
+              style={{
+                fontSize: '1rem',
+                textAlign: 'center',
+                color: 'white',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: '2px solid rgba(255,255,255,0.5)',
+                width: '200px',
+                padding: '0.5rem',
+                marginTop: '1rem',
+                textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+                outline: 'none'
+              }}
+            />
+          </>
+        ) : (
+          <>
+            <h1 style={{ 
+              fontSize: 'clamp(2rem, 5vw, 4rem)', 
+              fontWeight: 'bold',
+              color: 'white',
+              textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+              marginBottom: '1rem',
+              lineHeight: 1.2
+            }}>
+              {config.headline || "Welcome to Our Shop"}
+            </h1>
+            {config.subtitle && (
+              <p style={{
+                fontSize: 'clamp(1rem, 2vw, 1.5rem)',
+                color: 'white',
+                textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+                marginBottom: '2rem',
+                lineHeight: 1.5
+              }}>
+                {config.subtitle}
+              </p>
+            )}
+            {config.ctaText && (
+              <button style={{
+                padding: '1rem 2rem',
+                fontSize: '1.1rem',
+                fontWeight: 'bold',
+                background: theme?.colors?.accent,
+                color: 'white',
+                border: 'none',
+                borderRadius: '50px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
+              }}>
+                {config.ctaText}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Background Upload Button (Editor Only) */}
+      {editable && (
+        <div style={{
+          position: 'absolute',
+          bottom: '1rem',
+          right: '1rem',
+          zIndex: 10,
+          display: 'flex',
+          gap: '0.5rem'
+        }}>
+          <input
+            type="file"
+            accept="image/*"
+            id="hero-background-upload"
+            style={{ display: 'none' }}
+            onChange={(e) => e.target.files?.[0] && 
+              handleBackgroundUpload(e.target.files[0])}
+            disabled={uploading}
+          />
+          <label
+            htmlFor="hero-background-upload"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem 1.5rem',
+              background: 'rgba(0,0,0,0.8)',
+              backdropFilter: 'blur(10px)',
+              color: 'white',
+              borderRadius: '25px',
+              cursor: uploading ? 'not-allowed' : 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: '500',
+              transition: 'all 0.3s ease',
+              opacity: uploading ? 0.6 : 1
+            }}
+          >
+            <Upload size={18} />
+            {uploading ? 'Uploading...' : 'Change Background'}
+          </label>
+          {config.backgroundImage && (
+            <button
+              onClick={() => onUpdate({ ...config, backgroundImage: null })}
+              style={{
+                padding: '0.75rem',
+                background: 'rgba(255,0,0,0.8)',
+                backdropFilter: 'blur(10px)',
+                color: 'white',
+                borderRadius: '50%',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="Remove background"
             >
-              Subscribe
+              <X size={18} />
             </button>
-          </div>
-        </>
-      ) : (
-        <div style={{ padding: '2rem' }}>
-          <h3 style={{ color: theme?.colors?.accent, marginBottom: '1rem' }}>
-            ✓ Subscribed!
-          </h3>
-          <p>Thank you for subscribing. Check your email for confirmation.</p>
+          )}
         </div>
       )}
     </div>
   );
 };
+
 
 // Countdown Timer Widget
 export const CountdownWidget = ({ config, theme }) => {
@@ -297,12 +436,26 @@ export const TestimonialsWidget = ({ config, theme }) => {
   );
 };
 
-// Enhanced Gallery Widget with Image Upload
+// Enhanced Gallery Widget with Carousel Display
 export const GalleryWidget = ({ config, theme, editable, onUpdate }) => {
   const [selectedImage, setSelectedImage] = useState(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [uploadingIndex, setUploadingIndex] = useState(null);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   
   const images = config.images || Array(6).fill(null);
+  const validImages = images.filter(img => img?.url);
+
+  // Auto-play functionality
+  useEffect(() => {
+    if (!isAutoPlaying || validImages.length <= 1 || editable) return;
+    
+    const interval = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % validImages.length);
+    }, config.autoPlaySpeed || 5000);
+
+    return () => clearInterval(interval);
+  }, [isAutoPlaying, validImages.length, config.autoPlaySpeed, editable]);
 
   const handleImageUpload = async (index, file) => {
     if (!file || !editable || !auth.currentUser) return;
@@ -340,107 +493,304 @@ export const GalleryWidget = ({ config, theme, editable, onUpdate }) => {
     }
   };
 
-  const styles = {
-    instagram: {
-      display: 'grid',
-      gridTemplateColumns: `repeat(${config.columns || 3}, 1fr)`,
-      gap: '2px'
-    },
-    pinterest: {
-      columnCount: config.columns || 3,
-      columnGap: '1rem'
-    },
-    masonry: {
-      display: 'grid',
-      gridTemplateColumns: `repeat(auto-fill, minmax(250px, 1fr))`,
-      gap: '1rem',
-      gridAutoFlow: 'dense'
-    }
+  const handlePrevSlide = (e) => {
+    e.stopPropagation();
+    setCurrentSlide(prev => prev === 0 ? validImages.length - 1 : prev - 1);
   };
 
+  const handleNextSlide = (e) => {
+    e.stopPropagation();
+    setCurrentSlide(prev => (prev + 1) % validImages.length);
+  };
+
+  // PUBLIC VIEW - Carousel Display
+  if (!editable && validImages.length > 0) {
+    const currentImage = validImages[currentSlide];
+    
+    return (
+      <div style={{ 
+        position: 'relative',
+        width: '100%',
+        height: config.height || '500px',
+        overflow: 'hidden',
+        borderRadius: '16px',
+        background: `${theme?.colors?.surface}50`
+      }}>
+        {/* Title Overlay */}
+        {config.title && (
+          <div style={{
+            position: 'absolute',
+            top: '2rem',
+            left: '2rem',
+            zIndex: 10,
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(10px)',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '12px'
+          }}>
+            <h2 style={{ 
+              margin: 0, 
+              color: 'white',
+              fontSize: 'clamp(1.2rem, 3vw, 1.8rem)',
+              fontWeight: 'bold'
+            }}>
+              {config.title}
+            </h2>
+          </div>
+        )}
+
+        {/* Main Image */}
+        <img 
+          src={currentImage.url} 
+          alt={`Slide ${currentSlide + 1}`}
+          style={{ 
+            width: '100%', 
+            height: '100%', 
+            objectFit: 'cover',
+            transition: 'opacity 0.5s ease'
+          }}
+        />
+
+        {/* Image Overlay Info */}
+        <div style={{
+          position: 'absolute',
+          bottom: '5rem',
+          left: '2rem',
+          right: '2rem',
+          zIndex: 10,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(10px)',
+          padding: '1rem',
+          borderRadius: '12px',
+          display: 'flex',
+          gap: '2rem',
+          alignItems: 'center'
+        }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'white' }}>
+            <Heart size={20} /> {currentImage.likes || 0}
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'white' }}>
+            <MessageCircle size={20} /> {currentImage.comments || 0}
+          </span>
+        </div>
+
+        {/* Navigation Arrows */}
+        {validImages.length > 1 && (
+          <>
+            <button
+              onClick={handlePrevSlide}
+              style={{
+                position: 'absolute',
+                left: '1rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'rgba(0,0,0,0.7)',
+                backdropFilter: 'blur(10px)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '48px',
+                height: '48px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: 'white',
+                zIndex: 10,
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <button
+              onClick={handleNextSlide}
+              style={{
+                position: 'absolute',
+                right: '1rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'rgba(0,0,0,0.7)',
+                backdropFilter: 'blur(10px)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '48px',
+                height: '48px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: 'white',
+                zIndex: 10,
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <ChevronRight size={24} />
+            </button>
+          </>
+        )}
+
+        {/* Slide Indicators */}
+        <div style={{
+          position: 'absolute',
+          bottom: '2rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '0.5rem',
+          zIndex: 10
+        }}>
+          {validImages.map((_, index) => (
+            <button
+              key={index}
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentSlide(index);
+              }}
+              style={{
+                width: currentSlide === index ? '32px' : '12px',
+                height: '12px',
+                borderRadius: '6px',
+                background: currentSlide === index ? 
+                  theme?.colors?.accent || 'white' : 
+                  'rgba(255,255,255,0.5)',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Play/Pause Control */}
+        {validImages.length > 1 && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsAutoPlaying(!isAutoPlaying);
+            }}
+            style={{
+              position: 'absolute',
+              bottom: '2rem',
+              right: '2rem',
+              background: 'rgba(0,0,0,0.7)',
+              backdropFilter: 'blur(10px)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: 'white',
+              zIndex: 10
+            }}
+          >
+            {isAutoPlaying ? <Pause size={20} /> : <Play size={20} />}
+          </button>
+        )}
+
+        {/* Image Counter */}
+        <div style={{
+          position: 'absolute',
+          top: '2rem',
+          right: '2rem',
+          background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(10px)',
+          padding: '0.5rem 1rem',
+          borderRadius: '20px',
+          color: 'white',
+          fontSize: '0.9rem',
+          fontWeight: '500',
+          zIndex: 10
+        }}>
+          {currentSlide + 1} / {validImages.length}
+        </div>
+      </div>
+    );
+  }
+
+  // EDITOR VIEW - Grid Display (existing code continues...)
   return (
     <div>
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
-          {config.title || 'Photo Gallery'}
-        </h2>
-        {config.subtitle && (
-          <p style={{ opacity: 0.8 }}>{config.subtitle}</p>
-        )}
+        <input
+          type="text"
+          value={config.title || ''}
+          onChange={(e) => onUpdate && onUpdate({ ...config, title: e.target.value })}
+          placeholder="Gallery Title"
+          style={{
+            fontSize: '1.5rem',
+            fontWeight: 'bold',
+            background: 'transparent',
+            border: 'none',
+            borderBottom: `2px solid ${theme?.colors?.accent}30`,
+            color: theme?.colors?.text,
+            textAlign: 'center',
+            padding: '0.5rem',
+            width: '300px',
+            outline: 'none'
+          }}
+        />
       </div>
       
-      <div style={styles[config.style || 'instagram']}>
+      {/* Grid view for editing - your existing grid code */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(${config.columns || 3}, 1fr)`,
+        gap: '1rem'
+      }}>
         {images.map((img, index) => (
           <div key={index} style={{
             position: 'relative',
             aspectRatio: '1',
             background: `${theme?.colors?.surface}50`,
-            borderRadius: config.style === 'masonry' ? '8px' : '0',
+            borderRadius: '8px',
             overflow: 'hidden',
-            cursor: editable ? 'pointer' : 'default',
-            marginBottom: config.style === 'pinterest' ? '1rem' : '0'
+            cursor: 'pointer',
+            border: `1px solid ${theme?.colors?.accent}20`
           }}>
             {img?.url ? (
               <>
                 <img 
                   src={img.url} 
                   alt={`Gallery ${index}`}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  onClick={() => !editable && setSelectedImage(img.url)}
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'cover' 
+                  }}
                 />
-                {editable && (
-                  <button
-                    onClick={() => handleRemoveImage(index)}
-                    style={{
-                      position: 'absolute',
-                      top: '0.5rem',
-                      right: '0.5rem',
-                      background: 'rgba(0,0,0,0.7)',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: '32px',
-                      height: '32px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      color: 'white',
-                      zIndex: 2
-                    }}
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'rgba(0,0,0,0.7)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '1.5rem',
-                  opacity: 0,
-                  transition: 'opacity 0.3s',
-                  color: 'white'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = 0}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Heart size={20} /> {img.likes || 0}
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <MessageCircle size={20} /> {img.comments || 0}
-                  </span>
-                </div>
+                <button
+                  onClick={() => handleRemoveImage(index)}
+                  style={{
+                    position: 'absolute',
+                    top: '0.5rem',
+                    right: '0.5rem',
+                    background: 'rgba(0,0,0,0.8)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: 'white',
+                    zIndex: 2
+                  }}
+                >
+                  <X size={16} />
+                </button>
               </>
-            ) : editable ? (
+            ) : (
               <>
                 <input
                   type="file"
                   accept="image/*"
                   id={`gallery-upload-${index}`}
                   style={{ display: 'none' }}
-                  onChange={(e) => e.target.files?.[0] && handleImageUpload(index, e.target.files[0])}
+                  onChange={(e) => e.target.files?.[0] && 
+                    handleImageUpload(index, e.target.files[0])}
                 />
                 <label
                   htmlFor={`gallery-upload-${index}`}
@@ -456,74 +806,32 @@ export const GalleryWidget = ({ config, theme, editable, onUpdate }) => {
                   }}
                 >
                   {uploadingIndex === index ? (
-                    <div>Uploading...</div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ 
+                        width: '32px', 
+                        height: '32px', 
+                        border: '3px solid rgba(255,255,255,0.3)',
+                        borderTopColor: theme?.colors?.accent,
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite',
+                        margin: '0 auto 0.5rem'
+                      }} />
+                      <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>Uploading...</span>
+                    </div>
                   ) : (
                     <>
                       <Upload size={32} opacity={0.5} />
-                      <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>Upload Image</span>
+                      <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>
+                        Upload Image
+                      </span>
                     </>
                   )}
                 </label>
               </>
-            ) : (
-              <div style={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: 0.3
-              }}>
-                <ImageIcon size={32} />
-              </div>
             )}
           </div>
         ))}
       </div>
-
-      {selectedImage && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.9)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            cursor: 'pointer'
-          }}
-          onClick={() => setSelectedImage(null)}
-        >
-          <img 
-            src={selectedImage} 
-            alt="Full size"
-            style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }}
-          />
-          <button
-            onClick={() => setSelectedImage(null)}
-            style={{
-              position: 'absolute',
-              top: '2rem',
-              right: '2rem',
-              background: 'white',
-              border: 'none',
-              borderRadius: '50%',
-              width: '40px',
-              height: '40px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer'
-            }}
-          >
-            <X size={20} />
-          </button>
-        </div>
-      )}
     </div>
   );
 };
