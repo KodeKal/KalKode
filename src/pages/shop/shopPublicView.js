@@ -20,6 +20,7 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Search, 
+  Store,
   X,
   RefreshCw,
   Pin,
@@ -86,39 +87,142 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
   }
 `;
 
-// Header following WelcomePage pattern
-// Update the Header component to include tabs for desktop
-const Header = styled.header`
-  width: 100%;
-  height: 60px;
-  padding: 0 1rem;
+const HeaderTabButton = styled.button`
+  background: transparent;
+  border: none;
+  color: ${props => props.active ? 
+    props.theme?.colors?.accent : 
+    `${props.theme?.colors?.text}60`};
+  padding: 0.5rem;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  background: ${props => `${props.theme?.colors?.headerBg || 'rgba(0, 0, 0, 0.9)'}F5`};
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
-  position: fixed;
-  top: 0;
-  z-index: 100;
-
-  @media (min-width: 768px) {
-    height: 80px;
-    padding: 0 2rem;
+  justify-content: center;
+  transition: all 0.3s ease;
+  position: relative;
+  
+  &:active {
+    transform: scale(0.9);
+  }
+  
+  /* Bottom underline indicator */
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: ${props => props.active ? '80%' : '0'};
+    height: 3px;
+    background: ${props => props.theme?.colors?.accent || '#800000'};
+    border-radius: 2px 2px 0 0;
+    transition: width 0.3s ease;
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      color: ${props => props.theme?.colors?.accent};
+      opacity: 1;
+    }
+  }
+  
+  svg {
+    width: 22px;
+    height: 22px;
+    
+    @media (min-width: 768px) {
+      width: 24px;
+      height: 24px;
+    }
   }
 `;
 
-// Add this new component for desktop header tabs
-const HeaderTabsContainer = styled.div`
-  display: none;
+// Update HeaderLeft and HeaderRight
+const HeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+`;
+
+const HeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+`;
+
+// For ShopPublicView.js - where bottom nav exists
+const FloatingControls = styled.div`
+  position: fixed;
+  bottom: 100px; /* Adjusted to clear bottom navigation */
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  z-index: 90;
   
   @media (min-width: 768px) {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: 2rem; /* No bottom nav on desktop */
+  }
+  
+  @media (max-width: 767px) {
+    right: 1.5rem;
+    gap: 0.75rem;
+  }
+`;
+
+const FloatingButton = styled.button`
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: ${props => props.theme?.colors?.accent || '#800000'};
+  color: ${props => props.theme?.colors?.background || '#FFFFFF'};
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  ${props => props.isPinned && `
+    background: ${props.theme?.colors?.background || '#000000'};
+    color: ${props.theme?.colors?.accent || '#800000'};
+    border: 2px solid ${props.theme?.colors?.accent || '#800000'};
+  `}
+  
+  @media (max-width: 767px) {
+    width: 48px;
+    height: 48px;
+  }
+  
+  &:active {
+    transform: scale(0.9);
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
+    }
+  }
+  
+  &.spinning {
+    animation: spin 0.5s ease-in-out;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  svg {
+    width: 24px;
+    height: 24px;
+    
+    @media (max-width: 767px) {
+      width: 20px;
+      height: 20px;
+    }
   }
 `;
 
@@ -182,21 +286,20 @@ const TabContainer = styled.div`
   }
 `;
 
-// Add ProfileCover component
 const ProfileCover = styled.div`
   width: 100%;
-  height: 200px;
+  height: 160px; /* Reduced from 200px by 20% */
   background: ${props => props.coverImage ? 
     `url(${props.coverImage})` : 
     props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
   background-size: cover;
   background-position: center;
   position: relative;
-  margin-bottom: -60px; // Pull profile picture up
+  margin-bottom: -48px; /* Reduced from -60px by 20% */
   
   @media (min-width: 768px) {
-    height: 300px;
-    margin-bottom: -75px;
+    height: 240px; /* Reduced from 300px by 20% */
+    margin-bottom: -60px; /* Reduced from -75px by 20% */
   }
 
   &::after {
@@ -210,14 +313,13 @@ const ProfileCover = styled.div`
   }
 `;
 
-// Update ShopProfileSection
 const ShopProfileSection = styled.section`
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  margin: 0 0 2rem 0; // Remove top margin
-  padding: 0 1rem 1rem 1rem; // Remove top padding
+  margin: 0 0 1.5rem 0; /* Reduced from 2rem */
+  padding: 0 1rem 1rem 1rem;
 
   .profile-image {
     margin-bottom: 1rem;
@@ -226,7 +328,7 @@ const ShopProfileSection = styled.section`
     border-radius: 50%;
     overflow: hidden;
     background: rgba(0, 0, 0, 0.1);
-    border: 4px solid ${props => props.theme?.colors?.background || '#000000'}; // Border matches background
+    border: 4px solid ${props => props.theme?.colors?.background || '#000000'};
     box-shadow: 0 0 20px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
     transition: all 0.3s ease;
     position: relative;
@@ -269,21 +371,6 @@ const ShopProfileSection = styled.section`
     @media (min-width: 768px) {
       font-size: 1.1rem;
     }
-  }
-`;
-
-const Logo = styled.div`
-  color: ${props => props.theme?.colors?.accent || '#800000'};
-  font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
-  font-size: 1.4rem;
-  letter-spacing: 1px;
-  transform: skew(-5deg);
-  cursor: pointer;
-  flex-shrink: 0;
-
-  @media (min-width: 768px) {
-    font-size: 2rem;
-    letter-spacing: 2px;
   }
 `;
 
@@ -343,9 +430,8 @@ const HeaderButton = styled.button`
   }
 `;
 
-// Mobile-optimized main content
 const MainContent = styled.main`
-  padding: 80px 1rem 100px 1rem;
+  padding: 80px 1rem 2rem 1rem; /* Back to original padding */
   position: relative;
   z-index: 1;
   
@@ -356,52 +442,37 @@ const MainContent = styled.main`
   }
 `;
 
-// Mobile-friendly bottom navigation
-const BottomNavigation = styled.div`
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: ${props => `${props.theme?.colors?.headerBg || 'rgba(0, 0, 0, 0.9)'}F5`};
-  backdrop-filter: blur(10px);
-  border-top: 1px solid ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
-  padding: 1rem;
+const Header = styled.header`
+  width: 100%;
+  height: 60px;
+  padding: 0 1rem;
   display: flex;
-  justify-content: space-around;
   align-items: center;
+  justify-content: space-between;
+  background: ${props => props.theme?.colors?.headerBg || 'rgba(0, 0, 0, 1)'}; /* Solid, no blur */
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
+  position: fixed;
+  top: 0;
   z-index: 100;
-  height: 80px;
 
   @media (min-width: 768px) {
-    display: none;
+    height: 80px;
+    padding: 0 2rem;
   }
 `;
 
-const NavButton = styled.button`
-  background: transparent;
-  border: none;
-  color: ${props => props.active ? props.theme?.colors?.accent : `${props.theme?.colors?.text}80`} || 
-         ${props => props.active ? '#800000' : 'rgba(255, 255, 255, 0.5)'};
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
+const Logo = styled.div`
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
+  font-size: 1.2rem;
+  letter-spacing: 1px;
   cursor: pointer;
-  padding: 0.5rem;
-  transition: all 0.3s ease;
-  
-  &:active {
-    transform: scale(0.95);
-  }
-  
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-  
-  span {
-    font-size: 0.7rem;
-    font-weight: 500;
+  flex-shrink: 0;
+  text-align: right;
+
+  @media (min-width: 768px) {
+    font-size: 1.5rem;
+    letter-spacing: 1.5px;
   }
 `;
 
@@ -1466,96 +1537,45 @@ const handleGoHome = () => {
     <ThemeProvider theme={shopData?.theme || DEFAULT_THEME}>
       <PageContainer>
         <Header theme={shopData?.theme}>
-          <Logo theme={shopData?.theme} onClick={() => navigate('/')}>
-            {shopData?.name || 'SHOP'}
-          </Logo>
+          {/* Left: Shop Name/Logo */}
+          <HeaderLeft>
+            <Logo theme={shopData?.theme} onClick={handleGoHome}>
+              {shopData?.name || 'SHOP'}
+            </Logo>
+          </HeaderLeft>
 
-          {/* Desktop Tabs - centered in header */}
-          <HeaderTabsContainer>
-            <HeaderTab 
+          {/* Right: Tab Buttons */}
+          <HeaderRight>
+            <HeaderTabButton
               theme={shopData?.theme}
-              active={activeTab === 'home'} 
+              active={activeTab === 'home'}
               onClick={() => setActiveTab('home')}
+              title="Home"
             >
-              <Home size={16} />
-              Home
-            </HeaderTab>
-            <HeaderTab
-              theme={shopData?.theme} 
-              active={activeTab === 'community'} 
-              onClick={() => setActiveTab('community')}
-            >
-              <Users size={16} />
-              Community
-            </HeaderTab>
-            <HeaderTab
-              theme={shopData?.theme} 
-              active={activeTab === 'shop'} 
+              <Home size={22} />
+            </HeaderTabButton>
+
+            <HeaderTabButton
+              theme={shopData?.theme}
+              active={activeTab === 'shop'}
               onClick={() => setActiveTab('shop')}
+              title="Shop"
             >
-              <ShoppingCart size={16} />
-              Shop
-            </HeaderTab>
-          </HeaderTabsContainer>
+              <Store size={22} />
+            </HeaderTabButton>
 
-          <HeaderControls>
-            <HeaderButton 
-              onClick={refreshTheme}
+            <HeaderTabButton
               theme={shopData?.theme}
-              className={isRefreshing ? "spinning" : ""}
-              title="Random theme"
+              active={activeTab === 'community'}
+              onClick={() => setActiveTab('community')}
+              title="Community"
             >
-              <RefreshCw size={20} />
-            </HeaderButton>
+              <Users size={22} />
+            </HeaderTabButton>
+          </HeaderRight>
+        </Header>
 
-            <HeaderButton 
-              onClick={togglePinStyle} 
-              theme={shopData?.theme}
-              className={isPinned ? "pinned" : ""}
-              title={isPinned ? "Unpin theme" : "Pin theme"}
-            >
-              <Pin size={20} fill={isPinned ? shopData?.theme?.colors?.accent : "none"} />
-            </HeaderButton>
-
-            <HeaderButton 
-  onClick={handleGoHome}
-  theme={shopData?.theme}
-  title="Go to Kalkode"
->
-  <Home size={20} />
-</HeaderButton>
-</HeaderControls>
-</Header>
-        
         <MainContent>
-          {/* Mobile Tabs - keep these for mobile */}
-          <TabContainer>
-            <Tab 
-              theme={shopData?.theme}
-              active={activeTab === 'home'} 
-              onClick={() => setActiveTab('home')}
-            >
-              <Home size={14} />
-              Home
-            </Tab>
-            <Tab
-              theme={shopData?.theme} 
-              active={activeTab === 'community'} 
-              onClick={() => setActiveTab('community')}
-            >
-              <Users size={14} />
-              Community
-            </Tab>
-            <Tab
-              theme={shopData?.theme} 
-              active={activeTab === 'shop'} 
-              onClick={() => setActiveTab('shop')}
-            >
-              <ShoppingCart size={14} />
-              Shop
-            </Tab>
-          </TabContainer>
-          
           {/* Profile Cover and Shop View */}
           {activeTab === 'shop' && (
             <>
@@ -1569,26 +1589,27 @@ const handleGoHome = () => {
           {activeTab === 'home' && renderHomeView()}
           {activeTab === 'community' && renderCommunityView()}
         </MainContent>
-        
-        <BottomNavigation theme={shopData?.theme}>
-          <NavButton
-            onClick={() => navigate('/')}
+
+        {/* Floating Controls - Bottom Right */}
+        <FloatingControls>
+          <FloatingButton
+            onClick={refreshTheme}
+            theme={shopData?.theme}
+            className={isRefreshing ? "spinning" : ""}
+            title="Random theme"
           >
-            <ArrowLeft size={20} />
-            <span>Back</span>
-          </NavButton>
-          <NavButton 
-            active={viewMode === 'gallery'}
-            onClick={() => setViewMode(viewMode === 'gallery' ? 'slide' : 'gallery')}
+            <RefreshCw size={24} />
+          </FloatingButton>
+
+          <FloatingButton
+            onClick={togglePinStyle}
+            theme={shopData?.theme}
+            isPinned={isPinned}
+            title={isPinned ? "Unpin theme" : "Pin theme"}
           >
-            {viewMode === 'gallery' ? <Grid size={20} /> : <Columns size={20} />}
-            <span>View</span>
-          </NavButton>
-          <NavButton>
-            <Heart size={20} />
-            <span>Favorite</span>
-          </NavButton>
-        </BottomNavigation>
+            <Pin size={24} />
+          </FloatingButton>
+        </FloatingControls>
 
         <ChatOverlay 
           isOpen={chatOpen} 

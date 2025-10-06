@@ -582,15 +582,14 @@ const ThemeContainer = styled.div`
   }
 `;
 
-// Keep all existing styled components
 const ShopProfileSection = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   max-width: 800px;
-  margin: 2rem auto 4rem;
-  padding: 2rem;
+  margin: 1.5rem auto 3rem; /* Reduced top margin from 2rem and bottom from 4rem */
+  padding: 1.5rem; /* Reduced from 2rem */
 
   .profile-image {
     margin-bottom: 1rem;
@@ -1096,10 +1095,10 @@ const HomePageEditorButton = styled.button`
 const MainContent = styled.div`
   max-width: ${props => props.theme?.styles?.containerWidth || '1400px'};
   margin: 0 auto;
-  padding: 120px 2rem 2rem;
+  padding: 96px 2rem 2rem; /* Reduced from 120px by 20% */
   
   @media (max-width: 768px) {
-    padding: 100px 1rem 2rem;
+    padding: 80px 1rem 2rem; /* Reduced from 100px by 20% */
   }
   position: relative;
   z-index: 1;
@@ -1126,7 +1125,25 @@ const FontSizeButton = styled.button`
   }
 `;
 
-
+/// For ShopPublicView.js - where bottom nav exists
+const FloatingControls = styled.div`
+  position: fixed;
+  bottom: 100px; /* Adjusted to clear bottom navigation */
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  z-index: 90;
+  
+  @media (min-width: 768px) {
+    bottom: 2rem; /* No bottom nav on desktop */
+  }
+  
+  @media (max-width: 767px) {
+    right: 1.5rem;
+    gap: 0.75rem;
+  }
+`;
 
 const TabControlsContainer = styled.div`
   position: fixed;

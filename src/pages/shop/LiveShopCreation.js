@@ -432,31 +432,49 @@ const HeaderButton = styled.button`
   }
 `;
 
-// Mobile-optimized main content
+// For ShopPublicView.js - where bottom nav exists
+const FloatingControls = styled.div`
+  position: fixed;
+  bottom: 100px; /* Adjusted to clear bottom navigation */
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  z-index: 90;
+  
+  @media (min-width: 768px) {
+    bottom: 2rem; /* No bottom nav on desktop */
+  }
+  
+  @media (max-width: 767px) {
+    right: 1.5rem;
+    gap: 0.75rem;
+  }
+`;
+
 const MainContent = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 80px 1rem 100px 1rem;
+  padding: 64px 1rem 100px 1rem; /* Reduced from 80px by 20% */
   position: relative;
   z-index: 1;
   
   @media (min-width: 768px) {
-    padding: 6rem 2rem 2rem 2rem;
+    padding: 80px 2rem 2rem 2rem; /* Reduced from 6rem (96px) to 80px - approximately 20% less */
   }
 `;
 
-// Mobile-optimized profile section
 const ShopProfileSection = styled.section`
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   max-width: 800px;
-  margin: 2rem auto 4rem;
-  padding: 1rem;
+  margin: 1.5rem auto 3rem; /* Reduced from 2rem and 4rem */
+  padding: 0.8rem; /* Reduced from 1rem */
 
   @media (min-width: 768px) {
-    padding: 2rem;
+    padding: 1.5rem; /* Reduced from 2rem */
   }
 
   .profile-image {
