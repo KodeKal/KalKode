@@ -33,7 +33,6 @@ import {
   LogOut
 } from 'lucide-react';
 import {
-  NewsletterWidget,
   CountdownWidget,
   TestimonialsWidget,
   GalleryWidget,
