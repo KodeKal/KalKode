@@ -151,19 +151,29 @@ export const saveShopData = async (userId, data) => {
     await setDoc(shopRef, shopData);
 
     // Profile image upload
-    if (data.profile?.file) {
+    if (data.profile) {
       try {
-        const profileUrl = await uploadImageWithCORS(
-          data.profile.file,
-          `shops/${userId}/profile/profile-${Date.now()}`
-        );
-
+        let profileUrl;
+        
+        // Handle different profile formats
+        if (typeof data.profile === 'string') {
+          // Already a URL
+          profileUrl = data.profile;
+        } else if (data.profile.file instanceof File || data.profile.file instanceof Blob) {
+          // Upload file
+          profileUrl = await uploadImageWithCORS(
+            data.profile.file,
+            `shops/${userId}/profile/profile-${Date.now()}`
+          );
+        }
+      
         if (profileUrl) {
           shopData.profile = profileUrl;
           await updateDoc(shopRef, {
             profile: profileUrl,
             updatedAt: new Date().toISOString()
           });
+          console.log('Profile image uploaded:', profileUrl); // Debug log
         }
       } catch (profileError) {
         console.error('Profile upload failed:', profileError);

@@ -13,7 +13,7 @@ import EditableImage from './components/EditableComponents/EditableImage';
 import { DEFAULT_THEME } from '../../theme/config/themes';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase/config';
-import { ChevronUp, ChevronDown, Plus, Minus, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronUp, ChevronDown, Plus, Users, ChevronLeft, ChevronRight, X, Home, Store } from 'lucide-react';
 import { Trash2, Save, RotateCcw } from 'lucide-react';
 import AddressInput from '../../components/shop/AddressInput';
 import ThemeSelector from '../../components/ThemeSelector/ThemeSelector';
@@ -65,6 +65,208 @@ const PageContainer = styled.div`
   
   @media (min-resolution: 2dppx) {
     font-size: 13px;
+  }
+`;
+
+// Add after existing styled components in ShopPage.js (around line 800)
+const ShopNameInputContainer = styled.div`
+  width: 100%;
+  margin: 0.5rem 0;
+  position: relative;
+`;
+
+const ShopNameInput = styled.input`
+  width: 100%;
+  text-align: center;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid ${props => props.isError ? '#ff4444' : `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+  font-size: ${props => props.fontSize || '2.5rem'};
+  font-family: ${props => props.theme?.fonts?.heading};
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  outline: none;
+  padding: 0.5rem;
+  transition: all 0.3s ease;
+
+  &:focus {
+    border-bottom-color: ${props => props.isError ? '#ff4444' : props.theme?.colors?.accent || '#800000'};
+    border-bottom-width: 3px;
+    transform: scale(1.02);
+  }
+
+  &::placeholder {
+    background: ${props => props.theme?.colors?.accentGradient ? 
+      `${props.theme.colors.accentGradient.replace(')', '80)')}` : 
+      'linear-gradient(45deg, rgba(128, 0, 0, 0.8), rgba(74, 4, 4, 0.8))'};
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+`;
+
+const ShopNameError = styled.div`
+  color: #ff4444;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  text-align: center;
+  font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
+  min-height: 20px;
+  
+  @media (min-width: 768px) {
+    font-size: 0.9rem;
+  }
+`;
+
+const ShopNameSuccess = styled.div`
+  color: #4CAF50;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  text-align: center;
+  font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
+  min-height: 20px;
+  
+  @media (min-width: 768px) {
+    font-size: 0.9rem;
+  }
+`;
+
+// ADD after existing Header styled component:
+const HeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+`;
+
+const HeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+`;
+
+const HeaderTabButton = styled.button`
+  background: transparent;
+  border: none;
+  color: ${props => props.active ? 
+    props.theme?.colors?.accent : 
+    `${props.theme?.colors?.text}60`};
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  position: relative;
+  
+  &:active {
+    transform: scale(0.9);
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: ${props => props.active ? '80%' : '0'};
+    height: 3px;
+    background: ${props => props.theme?.colors?.accent || '#800000'};
+    border-radius: 2px 2px 0 0;
+    transition: width 0.3s ease;
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      color: ${props => props.theme?.colors?.accent};
+      opacity: 1;
+    }
+  }
+  
+  svg {
+    width: 22px;
+    height: 22px;
+    
+    @media (min-width: 768px) {
+      width: 24px;
+      height: 24px;
+    }
+  }
+`;
+
+// UPDATE existing FloatingControls to match:
+const FloatingControls = styled.div`
+  position: fixed;
+  bottom: 100px;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  z-index: 90;
+  
+  @media (min-width: 768px) {
+    bottom: 2rem;
+  }
+  
+  @media (max-width: 767px) {
+    right: 1.5rem;
+    gap: 0.75rem;
+  }
+`;
+
+const FloatingButton = styled.button`
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: ${props => props.theme?.colors?.accent || '#800000'};
+  color: ${props => props.theme?.colors?.background || '#FFFFFF'};
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  ${props => props.isPinned && `
+    background: ${props.theme?.colors?.background || '#000000'};
+    color: ${props.theme?.colors?.accent || '#800000'};
+    border: 2px solid ${props.theme?.colors?.accent || '#800000'};
+  `}
+  
+  @media (max-width: 767px) {
+    width: 48px;
+    height: 48px;
+  }
+  
+  &:active {
+    transform: scale(0.9);
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
+    }
+  }
+  
+  &.spinning {
+    animation: spin 0.5s ease-in-out;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  svg {
+    width: 24px;
+    height: 24px;
+    
+    @media (max-width: 767px) {
+      width: 20px;
+      height: 20px;
+    }
   }
 `;
 
@@ -1125,26 +1327,6 @@ const FontSizeButton = styled.button`
   }
 `;
 
-/// For ShopPublicView.js - where bottom nav exists
-const FloatingControls = styled.div`
-  position: fixed;
-  bottom: 100px; /* Adjusted to clear bottom navigation */
-  right: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  z-index: 90;
-  
-  @media (min-width: 768px) {
-    bottom: 2rem; /* No bottom nav on desktop */
-  }
-  
-  @media (max-width: 767px) {
-    right: 1.5rem;
-    gap: 0.75rem;
-  }
-`;
-
 const TabControlsContainer = styled.div`
   position: fixed;
   display: flex;
@@ -1364,6 +1546,79 @@ const ShopPage = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [showHomeEditor, setShowHomeEditor] = useState(false);
+  // Add these state variables at the top of ShopPage component (around line 1000)
+  const [shopNameError, setShopNameError] = useState('');
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState(null);
+  const [originalUsername, setOriginalUsername] = useState('');
+
+  // Store original username when shop loads
+  useEffect(() => {
+    if (shopData?.username) {
+      setOriginalUsername(shopData.username);
+    }
+  }, [shopData?.username]);
+
+  // Add username checking function
+  const checkUsernameAvailability = async (shopName, currentUsername) => {
+    if (!shopName) {
+      setShopNameError('Shop name is required');
+      setUsernameAvailable(null);
+      return;
+    }
+
+    // If shop name hasn't changed from what generated the current username, skip check
+    const potentialUsername = shopName
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .substring(0, 20);
+
+    if (potentialUsername === currentUsername) {
+      setShopNameError('');
+      setUsernameAvailable(null);
+      return;
+    }
+
+    setCheckingUsername(true);
+    setShopNameError('');
+    setUsernameAvailable(null);
+
+    try {
+      if (!potentialUsername) {
+        setShopNameError('Shop name must contain letters or numbers');
+        setCheckingUsername(false);
+        return;
+      }
+
+      // Check if username exists
+      const { usernameExists } = await import('../../firebase/firebaseService');
+      const exists = await usernameExists(potentialUsername);
+
+      if (exists) {
+        setShopNameError('This shop name is already taken');
+        setUsernameAvailable(false);
+      } else {
+        setUsernameAvailable(true);
+      }
+    } catch (error) {
+      console.error('Error checking username:', error);
+      setShopNameError('Error checking availability');
+    } finally {
+      setCheckingUsername(false);
+    }
+  };
+
+  // Add debounced username check
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (shopData?.name) {
+        checkUsernameAvailability(shopData.name, originalUsername);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [shopData?.name, originalUsername]);
+
 
   // Deep comparison utility
   const deepEqual = (obj1, obj2) => {
@@ -1560,7 +1815,25 @@ const ShopPage = () => {
   }
 
   // Local update handlers (no Firestore writes)
-  const handleUpdateShop = (updates) => {
+  // Update handleUpdateShop function (around line 1200)
+  const handleUpdateShop = async (updates) => {
+    // If shop name is being updated, check username
+    if (updates.name && updates.name !== shopData.name) {
+      if (shopNameError || usernameAvailable === false) {
+        alert('Please choose a different shop name - this one is already taken');
+        return;
+      }
+
+      // Generate new username
+      try {
+        const { generateUsername } = await import('../../firebase/firebaseService');
+        updates.username = await generateUsername(updates.name);
+        setOriginalUsername(updates.username);
+      } catch (error) {
+        console.error('Error generating username:', error);
+      }
+    }
+
     setShopData(prev => ({
       ...prev,
       ...updates
@@ -1643,10 +1916,11 @@ const ShopPage = () => {
       ));
   };
 
+  // UPDATE handleAddItem function in ShopPage.js (around line 1400)
   const handleAddItem = () => {
     const newItem = {
       id: Date.now().toString(),
-      name: 'Item Name',
+      name: 'MyItemName', // ADD DEFAULT ITEM NAME
       price: '',
       description: '',
       category: 'Other',
@@ -1695,52 +1969,72 @@ const ShopPage = () => {
     <ThemeProvider theme={shopData?.theme || DEFAULT_THEME}>
       <PageContainer>      
         <Header theme={shopData?.theme}>
-          <HeaderLogo onClick={() => navigate('/')} theme={shopData?.theme}>
-            {shopData?.name || 'MY SHOP'}
-          </HeaderLogo>
+          <HeaderLeft>
+            <HeaderLogo onClick={() => navigate('/')} theme={shopData?.theme}>
+              {shopData?.name || 'MY SHOP'}
+            </HeaderLogo>
+          </HeaderLeft>       
 
-          <HeaderControls>
-            <HeaderButton 
-              onClick={refreshTheme}
+          <HeaderRight>
+            <HeaderTabButton
               theme={shopData?.theme}
-              className={isRefreshing ? "spinning" : ""}
-              title="Random theme"
+              active={activeTab === 'home'}
+              onClick={() => setActiveTab('home')}
+              title="Home"
             >
-              <RefreshCw size={20} />
-            </HeaderButton>
-            
-            <HeaderButton 
-              onClick={togglePinStyle} 
+              <Home size={22} />
+            </HeaderTabButton>        
+
+            <HeaderTabButton
               theme={shopData?.theme}
-              className={isPinned ? "pinned" : ""}
-              title={isPinned ? "Unpin theme" : "Pin theme"}
+              active={activeTab === 'community'}
+              onClick={() => setActiveTab('community')}
+              title="Community"
             >
-              <Pin size={20} fill={isPinned ? shopData?.theme?.colors?.accent : "none"} />
-            </HeaderButton>
-            
-            <HeaderButton 
+              <Users size={22} />
+            </HeaderTabButton>        
+
+            <HeaderTabButton
+              theme={shopData?.theme}
+              active={activeTab === 'shop'}
+              onClick={() => setActiveTab('shop')}
+              title="Shop"
+            >
+              <Store size={22} />
+            </HeaderTabButton>        
+
+            <HeaderTabButton
               onClick={handleLogout}
               theme={shopData?.theme}
               title="Logout"
             >
-              <LogOut size={20} />
-            </HeaderButton>
-          </HeaderControls>
-        </Header>
+              <LogOut size={22} />
+            </HeaderTabButton>
+          </HeaderRight>
+        </Header>       
 
-        <TabControlsContainer>
-          <TabPositioner
-            position="top"
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            tabs={[
-              { id: 'home', label: 'Home' },
-              { id: 'community', label: 'Community' },
-              { id: 'shop', label: 'Shop' }
-            ]}
+        {/* REMOVE TabControlsContainer */}       
+
+        {/* REPLACE or ADD Floating Controls before ThemeContainer */}
+        <FloatingControls>
+          <FloatingButton
+            onClick={refreshTheme}
             theme={shopData?.theme}
-          />
-        </TabControlsContainer>
+            className={isRefreshing ? "spinning" : ""}
+            title="Random theme"
+          >
+            <RefreshCw size={24} />
+          </FloatingButton>       
+
+          <FloatingButton
+            onClick={togglePinStyle}
+            theme={shopData?.theme}
+            isPinned={isPinned}
+            title={isPinned ? "Unpin theme" : "Pin theme"}
+          >
+            <Pin size={24} />
+          </FloatingButton>
+        </FloatingControls>
 
         <ThemeContainer>
           <ThemeSelector 
@@ -1802,6 +2096,27 @@ const ShopPage = () => {
                           if (e.target.files?.[0]) {
                             try {
                               const file = e.target.files[0];
+                              
+                              // Create preview
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                // Update local state with preview first for immediate feedback
+                                handleUpdateShop({ 
+                                  profile: {
+                                    file: file,
+                                    preview: reader.result,
+                                    type: file.type,
+                                    name: file.name
+                                  }
+                                });
+                              };
+                              reader.readAsDataURL(file);
+                              
+                              // Upload to Firebase
+                              const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+                              const { storage } = await import('../../firebase/config');
+                              const { auth } = await import('../../firebase/config');
+                              
                               const profileRef = ref(
                                 storage, 
                                 `shops/${auth.currentUser.uid}/profile/profile-${Date.now()}`
@@ -1812,9 +2127,70 @@ const ShopPage = () => {
                               };
                               const snapshot = await uploadBytes(profileRef, file, metadata);
                               const imageUrl = await getDownloadURL(snapshot.ref);
+                              
+                              // Update with actual URL
                               handleUpdateShop({ profile: imageUrl });
                             } catch (error) {
                               console.error('Error uploading profile image:', error);
+                              alert('Failed to upload profile image');
+                            }
+                          }
+                        };
+                        input.click();
+                      }}
+                    />
+                  ) : shopData?.profile?.preview ? (
+                    // Show preview if exists
+                    <img 
+                      src={shopData.profile.preview} 
+                      alt="Profile Preview" 
+                      style={{ 
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = async (e) => {
+                          if (e.target.files?.[0]) {
+                            try {
+                              const file = e.target.files[0];
+                              
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                handleUpdateShop({ 
+                                  profile: {
+                                    file: file,
+                                    preview: reader.result,
+                                    type: file.type,
+                                    name: file.name
+                                  }
+                                });
+                              };
+                              reader.readAsDataURL(file);
+                              
+                              const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+                              const { storage } = await import('../../firebase/config');
+                              const { auth } = await import('../../firebase/config');
+                              
+                              const profileRef = ref(
+                                storage, 
+                                `shops/${auth.currentUser.uid}/profile/profile-${Date.now()}`
+                              );
+                              const metadata = {
+                                contentType: file.type || 'image/jpeg',
+                                cacheControl: 'public,max-age=3600'
+                              };
+                              const snapshot = await uploadBytes(profileRef, file, metadata);
+                              const imageUrl = await getDownloadURL(snapshot.ref);
+                              
+                              handleUpdateShop({ profile: imageUrl });
+                            } catch (error) {
+                              console.error('Error uploading profile image:', error);
+                              alert('Failed to upload profile image');
                             }
                           }
                         };
@@ -1822,11 +2198,20 @@ const ShopPage = () => {
                       }}
                     />
                   ) : (
+                    // Use EditableImage for initial upload
                     <EditableImage
                       value={null}
                       onChange={async (value) => {
-                        if (value instanceof File) {
+                        if (value?.file) {
                           try {
+                            // Update local state with preview first
+                            handleUpdateShop({ profile: value });
+                            
+                            // Upload to Firebase
+                            const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+                            const { storage } = await import('../../firebase/config');
+                            const { auth } = await import('../../firebase/config');
+                            
                             const profileRef = ref(
                               storage, 
                               `shops/${auth.currentUser.uid}/profile/profile-${Date.now()}`
@@ -1835,11 +2220,14 @@ const ShopPage = () => {
                               contentType: value.type || 'image/jpeg',
                               cacheControl: 'public,max-age=3600'
                             };
-                            const snapshot = await uploadBytes(profileRef, value, metadata);
+                            const snapshot = await uploadBytes(profileRef, value.file, metadata);
                             const imageUrl = await getDownloadURL(snapshot.ref);
+                            
+                            // Update with actual URL
                             handleUpdateShop({ profile: imageUrl });
                           } catch (error) {
                             console.error('Error uploading profile image:', error);
+                            alert('Failed to upload profile image');
                           }
                         }
                       }}
@@ -1847,27 +2235,35 @@ const ShopPage = () => {
                       round
                       width="150px"
                       height="150px"
-                      style={{ 
-                        width: '150px',
-                        height: '150px',
-                        borderRadius: '50%',
-                        objectFit: 'cover'
-                      }}
                     />
                   )}
                 </div>
                 <div className="shop-name-container">
-                  <ValidatedEditableText
-                    value={shopData?.name}
-                    onChange={(value) => handleUpdateShop({ name: value })}
-                    placeholder="Shop Name"
-                    validationRules={VALIDATION_RULES.shop.name}
-                    style={{
-                      fontSize: `${shopNameFontSize}rem`,
-                      maxWidth: '500px',
-                      margin: '0 auto'
-                    }}
-                  />
+                  <ShopNameInputContainer>
+                    <ShopNameInput
+                      value={shopData?.name || ''}
+                      onChange={(e) => handleUpdateShop({ name: e.target.value })}
+                      placeholder="Shop Name"
+                      fontSize={shopNameFontSize}
+                      theme={shopData?.theme}
+                      isError={!!shopNameError}
+                    />
+                    {checkingUsername && (
+                      <ShopNameError theme={shopData?.theme}>
+                        Checking availability...
+                      </ShopNameError>
+                    )}
+                    {shopNameError && (
+                      <ShopNameError theme={shopData?.theme}>
+                        {shopNameError}
+                      </ShopNameError>
+                    )}
+                    {usernameAvailable && !checkingUsername && (
+                      <ShopNameSuccess theme={shopData?.theme}>
+                        ✓ Shop name available
+                      </ShopNameSuccess>
+                    )}
+                  </ShopNameInputContainer>
                 </div>
                 <div className="shop-description-container">
                   <ValidatedEditableText

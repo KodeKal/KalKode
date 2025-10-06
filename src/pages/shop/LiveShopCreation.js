@@ -13,14 +13,14 @@ import {
   Minus, 
   Heart,
   MessageCircle,
-  Share2,
+  Users,
   RefreshCw, 
   Pin,
   X,
   ChevronDown,
   ChevronUp,
-  Grid,
-  List,
+  Store,
+  Home,
   LogOut,
   Check,
   Package
@@ -91,6 +91,228 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
   @keyframes galaxySwirl {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+  }
+`;
+
+// Add after existing styled components (around line 800)
+const ShopNameInputContainer = styled.div`
+  width: 100%;
+  margin: 0.5rem 0;
+  position: relative;
+`;
+
+const ShopNameInput = styled.input`
+  width: 100%;
+  text-align: center;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid ${props => props.isError ? '#ff4444' : `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+  font-size: ${props => Math.min(props.fontSize || 2.5, 2)}rem;
+  font-family: ${props => props.theme?.fonts?.heading};
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  outline: none;
+  padding: 0.5rem;
+  transition: all 0.3s ease;
+  
+  @media (min-width: 768px) {
+    font-size: ${props => props.fontSize || '2.5rem'};
+  }
+
+  &:focus {
+    border-bottom-color: ${props => props.isError ? '#ff4444' : props.theme?.colors?.accent || '#800000'};
+    border-bottom-width: 3px;
+  }
+
+  &::placeholder {
+    color: ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
+  }
+
+  .required {
+    color: #ff4444;
+  }
+`;
+
+const ShopNameError = styled.div`
+  color: #ff4444;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  text-align: center;
+  font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
+  min-height: 20px;
+  
+  @media (min-width: 768px) {
+    font-size: 0.9rem;
+  }
+`;
+
+const ShopNameSuccess = styled.div`
+  color: #4CAF50;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  text-align: center;
+  font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
+  min-height: 20px;
+  
+  @media (min-width: 768px) {
+    font-size: 0.9rem;
+  }
+`;
+
+// REPLACE Header with:
+const Header = styled.header`
+  width: 100%;
+  height: 60px;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: ${props => props.theme?.colors?.headerBg || 'rgba(0, 0, 0, 1)'};
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
+  position: fixed;
+  top: 0;
+  z-index: 100;
+
+  @media (min-width: 768px) {
+    height: 80px;
+    padding: 0 2rem;
+  }
+`;
+
+// ADD these new styled components after Header:
+const HeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+`;
+
+const HeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+`;
+
+const HeaderTabButton = styled.button`
+  background: transparent;
+  border: none;
+  color: ${props => props.active ? 
+    props.theme?.colors?.accent : 
+    `${props.theme?.colors?.text}60`};
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  position: relative;
+  
+  &:active {
+    transform: scale(0.9);
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: ${props => props.active ? '80%' : '0'};
+    height: 3px;
+    background: ${props => props.theme?.colors?.accent || '#800000'};
+    border-radius: 2px 2px 0 0;
+    transition: width 0.3s ease;
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      color: ${props => props.theme?.colors?.accent};
+      opacity: 1;
+    }
+  }
+  
+  svg {
+    width: 22px;
+    height: 22px;
+    
+    @media (min-width: 768px) {
+      width: 24px;
+      height: 24px;
+    }
+  }
+`;
+
+// UPDATE FloatingControls (add if doesn't exist):
+const FloatingControls = styled.div`
+  position: fixed;
+  bottom: 100px;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  z-index: 90;
+  
+  @media (min-width: 768px) {
+    bottom: 2rem;
+  }
+  
+  @media (max-width: 767px) {
+    right: 1.5rem;
+    gap: 0.75rem;
+  }
+`;
+
+const FloatingButton = styled.button`
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: ${props => props.theme?.colors?.accent || '#800000'};
+  color: ${props => props.theme?.colors?.background || '#FFFFFF'};
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  ${props => props.isPinned && `
+    background: ${props.theme?.colors?.background || '#000000'};
+    color: ${props.theme?.colors?.accent || '#800000'};
+    border: 2px solid ${props.theme?.colors?.accent || '#800000'};
+  `}
+  
+  @media (max-width: 767px) {
+    width: 48px;
+    height: 48px;
+  }
+  
+  &:active {
+    transform: scale(0.9);
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
+    }
+  }
+  
+  &.spinning {
+    animation: spin 0.5s ease-in-out;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  svg {
+    width: 24px;
+    height: 24px;
+    
+    @media (max-width: 767px) {
+      width: 20px;
+      height: 20px;
+    }
   }
 `;
 
@@ -340,27 +562,6 @@ const TemplateContent = styled.div`
   }
 `;
 
-// Mobile-optimized header
-const Header = styled.header`
-  width: 100%;
-  height: 60px;
-  padding: 0 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: ${props => `${props.theme?.colors?.headerBg || 'rgba(0, 0, 0, 0.9)'}F5`};
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
-  position: fixed;
-  top: 0;
-  z-index: 100;
-
-  @media (min-width: 768px) {
-    height: 80px;
-    padding: 0 2rem;
-  }
-`;
-
 const Logo = styled.div`
   color: ${props => props.theme?.colors?.accent || '#800000'};
   font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
@@ -429,26 +630,6 @@ const HeaderButton = styled.button`
       width: 22px;
       height: 22px;
     }
-  }
-`;
-
-// For ShopPublicView.js - where bottom nav exists
-const FloatingControls = styled.div`
-  position: fixed;
-  bottom: 100px; /* Adjusted to clear bottom navigation */
-  right: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  z-index: 90;
-  
-  @media (min-width: 768px) {
-    bottom: 2rem; /* No bottom nav on desktop */
-  }
-  
-  @media (max-width: 767px) {
-    right: 1.5rem;
-    gap: 0.75rem;
   }
 `;
 
@@ -1195,15 +1376,19 @@ const LiveShopCreation = () => {
   const [validationErrors, setValidationErrors] = useState({});
   const [editingItem, setEditingItem] = useState(null);
 
-  // Consolidated shop data
+  // Add these new state variables at the top of LiveShopCreation component (around line 1000)
+  const [shopNameError, setShopNameError] = useState('');
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState(null);
+
   const [shopData, setShopData] = useState({
-    name: '',
+    name: 'MyShopName', // ADD DEFAULT NAME HERE
     description: '',
     profile: null,
     mission: '',
     items: [{
       id: Date.now().toString(),
-      name: '',
+      name: 'MyItemName',
       price: '',
       description: '',
       category: 'Other',
@@ -1219,6 +1404,73 @@ const LiveShopCreation = () => {
       tabPosition: 'top'
     }
   });
+
+  // Add this function to check username availability
+  // UPDATE checkUsernameAvailability function (around line 1050)
+const checkUsernameAvailability = async (shopName) => {
+  // Skip check for empty or default names
+  if (!shopName || shopName.trim() === '' || shopName === 'MyShopName') {
+    setShopNameError('');
+    setUsernameAvailable(null);
+    return;
+  }
+
+  setCheckingUsername(true);
+  setShopNameError('');
+  setUsernameAvailable(null);
+
+  try {
+    // Generate potential username from shop name
+    const potentialUsername = shopName
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .substring(0, 20);
+
+    if (!potentialUsername) {
+      setShopNameError('Shop name must contain letters or numbers');
+      setUsernameAvailable(false);
+      setCheckingUsername(false);
+      return;
+    }
+
+    // Check if username exists
+    const { usernameExists } = await import('../../firebase/firebaseService');
+    const exists = await usernameExists(potentialUsername);
+
+    if (exists) {
+      setShopNameError('This shop name is already taken');
+      setUsernameAvailable(false);
+    } else {
+      setUsernameAvailable(true);
+    }
+  } catch (error) {
+    console.error('Error checking username:', error);
+    setShopNameError('Error checking availability');
+    setUsernameAvailable(false);
+  } finally {
+    setCheckingUsername(false);
+  }
+};
+
+  // Add debounced username check
+  // UPDATE the debounced username check useEffect (around line 1100)
+useEffect(() => {
+  // Don't check on initial mount or if name is the default placeholder
+  if (!shopData?.name || shopData.name === 'MyShopName') {
+    setShopNameError('');
+    setUsernameAvailable(null);
+    return;
+  }
+
+  const timer = setTimeout(() => {
+    checkUsernameAvailability(shopData.name);
+  }, 500); // Check 500ms after user stops typing
+
+  return () => clearTimeout(timer);
+}, [shopData?.name]); // Add optional chaining
+
+
+  
 
   // Add this useEffect for browser back button handling
   useEffect(() => {
@@ -1350,7 +1602,7 @@ const LiveShopCreation = () => {
   const handleItemAdd = () => {
     const newItem = {
       id: Date.now().toString(),
-      name: '',
+      name: 'MyItemName',
       price: '',
       description: '',
       category: 'Other',
@@ -1402,57 +1654,95 @@ const LiveShopCreation = () => {
     });
   };
 
-  const handleSave = async () => {
-    // Validate shop data
-    const shopValidation = validateShopData(shopData);
-    const itemsValidation = validateAllItems(shopData.items);
+  // Update handleSave function (around line 1200)
+  // UPDATE handleSave function in LiveShopCreation.js (around line 1200)
+const handleSave = async () => {
+  // Check if shop name is still default or empty
+  let finalShopName = shopData.name;
+  
+  if (!finalShopName || finalShopName === 'MyShopName') {
+    const adjectives = ['Cool', 'Great', 'Super', 'Amazing', 'Awesome', 'Epic', 'Prime', 'Elite'];
+    const nouns = ['Shop', 'Store', 'Market', 'Bazaar', 'Outlet', 'Hub', 'Spot', 'Place'];
+    const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+    const randomNumber = Math.floor(Math.random() * 1000);
+    
+    finalShopName = `${randomAdjective}${randomNoun}${randomNumber}`;
+  }
 
-    if (!shopValidation.isValid || !itemsValidation.isValid) {
-      setValidationErrors({
-        shop: shopValidation.errors,
-        items: itemsValidation.itemErrors
-      });
+  if (shopNameError || usernameAvailable === false) {
+    alert('Please choose a different shop name - this one is already taken');
+    return;
+  }
 
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      alert('Please fix validation errors before saving');
-      return;
-    }
+  const shopValidation = validateShopData({ ...shopData, name: finalShopName });
+  const itemsValidation = validateAllItems(shopData.items);
 
-    const dataToSave = {
-      ...shopData,
-      theme: selectedTheme,
-      layout: {
-        namePosition: shopData.layout.namePosition,
-        tabPosition: 'top',
-        nameSize: shopNameFontSize
-      },
-      createdAt: new Date().toISOString()
-    };
-
-    // Generate username if shop name exists
-    if (dataToSave.name) {
-      try {
-        const { generateUsername } = await import('../../firebase/firebaseService');
-        dataToSave.username = await generateUsername(dataToSave.name);
-      } catch (error) {
-        console.error('Error generating username:', error);
-        // Fallback username generation
-        dataToSave.username = dataToSave.name
-          .toLowerCase()
-          .replace(/[^a-z0-9]/g, '')
-          .substring(0, 20) || 'shop';
-      }
-    }
-
-    saveTempStore(dataToSave);
-
-    navigate('/auth', {
-      state: { 
-        mode: 'signup', 
-        tempData: dataToSave 
-      }
+  if (!shopValidation.isValid || !itemsValidation.isValid) {
+    setValidationErrors({
+      shop: shopValidation.errors,
+      items: itemsValidation.itemErrors
     });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    alert('Please fix validation errors before saving');
+    return;
+  }
+
+  // Prepare data with proper profile handling
+  const dataToSave = {
+    ...shopData,
+    name: finalShopName,
+    theme: selectedTheme,
+    layout: {
+      namePosition: shopData.layout.namePosition,
+      tabPosition: 'top',
+      nameSize: shopNameFontSize
+    },
+    createdAt: new Date().toISOString()
   };
+
+  // Handle profile image - ensure it's in the correct format
+  if (shopData.profile) {
+    if (typeof shopData.profile === 'string') {
+      // Already a URL
+      dataToSave.profile = shopData.profile;
+    } else if (shopData.profile.file) {
+      // File object with preview
+      dataToSave.profile = {
+        file: shopData.profile.file,
+        preview: shopData.profile.preview,
+        type: shopData.profile.type,
+        name: shopData.profile.name
+      };
+    }
+  }
+
+  // Generate username
+  if (dataToSave.name) {
+    try {
+      const { generateUsername } = await import('../../firebase/firebaseService');
+      dataToSave.username = await generateUsername(dataToSave.name);
+    } catch (error) {
+      console.error('Error generating username:', error);
+      dataToSave.username = dataToSave.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .substring(0, 20) || 'shop';
+    }
+  }
+
+  console.log('Saving data with profile:', dataToSave.profile); // Debug log
+
+  saveTempStore(dataToSave);
+
+  navigate('/auth', {
+    state: { 
+      mode: 'signup', 
+      tempData: dataToSave 
+    }
+  });
+};
 
   const renderShopView = () => (
     <MainContent>
@@ -1468,18 +1758,33 @@ const LiveShopCreation = () => {
           />
         </div>
         <div className="shop-name-container">
-          <ValidatedEditableText
-            value={shopData.name}
-            onChange={(value) => handleShopDataChange('name', value)}
-            placeholder="Site Store Name:"
-            validationRules={VALIDATION_RULES.shop.name}
-            theme={selectedTheme}
-            style={{
-              fontSize: `${Math.min(shopNameFontSize, 2)}rem`,
-              maxWidth: '500px',
-              margin: '0 auto'
-            }}
-          />
+          <ShopNameInputContainer>
+            <ShopNameInput
+              value={shopData?.name || ''} // Add optional chaining and fallback
+              onChange={(e) => {
+                handleShopDataChange('name', e.target.value);
+              }}
+              placeholder="MyShopName*" // Show asterisk in placeholder
+              fontSize={shopNameFontSize}
+              theme={selectedTheme}
+              isError={!!shopNameError}
+            />
+            {checkingUsername && (
+              <ShopNameError theme={selectedTheme}>
+                Checking availability...
+              </ShopNameError>
+            )}
+            {shopNameError && (
+              <ShopNameError theme={selectedTheme}>
+                {shopNameError}
+              </ShopNameError>
+            )}
+            {usernameAvailable && !checkingUsername && shopData.name !== 'MyShopName' && (
+              <ShopNameSuccess theme={selectedTheme}>
+                ✓ Shop name available
+              </ShopNameSuccess>
+            )}
+          </ShopNameInputContainer>
         </div>
         <div className="shop-description-container">
           <ValidatedEditableText
@@ -1576,7 +1881,10 @@ const LiveShopCreation = () => {
                     
                   <MobileTemplateContent theme={selectedTheme}>
                     <div className="item-name">
-                      {currentItem.name || <span className="empty-text">Item Name</span>}
+                      {currentItem.name && currentItem.name !== 'MyItemName' ? 
+                        currentItem.name : 
+                        <span style={{ opacity: 0.5 }}>MyItemName</span>
+                      }
                     </div>
                     <div className="item-price">
                       {currentItem.price ? `$${parseFloat(currentItem.price).toFixed(2)}` : 
@@ -1632,7 +1940,12 @@ const LiveShopCreation = () => {
 
                   <ItemContent>
                     <ItemHeader onClick={() => toggleItemExpansion(item.id)}>
-                      <h4>{item.name || 'New Item'}</h4>
+                      <h4>
+                        {item.name && item.name !== 'MyItemName' ? 
+                          item.name : 
+                          <span style={{ opacity: 0.5 }}>MyItemName</span>
+                        }
+                      </h4>
                       <ExpandButton>
                         {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                       </ExpandButton>
@@ -1643,7 +1956,7 @@ const LiveShopCreation = () => {
                         <ValidatedEditableText
                           value={item.name}
                           onChange={(value) => handleItemUpdate(item.id, { name: value })}
-                          placeholder="Item Name"
+                          placeholder="MyItemName"
                           validationRules={VALIDATION_RULES.item.name}
                           theme={selectedTheme}
                         />
@@ -1811,7 +2124,7 @@ const LiveShopCreation = () => {
         <ValidatedEditableText
           value={editingItem.name}
           onChange={(value) => setEditingItem({ ...editingItem, name: value })}
-          placeholder="Item Name"
+          placeholder="MyItemName"
                 validationRules={VALIDATION_RULES.item.name}
                 theme={selectedTheme}
               />
@@ -1925,55 +2238,72 @@ const LiveShopCreation = () => {
       <GlobalStyles />
       <PageContainer className="page-container">
         <Header theme={selectedTheme}>
-          <Logo onClick={() => navigate('/')} theme={selectedTheme}>
-            KALKODE
-          </Logo>
+          <HeaderLeft>
+            <Logo onClick={() => navigate('/')} theme={selectedTheme}>
+              KALKODE
+            </Logo>
+          </HeaderLeft>
 
-          <HeaderControls>
-            <HeaderButton 
-              onClick={refreshTheme}
+          <HeaderRight>
+            <HeaderTabButton
               theme={selectedTheme}
-              className={isRefreshing ? "spinning" : ""}
-              title="Random theme"
+              active={activeTab === 'shop'}
+              onClick={() => setActiveTab('shop')}
+              title="Shop"
             >
-              <RefreshCw size={20} />
-            </HeaderButton>
-            
-            <HeaderButton 
-              onClick={togglePinStyle} 
+              <Store size={22} />
+            </HeaderTabButton>
+
+            <HeaderTabButton
               theme={selectedTheme}
-              className={isPinned ? "pinned" : ""}
-              title={isPinned ? "Unpin theme" : "Pin theme"}
+              active={activeTab === 'home'}
+              onClick={() => setActiveTab('home')}
+              title="Home"
             >
-              <Pin size={20} fill={isPinned ? selectedTheme.colors.accent : "none"} />
-            </HeaderButton>
-            
+              <Home size={22} />
+            </HeaderTabButton>
+
+            <HeaderTabButton
+              theme={selectedTheme}
+              active={activeTab === 'community'}
+              onClick={() => setActiveTab('community')}
+              title="Community"
+            >
+              <Users size={22} />
+            </HeaderTabButton>
+
             {isAuthenticated && (
-              <HeaderButton 
+              <HeaderTabButton
                 onClick={handleLogout}
                 theme={selectedTheme}
                 title="Logout"
               >
-                <LogOut size={20} />
-              </HeaderButton>
+                <LogOut size={22} />
+              </HeaderTabButton>
             )}
-          </HeaderControls>
+          </HeaderRight>
         </Header>
-
-        <TabControlsContainer>
-          <TabPositioner
-            position="top"
-            onPositionChange={() => {}}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            tabs={[
-              { id: 'shop', label: 'Shop' },
-              { id: 'home', label: 'Home' },
-              { id: 'community', label: 'Community' }
-            ]}
+          
+        {/* ADD Floating Controls before closing PageContainer */}
+        <FloatingControls>
+          <FloatingButton
+            onClick={refreshTheme}
             theme={selectedTheme}
-          />
-        </TabControlsContainer>
+            className={isRefreshing ? "spinning" : ""}
+            title="Random theme"
+          >
+            <RefreshCw size={24} />
+          </FloatingButton>
+          
+          <FloatingButton
+            onClick={togglePinStyle}
+            theme={selectedTheme}
+            isPinned={isPinned}
+            title={isPinned ? "Unpin theme" : "Pin theme"}
+          >
+            <Pin size={24} />
+          </FloatingButton>
+        </FloatingControls>
 
         {activeTab === 'shop' && renderShopView()}
         {activeTab === 'home' && renderHomeView()}

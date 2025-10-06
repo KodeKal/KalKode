@@ -1,5 +1,4 @@
-// Save at: src/pages/shop/components/EditableComponents/EditableImage.js
-
+// UPDATE EditableImage.js - Complete replacement
 import React, { useRef, useState } from 'react';
 import styled from 'styled-components';
 import { Plus, X } from 'lucide-react';
@@ -97,6 +96,22 @@ const EditableImage = ({
     onChange(null);
   };
 
+  // Determine what image to show
+  const getImageSource = () => {
+    // If value is a string URL, use it directly
+    if (typeof value === 'string') {
+      return value;
+    }
+    // If value is an object with preview, use preview
+    if (value?.preview) {
+      return value.preview;
+    }
+    // No image
+    return null;
+  };
+
+  const imageSource = getImageSource();
+
   return (
     <ImageContainer 
       width={width} 
@@ -112,9 +127,9 @@ const EditableImage = ({
         style={{ display: 'none' }}
       />
 
-      {value?.preview ? (
+      {imageSource ? (
         <>
-          <ImagePreview src={value.preview} alt="Preview" />
+          <ImagePreview src={imageSource} alt="Preview" />
           <RemoveButton onClick={handleRemove}>
             <X size={14} />
           </RemoveButton>
