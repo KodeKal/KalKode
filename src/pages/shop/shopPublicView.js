@@ -1127,8 +1127,6 @@ const ShopPublicView = () => {
         return <ProductCarouselWidget {...props} items={shopData?.items || []} />;
       case 'stats-dashboard':
         return <StatsWidget {...props} stats={shopData?.stats} />;
-      case 'newsletter':
-        return <NewsletterWidget {...props} />;
       case 'countdown-timer':
         return <CountdownWidget {...props} />;
       case 'testimonials':
