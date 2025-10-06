@@ -1327,7 +1327,7 @@ const handleGoHome = () => {
           )}
         </div>
         <h1 className="shop-name">{shopData?.name || 'Shop Name'}</h1>
-        <p className="shop-description">{shopData?.description || 'No description available.'}</p>
+        <p className="shop-description">{shopData?.description}</p>
       </ShopProfileSection>
       
       <SearchContainer>
@@ -1431,7 +1431,7 @@ const handleGoHome = () => {
                     ${parseFloat(item.price || 0).toFixed(2)}
                   </div>
                   <div className="description">
-                    {item.description || 'No description available.'}
+                    {item.description}
                   </div>
                   
                   {item.formattedDistance && (
