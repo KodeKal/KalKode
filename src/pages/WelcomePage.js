@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
 import { getFeaturedItems } from '../firebase/firebaseService';
 import FeaturedItem from '../components/shop/FeaturedItem';
-import { Search, Package, Navigation, Film, Store, Plus, Minus, Pin, ChevronLeft, ChevronRight, X, MessageCircle, ShoppingCart, RefreshCw, LogOut } from 'lucide-react';
+import { Search, Package, Navigation, Film, Filter, Store, Plus, Minus, Pin, ChevronLeft, ChevronRight, X, MessageCircle, ShoppingCart, RefreshCw, LogOut } from 'lucide-react';
 import { getDistance } from 'geolib';
 import OrderChat from '../components/Chat/OrderChat';
 import { collection, getDocs } from 'firebase/firestore';
@@ -145,6 +145,7 @@ const LocationIndicator2 = styled.div`
     padding: 0.25rem;
     border-radius: 50%;
     transition: all 0.2s ease;
+    flex-shrink: 0;
     
     &:hover {
       background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
@@ -152,6 +153,11 @@ const LocationIndicator2 = styled.div`
     
     &:active {
       transform: scale(0.9);
+    }
+    
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
     
     svg {
@@ -173,9 +179,12 @@ const LocationIndicator2 = styled.div`
     font-size: 0.95rem;
     outline: none;
     text-align: center;
+    cursor: default;
+    min-width: 0; /* Allow text to shrink */
     
     &::placeholder {
-      color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.6)'};
+      color: ${props => `${props.theme?.colors?.text}50` || 'rgba(255, 255, 255, 0.5)'};
+      font-style: italic;
     }
     
     @media (max-width: 768px) {
@@ -204,14 +213,20 @@ const LocationIndicator2 = styled.div`
     border-radius: 50%;
     transition: all 0.2s ease;
     opacity: ${props => props.isPinned ? 1 : 0.5};
+    flex-shrink: 0;
     
-    &:hover {
+    &:hover:not(:disabled) {
       background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
       opacity: 1;
     }
     
-    &:active {
+    &:active:not(:disabled) {
       transform: scale(0.9);
+    }
+    
+    &:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
     }
     
     svg {
@@ -1476,6 +1491,102 @@ const ChatOverlay = styled.div`
   transition: opacity 0.3s ease;
 `;
 
+// Add these styled components after StyleIndicator
+
+const SortContainer = styled.div`
+  position: relative;
+  display: inline-block;
+`;
+
+const SortDropdown = styled.div`
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background: ${props => props.theme?.colors?.background || '#000000'};
+  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+  border-radius: 12px;
+  padding: 0.75rem;
+  min-width: 220px;
+  z-index: 1000;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8),
+              0 0 20px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+  opacity: ${props => props.isOpen ? 1 : 0};
+  visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
+  transform: ${props => props.isOpen ? 'translateY(0)' : 'translateY(-10px)'};
+  transition: all 0.3s ease;
+  
+  @media (max-width: 768px) {
+    min-width: 200px;
+    right: 0;
+  }
+`;
+
+const SortOption = styled.button`
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: ${props => props.active ? 
+    props.theme?.colors?.accent || '#800000' : 
+    'transparent'};
+  border: none;
+  border-radius: 8px;
+  color: ${props => props.active ? 
+    '#FFFFFF' : 
+    props.theme?.colors?.text || '#FFFFFF'};
+  font-size: 0.95rem;
+  font-weight: ${props => props.active ? '600' : '500'};
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: ${props => props.theme?.fonts?.body || 'inherit'};
+  min-height: 50px; /* Added for two-line content */
+  
+  &:hover {
+    background: ${props => props.active ?
+      props.theme?.colors?.primary || '#4A0404' :
+      `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+    transform: translateX(2px);
+  }
+  
+  &:active {
+    transform: scale(0.98);
+  }
+  
+  svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    align-self: flex-start; /* Align icon to top when two lines */
+    margin-top: 2px;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.65rem 0.85rem;
+    font-size: 0.9rem;
+    min-height: 46px;
+    
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+`;
+
+const SortHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+`;
+
 // Motivational messages
 const MOTIVATIONAL_MESSAGES = [
   "Build your vision, Elevate humanity.",
@@ -1512,6 +1623,9 @@ const WelcomePage = () => {
   const [isPinned, setIsPinned] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [orderQuantity, setOrderQuantity] = useState(1);
+  const [sortBy, setSortBy] = useState('recent'); // 'recent', 'proximity', 'price-low', 'price-high'
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
+
 
   
   const { user, isAuthenticated } = useAuth();
@@ -1550,6 +1664,104 @@ const [cityRegion, setCityRegion] = useState('');
 const [isCityPinned, setIsCityPinned] = useState(false);
 const [isConvertingToCity, setIsConvertingToCity] = useState(false);
 const [cityInputValue, setCityInputValue] = useState('');
+
+// Add this useEffect with other effects
+
+useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (sortMenuOpen && !event.target.closest('.sort-container')) {
+      setSortMenuOpen(false);
+    }
+  };
+
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => document.removeEventListener('mousedown', handleClickOutside);
+}, [sortMenuOpen]);
+
+// Add this function before the return statement in WelcomePage component
+
+// Replace the applySorting function with this updated version:
+
+const applySorting = (items, sortType) => {
+  let sortedItems = [...items];
+  
+  switch (sortType) {
+    case 'proximity':
+      if (!userLocation) {
+        // If no location, request it
+        requestLocation();
+        return sortedItems;
+      }
+      // Sort by distance (closest first) - no distance filter
+      sortedItems.sort((a, b) => {
+        const distA = a.distance || Infinity;
+        const distB = b.distance || Infinity;
+        return distA - distB;
+      });
+      break;
+      
+    case 'price-low':
+      // Filter items within 30 miles, then sort by price (low to high)
+      if (userLocation) {
+        sortedItems = sortedItems.filter(item => {
+          if (!item.distance) return false;
+          const distanceInMiles = item.distance / 1609.34;
+          return distanceInMiles <= 30;
+        });
+      }
+      sortedItems.sort((a, b) => {
+        const priceA = parseFloat(a.price) || 0;
+        const priceB = parseFloat(b.price) || 0;
+        return priceA - priceB;
+      });
+      break;
+      
+    case 'price-high':
+      // Filter items within 30 miles, then sort by price (high to low)
+      if (userLocation) {
+        sortedItems = sortedItems.filter(item => {
+          if (!item.distance) return false;
+          const distanceInMiles = item.distance / 1609.34;
+          return distanceInMiles <= 30;
+        });
+      }
+      sortedItems.sort((a, b) => {
+        const priceA = parseFloat(a.price) || 0;
+        const priceB = parseFloat(b.price) || 0;
+        return priceB - priceA;
+      });
+      break;
+      
+    case 'recent':
+    default:
+      // Filter items within 30 miles, then sort by most recent
+      if (userLocation) {
+        sortedItems = sortedItems.filter(item => {
+          if (!item.distance) return false;
+          const distanceInMiles = item.distance / 1609.34;
+          return distanceInMiles <= 30;
+        });
+      }
+      sortedItems.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+        return dateB - dateA;
+      });
+      break;
+  }
+  
+  return sortedItems;
+};
+
+const getSortLabel = (sortType) => {
+  switch (sortType) {
+    case 'proximity': return 'Closest First';
+    case 'price-low': return 'Price: Low to High';
+    case 'price-high': return 'Price: High to Low';
+    case 'recent':
+    default: return 'Most Recent';
+  }
+};
 
 // Replace convertCoordsToZip with this new function
 const convertCoordsToCity = async (lat, lon) => {
@@ -1968,8 +2180,8 @@ useEffect(() => {
     setError(null);
   };
 
-  // Load categorized items
-  // Load categorized items
+// Update the loadCategorizedItems function (around line 950)
+
 const loadCategorizedItems = async () => {
   try {
     setLoading(true);
@@ -1977,12 +2189,20 @@ const loadCategorizedItems = async () => {
 
     const allItems = await getFeaturedItems(48);
     const currentUserId = user?.uid;
-    const filteredItems = allItems.filter(item => item.shopId !== currentUserId);
+    
+    // Filter out current user's items AND invalid items
+    const filteredItems = allItems.filter(item => {
+      const isNotCurrentUser = item.shopId !== currentUserId;
+      const hasImages = item.images && item.images.length > 0 && item.images.some(img => img);
+      const hasValidPrice = item.price && !isNaN(parseFloat(item.price)) && parseFloat(item.price) > 0;
+      const hasStock = !item.deleted && (!item.quantity || parseInt(item.quantity) > 0);
+      
+      return isNotCurrentUser && hasImages && hasValidPrice && hasStock;
+    });
 
     let itemsWithDistance = filteredItems;
     if (userLocation) {
       itemsWithDistance = filteredItems.map(item => {
-        // Use the same coordinate extraction logic as nearby tab
         let itemCoords = item.coordinates;
         if (!itemCoords && item.address) {
           const coordsMatch = item.address.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
@@ -2018,6 +2238,9 @@ const loadCategorizedItems = async () => {
       });
     }
 
+    // Apply sorting
+    const sortedItems = applySorting(itemsWithDistance, sortBy);
+
     const categorizedItems = {
       'Electronics & Tech': [],
       'Clothing & Accessories': [],
@@ -2032,7 +2255,7 @@ const loadCategorizedItems = async () => {
       'Other': []
     };
 
-    itemsWithDistance.forEach(item => {
+    sortedItems.forEach(item => {
       const category = item.category || 'Other';
       if (categorizedItems[category]) {
         categorizedItems[category].push(item);
@@ -2046,7 +2269,7 @@ const loadCategorizedItems = async () => {
     });
 
     setCategories(categorizedItems);
-    setFeaturedItems(itemsWithDistance.slice(0, 10));
+    setFeaturedItems(sortedItems.slice(0, 10));
     setTotalItems(filteredItems.length);
 
     setLoading(false);
@@ -2631,10 +2854,7 @@ const loadCategorizedItems = async () => {
     className="location-input"
     value={cityInputValue}
     onChange={(e) => setCityInputValue(e.target.value)}
-    placeholder={userLocation ? 
-      `${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}` : 
-      "Click icon for location"
-    }
+    placeholder={cityRegion ? cityRegion : "Read current Location One Time"}
     readOnly
   />
   
@@ -2723,7 +2943,7 @@ const loadCategorizedItems = async () => {
         {/* Featured Items Tab */}
         {activeTab === 'featured' && (
           <>
-            {/* Search container */}
+            {/* Search container with Filter */}
             <SearchContainer>
               <SearchInput
                 type="text"
@@ -2746,6 +2966,186 @@ const loadCategorizedItems = async () => {
                     Clear
                   </SearchButton>
                 )}
+
+                {/* Filter Button */}
+                <SortContainer className="sort-container">
+                  <SearchButton 
+                    onClick={() => setSortMenuOpen(!sortMenuOpen)}
+                    style={{ position: 'relative' }}
+                  >
+                    <Filter size={16} />
+                    {sortBy !== 'recent' && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '4px',
+                        right: '4px',
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: currentStyle?.colors?.accent || '#800000'
+                      }} />
+                    )}
+                  </SearchButton>
+                  
+                  <SortDropdown theme={currentStyle} isOpen={sortMenuOpen}>
+                    <div style={{
+                      padding: '0.5rem 1rem 0.75rem',
+                      fontSize: '0.75rem',
+                      fontWeight: '700',
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px',
+                      color: currentStyle?.colors?.accent || '#800000',
+                      borderBottom: `2px solid ${currentStyle?.colors?.accent || '#800000'}`,
+                      marginBottom: '0.75rem',
+                      fontFamily: currentStyle?.fonts?.heading || 'inherit'
+                    }}>
+                      Sort By
+                    </div>
+
+                    <SortOption 
+                      theme={currentStyle}
+                      active={sortBy === 'recent'}
+                      onClick={() => {
+                        if (!userLocation) {
+                          requestLocation();
+                          return;
+                        }
+                        setSortBy('recent');
+                        setSortMenuOpen(false);
+                        loadCategorizedItems();
+                      }}
+                    >
+                      <Package size={16} />
+                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                        <span>Most Recent</span>
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          opacity: 0.7,
+                          fontWeight: '400'
+                        }}>
+                          Within 30 miles
+                        </span>
+                      </div>
+                      {!userLocation && (
+                        <span style={{ 
+                          fontSize: '0.65rem', 
+                          opacity: 0.6,
+                          marginLeft: 'auto',
+                          fontStyle: 'italic'
+                        }}>
+                          (needs location)
+                        </span>
+                      )}
+                    </SortOption>
+                    
+                    <SortOption 
+                      theme={currentStyle}
+                      active={sortBy === 'proximity'}
+                      onClick={() => {
+                        if (!userLocation) {
+                          requestLocation();
+                        }
+                        setSortBy('proximity');
+                        setSortMenuOpen(false);
+                        loadCategorizedItems();
+                      }}
+                    >
+                      <Navigation size={16} />
+                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                        <span>Closest First</span>
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          opacity: 0.7,
+                          fontWeight: '400'
+                        }}>
+                          No distance limit
+                        </span>
+                      </div>
+                      {!userLocation && (
+                        <span style={{ 
+                          fontSize: '0.65rem', 
+                          opacity: 0.6,
+                          marginLeft: 'auto',
+                          fontStyle: 'italic'
+                        }}>
+                          (needs location)
+                        </span>
+                      )}
+                    </SortOption>
+                    
+                    <SortOption 
+                      theme={currentStyle}
+                      active={sortBy === 'price-low'}
+                      onClick={() => {
+                        if (!userLocation) {
+                          requestLocation();
+                          return;
+                        }
+                        setSortBy('price-low');
+                        setSortMenuOpen(false);
+                        loadCategorizedItems();
+                      }}
+                    >
+                      <span style={{ fontSize: '1rem', fontWeight: '600' }}>$</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                        <span>Price: Low to High</span>
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          opacity: 0.7,
+                          fontWeight: '400'
+                        }}>
+                          Within 30 miles
+                        </span>
+                      </div>
+                      {!userLocation && (
+                        <span style={{ 
+                          fontSize: '0.65rem', 
+                          opacity: 0.6,
+                          marginLeft: 'auto',
+                          fontStyle: 'italic'
+                        }}>
+                          (needs location)
+                        </span>
+                      )}
+                    </SortOption>
+                    
+                    <SortOption 
+                      theme={currentStyle}
+                      active={sortBy === 'price-high'}
+                      onClick={() => {
+                        if (!userLocation) {
+                          requestLocation();
+                          return;
+                        }
+                        setSortBy('price-high');
+                        setSortMenuOpen(false);
+                        loadCategorizedItems();
+                      }}
+                    >
+                      <span style={{ fontSize: '1rem', fontWeight: '600' }}>$$$</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                        <span>Price: High to Low</span>
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          opacity: 0.7,
+                          fontWeight: '400'
+                        }}>
+                          Within 30 miles
+                        </span>
+                      </div>
+                      {!userLocation && (
+                        <span style={{ 
+                          fontSize: '0.65rem', 
+                          opacity: 0.6,
+                          marginLeft: 'auto',
+                          fontStyle: 'italic'
+                        }}>
+                          (needs location)
+                        </span>
+                      )}
+                    </SortOption>
+                  </SortDropdown>
+                </SortContainer>
               </SearchButtonGroup>
             </SearchContainer>
 

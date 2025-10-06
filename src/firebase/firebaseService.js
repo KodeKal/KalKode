@@ -154,7 +154,7 @@ export const saveShopData = async (userId, data) => {
     if (data.profile) {
       try {
         let profileUrl;
-        
+
         // Handle different profile formats
         if (typeof data.profile === 'string') {
           // Already a URL
@@ -407,6 +407,9 @@ export const batchUpdateShopData = async (userId, updateData) => {
 
 // src/firebase/firebaseService.js - Update getFeaturedItems
 
+// In src/firebase/firebaseService.js
+// Update the getFeaturedItems function
+
 export const getFeaturedItems = async (limitCount = 6) => {
   try {
     const shopsRef = collection(db, 'shops');
@@ -417,12 +420,19 @@ export const getFeaturedItems = async (limitCount = 6) => {
       const shopData = doc.data();
       if (shopData?.items && Array.isArray(shopData.items)) {
         const shopItems = shopData.items
-          .filter(item => !item.deleted)
+          .filter(item => {
+            // Filter out invalid items
+            const hasImages = item.images && item.images.length > 0 && item.images.some(img => img);
+            const hasValidPrice = item.price && !isNaN(parseFloat(item.price)) && parseFloat(item.price) > 0;
+            const hasStock = !item.deleted && (!item.quantity || parseInt(item.quantity) > 0);
+            
+            return hasImages && hasValidPrice && hasStock;
+          })
           .map(item => ({
             ...item,
             shopId: doc.id,
             shopName: shopData.name || 'Unknown Shop',
-            shopUsername: shopData.username, // ADD THIS LINE
+            shopUsername: shopData.username,
             shopTheme: shopData.theme || {},
             quantity: item.quantity || 1
           }));
