@@ -139,16 +139,6 @@ const WIDGET_LIBRARY = {
       videoUrl: ''
     }
   },
-  'newsletter': {
-    name: 'Newsletter Signup',
-    icon: Mail,
-    description: 'Email capture like Medium or Substack',
-    defaultConfig: {
-      style: 'medium',
-      incentive: 'Get 10% off your first order',
-      fields: ['email']
-    }
-  },
   'countdown-timer': {
     name: 'Countdown Timer',
     icon: Clock,
