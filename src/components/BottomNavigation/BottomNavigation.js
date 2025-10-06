@@ -5,13 +5,14 @@ import {
   Home,
   MessageCircle,
   Bell,
-  User,
+  LogOut,
   Store
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { auth, db } from '../../firebase/config';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
+import { signOut } from 'firebase/auth';
 
 const BottomNavContainer = styled.div`
   position: fixed;
@@ -102,10 +103,11 @@ const NavButton = styled.button`
 const BottomNavigation = ({ theme }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, user } = useAuth(); // Add user to destructuring
+  const { isAuthenticated, user } = useAuth();
   const [unreadMessages, setUnreadMessages] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(false);
 
+  
   const defaultTheme = {
     colors: {
       background: '#000000',
@@ -115,6 +117,16 @@ const BottomNavigation = ({ theme }) => {
   };
 
   const navTheme = theme || defaultTheme;
+
+  // ADD THIS LOGOUT HANDLER
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   // Check for unread messages
   useEffect(() => {
@@ -143,7 +155,7 @@ const BottomNavigation = ({ theme }) => {
     return () => unsubscribe();
   }, []);
 
-  // Check for unread notifications (placeholder - implement based on your notification system)
+  // Check for unread notifications
   useEffect(() => {
     if (!auth.currentUser) return;
     
@@ -151,6 +163,7 @@ const BottomNavigation = ({ theme }) => {
     setUnreadNotifications(false);
   }, []);
 
+  // UPDATE navigationItems - REPLACE Profile with Logout
   const navigationItems = [
     {
       icon: <Home size={22} />,
@@ -162,9 +175,9 @@ const BottomNavigation = ({ theme }) => {
     {
       icon: <Store size={22} />,
       label: 'My Shop',
-      path: user?.uid ? `/shop/${user.uid}` : '/shop/create/template', // Fallback if no user
+      path: user?.uid ? `/shop/${user.uid}` : '/shop/create/template',
       key: 'shop',
-      showAlways: false, // Only show when authenticated
+      showAlways: false,
       requiresAuth: true
     },
     {
@@ -183,20 +196,28 @@ const BottomNavigation = ({ theme }) => {
       hasNotification: unreadNotifications,
       showAlways: true
     },
+    // REPLACE THIS SECTION
     {
-      icon: <User size={22} />,
-      label: 'Profile',
-      path: '/profile',
-      key: 'profile',
-      showAlways: true
+      icon: <LogOut size={22} />,  // Changed from User to LogOut
+      label: 'Logout',              // Changed from Profile to Logout
+      key: 'logout',                // Changed key
+      showAlways: false,            // Only show when authenticated
+      requiresAuth: true,           // Only show when authenticated
+      isAction: true                // ADD THIS FLAG to indicate it's an action, not navigation
     }
   ];
 
-  const handleNavigation = (path) => {
-    navigate(path);
+  // UPDATE handleNavigation to handle logout action
+  const handleNavigation = (item) => {
+    if (item.isAction && item.key === 'logout') {
+      handleLogout();
+    } else {
+      navigate(item.path);
+    }
   };
 
   const isPathActive = (path) => {
+    if (!path) return false; // Handle items without paths (like logout)
     if (path === '/') {
       return location.pathname === '/';
     }
@@ -217,7 +238,7 @@ const BottomNavigation = ({ theme }) => {
           key={item.key}
           theme={navTheme}
           active={isPathActive(item.path)}
-          onClick={() => handleNavigation(item.path)}
+          onClick={() => handleNavigation(item)} // Changed from item.path to item
           hasNotification={item.hasNotification}
         >
           <div className="icon-container">

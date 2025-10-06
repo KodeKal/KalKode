@@ -1352,6 +1352,93 @@ const UploadingOverlay = styled.div`
   z-index: 3;
 `;
 
+const WelcomeHeader = styled.div`
+  text-align: center;
+  margin: 2rem auto 1rem;
+  padding: 1rem;
+  max-width: 800px;
+  
+  h2 {
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+    font-family: ${props => props.theme?.fonts?.heading || "'Space Grotesk', sans-serif"};
+    margin-bottom: 0.5rem;
+    font-weight: 400;
+    
+    .shop-name-text {
+      background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 700;
+      font-size: clamp(1.5rem, 4vw, 2.2rem);
+    }
+  }
+  
+  .url-display {
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    color: ${props => `${props.theme?.colors?.text}80` || 'rgba(255, 255, 255, 0.5)'};
+    font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
+    margin-top: 0.25rem;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+  }
+`;
+
+const ItemHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+  
+  &:hover {
+    background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
+  }
+  
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+    
+    @media (min-width: 768px) {
+      font-size: 1.1rem;
+    }
+  }
+`;
+
+const ExpandButton = styled.button`
+  background: transparent;
+  border: none;
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  
+  &:active {
+    transform: scale(0.9);
+  }
+`;
+
+const ItemDetails = styled.div`
+  max-height: ${props => props.expanded ? '2000px' : '0'};
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+  
+  .details-content {
+    padding-top: ${props => props.expanded ? '1rem' : '0'};
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+`;
+
 const LoadingSpinner = styled.div`
   width: 20px;
   height: 20px;
@@ -1551,6 +1638,20 @@ const ShopPage = () => {
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [originalUsername, setOriginalUsername] = useState('');
+  const [expandedItems, setExpandedItems] = useState(new Set());
+
+// ADD toggle function:
+const toggleItemExpansion = (itemId) => {
+  setExpandedItems(prev => {
+    const newSet = new Set(prev);
+    if (newSet.has(itemId)) {
+      newSet.delete(itemId);
+    } else {
+      newSet.add(itemId);
+    }
+    return newSet;
+  });
+};
 
   // Store original username when shop loads
   useEffect(() => {
@@ -2003,13 +2104,7 @@ const ShopPage = () => {
               <Store size={22} />
             </HeaderTabButton>        
 
-            <HeaderTabButton
-              onClick={handleLogout}
-              theme={shopData?.theme}
-              title="Logout"
-            >
-              <LogOut size={22} />
-            </HeaderTabButton>
+            
           </HeaderRight>
         </Header>       
 
@@ -2076,6 +2171,7 @@ const ShopPage = () => {
         <MainContent>
           {activeTab === 'shop' && (
             <>
+
               <ShopProfileSection>
                 <div className="profile-image">
                   {shopData?.profile && typeof shopData.profile === 'string' ? (
@@ -2096,7 +2192,7 @@ const ShopPage = () => {
                           if (e.target.files?.[0]) {
                             try {
                               const file = e.target.files[0];
-                              
+
                               // Create preview
                               const reader = new FileReader();
                               reader.onloadend = () => {
@@ -2111,12 +2207,12 @@ const ShopPage = () => {
                                 });
                               };
                               reader.readAsDataURL(file);
-                              
+
                               // Upload to Firebase
                               const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
                               const { storage } = await import('../../firebase/config');
                               const { auth } = await import('../../firebase/config');
-                              
+
                               const profileRef = ref(
                                 storage, 
                                 `shops/${auth.currentUser.uid}/profile/profile-${Date.now()}`
@@ -2127,7 +2223,7 @@ const ShopPage = () => {
                               };
                               const snapshot = await uploadBytes(profileRef, file, metadata);
                               const imageUrl = await getDownloadURL(snapshot.ref);
-                              
+
                               // Update with actual URL
                               handleUpdateShop({ profile: imageUrl });
                             } catch (error) {
@@ -2158,7 +2254,7 @@ const ShopPage = () => {
                           if (e.target.files?.[0]) {
                             try {
                               const file = e.target.files[0];
-                              
+
                               const reader = new FileReader();
                               reader.onloadend = () => {
                                 handleUpdateShop({ 
@@ -2171,11 +2267,11 @@ const ShopPage = () => {
                                 });
                               };
                               reader.readAsDataURL(file);
-                              
+
                               const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
                               const { storage } = await import('../../firebase/config');
                               const { auth } = await import('../../firebase/config');
-                              
+
                               const profileRef = ref(
                                 storage, 
                                 `shops/${auth.currentUser.uid}/profile/profile-${Date.now()}`
@@ -2186,7 +2282,7 @@ const ShopPage = () => {
                               };
                               const snapshot = await uploadBytes(profileRef, file, metadata);
                               const imageUrl = await getDownloadURL(snapshot.ref);
-                              
+
                               handleUpdateShop({ profile: imageUrl });
                             } catch (error) {
                               console.error('Error uploading profile image:', error);
@@ -2206,12 +2302,12 @@ const ShopPage = () => {
                           try {
                             // Update local state with preview first
                             handleUpdateShop({ profile: value });
-                            
+
                             // Upload to Firebase
                             const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
                             const { storage } = await import('../../firebase/config');
                             const { auth } = await import('../../firebase/config');
-                            
+
                             const profileRef = ref(
                               storage, 
                               `shops/${auth.currentUser.uid}/profile/profile-${Date.now()}`
@@ -2222,7 +2318,7 @@ const ShopPage = () => {
                             };
                             const snapshot = await uploadBytes(profileRef, value.file, metadata);
                             const imageUrl = await getDownloadURL(snapshot.ref);
-                            
+
                             // Update with actual URL
                             handleUpdateShop({ profile: imageUrl });
                           } catch (error) {
@@ -2258,11 +2354,6 @@ const ShopPage = () => {
                         {shopNameError}
                       </ShopNameError>
                     )}
-                    {usernameAvailable && !checkingUsername && (
-                      <ShopNameSuccess theme={shopData?.theme}>
-                        ✓ Shop name available
-                      </ShopNameSuccess>
-                    )}
                   </ShopNameInputContainer>
                 </div>
                 <div className="shop-description-container">
@@ -2276,11 +2367,7 @@ const ShopPage = () => {
                 </div>
               </ShopProfileSection>
 
-              {/* Add Subdomain Display */}
-              <SubdomainInfo 
-                username={shopData?.username} 
-                theme={shopData?.theme}
-              />
+              
 
               <AddItemButton onClick={handleAddItem} theme={shopData?.theme}>
                 <Plus size={20} />
@@ -2288,177 +2375,192 @@ const ShopPage = () => {
               </AddItemButton>
 
               <ItemGrid>
-                {shopData?.items?.map(item => (
-                  <ItemCard key={item.id}>
-                    
-                    <ItemImageContainer>
-                      {uploading[item.id] && (
-                        <UploadingOverlay>
-                          <LoadingSpinner />
-                        </UploadingOverlay>
-                      )}
-                      <div 
-                        className="image-container"
-                        onClick={() => {
-                          if (!item.images[item.currentImageIndex]) {
-                            document.getElementById(`image-upload-${item.id}-${item.currentImageIndex}`).click();
-                          }
-                        }}
-                      >
-                        {item.images[item.currentImageIndex] ? (
-                          <img 
-                            src={item.images[item.currentImageIndex]} 
-                            alt={item.name}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            onError={(e) => {
-                              console.error('Image failed to load:', {
-                                src: e.target.src,
-                                itemId: item.id,
-                                currentIndex: item.currentImageIndex
-                              });
-                            }}
-                          />
-                        ) : (
-                          <div className="placeholder">
-                            <Plus size={24} />
-                            <span>Upload Image</span>
-                          </div>
+                {shopData?.items?.map(item => {
+                  // ADD THIS LINE - define isExpanded for each item in the map
+                  const isExpanded = expandedItems.has(item.id);
+
+                  return (
+                    <ItemCard key={item.id}>
+
+                      <ItemImageContainer>
+                        {uploading[item.id] && (
+                          <UploadingOverlay>
+                            <LoadingSpinner />
+                          </UploadingOverlay>
                         )}
-                      </div>
-                      
-                      {item.images.some(img => img) && (
-                        <>
-                          <button 
-                            className="carousel-arrow left"
-                            onClick={() => {
-                              const newIndex = ((item.currentImageIndex - 1) + 3) % 3;
-                              handleItemUpdate(item.id, { currentImageIndex: newIndex });
-                            }}
-                          >
-                            <ChevronLeft size={16} />
-                          </button>
-                          <button 
-                            className="carousel-arrow right"
-                            onClick={() => {
-                              const newIndex = (item.currentImageIndex + 1) % 3;
-                              handleItemUpdate(item.id, { currentImageIndex: newIndex });
-                            }}
-                          >
-                            <ChevronRight size={16} />
-                          </button>
-                        </>
-                      )}
-
-                      {item.images[item.currentImageIndex] && (
-                        <button 
-                          className="add-image"
+                        <div 
+                          className="image-container"
                           onClick={() => {
-                            const newImages = [...item.images];
-                            newImages[item.currentImageIndex] = null;
-                            handleItemUpdate(item.id, { images: newImages });
+                            if (!item.images[item.currentImageIndex]) {
+                              document.getElementById(`image-upload-${item.id}-${item.currentImageIndex}`).click();
+                            }
                           }}
                         >
-                          <X size={16} />
-                        </button>
-                      )}
+                          {item.images[item.currentImageIndex] ? (
+                            <img 
+                              src={item.images[item.currentImageIndex]} 
+                              alt={item.name}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              onError={(e) => {
+                                console.error('Image failed to load:', {
+                                  src: e.target.src,
+                                  itemId: item.id,
+                                  currentIndex: item.currentImageIndex
+                                });
+                              }}
+                            />
+                          ) : (
+                            <div className="placeholder">
+                              <Plus size={24} />
+                              <span>Upload Image</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {item.images.some(img => img) && (
+                          <>
+                            <button 
+                              className="carousel-arrow left"
+                              onClick={() => {
+                                const newIndex = ((item.currentImageIndex - 1) + 3) % 3;
+                                handleItemUpdate(item.id, { currentImageIndex: newIndex });
+                              }}
+                            >
+                              <ChevronLeft size={16} />
+                            </button>
+                            <button 
+                              className="carousel-arrow right"
+                              onClick={() => {
+                                const newIndex = (item.currentImageIndex + 1) % 3;
+                                handleItemUpdate(item.id, { currentImageIndex: newIndex });
+                              }}
+                            >
+                              <ChevronRight size={16} />
+                            </button>
+                          </>
+                        )}
 
-                      <input
-                        type="file"
-                        id={`image-upload-${item.id}-${item.currentImageIndex}`}
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) {
-                            handleImageUpload(item.id, item.currentImageIndex, e.target.files[0]);
-                          }
-                        }}
-                      />
-                    </ItemImageContainer>
+                        {item.images[item.currentImageIndex] && (
+                          <button 
+                            className="add-image"
+                            onClick={() => {
+                              const newImages = [...item.images];
+                              newImages[item.currentImageIndex] = null;
+                              handleItemUpdate(item.id, { images: newImages });
+                            }}
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
 
-                    <ItemContent>
-                      <div className="editable-text">
-                        <ValidatedEditableText
-                          value={item.name}
-                          onChange={(value) => handleItemUpdate(item.id, { name: value })}
-                          placeholder="Item Name"
-                          theme={shopData?.theme}
-                        />
-                      </div>
-
-                      <div className="editable-text">
-                        <ValidatedEditableText
-                          value={item.price}
-                          onChange={(value) => handleItemUpdate(item.id, { price: value })}
-                          placeholder="Price"
-                          theme={shopData?.theme}
-                        />
-                      </div>
-
-                      <div className="editable-text">
-                        <ValidatedEditableText
-                          value={item.description}
-                          onChange={(value) => handleItemUpdate(item.id, { description: value })}
-                          placeholder="Item Description"
-                          multiline
-                          theme={shopData?.theme}
-                        />
-                      </div>
-
-                      <CategorySelect
-                        value={item.category || 'Other'}
-                        onChange={(e) => handleItemUpdate(item.id, { category: e.target.value })}
-                        theme={shopData?.theme}
-                      >
-                        {ITEM_CATEGORIES.map(category => (
-                          <option key={category} value={category}>
-                            {category}
-                          </option>
-                        ))}
-                      </CategorySelect>
-
-                      <QuantitySelector 
-                        value={parseInt(item.quantity) || 1}
-                        onChange={(value) => handleItemUpdate(item.id, { quantity: value })}
-                        theme={shopData?.theme}
-                        min={0}
-                        max={9999}
-                      />
-
-                      <AddressInput
-                        address={item.address || ''}
-                        onAddressChange={(value) => handleItemUpdate(item.id, { 
-                          address: value,
-                          coordinates: null
-                        })}
-                        onLocationSelect={(location) => {
-                          if (location?.coordinates?.latitude && location?.coordinates?.longitude) {
-                            const coords = {
-                              lat: location.coordinates.latitude,
-                              lng: location.coordinates.longitude
-                            };
-                            handleItemUpdate(item.id, {
-                              address: `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`,
-                              coordinates: coords
-                            });
-                          }
-                        }}
-                      />
-                      
-                      <DeleteSection>
-                        <DeleteItemButton
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteItem(item.id);
+                        <input
+                          type="file"
+                          id={`image-upload-${item.id}-${item.currentImageIndex}`}
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              handleImageUpload(item.id, item.currentImageIndex, e.target.files[0]);
+                            }
                           }}
-                        >
-                          <Trash2 size={16} />
-                          Remove Item
-                        </DeleteItemButton>
-                      </DeleteSection>
-                    </ItemContent>
-                  </ItemCard>
-                ))}
-              </ItemGrid>              
+                        />
+                      </ItemImageContainer>
+                        
+                      <ItemContent>
+                        <ItemHeader onClick={() => toggleItemExpansion(item.id)}>
+                          <h3>
+                            {item.name && item.name !== 'MyItemName' ? 
+                              item.name : 
+                              <span style={{ opacity: 0.5 }}>MyItemName</span>
+                            }
+                          </h3>
+                          <ExpandButton>
+                            {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                          </ExpandButton>
+                        </ItemHeader>
+                          
+                        <ItemDetails expanded={isExpanded}>
+                          <div className="details-content">
+                            <ValidatedEditableText
+                              value={item.name}
+                              onChange={(value) => handleItemUpdate(item.id, { name: value })}
+                              placeholder="Item Name"
+                              theme={shopData?.theme}
+                            />
+
+                            <ValidatedEditableText
+                              value={item.price}
+                              onChange={(value) => handleItemUpdate(item.id, { price: value })}
+                              placeholder="Price"
+                              theme={shopData?.theme}
+                            />
+
+                            <ValidatedEditableText
+                              value={item.description}
+                              onChange={(value) => handleItemUpdate(item.id, { description: value })}
+                              placeholder="Item Description"
+                              multiline
+                              theme={shopData?.theme}
+                            />
+
+                            <CategorySelect
+                              value={item.category || 'Other'}
+                              onChange={(e) => handleItemUpdate(item.id, { category: e.target.value })}
+                              theme={shopData?.theme}
+                            >
+                              {ITEM_CATEGORIES.map(category => (
+                                <option key={category} value={category}>
+                                  {category}
+                                </option>
+                              ))}
+                            </CategorySelect>
+                            
+                            <QuantitySelector 
+                              value={parseInt(item.quantity) || 1}
+                              onChange={(value) => handleItemUpdate(item.id, { quantity: value })}
+                              theme={shopData?.theme}
+                              min={0}
+                              max={9999}
+                            />
+
+                            <AddressInput
+                              address={item.address || ''}
+                              onAddressChange={(value) => handleItemUpdate(item.id, { 
+                                address: value,
+                                coordinates: null
+                              })}
+                              onLocationSelect={(location) => {
+                                if (location?.coordinates?.latitude && location?.coordinates?.longitude) {
+                                  const coords = {
+                                    lat: location.coordinates.latitude,
+                                    lng: location.coordinates.longitude
+                                  };
+                                  handleItemUpdate(item.id, {
+                                    address: `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`,
+                                    coordinates: coords
+                                  });
+                                }
+                              }}
+                            />
+
+                            <DeleteSection>
+                              <DeleteItemButton
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteItem(item.id);
+                                }}
+                              >
+                                <Trash2 size={16} />
+                                Remove Item
+                              </DeleteItemButton>
+                            </DeleteSection>
+                          </div>
+                        </ItemDetails>
+                      </ItemContent>
+                    </ItemCard>
+                  );
+                })}
+              </ItemGrid>            
             </>
           )}
 

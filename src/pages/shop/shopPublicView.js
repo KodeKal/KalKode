@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled, { ThemeProvider } from 'styled-components';
 import { doc, getDoc } from 'firebase/firestore';
+import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../firebase/config';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase/config';
@@ -1077,6 +1078,7 @@ const ShopPublicView = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedChatItem, setSelectedChatItem] = useState(null);
   const { userLocation } = useLocation();
+  const { isAuthenticated } = useAuth(); // ADD THIS LINE
 
   useEffect(() => {
     const pinnedStyleId = localStorage.getItem('pinnedStyleId');
@@ -1447,6 +1449,15 @@ const handleGoHome = () => {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        
+                        // CHECK AUTHENTICATION
+                        if (!isAuthenticated) {
+                          // Redirect to LiveShopCreation
+                          navigate('/live-shop-creation');
+                          return;
+                        }
+                        
+                        // Proceed with order if authenticated
                         setSelectedChatItem(item);
                         setChatOpen(true);
                       }}
