@@ -5,6 +5,402 @@ import { storage } from '../../firebase/config';
 import { auth } from '../../firebase/config';
 
 
+// Add to HomePageWidgets.js
+export const CalendarWidget = ({ config, theme, editable, onUpdate }) => {
+  const [events, setEvents] = useState(config.events || []);
+  const [showAddEvent, setShowAddEvent] = useState(false);
+
+  const addEvent = (event) => {
+    const newEvents = [...events, { ...event, id: Date.now() }];
+    setEvents(newEvents);
+    if (onUpdate) {
+      onUpdate({ ...config, events: newEvents });
+    }
+    setShowAddEvent(false);
+  };
+
+  const removeEvent = (eventId) => {
+    const newEvents = events.filter(e => e.id !== eventId);
+    setEvents(newEvents);
+    if (onUpdate) {
+      onUpdate({ ...config, events: newEvents });
+    }
+  };
+
+  return (
+    <div style={{
+      padding: '2rem',
+      background: `${theme?.colors?.surface}50`,
+      borderRadius: '16px',
+      maxWidth: '800px',
+      margin: '0 auto'
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '2rem'
+      }}>
+        <h2 style={{ 
+          color: theme?.colors?.accent,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem'
+        }}>
+          <CalendarIcon size={28} />
+          Upcoming Events
+        </h2>
+        
+        {editable && (
+          <button
+            onClick={() => setShowAddEvent(true)}
+            style={{
+              background: theme?.colors?.accent,
+              color: 'white',
+              border: 'none',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            <Plus size={16} />
+            Add Event
+          </button>
+        )}
+      </div>
+
+      {events.length === 0 ? (
+        <p style={{ textAlign: 'center', opacity: 0.7 }}>
+          No upcoming events scheduled
+        </p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {events.map((event) => (
+            <div key={event.id} style={{
+              background: `${theme?.colors?.background}80`,
+              padding: '1.5rem',
+              borderRadius: '12px',
+              border: `1px solid ${theme?.colors?.accent}30`,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start'
+            }}>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ 
+                  marginBottom: '0.5rem',
+                  color: theme?.colors?.accent 
+                }}>
+                  {event.title}
+                </h3>
+                <p style={{ 
+                  fontSize: '0.9rem',
+                  opacity: 0.8,
+                  marginBottom: '0.5rem'
+                }}>
+                  {event.description}
+                </p>
+                <div style={{
+                  display: 'flex',
+                  gap: '1rem',
+                  fontSize: '0.85rem',
+                  opacity: 0.7
+                }}>
+                  <span>📅 {event.date}</span>
+                  <span>🕒 {event.time}</span>
+                </div>
+              </div>
+              
+              {editable && (
+                <button
+                  onClick={() => removeEvent(event.id)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: theme?.colors?.accent,
+                    cursor: 'pointer',
+                    padding: '0.5rem'
+                  }}
+                >
+                  <X size={20} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showAddEvent && editable && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <EventForm 
+            onSubmit={addEvent}
+            onCancel={() => setShowAddEvent(false)}
+            theme={theme}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+const EventForm = ({ onSubmit, onCancel, theme }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    date: '',
+    time: ''
+  });
+
+  return (
+    <div style={{
+      background: theme?.colors?.background,
+      padding: '2rem',
+      borderRadius: '16px',
+      maxWidth: '500px',
+      width: '90%'
+    }}>
+      <h3 style={{ marginBottom: '1.5rem', color: theme?.colors?.accent }}>
+        Add New Event
+      </h3>
+      
+      <input
+        placeholder="Event Title"
+        value={formData.title}
+        onChange={(e) => setFormData({...formData, title: e.target.value})}
+        style={{
+          width: '100%',
+          padding: '0.75rem',
+          marginBottom: '1rem',
+          borderRadius: '8px',
+          border: `1px solid ${theme?.colors?.accent}30`,
+          background: 'transparent',
+          color: theme?.colors?.text
+        }}
+      />
+      
+      <textarea
+        placeholder="Event Description"
+        value={formData.description}
+        onChange={(e) => setFormData({...formData, description: e.target.value})}
+        rows={3}
+        style={{
+          width: '100%',
+          padding: '0.75rem',
+          marginBottom: '1rem',
+          borderRadius: '8px',
+          border: `1px solid ${theme?.colors?.accent}30`,
+          background: 'transparent',
+          color: theme?.colors?.text,
+          resize: 'vertical'
+        }}
+      />
+      
+      <input
+        type="date"
+        value={formData.date}
+        onChange={(e) => setFormData({...formData, date: e.target.value})}
+        style={{
+          width: '100%',
+          padding: '0.75rem',
+          marginBottom: '1rem',
+          borderRadius: '8px',
+          border: `1px solid ${theme?.colors?.accent}30`,
+          background: 'transparent',
+          color: theme?.colors?.text
+        }}
+      />
+      
+      <input
+        type="time"
+        value={formData.time}
+        onChange={(e) => setFormData({...formData, time: e.target.value})}
+        style={{
+          width: '100%',
+          padding: '0.75rem',
+          marginBottom: '1.5rem',
+          borderRadius: '8px',
+          border: `1px solid ${theme?.colors?.accent}30`,
+          background: 'transparent',
+          color: theme?.colors?.text
+        }}
+      />
+      
+      <div style={{ display: 'flex', gap: '1rem' }}>
+        <button
+          onClick={() => onSubmit(formData)}
+          disabled={!formData.title || !formData.date}
+          style={{
+            flex: 1,
+            padding: '0.75rem',
+            background: theme?.colors?.accent,
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: formData.title && formData.date ? 'pointer' : 'not-allowed',
+            opacity: formData.title && formData.date ? 1 : 0.5
+          }}
+        >
+          Add Event
+        </button>
+        <button
+          onClick={onCancel}
+          style={{
+            flex: 1,
+            padding: '0.75rem',
+            background: 'transparent',
+            color: theme?.colors?.text,
+            border: `1px solid ${theme?.colors?.accent}`,
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Add to HomePageWidgets.js
+export const FeaturedProductsWidget = ({ config, theme, items = [] }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const itemsPerView = config.itemsToShow || 4;
+
+  useEffect(() => {
+    if (config.autoPlay) {
+      const interval = setInterval(() => {
+        setCurrentIndex((prev) => 
+          prev + itemsPerView >= items.length ? 0 : prev + 1
+        );
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [config.autoPlay, itemsPerView, items.length]);
+
+  const visibleItems = items.slice(currentIndex, currentIndex + itemsPerView);
+
+  return (
+    <div style={{ padding: '2rem', position: 'relative' }}>
+      <h2 style={{ 
+        marginBottom: '2rem', 
+        color: theme?.colors?.accent,
+        textAlign: 'center',
+        fontSize: '2rem'
+      }}>
+        Featured Products
+      </h2>
+      
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(auto-fit, minmax(200px, 1fr))`,
+        gap: '1.5rem',
+        transition: 'all 0.5s ease'
+      }}>
+        {visibleItems.map((item, index) => (
+          <div key={index} style={{
+            background: `${theme?.colors?.surface}80`,
+            borderRadius: '12px',
+            padding: '1rem',
+            border: `1px solid ${theme?.colors?.accent}30`,
+            transition: 'transform 0.3s ease'
+          }}>
+            <div style={{
+              height: '200px',
+              background: item.images?.[0] ? 
+                `url(${item.images[0]})` : 
+                `${theme?.colors?.background}50`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              borderRadius: '8px',
+              marginBottom: '1rem'
+            }} />
+            <h3 style={{ 
+              fontSize: '1rem', 
+              marginBottom: '0.5rem',
+              color: theme?.colors?.text
+            }}>
+              {item.name}
+            </h3>
+            <p style={{ 
+              color: theme?.colors?.accent, 
+              fontWeight: 'bold',
+              fontSize: '1.2rem'
+            }}>
+              ${parseFloat(item.price || 0).toFixed(2)}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {items.length > itemsPerView && (
+        <>
+          <button
+            onClick={() => setCurrentIndex((prev) => 
+              prev === 0 ? items.length - itemsPerView : prev - 1
+            )}
+            style={{
+              position: 'absolute',
+              left: '0',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: theme?.colors?.accent,
+              border: 'none',
+              borderRadius: '50%',
+              width: '48px',
+              height: '48px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white'
+            }}
+          >
+            <ChevronLeft size={24} />
+          </button>
+          
+          <button
+            onClick={() => setCurrentIndex((prev) => 
+              prev + itemsPerView >= items.length ? 0 : prev + 1
+            )}
+            style={{
+              position: 'absolute',
+              right: '0',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: theme?.colors?.accent,
+              border: 'none',
+              borderRadius: '50%',
+              width: '48px',
+              height: '48px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white'
+            }}
+          >
+            <ChevronRight size={24} />
+          </button>
+        </>
+      )}
+    </div>
+  );
+};
+
+
 export const HeroBannerWidget = ({ config, theme, editable, onUpdate }) => {
   const [uploading, setUploading] = useState(false);
 
