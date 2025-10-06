@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X, ChevronLeft, ChevronRight, Heart, MessageCircle, Star, Clock, Mail, Instagram, TrendingUp, Upload, Play, Pause, Phone, MapPin, Calendar, FileText, Image as ImageIcon } from 'lucide-react';
+import { Plus, X, ChevronLeft, ChevronRight, Heart, MessageCircle, CalendarIcon, Star, Clock, Mail, Instagram, TrendingUp, Upload, Play, Pause, Phone, MapPin, Calendar, FileText, Image as ImageIcon } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase/config';
 import { auth } from '../../firebase/config';
