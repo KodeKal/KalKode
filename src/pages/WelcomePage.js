@@ -2461,6 +2461,11 @@ const loadCategorizedItems = async () => {
   const handleDirectOrder = async () => {
     if (!zoomedItem) return;
     
+    if (!isAuthenticated) {
+       navigate('/shop/create/template');
+       return;
+     }
+    
     try {
       const result = await TransactionService.initiateQuantityTransaction(
         zoomedItem.id,

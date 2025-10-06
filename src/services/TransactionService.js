@@ -14,16 +14,18 @@ import {
  orderBy,
  getDocs
 } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
+
 
 export const TransactionService = {
+
+  
  // Step 1: Buyer initiates quantity-based transaction
  initiateQuantityTransaction: async (itemId, sellerId, unitPrice, requestedQuantity, meetupType) => {
    try {
      const buyer = auth.currentUser;
 
-     if (!buyer) {
-       throw new Error('You must be logged in to make a purchase');
-     }
+     
 
      if (buyer.uid === sellerId) {
        throw new Error('You cannot purchase items from your own store');

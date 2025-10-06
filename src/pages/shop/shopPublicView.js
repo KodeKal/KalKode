@@ -1449,14 +1449,14 @@ const handleGoHome = () => {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        
+
                         // CHECK AUTHENTICATION
                         if (!isAuthenticated) {
                           // Redirect to LiveShopCreation
-                          navigate('/live-shop-creation');
+                          navigate('/shop/create/template');
                           return;
                         }
-                        
+
                         // Proceed with order if authenticated
                         setSelectedChatItem(item);
                         setChatOpen(true);

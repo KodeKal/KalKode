@@ -2325,7 +2325,7 @@ const handleSave = async () => {
             disabled={!shopData.name}
             theme={selectedTheme}
           >
-            Save Shop
+            Save / LogIn
             <ChevronRight size={20} />
           </ActionButton>
         </SaveButtonContainer>
