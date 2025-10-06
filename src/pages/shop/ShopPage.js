@@ -25,7 +25,6 @@ import HomePageEditor from './HomePageEditor';
 import { saveHomePageConfig } from '../../firebase/firebaseService';
 import SubdomainInfo from '../../components/SubdomainDisplay';
 import {
-  NewsletterWidget,
   CountdownWidget,
   TestimonialsWidget,
   GalleryWidget,
