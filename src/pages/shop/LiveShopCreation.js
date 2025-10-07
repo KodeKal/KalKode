@@ -1391,13 +1391,13 @@ const LiveShopCreation = () => {
   const [usernameAvailable, setUsernameAvailable] = useState(null);
 
   const [shopData, setShopData] = useState({
-    name: 'MyBrandName', // ADD DEFAULT NAME HERE
+    name: 'BrandName', // ADD DEFAULT NAME HERE
     description: '',
     profile: null,
     mission: '',
     items: [{
       id: Date.now().toString(),
-      name: 'MyItemName',
+      name: 'ItemName',
       price: '',
       description: '',
       category: 'Other',
@@ -1418,7 +1418,7 @@ const LiveShopCreation = () => {
   // UPDATE checkUsernameAvailability function (around line 1050)
 const checkUsernameAvailability = async (shopName) => {
   // Skip check for empty or default names
-  if (!shopName || shopName.trim() === '' || shopName === 'MyBrandName') {
+  if (!shopName || shopName.trim() === '' || shopName === 'BrandName') {
     setShopNameError('');
     setUsernameAvailable(null);
     return;
@@ -1465,7 +1465,7 @@ const checkUsernameAvailability = async (shopName) => {
   // UPDATE the debounced username check useEffect (around line 1100)
 useEffect(() => {
   // Don't check on initial mount or if name is the default placeholder
-  if (!shopData?.name || shopData.name === 'MyBrandName') {
+  if (!shopData?.name || shopData.name === 'BrandName') {
     setShopNameError('');
     setUsernameAvailable(null);
     return;
