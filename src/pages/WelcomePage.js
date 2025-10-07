@@ -2462,7 +2462,12 @@ const loadCategorizedItems = async () => {
     if (!zoomedItem) return;
     
     if (!isAuthenticated) {
-       navigate('/shop/create/template');
+       navigate('/auth', { 
+        state: { 
+          mode: 'login',
+          from: window.location.pathname
+        }
+      });
        return;
      }
     
