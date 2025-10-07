@@ -1450,7 +1450,12 @@ const handleGoHome = () => {
                         // CHECK AUTHENTICATION
                         if (!isAuthenticated) {
                           // Redirect to LiveShopCreation
-                          navigate('/shop/create/template');
+                              navigate('/auth', { 
+      state: { 
+        mode: 'login',
+        from: window.location.pathname
+      }
+    });
                           return;
                         }
 
