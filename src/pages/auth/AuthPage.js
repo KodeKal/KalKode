@@ -467,7 +467,7 @@ const handleGoogleSignup = async () => {
                   onClick={() => navigate('/shop/create/template')} 
                   style={{ marginTop: '1rem' }}
                 >
-                  Open a Shop
+                  Open an Account 
                 </Button>
               </>
             )
