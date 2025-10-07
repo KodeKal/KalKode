@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Navigation, Search, X } from 'lucide-react';
+import geocodeAddress from 'src/utils/geocoding'
 
 const AddressContainer = styled.div`
   margin-top: 0.5rem;
