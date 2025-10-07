@@ -146,10 +146,11 @@ const AddressInput = ({ address, onAddressChange, onLocationSelect }) => {
       onLocationSelect({
         address: result.displayName,
         coordinates: { lat: result.lat, lng: result.lng }
-      });
+      })
     } else {
       setError('Could not find that address');
     }
+setIsLoading(false);
   };
       
       onLocationSelect({
