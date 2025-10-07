@@ -138,7 +138,18 @@ const AddressInput = ({ address, onAddressChange, onLocationSelect }) => {
       const coords = {
         lat: parseFloat(coordsMatch[1]),
         lng: parseFloat(coordsMatch[2])
-      };
+      } else {
+    // NEW: Geocode the address
+    const result = await geocodeAddress(address);
+    if (result) {
+      onLocationSelect({
+        address: result.displayName,
+        coordinates: { lat: result.lat, lng: result.lng }
+      });
+    } else {
+      setError('Could not find that address');
+    }
+  };
       
       onLocationSelect({
         address: formatCoordinates(coords),
