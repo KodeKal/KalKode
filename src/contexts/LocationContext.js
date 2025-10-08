@@ -42,20 +42,26 @@ export const LocationProvider = ({ children }) => {
     }
   };
 
-  // Check for stored location on initial load
   useEffect(() => {
-    const storedLocation = localStorage.getItem('userLocation');
-    if (storedLocation) {
+  // Only check if permission was previously granted
+  const checkPreviousPermission = async () => {
+    if (navigator.permissions) {
       try {
-        const parsedLocation = JSON.parse(storedLocation);
-        setUserLocation(parsedLocation);
-        setLocationPermission('granted');
-      } catch (e) {
-        console.error('Error parsing stored location', e);
+        const result = await navigator.permissions.query({ name: 'geolocation' });
+        if (result.state === 'granted') {
+          // Only auto-fetch if previously granted
+          requestLocation();
+        } else {
+          setLocationPermission('prompt');
+        }
+      } catch (error) {
+        setLocationPermission('prompt');
       }
     }
-    setLocationLoading(false);
-  }, []);
+  };
+  
+  checkPreviousPermission();
+}, []);
 
   return (
     <LocationContext.Provider 

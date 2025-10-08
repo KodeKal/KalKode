@@ -2523,18 +2523,19 @@ const toggleItemExpansion = (itemId) => {
                             <AddressInput
                               address={item.address || ''}
                               onAddressChange={(value) => handleItemUpdate(item.id, { 
-                                address: value,
-                                coordinates: null
+                                address: value
                               })}
                               onLocationSelect={(location) => {
-                                if (location?.coordinates?.latitude && location?.coordinates?.longitude) {
-                                  const coords = {
-                                    lat: location.coordinates.latitude,
-                                    lng: location.coordinates.longitude
-                                  };
+                                console.log('Location selected:', location);
+                                if (location?.coordinates) {
                                   handleItemUpdate(item.id, {
-                                    address: `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`,
-                                    coordinates: coords
+                                    address: location.address,
+                                    coordinates: location.coordinates
+                                  });
+                                } else if (!location?.address) {
+                                  handleItemUpdate(item.id, {
+                                    address: '',
+                                    coordinates: null
                                   });
                                 }
                               }}

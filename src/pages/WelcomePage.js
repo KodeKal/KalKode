@@ -19,6 +19,47 @@ import ThemeDecorations from '../components/ThemeDecorations';
 import { TransactionService } from '../services/TransactionService';
 import { signOut } from 'firebase/auth';
 
+const getIPBasedLocation = async () => {
+  try {
+    console.log('🌐 Fetching IP-based location from ipapi.co...');
+    const response = await fetch('https://ipapi.co/json/');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ IP Location data:', data);
+    
+    if (!data.latitude || !data.longitude) {
+      throw new Error('Invalid location data received');
+    }
+    
+    return {
+      latitude: data.latitude,
+      longitude: data.longitude,
+      city: data.city,
+      region: data.region,
+      country: data.country_name,
+      isIPBased: true
+    };
+  } catch (error) {
+    console.error('❌ Error getting IP location:', error);
+    
+    // Fallback to a default location (Houston, TX)
+    console.log('⚠️ Using fallback location: Houston, TX');
+    return {
+      latitude: 29.7604,
+      longitude: -95.3698,
+      city: 'Houston',
+      region: 'Texas',
+      country: 'United States',
+      isIPBased: true,
+      isFallback: true
+    };
+  }
+};
+
 // Mobile-first styled components
 const PageContainer = styled.div.attrs({ className: 'page-container' })`
   min-height: 100vh;
@@ -1664,6 +1705,170 @@ const [cityRegion, setCityRegion] = useState('');
 const [isCityPinned, setIsCityPinned] = useState(false);
 const [isConvertingToCity, setIsConvertingToCity] = useState(false);
 const [cityInputValue, setCityInputValue] = useState('');
+const [effectiveLocation, setEffectiveLocation] = useState(null);
+const [isIPLocation, setIsIPLocation] = useState(false);
+
+useEffect(() => {
+  const initializeLocation = async () => {
+    console.log('🔍 Initializing location...');
+    console.log('userLocation:', userLocation);
+    
+    if (userLocation) {
+      // User has shared precise location
+      console.log('✅ Using GPS location:', userLocation);
+      setEffectiveLocation(userLocation);
+      setIsIPLocation(false);
+    } else {
+      // Use IP-based location
+      console.log('🌐 Fetching IP-based location...');
+      const ipLocation = await getIPBasedLocation();
+      console.log('IP Location result:', ipLocation);
+      
+      if (ipLocation) {
+        console.log('✅ Using IP location:', ipLocation);
+        setEffectiveLocation(ipLocation);
+        setIsIPLocation(true);
+      } else {
+        console.error('❌ Failed to get IP location');
+      }
+    }
+  };
+  
+  initializeLocation();
+}, [userLocation]);
+
+useEffect(() => {
+  console.log('🔄 effectiveLocation changed:', effectiveLocation);
+  console.log('activeTab:', activeTab);
+  
+  if (activeTab === 'featured' && effectiveLocation) {
+    console.log('📦 Loading items with location...');
+    loadCategorizedItems();
+  }
+}, [effectiveLocation, activeTab]);
+
+useEffect(() => {
+  if (effectiveLocation && activeTab === 'featured') {
+    console.log('🔄 Location changed, re-fetching items...');
+    loadCategorizedItems();
+  }
+}, [effectiveLocation]);
+
+const loadCategorizedItems = async () => {
+  console.log('🔄 loadCategorizedItems called');
+  console.log('effectiveLocation:', effectiveLocation);
+  console.log('sortBy:', sortBy);
+  
+  try {
+    setLoading(true);
+    setError(null);
+
+    console.log('📡 Fetching items from Firebase...');
+    const allItems = await getFeaturedItems(48);
+    console.log('✅ Fetched items:', allItems.length);
+    
+    const currentUserId = user?.uid;
+    
+    // Filter out current user's items AND invalid items
+    const filteredItems = allItems.filter(item => {
+      const isNotCurrentUser = item.shopId !== currentUserId;
+      const hasImages = item.images && item.images.length > 0 && item.images.some(img => img);
+      const hasValidPrice = item.price && !isNaN(parseFloat(item.price)) && parseFloat(item.price) > 0;
+      const hasStock = !item.deleted && (!item.quantity || parseInt(item.quantity) > 0);
+      
+      return isNotCurrentUser && hasImages && hasValidPrice && hasStock;
+    });
+    
+    console.log('✅ Filtered items:', filteredItems.length);
+
+    let itemsWithDistance = filteredItems;
+    
+    // Calculate distances if we have location
+    if (effectiveLocation) {
+      console.log('📍 Calculating distances...');
+      itemsWithDistance = filteredItems.map(item => {
+        let itemCoords = item.coordinates;
+        if (!itemCoords && item.address) {
+          const coordsMatch = item.address.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+          if (coordsMatch) {
+            itemCoords = {
+              lat: parseFloat(coordsMatch[1]),
+              lng: parseFloat(coordsMatch[2])
+            };
+          }
+        }
+
+        if (itemCoords?.lat && itemCoords?.lng) {
+          try {
+            const distanceInMeters = getDistance(
+              { latitude: effectiveLocation.latitude, longitude: effectiveLocation.longitude },
+              { latitude: itemCoords.lat, longitude: itemCoords.lng }
+            );
+            const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
+
+            return {
+              ...item,
+              coordinates: itemCoords,
+              distance: distanceInMeters,
+              distanceInMiles,
+              formattedDistance: `${distanceInMiles} mi`
+            };
+          } catch (e) {
+            console.warn('Error calculating distance for item:', e);
+            return item;
+          }
+        }
+        return item;
+      });
+    } else {
+      console.warn('⚠️ No effectiveLocation available for distance calculation');
+    }
+
+    // Apply sorting
+    console.log('🔄 Applying sort:', sortBy);
+    const sortedItems = applySorting(itemsWithDistance, sortBy);
+    console.log('✅ Sorted items:', sortedItems.length);
+
+    // Categorize items
+    const categorizedItems = {
+      'Electronics & Tech': [],
+      'Clothing & Accessories': [],
+      'Home & Garden': [],
+      'Sports & Outdoors': [],
+      'Books & Media': [],
+      'Toys & Games': [],
+      'Health & Beauty': [],
+      'Automotive': [],
+      'Collectibles & Art': [],
+      'Food & Beverages': [],
+      'Other': []
+    };
+
+    sortedItems.forEach(item => {
+      const category = item.category || 'Other';
+      if (categorizedItems[category]) {
+        categorizedItems[category].push(item);
+      } else {
+        categorizedItems['Other'].push(item);
+      }
+    });
+
+    Object.keys(categorizedItems).forEach(category => {
+      categorizedItems[category] = categorizedItems[category].slice(0, 10);
+    });
+
+    console.log('✅ Setting categories:', Object.keys(categorizedItems).map(k => `${k}: ${categorizedItems[k].length}`));
+    setCategories(categorizedItems);
+    setFeaturedItems(sortedItems.slice(0, 10));
+    setTotalItems(filteredItems.length);
+
+    setLoading(false);
+  } catch (error) {
+    console.error('❌ Error loading categorized items:', error);
+    setError('Failed to load items. Please try again later.');
+    setLoading(false);
+  }
+};
 
 // Add this useEffect with other effects
 
@@ -1677,10 +1882,6 @@ useEffect(() => {
   document.addEventListener('mousedown', handleClickOutside);
   return () => document.removeEventListener('mousedown', handleClickOutside);
 }, [sortMenuOpen]);
-
-// Add this function before the return statement in WelcomePage component
-
-// Replace the applySorting function with this updated version:
 
 const applySorting = (items, sortType) => {
   let sortedItems = [...items];
@@ -1701,14 +1902,7 @@ const applySorting = (items, sortType) => {
       break;
       
     case 'price-low':
-      // Filter items within 30 miles, then sort by price (low to high)
-      if (userLocation) {
-        sortedItems = sortedItems.filter(item => {
-          if (!item.distance) return false;
-          const distanceInMiles = item.distance / 1609.34;
-          return distanceInMiles <= 30;
-        });
-      }
+      // REMOVED 30-mile filter - sort all items by price (low to high)
       sortedItems.sort((a, b) => {
         const priceA = parseFloat(a.price) || 0;
         const priceB = parseFloat(b.price) || 0;
@@ -1717,14 +1911,7 @@ const applySorting = (items, sortType) => {
       break;
       
     case 'price-high':
-      // Filter items within 30 miles, then sort by price (high to low)
-      if (userLocation) {
-        sortedItems = sortedItems.filter(item => {
-          if (!item.distance) return false;
-          const distanceInMiles = item.distance / 1609.34;
-          return distanceInMiles <= 30;
-        });
-      }
+      // REMOVED 30-mile filter - sort all items by price (high to low)
       sortedItems.sort((a, b) => {
         const priceA = parseFloat(a.price) || 0;
         const priceB = parseFloat(b.price) || 0;
@@ -1734,14 +1921,7 @@ const applySorting = (items, sortType) => {
       
     case 'recent':
     default:
-      // Filter items within 30 miles, then sort by most recent
-      if (userLocation) {
-        sortedItems = sortedItems.filter(item => {
-          if (!item.distance) return false;
-          const distanceInMiles = item.distance / 1609.34;
-          return distanceInMiles <= 30;
-        });
-      }
+      // REMOVED 30-mile filter - sort all items by most recent
       sortedItems.sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
         const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
@@ -1932,7 +2112,6 @@ const getStateAbbreviation = (stateName) => {
   return stateMap[stateName] || stateName;
 };
 
-// Replace handleLocationToZip with handleLocationToCity
 const handleLocationToCity = async () => {
   try {
     setIsConvertingToCity(true);
@@ -1966,6 +2145,16 @@ const handleLocationToCity = async () => {
     // Convert fresh coordinates to city/region
     await convertCoordsToCity(freshLocation.latitude, freshLocation.longitude);
     
+    // ✅ UPDATE: Set effectiveLocation to trigger item re-fetch
+    setEffectiveLocation(freshLocation);
+    setIsIPLocation(false);
+    
+    // ✅ UPDATE: Re-fetch items with new location
+    console.log('🔄 Re-fetching items with new location...');
+    if (activeTab === 'featured') {
+      await loadCategorizedItems();
+    }
+    
   } catch (error) {
     console.error('Error getting fresh location:', error);
     
@@ -1973,6 +2162,11 @@ const handleLocationToCity = async () => {
     if (userLocation) {
       console.log('Using stored location as fallback');
       await convertCoordsToCity(userLocation.latitude, userLocation.longitude);
+      
+      // ✅ UPDATE: Still re-fetch with stored location
+      if (activeTab === 'featured') {
+        await loadCategorizedItems();
+      }
     } else {
       setError('Location not available. Please enable location services.');
     }
@@ -2179,106 +2373,6 @@ useEffect(() => {
     setHasSearchResults(false);
     setError(null);
   };
-
-// Update the loadCategorizedItems function (around line 950)
-
-const loadCategorizedItems = async () => {
-  try {
-    setLoading(true);
-    setError(null);
-
-    const allItems = await getFeaturedItems(48);
-    const currentUserId = user?.uid;
-    
-    // Filter out current user's items AND invalid items
-    const filteredItems = allItems.filter(item => {
-      const isNotCurrentUser = item.shopId !== currentUserId;
-      const hasImages = item.images && item.images.length > 0 && item.images.some(img => img);
-      const hasValidPrice = item.price && !isNaN(parseFloat(item.price)) && parseFloat(item.price) > 0;
-      const hasStock = !item.deleted && (!item.quantity || parseInt(item.quantity) > 0);
-      
-      return isNotCurrentUser && hasImages && hasValidPrice && hasStock;
-    });
-
-    let itemsWithDistance = filteredItems;
-    if (userLocation) {
-      itemsWithDistance = filteredItems.map(item => {
-        let itemCoords = item.coordinates;
-        if (!itemCoords && item.address) {
-          const coordsMatch = item.address.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
-          if (coordsMatch) {
-            itemCoords = {
-              lat: parseFloat(coordsMatch[1]),
-              lng: parseFloat(coordsMatch[2])
-            };
-          }
-        }
-
-        if (itemCoords?.lat && itemCoords?.lng) {
-          try {
-            const distanceInMeters = getDistance(
-              { latitude: userLocation.latitude, longitude: userLocation.longitude },
-              { latitude: itemCoords.lat, longitude: itemCoords.lng }
-            );
-            const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
-
-            return {
-              ...item,
-              coordinates: itemCoords,
-              distance: distanceInMeters,
-              distanceInMiles,
-              formattedDistance: `${distanceInMiles} mi`
-            };
-          } catch (e) {
-            console.warn('Error calculating distance for item:', e);
-            return item;
-          }
-        }
-        return item;
-      });
-    }
-
-    // Apply sorting
-    const sortedItems = applySorting(itemsWithDistance, sortBy);
-
-    const categorizedItems = {
-      'Electronics & Tech': [],
-      'Clothing & Accessories': [],
-      'Home & Garden': [],
-      'Sports & Outdoors': [],
-      'Books & Media': [],
-      'Toys & Games': [],
-      'Health & Beauty': [],
-      'Automotive': [],
-      'Collectibles & Art': [],
-      'Food & Beverages': [],
-      'Other': []
-    };
-
-    sortedItems.forEach(item => {
-      const category = item.category || 'Other';
-      if (categorizedItems[category]) {
-        categorizedItems[category].push(item);
-      } else {
-        categorizedItems['Other'].push(item);
-      }
-    });
-
-    Object.keys(categorizedItems).forEach(category => {
-      categorizedItems[category] = categorizedItems[category].slice(0, 10);
-    });
-
-    setCategories(categorizedItems);
-    setFeaturedItems(sortedItems.slice(0, 10));
-    setTotalItems(filteredItems.length);
-
-    setLoading(false);
-  } catch (error) {
-    console.error('Error loading categorized items:', error);
-    setError('Failed to load items. Please try again later.');
-    setLoading(false);
-  }
-};
 
   // Fetch nearby items
   const fetchNearbyItems = async () => {
@@ -2618,33 +2712,42 @@ const loadCategorizedItems = async () => {
   }, [userLocation, activeTab]);
 
   useEffect(() => {
-    const loadTabContent = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const loadTabContent = async () => {
+    console.log('📑 Loading tab content...', { activeTab, effectiveLocation });
     
-        switch (activeTab) {
-          case 'featured':
-            loadCategorizedItems();
-            return;
-          case 'nearby':
-            setLoading(false);
-            break;
-          case 'media':
-            setLoading(false);
-            break;
-          default:
-            setLoading(false);
-        }
-      } catch (error) {
-        console.error('Error loading content:', error);
-        setError('Failed to load content. Please try again later.');
-        setLoading(false);
-      }
-    };
+    try {
+      setLoading(true);
+      setError(null);
   
-    loadTabContent();
-  }, [activeTab, user?.uid]);
+      switch (activeTab) {
+        case 'featured':
+          // Wait for effectiveLocation before loading items
+          if (effectiveLocation) {
+            console.log('📦 Loading featured items...');
+            await loadCategorizedItems();
+          } else {
+            console.log('⏳ Waiting for location...');
+            setLoading(false);
+          }
+          return;
+        case 'nearby':
+          setLoading(false);
+          break;
+        case 'media':
+          setLoading(false);
+          break;
+        default:
+          setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error loading content:', error);
+      setError('Failed to load content. Please try again later.');
+      setLoading(false);
+    }
+  };
+
+  loadTabContent();
+}, [activeTab, user?.uid]); // ❌ REMOVE effectiveLocation from here to avoid duplicate calls
 
   useEffect(() => {
     if (activeTab === 'featured') {
@@ -2845,41 +2948,46 @@ const loadCategorizedItems = async () => {
           </Tab>
         </TabContainer>
 
-<LocationIndicator2 theme={currentStyle} isPinned={isCityPinned}>
-  <button 
-    className="location-icon-btn"
-    onClick={handleLocationToCity}
-    disabled={isConvertingToCity}
-    title="Get region from current location"
-  >
-    {isConvertingToCity ? (
-      <div className="updating-spinner" />
-    ) : (
-      <Navigation size={20} />
-    )}
-  </button>
-  
-  <input
-    type="text"
-    className="location-input"
-    value={cityInputValue}
-    onChange={(e) => setCityInputValue(e.target.value)}
-    placeholder={cityRegion ? cityRegion : "Read current Location One Time"}
-    readOnly
-  />
-  
-  <button
-    className="pin-icon-btn"
-    onClick={handleToggleCityPin}
-    disabled={!cityRegion || cityRegion === 'Not available' || cityRegion === 'Error'}
-    title={isCityPinned ? "Unpin location" : "Pin location"}
-  >
-    <Pin 
-      size={18} 
-      fill={isCityPinned ? currentStyle.colors.accent : "none"}
-    />
-  </button>
-</LocationIndicator2>
+
+        <LocationIndicator2 theme={currentStyle} isPinned={isCityPinned}>
+          <button 
+            className="location-icon-btn"
+            onClick={handleLocationToCity}
+            disabled={isConvertingToCity}
+            title="Get region from current location"
+          >
+            {isConvertingToCity ? (
+              <div className="updating-spinner" />
+            ) : (
+              <Navigation size={20} />
+            )}
+          </button>
+          
+          <input
+            type="text"
+            className="location-input"
+            value={cityInputValue}
+            onChange={(e) => setCityInputValue(e.target.value)}
+            placeholder={
+              isIPLocation ? 
+                `${effectiveLocation?.city || 'Location'} (IP-based)` : 
+                cityRegion ? cityRegion : "Click location icon to share"
+            }
+            readOnly
+          />
+
+          <button
+            className="pin-icon-btn"
+            onClick={handleToggleCityPin}
+            disabled={!cityRegion || cityRegion === 'Not available' || cityRegion === 'Error'}
+            title={isCityPinned ? "Unpin location" : "Pin location"}
+          >
+            <Pin 
+              size={18} 
+              fill={isCityPinned ? currentStyle.colors.accent : "none"}
+            />
+          </button>
+        </LocationIndicator2>
 
 
         {/* Nearby Items Tab */}
@@ -3011,7 +3119,7 @@ const loadCategorizedItems = async () => {
                     }}>
                       Sort By
                     </div>
-
+                  
                     <SortOption 
                       theme={currentStyle}
                       active={sortBy === 'recent'}
@@ -3033,7 +3141,7 @@ const loadCategorizedItems = async () => {
                           opacity: 0.7,
                           fontWeight: '400'
                         }}>
-                          Within 30 miles
+                          All items, newest first
                         </span>
                       </div>
                       {!userLocation && (
@@ -3068,7 +3176,7 @@ const loadCategorizedItems = async () => {
                           opacity: 0.7,
                           fontWeight: '400'
                         }}>
-                          No distance limit
+                          All items by distance
                         </span>
                       </div>
                       {!userLocation && (
@@ -3104,7 +3212,7 @@ const loadCategorizedItems = async () => {
                           opacity: 0.7,
                           fontWeight: '400'
                         }}>
-                          Within 30 miles
+                          All items by price
                         </span>
                       </div>
                       {!userLocation && (
@@ -3140,7 +3248,7 @@ const loadCategorizedItems = async () => {
                           opacity: 0.7,
                           fontWeight: '400'
                         }}>
-                          Within 30 miles
+                          All items by price
                         </span>
                       </div>
                       {!userLocation && (

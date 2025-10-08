@@ -89,6 +89,7 @@ const formatCoordinates = (coords) => {
   return `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`;
 };
 
+
 const AddressInput = ({ address, onAddressChange, onLocationSelect }) => {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -109,6 +110,8 @@ const AddressInput = ({ address, onAddressChange, onLocationSelect }) => {
         if (coords) {
           const formattedAddress = formatCoordinates(coords);
           onAddressChange(formattedAddress);
+          
+          // Call onLocationSelect with proper structure
           onLocationSelect({
             address: formattedAddress,
             coordinates: coords
@@ -118,41 +121,15 @@ const AddressInput = ({ address, onAddressChange, onLocationSelect }) => {
       },
       (error) => {
         console.error('Error getting location:', error);
+        alert('Failed to get location. Please enable location services.');
         setIsLoading(false);
       },
       {
         enableHighAccuracy: true,
-        timeout: 5000,
+        timeout: 10000,
         maximumAge: 0
       }
     );
-  };
-
-  const handleAddressSubmit = () => {
-    if (!address.trim()) return;
-
-    // Check if input is coordinates format (lat, lng)
-    const coordsMatch = address.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
-    
-    if (coordsMatch) {
-      const coords = {
-        lat: parseFloat(coordsMatch[1]),
-        lng: parseFloat(coordsMatch[2])
-      };
-      
-      onLocationSelect({
-        address: formatCoordinates(coords),
-        coordinates: coords
-      });
-    } else {
-      // For now, use a default location
-      // TODO: Implement actual geocoding
-      const defaultCoords = { lat: 29.6350, lng: -95.4738 };
-      onLocationSelect({
-        address: formatCoordinates(defaultCoords),
-        coordinates: defaultCoords
-      });
-    }
   };
 
   return (
@@ -162,30 +139,52 @@ const AddressInput = ({ address, onAddressChange, onLocationSelect }) => {
           type="text"
           value={address}
           onChange={(e) => onAddressChange(e.target.value)}
-          placeholder="Enter coordinates (lat, lng)..."
-          onKeyPress={(e) => e.key === 'Enter' && handleAddressSubmit()}
+          placeholder="Enter coordinates (lat, lng) or click location icon"
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              // Handle manual coordinate entry
+              const coordsMatch = address.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+              if (coordsMatch) {
+                const coords = {
+                  lat: parseFloat(coordsMatch[1]),
+                  lng: parseFloat(coordsMatch[2])
+                };
+                onLocationSelect({
+                  address: formatCoordinates(coords),
+                  coordinates: coords
+                });
+              }
+            }
+          }}
         />
         {address && (
           <LocationButton 
-            onClick={() => onAddressChange('')}
+            onClick={() => {
+              onAddressChange('');
+              onLocationSelect({ address: '', coordinates: null });
+            }}
             title="Clear"
           >
             <X size={16} />
           </LocationButton>
         )}
         <LocationButton 
-          onClick={handleAddressSubmit}
-          disabled={!address.trim() || isLoading}
-          title="Search coordinates"
-        >
-          <Search size={16} />
-        </LocationButton>
-        <LocationButton 
           onClick={handleLiveLocation}
           disabled={isLoading}
           title="Use current location"
         >
-          <Navigation size={16} />
+          {isLoading ? (
+            <div style={{
+              width: '16px',
+              height: '16px',
+              border: '2px solid rgba(128, 0, 0, 0.3)',
+              borderRadius: '50%',
+              borderTopColor: '#800000',
+              animation: 'spin 1s linear infinite'
+            }} />
+          ) : (
+            <Navigation size={16} />
+          )}
         </LocationButton>
       </InputWrapper>
       {address && (

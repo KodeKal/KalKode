@@ -2005,18 +2005,19 @@ const handleSave = async () => {
                         <AddressInput
                           address={item.address || ''}
                           onAddressChange={(value) => handleItemUpdate(item.id, { 
-                            address: value,
-                            coordinates: null
+                            address: value
                           })}
                           onLocationSelect={(location) => {
-                            if (location?.coordinates?.latitude && location?.coordinates?.longitude) {
-                              const coords = {
-                                lat: location.coordinates.latitude,
-                                lng: location.coordinates.longitude
-                              };
+                            console.log('Location selected:', location);
+                            if (location?.coordinates) {
                               handleItemUpdate(item.id, {
-                                address: location.address || `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`,
-                                coordinates: coords
+                                address: location.address,
+                                coordinates: location.coordinates
+                              });
+                            } else if (!location?.address) {
+                              handleItemUpdate(item.id, {
+                                address: '',
+                                coordinates: null
                               });
                             }
                           }}
@@ -2178,22 +2179,24 @@ const handleSave = async () => {
               <AddressInput
                 address={editingItem.address || ''}
                 onAddressChange={(value) => setEditingItem({ 
-            ...editingItem, 
-            address: value,
-            coordinates: null
+                  ...editingItem, 
+                  address: value
                 })}
                 onLocationSelect={(location) => {
-            if (location?.coordinates?.latitude && location?.coordinates?.longitude) {
-              const coords = {
-                lat: location.coordinates.latitude,
-                lng: location.coordinates.longitude
-              };
-              setEditingItem({
-                ...editingItem,
-                address: location.address || `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`,
-                coordinates: coords
-              });
-            }
+                  console.log('Location selected:', location);
+                  if (location?.coordinates) {
+                    setEditingItem({
+                      ...editingItem,
+                      address: location.address,
+                      coordinates: location.coordinates
+                    });
+                  } else if (!location?.address) {
+                    setEditingItem({
+                      ...editingItem,
+                      address: '',
+                      coordinates: null
+                    });
+                  }
                 }}
               />
             </EditModalBody>
