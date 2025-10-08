@@ -1391,7 +1391,7 @@ const LiveShopCreation = () => {
   const [usernameAvailable, setUsernameAvailable] = useState(null);
 
   const [shopData, setShopData] = useState({
-    name: 'MyBrandName', // ADD DEFAULT NAME HERE
+    name: 'EnterBrandName', // ADD DEFAULT NAME HERE
     description: '',
     profile: null,
     mission: '',
@@ -1418,7 +1418,7 @@ const LiveShopCreation = () => {
   // UPDATE checkUsernameAvailability function (around line 1050)
 const checkUsernameAvailability = async (shopName) => {
   // Skip check for empty or default names
-  if (!shopName || shopName.trim() === '' || shopName === 'MyBrandName') {
+  if (!shopName || shopName.trim() === '' || shopName === 'EnterBrandName') {
     setShopNameError('');
     setUsernameAvailable(null);
     return;
@@ -1465,7 +1465,7 @@ const checkUsernameAvailability = async (shopName) => {
   // UPDATE the debounced username check useEffect (around line 1100)
 useEffect(() => {
   // Don't check on initial mount or if name is the default placeholder
-  if (!shopData?.name || shopData.name === 'MyBrandName') {
+  if (!shopData?.name || shopData.name === 'EnterBrandName') {
     setShopNameError('');
     setUsernameAvailable(null);
     return;
@@ -1669,7 +1669,7 @@ const handleSave = async () => {
   // Check if shop name is still default or empty
   let finalShopName = shopData.name;
   
-  if (!finalShopName || finalShopName === 'MyBrandName') {
+  if (!finalShopName || finalShopName === 'EnterBrandName') {
     const adjectives = ['Cool', 'Great', 'Super', 'Amazing', 'Awesome', 'Epic', 'Prime', 'Elite'];
     const nouns = ['Shop', 'Store', 'Market', 'Bazaar', 'Outlet', 'Hub', 'Spot', 'Place'];
     const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
@@ -1773,7 +1773,7 @@ const handleSave = async () => {
               onChange={(e) => {
                 handleShopDataChange('name', e.target.value);
               }}
-              placeholder="MyBrandName*" // Show asterisk in placeholder
+              placeholder="EnterBrandName*" // Show asterisk in placeholder
               fontSize={shopNameFontSize}
               theme={selectedTheme}
               isError={!!shopNameError}
@@ -1788,7 +1788,7 @@ const handleSave = async () => {
                 {shopNameError}
               </ShopNameError>
             )}
-            {usernameAvailable && !checkingUsername && shopData.name !== 'MyBrandName' && (
+            {usernameAvailable && !checkingUsername && shopData.name !== 'EnterBrandName' && (
               <ShopNameSuccess theme={selectedTheme}>
                 ✓ Shop name available
               </ShopNameSuccess>
