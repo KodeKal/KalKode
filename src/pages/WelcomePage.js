@@ -3069,10 +3069,10 @@ useEffect(() => {
                 (isIPLocation ? `${cityInputValue} - IP-based` : `${cityInputValue} - Fetched Nearby` ) :
                 (effectiveLocation && isIPLocation ? 
                   `${effectiveLocation.city}, ${effectiveLocation.region} (IP-based)` : 
-                  'Click location icon')
+                  'Read Location')
             }
             onChange={(e) => setCityInputValue(e.target.value)}
-            placeholder="Click location icon to share"
+            placeholder="Read Location for Nearby"
             readOnly
           />
 
