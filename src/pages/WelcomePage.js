@@ -19,46 +19,12 @@ import ThemeDecorations from '../components/ThemeDecorations';
 import { TransactionService } from '../services/TransactionService';
 import { signOut } from 'firebase/auth';
 
-const getIPBasedLocation = async () => {
-  try {
-    console.log('🌐 Fetching IP-based location from ipapi.co...');
-    const response = await fetch('https://ipapi.co/json/');
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    console.log('✅ IP Location data:', data);
-    
-    if (!data.latitude || !data.longitude) {
-      throw new Error('Invalid location data received');
-    }
-    
-    return {
-      latitude: data.latitude,
-      longitude: data.longitude,
-      city: data.city,
-      region: data.region,
-      country: data.country_name,
-      isIPBased: true
-    };
-  } catch (error) {
-    console.error('❌ Error getting IP location:', error);
-    
-    // Fallback to a default location (Houston, TX)
-    console.log('⚠️ Using fallback location: Houston, TX');
-    return {
-      latitude: 29.7604,
-      longitude: -95.3698,
-      city: 'Houston',
-      region: 'Texas',
-      country: 'United States',
-      isIPBased: true,
-      isFallback: true
-    };
-  }
-};
+// Location storage utilities
+const LOCATION_STORAGE_KEY = 'kalkode_user_location';
+const LOCATION_TIMESTAMP_KEY = 'kalkode_location_timestamp';
+const LOCATION_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+
+
 
 // Mobile-first styled components
 const PageContainer = styled.div.attrs({ className: 'page-container' })`
@@ -1701,41 +1667,74 @@ const WelcomePage = () => {
     'Other': []
   });
 // Replace the existing state variables related to ZIP with city/region states
+const [effectiveLocation, setEffectiveLocation] = useState(null);
+const [isIPLocation, setIsIPLocation] = useState(false);
+// Add these state variables with the other useState declarations
 const [cityRegion, setCityRegion] = useState('');
 const [isCityPinned, setIsCityPinned] = useState(false);
 const [isConvertingToCity, setIsConvertingToCity] = useState(false);
 const [cityInputValue, setCityInputValue] = useState('');
-const [effectiveLocation, setEffectiveLocation] = useState(null);
-const [isIPLocation, setIsIPLocation] = useState(false);
 
 useEffect(() => {
   const initializeLocation = async () => {
     console.log('🔍 Initializing location...');
-    console.log('userLocation:', userLocation);
+    console.log('userLocation from context:', userLocation);
     
+    // Priority 1: Check if user has GPS location from context
     if (userLocation) {
-      // User has shared precise location
-      console.log('✅ Using GPS location:', userLocation);
+      console.log('✅ Using GPS location from context:', userLocation);
       setEffectiveLocation(userLocation);
       setIsIPLocation(false);
-    } else {
-      // Use IP-based location
-      console.log('🌐 Fetching IP-based location...');
-      const ipLocation = await getIPBasedLocation();
-      console.log('IP Location result:', ipLocation);
+      saveLocationToStorage({ ...userLocation, isIPBased: false });
       
-      if (ipLocation) {
-        console.log('✅ Using IP location:', ipLocation);
-        setEffectiveLocation(ipLocation);
-        setIsIPLocation(true);
-      } else {
-        console.error('❌ Failed to get IP location');
+      // Convert to city for display
+      if (userLocation.latitude && userLocation.longitude) {
+        await convertCoordsToCity(userLocation.latitude, userLocation.longitude);
       }
+      return;
+    }
+    
+    // Priority 2: Check localStorage for previously saved location
+    const storedLocation = getLocationFromStorage();
+    if (storedLocation) {
+      console.log('✅ Using stored location:', storedLocation);
+      setEffectiveLocation(storedLocation);
+      setIsIPLocation(storedLocation.isIPBased || false);
+      
+      // If it's a GPS location, convert to city for display
+      if (!storedLocation.isIPBased && storedLocation.latitude && storedLocation.longitude) {
+        await convertCoordsToCity(storedLocation.latitude, storedLocation.longitude);
+      } else if (storedLocation.city) {
+        // If it's IP-based, use the stored city
+        setCityRegion(storedLocation.city);
+        setCityInputValue(storedLocation.city);
+      }
+      return;
+    }
+    
+    // Priority 3: Fetch IP-based location
+    console.log('🌐 Fetching IP-based location...');
+    const ipLocation = await getIPBasedLocation();
+    
+    if (ipLocation) {
+      console.log('✅ Using IP location:', ipLocation);
+      setEffectiveLocation(ipLocation);
+      setIsIPLocation(true);
+      saveLocationToStorage(ipLocation);
+      
+      // Display IP-based city
+      if (ipLocation.city) {
+        const displayText = `${ipLocation.city}, ${ipLocation.region || ipLocation.country}`;
+        setCityRegion(displayText);
+        setCityInputValue(displayText);
+      }
+    } else {
+      console.error('❌ Failed to get any location');
     }
   };
   
   initializeLocation();
-}, [userLocation]);
+}, [userLocation]); // Only depend on userLocation from context
 
 useEffect(() => {
   console.log('🔄 effectiveLocation changed:', effectiveLocation);
@@ -1753,6 +1752,102 @@ useEffect(() => {
     loadCategorizedItems();
   }
 }, [effectiveLocation]);
+
+const saveLocationToStorage = (location) => {
+  try {
+    localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(location));
+    localStorage.setItem(LOCATION_TIMESTAMP_KEY, Date.now().toString());
+    console.log('💾 Saved location to localStorage:', location);
+  } catch (error) {
+    console.error('Failed to save location:', error);
+  }
+};
+
+const getLocationFromStorage = () => {
+  try {
+    const stored = localStorage.getItem(LOCATION_STORAGE_KEY);
+    const timestamp = localStorage.getItem(LOCATION_TIMESTAMP_KEY);
+    
+    if (!stored || !timestamp) {
+      console.log('📍 No stored location found');
+      return null;
+    }
+    
+    const age = Date.now() - parseInt(timestamp);
+    if (age > LOCATION_EXPIRY) {
+      console.log('⏰ Stored location expired');
+      localStorage.removeItem(LOCATION_STORAGE_KEY);
+      localStorage.removeItem(LOCATION_TIMESTAMP_KEY);
+      return null;
+    }
+    
+    const location = JSON.parse(stored);
+    console.log('✅ Retrieved stored location:', location);
+    return location;
+  } catch (error) {
+    console.error('Failed to retrieve location:', error);
+    return null;
+  }
+};
+
+const clearLocationFromStorage = () => {
+  localStorage.removeItem(LOCATION_STORAGE_KEY);
+  localStorage.removeItem(LOCATION_TIMESTAMP_KEY);
+  console.log('🗑️ Cleared stored location');
+};
+
+const getIPBasedLocation = async () => {
+  try {
+    console.log('🌐 Fetching IP-based location from ipapi.co...');
+    const response = await fetch('https://ipapi.co/json/');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ IP Location data:', data);
+    
+    if (!data.latitude || !data.longitude) {
+      throw new Error('Invalid location data received');
+    }
+    
+    const location = {
+      latitude: data.latitude,
+      longitude: data.longitude,
+      city: data.city,
+      region: data.region,
+      country: data.country_name,
+      isIPBased: true
+    };
+    
+    // ✅ Immediately show city in UI
+    const displayText = `${data.city}, ${data.region || data.country_name}`;
+    setCityRegion(displayText);
+    setCityInputValue(displayText);
+    
+    return location;
+  } catch (error) {
+    console.error('❌ Error getting IP location:', error);
+    
+    // Fallback to a default location (Houston, TX)
+    console.log('⚠️ Using fallback location: Houston, TX');
+    const fallbackLocation = {
+      latitude: 29.7604,
+      longitude: -95.3698,
+      city: 'Houston',
+      region: 'Texas',
+      country: 'United States',
+      isIPBased: true,
+      isFallback: true
+    };
+    
+    setCityRegion('Houston, Texas');
+    setCityInputValue('Houston, Texas');
+    
+    return fallbackLocation;
+  }
+};
 
 const loadCategorizedItems = async () => {
   console.log('🔄 loadCategorizedItems called');
@@ -1943,7 +2038,6 @@ const getSortLabel = (sortType) => {
   }
 };
 
-// Replace convertCoordsToZip with this new function
 const convertCoordsToCity = async (lat, lon) => {
   try {
     setIsConvertingToCity(true);
@@ -1976,7 +2070,7 @@ const convertCoordsToCity = async (lat, lon) => {
     const city = address.city || address.town || address.village || address.county;
     const state = address.state;
     
-    // Major cities list (you can expand this)
+    // Major cities list
     const majorCities = [
       'Houston', 'Dallas', 'Austin', 'San Antonio', 'Fort Worth',
       'Los Angeles', 'New York', 'Chicago', 'Phoenix', 'Philadelphia',
@@ -1986,10 +2080,8 @@ const convertCoordsToCity = async (lat, lon) => {
     let locationString = '';
     
     if (city && majorCities.some(major => city.includes(major))) {
-      // For major cities, determine direction from city center
       const cityName = majorCities.find(major => city.includes(major));
       
-      // Get city center coordinates (you could make this more precise with a lookup table)
       const cityCenterResponse = await fetch(
         `https://nominatim.openstreetmap.org/search?city=${cityName}&state=${state}&format=json&limit=1`,
         {
@@ -2006,15 +2098,12 @@ const convertCoordsToCity = async (lat, lon) => {
         const centerLat = parseFloat(cityCenterData[0].lat);
         const centerLon = parseFloat(cityCenterData[0].lon);
         
-        // Calculate direction
         const direction = getDirection(lat, lon, centerLat, centerLon);
         locationString = `${direction} ${cityName}, ${getStateAbbreviation(state)}`;
       } else {
         locationString = `${cityName}, ${getStateAbbreviation(state)}`;
       }
     } else if (state) {
-      // For non-major cities, use state with direction
-      // Get state center (approximate)
       const stateCenterResponse = await fetch(
         `https://nominatim.openstreetmap.org/search?state=${state}&country=USA&format=json&limit=1`,
         {
@@ -2049,7 +2138,7 @@ const convertCoordsToCity = async (lat, lon) => {
     
     console.log(`Coordinates ${lat}, ${lon} → ${locationString}`);
     
-    return locationString;
+    return locationString; // ✅ Return the city name
     
   } catch (error) {
     console.error('Error converting coordinates to city:', error);
@@ -2142,14 +2231,24 @@ const handleLocationToCity = async () => {
       );
     });
     
-    // Convert fresh coordinates to city/region
-    await convertCoordsToCity(freshLocation.latitude, freshLocation.longitude);
+    console.log('📍 Got fresh GPS location:', freshLocation);
     
-    // ✅ UPDATE: Set effectiveLocation to trigger item re-fetch
-    setEffectiveLocation(freshLocation);
+    // Convert fresh coordinates to city/region
+    const cityName = await convertCoordsToCity(freshLocation.latitude, freshLocation.longitude);
+    
+    // ✅ Save GPS location to localStorage
+    const locationToSave = {
+      ...freshLocation,
+      city: cityName,
+      isIPBased: false
+    };
+    saveLocationToStorage(locationToSave);
+    
+    // Update effectiveLocation to trigger item re-fetch
+    setEffectiveLocation(locationToSave);
     setIsIPLocation(false);
     
-    // ✅ UPDATE: Re-fetch items with new location
+    // Re-fetch items with new location
     console.log('🔄 Re-fetching items with new location...');
     if (activeTab === 'featured') {
       await loadCategorizedItems();
@@ -2163,7 +2262,6 @@ const handleLocationToCity = async () => {
       console.log('Using stored location as fallback');
       await convertCoordsToCity(userLocation.latitude, userLocation.longitude);
       
-      // ✅ UPDATE: Still re-fetch with stored location
       if (activeTab === 'featured') {
         await loadCategorizedItems();
       }
@@ -2226,6 +2324,24 @@ useEffect(() => {
     
     setTimeout(() => setIsRefreshing(false), 500);
   };
+
+  {!isIPLocation && cityRegion && (
+  <button
+    className="location-icon-btn"
+    onClick={() => {
+      clearLocationFromStorage();
+      setCityRegion('');
+      setCityInputValue('');
+      setEffectiveLocation(null);
+      setIsIPLocation(false);
+      // This will trigger the useEffect to fetch IP location again
+    }}
+    title="Clear saved location"
+    style={{ opacity: 0.6 }}
+  >
+    <X size={16} />
+  </button>
+)}
 
   // Toggle pin style
   const togglePinStyle = () => {
@@ -2747,7 +2863,7 @@ useEffect(() => {
   };
 
   loadTabContent();
-}, [activeTab, user?.uid]); // ❌ REMOVE effectiveLocation from here to avoid duplicate calls
+}, [activeTab, user?.uid]); 
 
   useEffect(() => {
     if (activeTab === 'featured') {
@@ -2966,13 +3082,15 @@ useEffect(() => {
           <input
             type="text"
             className="location-input"
-            value={cityInputValue}
-            onChange={(e) => setCityInputValue(e.target.value)}
-            placeholder={
-              isIPLocation ? 
-                `${effectiveLocation?.city || 'Location'} (IP-based)` : 
-                cityRegion ? cityRegion : "Click location icon to share"
+            value={
+              cityInputValue ? 
+                (isIPLocation ? `${cityInputValue} - IP-based` : `${cityInputValue} - Fetched Nearby` ) :
+                (effectiveLocation && isIPLocation ? 
+                  `${effectiveLocation.city}, ${effectiveLocation.region} (IP-based)` : 
+                  'Click location icon')
             }
+            onChange={(e) => setCityInputValue(e.target.value)}
+            placeholder="Click location icon to share"
             readOnly
           />
 
@@ -3527,7 +3645,7 @@ useEffect(() => {
               }}>
                 {zoomedItem.formattedDistance && (
                   <>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'right', gap: '0.25rem' }}>
                       <Navigation size={11} />
                       <span>{zoomedItem.formattedDistance}</span>
                     </div>
