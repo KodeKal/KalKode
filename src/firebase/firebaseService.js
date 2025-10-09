@@ -254,7 +254,6 @@ export const saveInitialShop = async (userId, data) => {
       username: username, // ADD USERNAME
       theme: cleanDataForFirestore(data.theme) || {},
       layout: cleanDataForFirestore(data.layout) || {},
-homeWidgets: cleanDataForFirestore(data.homeWidgets) || [],
       status: 'active',
       profile: null,
       searchTerms: generateSearchTerms({ shopName: data.name }),
