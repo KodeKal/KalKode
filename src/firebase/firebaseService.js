@@ -121,7 +121,6 @@ export const saveShopData = async (userId, data) => {
       username: username, // ADD USERNAME
       theme: cleanDataForFirestore(data.theme) || {},
       layout: cleanDataForFirestore(data.layout) || {},
-homeWidgets: cleanDataForFirestore(data.homeWidgets) || [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       userId: userId,
