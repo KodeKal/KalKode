@@ -2325,6 +2325,24 @@ useEffect(() => {
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
+  {!isIPLocation && cityRegion && (
+  <button
+    className="location-icon-btn"
+    onClick={() => {
+      clearLocationFromStorage();
+      setCityRegion('');
+      setCityInputValue('');
+      setEffectiveLocation(null);
+      setIsIPLocation(false);
+      // This will trigger the useEffect to fetch IP location again
+    }}
+    title="Clear saved location"
+    style={{ opacity: 0.6 }}
+  >
+    <X size={16} />
+  </button>
+)}
+
   // Toggle pin style
   const togglePinStyle = () => {
     if (isPinned) {
@@ -3066,13 +3084,13 @@ useEffect(() => {
             className="location-input"
             value={
               cityInputValue ? 
-                (isIPLocation ? `${cityInputValue} - IP-based` : `${cityInputValue} - Fetched Nearby` ) :
+                (isIPLocation ? `${cityInputValue} - IP-based` : `Nearby Area: ${cityInputValue}` ) :
                 (effectiveLocation && isIPLocation ? 
                   `${effectiveLocation.city}, ${effectiveLocation.region} (IP-based)` : 
-                  'Read Location')
+                  'Load Locations')
             }
             onChange={(e) => setCityInputValue(e.target.value)}
-            placeholder="Read Location for Nearby"
+            placeholder="Load Locations"
             readOnly
           />
 
@@ -3087,23 +3105,6 @@ useEffect(() => {
               fill={isCityPinned ? currentStyle.colors.accent : "none"}
             />
           </button>
- {!isIPLocation && cityRegion && (
-  <button
-    className="location-icon-btn"
-    onClick={() => {
-      clearLocationFromStorage();
-      setCityRegion('');
-      setCityInputValue('');
-      setEffectiveLocation(null);
-      setIsIPLocation(false);
-      // This will trigger the useEffect to fetch IP location again
-    }}
-    title="Clear saved location"
-    style={{ opacity: 0.6 }}
-  >
-    <X size={16} />
-  </button>
-)}
         </LocationIndicator2>
 
 

@@ -13,6 +13,7 @@ import {
   Clock,
   Award
 } from 'lucide-react';
+import { center } from '@turf/turf';
 
 // Styled Components
 const TemplateContainer = styled.div`
@@ -63,7 +64,7 @@ const HeroSection = styled.section`
 `;
 
 const BrandName = styled.h1`
-  font-size: clamp(1.8rem, 6vw, 4.5rem);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
   font-weight: 900;
   color: #FFFFFF;
   margin-bottom: 1rem;
@@ -74,21 +75,11 @@ const BrandName = styled.h1`
     0 0 20px rgba(0, 0, 0, 0.8),
     0 0 40px ${props => props.theme?.colors?.accent || '#800000'},
     2px 2px 4px rgba(0, 0, 0, 0.9);
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  line-height: 1.1;
   
   /* Add glowing effect */
   filter: drop-shadow(0 0 10px ${props => props.theme?.colors?.accent || '#800000'});
-  
-  @media (max-width: 480px) {
-    font-size: 1.5rem;
-    letter-spacing: 0.5px;
-  }
-  
-  @media (min-width: 481px) and (max-width: 768px) {
-    font-size: 2rem;
-  }
 `;
 
 const Tagline = styled.p`
@@ -466,23 +457,14 @@ const HomePageTemplate = ({ shopData, theme }) => {
   return (
     <TemplateContainer>
       {/* Preview Notice */}
-      <div style={{
-        background: `${theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)',
-        border: `2px solid ${theme?.colors?.accent}` || '2px solid #800000',
-        borderRadius: '12px',
-        padding: '1rem 1.5rem',
-        marginBottom: '2rem',
-        textAlign: 'center'
-      }}>
         <p style={{
           margin: 0,
           color: theme?.colors?.text || '#FFFFFF',
           fontSize: '0.95rem',
-          fontFamily: theme?.fonts?.body || "'Inter', sans-serif"
+          fontFamily: theme?.fonts?.body || "'Inter', sans-serif",
         }}>
           📋 <strong>Preview Mode:</strong> Editable After Sign Up.
         </p>
-      </div>
       {/* Hero Banner */}
       <HeroSection theme={theme}>
         <BrandName theme={theme}>
