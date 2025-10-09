@@ -3066,7 +3066,7 @@ useEffect(() => {
             className="location-input"
             value={
               cityInputValue ? 
-                (isIPLocation ? `${cityInputValue} - IP-based` : `Nearby Area: ${cityInputValue}` ) :
+                (isIPLocation ? `${cityInputValue} - IP-based` : `${cityInputValue} - Fetched Nearby` ) :
                 (effectiveLocation && isIPLocation ? 
                   `${effectiveLocation.city}, ${effectiveLocation.region} (IP-based)` : 
                   'Read Location')

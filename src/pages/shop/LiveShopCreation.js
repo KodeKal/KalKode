@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import styled, { ThemeProvider, createGlobalStyle } from 'styled-components';
 import ValidatedEditableText from '../../components/common/ValidatedEditableText';
 import { VALIDATION_RULES, validateShopData, validateAllItems } from '../../utils/inputValidation';
-import HomePageTemplate from './HomePageTemplate'; 
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -92,77 +91,6 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
   @keyframes galaxySwirl {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-  }
-`;
-
-// Compact Floating Controls - positioned below header on right
-const FloatingControls = styled.div`
-  position: fixed;
-  top: 70px; /* Just below header */
-  right: 1rem;
-  display: flex;
-  gap: 0.5rem;
-  z-index: 90;
-  
-  @media (min-width: 768px) {
-    top: 90px;
-    right: 2rem;
-  }
-`;
-
-const FloatingButton = styled.button`
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: ${props => props.theme?.colors?.accent || '#800000'};
-  color: white;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 8px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
-  transition: all 0.3s ease;
-  
-  ${props => props.isPinned && `
-    background: white;
-    color: ${props.theme?.colors?.accent || '#800000'};
-    border: 2px solid ${props.theme?.colors?.accent || '#800000'};
-  `}
-  
-  @media (min-width: 768px) {
-    width: 40px;
-    height: 40px;
-  }
-  
-  &:active {
-    transform: scale(0.9);
-  }
-  
-  @media (hover: hover) {
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
-    }
-  }
-  
-  &.spinning {
-    animation: spin 0.5s ease-in-out;
-  }
-  
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  
-  svg {
-    width: 18px;
-    height: 18px;
-    
-    @media (min-width: 768px) {
-      width: 20px;
-      height: 20px;
-    }
   }
 `;
 
@@ -320,6 +248,83 @@ const HeaderTabButton = styled.button`
     }
   }
 `;
+
+// UPDATE FloatingControls (add if doesn't exist):
+const FloatingControls = styled.div`
+  position: fixed;
+  bottom: 100px;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  z-index: 90;
+  
+  @media (min-width: 768px) {
+    bottom: 2rem;
+  }
+  
+  @media (max-width: 767px) {
+    right: 1.5rem;
+    gap: 0.75rem;
+  }
+`;
+
+const FloatingButton = styled.button`
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: ${props => props.theme?.colors?.accent || '#800000'};
+  color: ${props => props.theme?.colors?.background || '#FFFFFF'};
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  ${props => props.isPinned && `
+    background: ${props.theme?.colors?.background || '#000000'};
+    color: ${props.theme?.colors?.accent || '#800000'};
+    border: 2px solid ${props.theme?.colors?.accent || '#800000'};
+  `}
+  
+  @media (max-width: 767px) {
+    width: 48px;
+    height: 48px;
+  }
+  
+  &:active {
+    transform: scale(0.9);
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
+    }
+  }
+  
+  &.spinning {
+    animation: spin 0.5s ease-in-out;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  svg {
+    width: 24px;
+    height: 24px;
+    
+    @media (max-width: 767px) {
+      width: 20px;
+      height: 20px;
+    }
+  }
+`;
+
 const EditModal = styled.div`
   display: none;
 
@@ -961,44 +966,6 @@ const ExpandButton = styled.button`
   
   &:active {
     transform: scale(0.9);
-  }
-`;
-
-const HomePreviewSection = styled.div`
-  margin-top: 3rem;
-  padding: 2rem 1rem;
-  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}30`};
-  border-radius: 16px;
-  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
-
-  @media (min-width: 768px) {
-    padding: 3rem 2rem;
-  }
-
-  .preview-header {
-    text-align: center;
-    margin-bottom: 2rem;
-    
-    h3 {
-      color: ${props => props.theme?.colors?.accent || '#800000'};
-      font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
-      margin-bottom: 0.5rem;
-      font-size: 1.3rem;
-      
-      @media (min-width: 768px) {
-        font-size: 1.8rem;
-      }
-    }
-    
-    p {
-      color: ${props => props.theme?.colors?.text || '#FFFFFF'};
-      opacity: 0.7;
-      font-size: 0.9rem;
-      
-      @media (min-width: 768px) {
-        font-size: 1rem;
-      }
-    }
   }
 `;
 
@@ -1696,90 +1663,13 @@ useEffect(() => {
     });
   };
 
-// Function to create default home page widgets
-const createDefaultHomeWidgets = (shopName, mission) => {
-  return [
-    // Hero Banner with Shop Name
-    {
-      id: `hero-banner-${Date.now()}`,
-      type: 'hero-banner',
-      config: {
-        style: 'apple',
-        height: 'large',
-        overlay: true,
-        parallax: false,
-        headline: shopName || 'Welcome to Our Shop',
-        subtitle: 'Discover Amazing Products',
-        ctaText: 'Shop Now',
-        backgroundImage: null
-      },
-      visible: true
-    },
-    // Mission Statement
-    {
-      id: `mission-${Date.now() + 1}`,
-      type: 'services',
-      config: {
-        style: 'grid',
-        title: 'Our Mission',
-        services: [
-          {
-            icon: '🎯',
-            title: 'Our Vision',
-            description: mission || 'Delivering quality products and exceptional service to our customers.'
-          },
-          {
-            icon: '⭐',
-            title: 'Quality First',
-            description: 'We believe in providing only the best for our customers.'
-          },
-          {
-            icon: '🤝',
-            title: 'Customer Focus',
-            description: 'Your satisfaction is our top priority.'
-          },
-          {
-            icon: '🚀',
-            title: 'Innovation',
-            description: 'Always improving and staying ahead of the curve.'
-          }
-        ]
-      },
-      visible: true
-    },
-    // Stats Dashboard
-    {
-      id: `stats-${Date.now() + 2}`,
-      type: 'stats-dashboard',
-      config: {
-        style: 'stripe',
-        animate: true,
-        layout: 'grid'
-      },
-      visible: true
-    },
-    // Featured Products Preview
-    {
-      id: `products-${Date.now() + 3}`,
-      type: 'product-carousel',
-      config: {
-        style: 'amazon',
-        itemsToShow: 4,
-        autoPlay: true,
-        showArrows: true,
-        showDots: true
-      },
-      visible: true
-    }
-  ];
-};
-
-// UPDATE handleSave function in LiveShopCreation.js (around line 1200)
+  // Update handleSave function (around line 1200)
+  // UPDATE handleSave function in LiveShopCreation.js (around line 1200)
 const handleSave = async () => {
   // Check if shop name is still default or empty
   let finalShopName = shopData.name;
   
-  if (!finalShopName || finalShopName === 'MyBrandName') {
+  if (!finalShopName || finalShopName === 'EnterBrandName') {
     const adjectives = ['Cool', 'Great', 'Super', 'Amazing', 'Awesome', 'Epic', 'Prime', 'Elite'];
     const nouns = ['Shop', 'Store', 'Market', 'Bazaar', 'Outlet', 'Hub', 'Spot', 'Place'];
     const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
@@ -1808,96 +1698,26 @@ const handleSave = async () => {
     return;
   }
 
-  // ✅ CREATE DEFAULT HOME PAGE WIDGETS
-  const defaultHomeWidgets = createDefaultHomeWidgets(finalShopName, shopData.mission);
-
   // Prepare data with proper profile handling
   const dataToSave = {
     ...shopData,
     name: finalShopName,
     theme: selectedTheme,
-    homeWidgets: defaultHomeWidgets, // ✅ Add default widgets
     layout: {
       namePosition: shopData.layout.namePosition,
       tabPosition: 'top',
       nameSize: shopNameFontSize
     },
-    // ADD THIS: Save default home page widgets
-    homeWidgets: [
-      {
-        id: 'hero-banner-default',
-        type: 'hero-banner',
-        visible: true,
-        config: {
-          style: 'apple',
-          height: 'large',
-          headline: shopData.name || 'Your Brand Name',
-          subtitle: 'Discover quality products crafted with care'
-        }
-      },
-      {
-        id: 'mission-default',
-        type: 'mission-statement',
-        visible: true,
-        config: {
-          title: 'Our Mission',
-          content: shopData.mission || 'We are dedicated to providing exceptional products...'
-        }
-      },
-      {
-        id: 'featured-items-default',
-        type: 'product-carousel',
-        visible: true,
-        config: {
-          style: 'modern',
-          itemsToShow: 3,
-          autoPlay: false
-        }
-      },
-      {
-        id: 'services-default',
-        type: 'services',
-        visible: true,
-        config: {
-          style: 'grid',
-          title: 'Why Choose Us'
-        }
-      },
-      {
-        id: 'gallery-default',
-        type: 'gallery',
-        visible: true,
-        config: {
-          style: 'instagram',
-          columns: 1,
-          title: 'Gallery Showcase',
-          images: [
-            { url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80' },
-            { url: 'https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=1200&q=80' },
-            { url: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1200&q=80' },
-            { url: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&q=80' },
-            { url: 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=1200&q=80' }
-          ]
-        }
-      },
-      {
-        id: 'contact-default',
-        type: 'contact-form',
-        visible: true,
-        config: {
-          style: 'modern',
-          title: 'Contact Us'
-        }
-      }
-    ],
     createdAt: new Date().toISOString()
   };
 
   // Handle profile image - ensure it's in the correct format
   if (shopData.profile) {
     if (typeof shopData.profile === 'string') {
+      // Already a URL
       dataToSave.profile = shopData.profile;
     } else if (shopData.profile.file) {
+      // File object with preview
       dataToSave.profile = {
         file: shopData.profile.file,
         preview: shopData.profile.preview,
@@ -1906,9 +1726,6 @@ const handleSave = async () => {
       };
     }
   }
-
-  console.log('Saving data with profile:', dataToSave.profile);
-  console.log('Saving data with home widgets:', dataToSave.homeWidgets);
 
   // Generate username
   if (dataToSave.name) {
@@ -1923,6 +1740,8 @@ const handleSave = async () => {
         .substring(0, 20) || 'shop';
     }
   }
+
+  console.log('Saving data with profile:', dataToSave.profile); // Debug log
 
   saveTempStore(dataToSave);
 
@@ -2389,10 +2208,24 @@ const handleSave = async () => {
 
   const renderHomeView = () => (
     <MainContent>
-      <HomePageTemplate 
-        shopData={shopData}
-        theme={selectedTheme}
-      />
+      <div style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto', padding: '2rem 1rem' }}>
+        <h2 style={{ 
+          color: selectedTheme?.colors?.accent || '#800000',
+          fontFamily: selectedTheme?.fonts?.heading || 'inherit',
+          marginBottom: '1.5rem',
+          fontSize: '1.5rem'
+        }}>
+          Mission Statement
+        </h2>
+        <ValidatedEditableText
+          value={shopData.mission}
+          onChange={(value) => handleShopDataChange('mission', value)}
+          placeholder="What's your shop's mission?"
+          multiline
+          validationRules={VALIDATION_RULES.shop.mission}
+          theme={selectedTheme}
+        />
+      </div>
     </MainContent>
   );
 
@@ -2424,16 +2257,6 @@ const handleSave = async () => {
           </HeaderLeft>
 
           <HeaderRight>
-            
-            <HeaderTabButton
-              theme={selectedTheme}
-              active={activeTab === 'home'}
-              onClick={() => setActiveTab('home')}
-              title="Home"
-            >
-              <Home size={22} />
-            </HeaderTabButton>
-
             <HeaderTabButton
               theme={selectedTheme}
               active={activeTab === 'shop'}
@@ -2441,6 +2264,15 @@ const handleSave = async () => {
               title="Shop"
             >
               <Store size={22} />
+            </HeaderTabButton>
+
+            <HeaderTabButton
+              theme={selectedTheme}
+              active={activeTab === 'home'}
+              onClick={() => setActiveTab('home')}
+              title="Home"
+            >
+              <Home size={22} />
             </HeaderTabButton>
 
             <HeaderTabButton

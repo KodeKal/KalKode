@@ -87,77 +87,6 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
   }
 `;
 
-// Compact Floating Controls - positioned below header on right
-const FloatingControls = styled.div`
-  position: fixed;
-  top: 70px; /* Just below header */
-  right: 1rem;
-  display: flex;
-  gap: 0.5rem;
-  z-index: 90;
-  
-  @media (min-width: 768px) {
-    top: 90px;
-    right: 2rem;
-  }
-`;
-
-const FloatingButton = styled.button`
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: ${props => props.theme?.colors?.accent || '#800000'};
-  color: white;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 8px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
-  transition: all 0.3s ease;
-  
-  ${props => props.isPinned && `
-    background: white;
-    color: ${props.theme?.colors?.accent || '#800000'};
-    border: 2px solid ${props.theme?.colors?.accent || '#800000'};
-  `}
-  
-  @media (min-width: 768px) {
-    width: 40px;
-    height: 40px;
-  }
-  
-  &:active {
-    transform: scale(0.9);
-  }
-  
-  @media (hover: hover) {
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
-    }
-  }
-  
-  &.spinning {
-    animation: spin 0.5s ease-in-out;
-  }
-  
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  
-  svg {
-    width: 18px;
-    height: 18px;
-    
-    @media (min-width: 768px) {
-      width: 20px;
-      height: 20px;
-    }
-  }
-`;
-
 const HeaderTabButton = styled.button`
   background: transparent;
   border: none;
@@ -219,6 +148,82 @@ const HeaderRight = styled.div`
   display: flex;
   align-items: center;
   gap: 0.75rem;
+`;
+
+// For ShopPublicView.js - where bottom nav exists
+const FloatingControls = styled.div`
+  position: fixed;
+  bottom: 100px; /* Adjusted to clear bottom navigation */
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  z-index: 90;
+  
+  @media (min-width: 768px) {
+    bottom: 2rem; /* No bottom nav on desktop */
+  }
+  
+  @media (max-width: 767px) {
+    right: 1.5rem;
+    gap: 0.75rem;
+  }
+`;
+
+const FloatingButton = styled.button`
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: ${props => props.theme?.colors?.accent || '#800000'};
+  color: ${props => props.theme?.colors?.background || '#FFFFFF'};
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  ${props => props.isPinned && `
+    background: ${props.theme?.colors?.background || '#000000'};
+    color: ${props.theme?.colors?.accent || '#800000'};
+    border: 2px solid ${props.theme?.colors?.accent || '#800000'};
+  `}
+  
+  @media (max-width: 767px) {
+    width: 48px;
+    height: 48px;
+  }
+  
+  &:active {
+    transform: scale(0.9);
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
+    }
+  }
+  
+  &.spinning {
+    animation: spin 0.5s ease-in-out;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  svg {
+    width: 24px;
+    height: 24px;
+    
+    @media (max-width: 767px) {
+      width: 20px;
+      height: 20px;
+    }
+  }
 `;
 
 const HeaderTab = styled.button`
