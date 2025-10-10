@@ -2036,9 +2036,11 @@ const toggleItemExpansion = (itemId) => {
         `shops/${auth.currentUser.uid}/items/${itemId}/image-${imageIndex}-${Date.now()}`
       );
       
+      // Also update the direct upload in ShopPage.js handleImageUpload
+      // Replace the metadata object with:
       const metadata = {
         contentType: file.type || 'image/jpeg',
-        cacheControl: 'public,max-age=3600'
+        cacheControl: 'public, max-age=31536000'
       };
 
       const snapshot = await uploadBytes(storageRef, file, metadata);
@@ -2210,7 +2212,7 @@ const toggleItemExpansion = (itemId) => {
                               );
                               const metadata = {
                                 contentType: file.type || 'image/jpeg',
-                                cacheControl: 'public,max-age=3600'
+                                cacheControl: 'public, max-age=31536000'
                               };
                               const snapshot = await uploadBytes(profileRef, file, metadata);
                               const imageUrl = await getDownloadURL(snapshot.ref);
@@ -2269,7 +2271,7 @@ const toggleItemExpansion = (itemId) => {
                               );
                               const metadata = {
                                 contentType: file.type || 'image/jpeg',
-                                cacheControl: 'public,max-age=3600'
+                                cacheControl: 'public,max-age=31536000'
                               };
                               const snapshot = await uploadBytes(profileRef, file, metadata);
                               const imageUrl = await getDownloadURL(snapshot.ref);
@@ -2305,7 +2307,7 @@ const toggleItemExpansion = (itemId) => {
                             );
                             const metadata = {
                               contentType: value.type || 'image/jpeg',
-                              cacheControl: 'public,max-age=3600'
+                              cacheControl: 'public,max-age=31536000'
                             };
                             const snapshot = await uploadBytes(profileRef, value.file, metadata);
                             const imageUrl = await getDownloadURL(snapshot.ref);

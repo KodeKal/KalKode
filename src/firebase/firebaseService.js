@@ -525,27 +525,42 @@ const cleanDataForFirestore = (data) => {
   return data;
 };
 
-// Add this helper function at the top
+// Replace the uploadImageWithCORS function in firebaseService.js
+
 const uploadImageWithCORS = async (file, path) => {
   if (!file) return null;
   
-  const metadata = {
-    contentType: file.type || 'image/jpeg',
-    cacheControl: 'public,max-age=3600',
-    customMetadata: {
-      'Access-Control-Allow-Origin': '*'
-    }
-  };
-
   try {
-    // Create a blob with CORS headers
-    const blob = new Blob([file], { type: file.type });
+    // Direct upload without custom metadata initially
     const imageRef = ref(storage, path);
-    const snapshot = await uploadBytes(imageRef, blob, metadata);
-    return await getDownloadURL(snapshot.ref);
+    
+    // Upload the file
+    const snapshot = await uploadBytes(imageRef, file, {
+      contentType: file.type || 'image/jpeg',
+      cacheControl: 'public, max-age=31536000',
+    });
+    
+    // Get download URL
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    
+    console.log('Image uploaded successfully:', downloadURL);
+    return downloadURL;
+    
   } catch (error) {
     console.error('Error uploading image:', error);
-    return null;
+    
+    // Fallback: Try with blob conversion
+    try {
+      const blob = await file.arrayBuffer();
+      const imageRef = ref(storage, path);
+      const snapshot = await uploadBytes(imageRef, blob, {
+        contentType: file.type || 'image/jpeg'
+      });
+      return await getDownloadURL(snapshot.ref);
+    } catch (fallbackError) {
+      console.error('Fallback upload also failed:', fallbackError);
+      return null;
+    }
   }
 };
 
