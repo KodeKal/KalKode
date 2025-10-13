@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { 
-  Package, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  ChevronLeft, 
-  ChevronRight,
-  Star,
-  Truck,
-  Shield,
-  Clock,
-  Award
+  Truck, 
+  Shield, 
+  Clock, 
+  Award,
+  Package,
+  Mail,
+  Phone,
+  MapPin,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { center } from '@turf/turf';
 
@@ -411,6 +410,90 @@ const ContactItem = styled.div`
     flex-shrink: 0;
   }
 `;
+
+export const convertTemplateToWidgets = (shopData) => {
+  const timestamp = Date.now();
+  
+  return [
+    // Hero Banner
+    {
+      id: `hero-${timestamp}`,
+      type: 'hero-banner',
+      config: {
+        style: 'apple',
+        height: 'large',
+        headline: shopData?.name || 'Your Brand Name',
+        subtitle: 'Discover quality products crafted with care'
+      },
+      visible: true
+    },
+    // Mission Statement
+    {
+      id: `mission-${timestamp + 1}`,
+      type: 'mission-statement',
+      config: {
+        title: 'Our Mission',
+        content: shopData?.mission || 'We are dedicated to providing exceptional products and services.'
+      },
+      visible: true
+    },
+    // Featured Products
+    {
+      id: `products-${timestamp + 2}`,
+      type: 'product-carousel',
+      config: {
+        style: 'modern',
+        itemsToShow: 3,
+        autoPlay: false
+      },
+      visible: true
+    },
+    // Services
+    {
+      id: `services-${timestamp + 3}`,
+      type: 'services',
+      config: {
+        style: 'grid',
+        title: 'Why Choose Us',
+        services: [
+          { icon: 'Truck', title: 'Fast Shipping', description: 'Quick delivery to your door' },
+          { icon: 'Shield', title: 'Secure Payment', description: 'Your payment is safe' },
+          { icon: 'Clock', title: '24/7 Support', description: 'Always here to help' },
+          { icon: 'Award', title: 'Quality Guarantee', description: 'Top-notch products' }
+        ]
+      },
+      visible: true
+    },
+    // Gallery
+    {
+      id: `gallery-${timestamp + 4}`,
+      type: 'gallery',
+      config: {
+        style: 'masonry',
+        columns: 3,
+        title: 'Gallery Showcase',
+        images: [
+          { url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80' },
+          { url: 'https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=1200&q=80' },
+          { url: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1200&q=80' },
+          { url: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&q=80' },
+          { url: 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=1200&q=80' }
+        ]
+      },
+      visible: true
+    },
+    // Contact
+    {
+      id: `contact-${timestamp + 5}`,
+      type: 'contact-form',
+      config: {
+        style: 'modern',
+        title: 'Contact Us'
+      },
+      visible: true
+    }
+  ];
+};
 
 // Main Component
 const HomePageTemplate = ({ shopData, theme }) => {

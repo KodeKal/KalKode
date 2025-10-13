@@ -97,7 +97,6 @@ export const getShopByUsername = async (username) => {
 
 // ============= UPDATE EXISTING FUNCTIONS =============
 
-// UPDATE: saveShopData function to include username
 export const saveShopData = async (userId, data) => {
   try {
     const hasShop = await checkExistingShop(userId);
@@ -113,14 +112,18 @@ export const saveShopData = async (userId, data) => {
       username = await generateUsername(data.name);
     }
 
+    // Log homeWidgets to verify they exist
+    console.log('Home widgets being saved:', data.homeWidgets);
+
     // Clean data before saving to Firestore
     let shopData = {
       name: data.name || '',
       description: data.description || '',
       mission: data.mission || '',
-      username: username, // ADD USERNAME
+      username: username,
       theme: cleanDataForFirestore(data.theme) || {},
       layout: cleanDataForFirestore(data.layout) || {},
+      homeWidgets: data.homeWidgets || [], // ADD THIS LINE
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       userId: userId,
@@ -140,10 +143,11 @@ export const saveShopData = async (userId, data) => {
       profile: null
     };
 
-    console.log('Shop data with username:', {
+    console.log('Shop data with widgets:', {
       userId,
       username: shopData.username,
-      name: shopData.name
+      name: shopData.name,
+      widgetCount: shopData.homeWidgets?.length || 0
     });
 
     // Save initial clean data

@@ -1611,6 +1611,7 @@ const cleanDataForFirestore = (data) => {
   return data;
 };
 
+
 const ShopPage = () => {
   const navigate = useNavigate();
   const [isPinned, setIsPinned] = useState(false);
@@ -1632,6 +1633,264 @@ const ShopPage = () => {
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [originalUsername, setOriginalUsername] = useState('');
   const [expandedItems, setExpandedItems] = useState(new Set());
+
+  // ADD WIDGET COMPONENTS HERE - after shopData is defined
+  const MissionStatementWidget = ({ config, theme }) => {
+    return (
+      <div style={{
+        background: `${theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}50`,
+        borderRadius: '16px',
+        padding: 'clamp(2rem, 4vw, 3rem)',
+        textAlign: 'center',
+        margin: 'clamp(1.5rem, 3vw, 2rem) 0'
+      }}>
+        <h2 style={{
+          fontSize: 'clamp(1.5rem, 3vw, 2rem)',
+          color: theme?.colors?.accent || '#800000',
+          marginBottom: 'clamp(0.75rem, 1.5vw, 1rem)'
+        }}>
+          {config.title || 'Our Mission'}
+        </h2>
+        <p style={{
+          fontSize: 'clamp(1rem, 2vw, 1.2rem)',
+          color: `${theme?.colors?.text}E6` || 'rgba(255, 255, 255, 0.9)',
+          lineHeight: 1.8,
+          maxWidth: '800px',
+          margin: '0 auto'
+        }}>
+          {config.content || 'We are dedicated to providing exceptional products.'}
+        </p>
+      </div>
+    );
+  };
+
+  const ServicesWidget = ({ config, theme }) => {
+    return (
+      <div style={{
+        background: `${theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}50`,
+        borderRadius: '16px',
+        padding: 'clamp(2rem, 4vw, 3rem)',
+        margin: 'clamp(1.5rem, 3vw, 2rem) 0'
+      }}>
+        <h2 style={{
+          fontSize: 'clamp(1.5rem, 3vw, 2rem)',
+          color: theme?.colors?.accent || '#800000',
+          marginBottom: 'clamp(1rem, 2vw, 2rem)',
+          textAlign: 'center'
+        }}>
+          {config.title || 'Our Services'}
+        </h2>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: 'clamp(1rem, 2vw, 2rem)'
+        }}>
+          {config.services?.map((service, index) => (
+            <div key={index} style={{
+              textAlign: 'center',
+              padding: 'clamp(1rem, 2vw, 1.5rem)',
+              background: `${theme?.colors?.background}60`,
+              borderRadius: '12px'
+            }}>
+              <div style={{
+                fontSize: '2.5rem',
+                marginBottom: '1rem'
+              }}>
+                {service.icon === 'Truck' && '🚚'}
+                {service.icon === 'Shield' && '🛡️'}
+                {service.icon === 'Clock' && '⏰'}
+                {service.icon === 'Award' && '🏆'}
+              </div>
+              <h3 style={{
+                fontSize: 'clamp(1rem, 2vw, 1.1rem)',
+                color: theme?.colors?.text,
+                marginBottom: '0.5rem'
+              }}>
+                {service.title}
+              </h3>
+              <p style={{
+                fontSize: 'clamp(0.85rem, 1.5vw, 0.9rem)',
+                color: `${theme?.colors?.text}99`,
+                lineHeight: 1.5
+              }}>
+                {service.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const GalleryWidgetComponent = ({ config, theme }) => {
+    const [currentSlide, setCurrentSlide] = React.useState(0);
+    const images = config.images || [];
+
+    return (
+      <div style={{
+        margin: 'clamp(1.5rem, 3vw, 2rem) 0'
+      }}>
+        <h2 style={{
+          fontSize: 'clamp(1.5rem, 3vw, 2rem)',
+          color: theme?.colors?.accent || '#800000',
+          marginBottom: 'clamp(1rem, 2vw, 2rem)',
+          textAlign: 'center'
+        }}>
+          {config.title || 'Gallery'}
+        </h2>
+        <div style={{
+          position: 'relative',
+          height: 'clamp(300px, 50vh, 500px)',
+          borderRadius: '16px',
+          overflow: 'hidden'
+        }}>
+          {images.map((img, index) => (
+            <div
+              key={index}
+              style={{
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                backgroundImage: `url(${img.url})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                opacity: currentSlide === index ? 1 : 0,
+                transition: 'opacity 0.5s ease'
+              }}
+            />
+          ))}
+          <button
+            onClick={() => setCurrentSlide((currentSlide - 1 + images.length) % images.length)}
+            style={{
+              position: 'absolute',
+              left: '1rem',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'rgba(0,0,0,0.5)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '48px',
+              height: '48px',
+              color: 'white',
+              cursor: 'pointer',
+              zIndex: 2
+            }}
+          >
+            ‹
+          </button>
+          <button
+            onClick={() => setCurrentSlide((currentSlide + 1) % images.length)}
+            style={{
+              position: 'absolute',
+              right: '1rem',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'rgba(0,0,0,0.5)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '48px',
+              height: '48px',
+              color: 'white',
+              cursor: 'pointer',
+              zIndex: 2
+            }}
+          >
+            ›
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const ContactFormWidget = ({ config, theme }) => {
+    return (
+      <div style={{
+        background: `${theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}50`,
+        borderRadius: '16px',
+        padding: 'clamp(2rem, 4vw, 3rem)',
+        margin: 'clamp(1.5rem, 3vw, 2rem) 0'
+      }}>
+        <h2 style={{
+          fontSize: 'clamp(1.5rem, 3vw, 2rem)',
+          color: theme?.colors?.accent || '#800000',
+          marginBottom: 'clamp(1rem, 2vw, 2rem)',
+          textAlign: 'center'
+        }}>
+          {config.title || 'Contact Us'}
+        </h2>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+          gap: 'clamp(1rem, 2vw, 2rem)',
+          maxWidth: '800px',
+          margin: '0 auto'
+        }}>
+          <div>
+            <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span>📧</span>
+              <span>info@yourshop.com</span>
+            </div>
+            <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span>📞</span>
+              <span>(555) 123-4567</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span>📍</span>
+              <span>123 Shop Street, City, ST 12345</span>
+            </div>
+          </div>
+          <div>
+            <h3 style={{ marginBottom: '0.5rem' }}>Business Hours</h3>
+            <div style={{ fontSize: '0.9rem', lineHeight: 1.8, opacity: 0.8 }}>
+              <div>Monday - Friday: 9:00 AM - 6:00 PM</div>
+              <div>Saturday: 10:00 AM - 4:00 PM</div>
+              <div>Sunday: Closed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderPublicWidget = (widget) => {
+    const props = {
+      config: widget.config,
+      theme: shopData?.theme
+    };
+
+    switch (widget.type) {
+      case 'hero-banner':
+        return <HeroBannerWidget {...props} />;
+      case 'mission-statement':
+        return <MissionStatementWidget {...props} />;
+      case 'product-carousel':
+        return <ProductCarouselWidget {...props} items={shopData?.items || []} />;
+      case 'services':
+        return <ServicesWidget {...props} />;
+      case 'gallery':
+        return <GalleryWidgetComponent {...props} />;
+      case 'contact-form':
+        return <ContactFormWidget {...props} />;
+      case 'stats-dashboard':
+        return <StatsWidget {...props} stats={shopData?.stats} />;
+      case 'countdown-timer':
+        return <CountdownWidget {...props} />;
+      case 'testimonials':
+        return <TestimonialsWidget {...props} />;
+      case 'social-feed':
+        return <SocialFeedWidget {...props} />;
+      case 'video-section':
+        return <VideoWidget {...props} />;
+      case 'faq-section':
+        return <FAQWidget {...props} />;
+      case 'team-section':
+        return <TeamWidget {...props} />;
+      case 'announcement-bar':
+        return <AnnouncementBar {...props} />;
+      default:
+        return null;
+    }
+  };
 
 // ADD toggle function:
 const toggleItemExpansion = (itemId) => {
@@ -1950,63 +2209,51 @@ const toggleItemExpansion = (itemId) => {
     }));
   };
 
-  const renderPublicWidget = (widget) => {
-      const props = {
-        config: widget.config,
-        theme: shopData?.theme
-      };
-  
-      switch (widget.type) {
-        case 'hero-banner':
-          return <HeroBannerWidget {...props} />;
-        case 'product-carousel':
-          return <ProductCarouselWidget {...props} items={shopData?.items || []} />;
-        case 'stats-dashboard':
-          return <StatsWidget {...props} stats={shopData?.stats} />;
-        case 'countdown-timer':
-          return <CountdownWidget {...props} />;
-        case 'testimonials':
-          return <TestimonialsWidget {...props} />;
-        case 'gallery':
-          return <GalleryWidget {...props} />;
-        case 'social-feed':
-          return <SocialFeedWidget {...props} />;
-        case 'video-section':
-          return <VideoWidget {...props} />;
-        case 'faq-section':
-          return <FAQWidget {...props} />;
-        case 'team-section':
-          return <TeamWidget {...props} />;
-        case 'announcement-bar':
-          return <AnnouncementBar {...props} />;
-        default:
-          return null;
-      }
-    };
 
   const renderHomePageWidgets = () => {
-    if (!shopData?.homeWidgets || shopData.homeWidgets.length === 0) {
-      return (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '4rem 1rem',
-          background: `${shopData?.theme?.colors?.surface}50`,
-          borderRadius: '12px'
-        }}>
-          <h2>Welcome to {shopData?.name || 'Our Shop'}</h2>
-          <p>{shopData?.mission || 'Start customizing your home page by adding widgets.'}</p>
-        </div>
-      );
-    }
+  if (!shopData?.homeWidgets || shopData.homeWidgets.length === 0) {
+    return (
+      <div style={{ 
+        textAlign: 'center', 
+        padding: '4rem 1rem',
+        background: `${shopData?.theme?.colors?.surface}50`,
+        borderRadius: '12px'
+      }}>
+        <h2 style={{ color: shopData?.theme?.colors?.accent }}>
+          Welcome to {shopData?.name || 'Our Shop'}
+        </h2>
+        <p style={{ color: shopData?.theme?.colors?.text, opacity: 0.7 }}>
+          {shopData?.mission || 'Your home page widgets will appear here.'}
+        </p>
+        <button
+          onClick={() => setActiveTab('home')}
+          style={{
+            marginTop: '2rem',
+            background: shopData?.theme?.colors?.accent,
+            color: 'white',
+            border: 'none',
+            padding: '1rem 2rem',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '1rem',
+            fontWeight: '600'
+          }}
+        >
+          Edit Home Page
+        </button>
+      </div>
+    );
+  }
 
-    return shopData.homeWidgets
-      .filter(widget => widget.visible)
-      .map(widget => (
-        <div key={widget.id} style={{ marginBottom: '2rem' }}>
-          {renderPublicWidget(widget)}
-        </div>
-      ));
-  };
+  return shopData.homeWidgets
+    .filter(widget => widget.visible)
+    .map(widget => (
+      <div key={widget.id} style={{ marginBottom: '2rem' }}>
+        {renderPublicWidget(widget)}
+      </div>
+    ));
+};
+
 
   // UPDATE handleAddItem function in ShopPage.js (around line 1400)
   const handleAddItem = () => {
@@ -2559,15 +2806,33 @@ const toggleItemExpansion = (itemId) => {
           )}
 
           {activeTab === 'home' && (
-            <HomePageEditor 
-              shopData={shopData}
-              theme={shopData?.theme}
-              onSave={async (data) => {
-                setShopData(prev => ({ ...prev, ...data }));
-                setOriginalShopData(prev => ({ ...prev, ...data }));
-              }}
-            />
-          )}
+          <>
+            {shopData?.homeWidgets && shopData.homeWidgets.length > 0 ? (
+              <HomePageEditor 
+                shopData={shopData}
+                theme={shopData?.theme}
+                onSave={async (data) => {
+                  setShopData(prev => ({ ...prev, ...data }));
+                  setOriginalShopData(prev => ({ ...prev, ...data }));
+                }}
+              />
+            ) : (
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '4rem 1rem',
+                background: `${shopData?.theme?.colors?.surface}50`,
+                borderRadius: '12px'
+              }}>
+                <h2 style={{ color: shopData?.theme?.colors?.accent }}>
+                  No widgets yet
+                </h2>
+                <p style={{ color: shopData?.theme?.colors?.text, opacity: 0.7 }}>
+                  Your template home page should have loaded. Try refreshing the page.
+                </p>
+              </div>
+            )}
+          </>
+        )}
 
           {activeTab === 'community' && (
             <div>

@@ -1696,19 +1696,18 @@ useEffect(() => {
     });
   };
 
-// Function to create default home page widgets
-const createDefaultHomeWidgets = (shopName, mission) => {
+const createDefaultHomeWidgets = (shopData) => {
   return [
     // Hero Banner with Shop Name
     {
-      id: `hero-banner-${Date.now()}`,
+      id: `hero-${Date.now()}`,
       type: 'hero-banner',
       config: {
         style: 'apple',
         height: 'large',
         overlay: true,
         parallax: false,
-        headline: shopName || 'Welcome to Our Shop',
+        headline: shopData.name || 'Welcome to Our Shop',
         subtitle: 'Discover Amazing Products',
         ctaText: 'Shop Now',
         backgroundImage: null
@@ -1718,56 +1717,85 @@ const createDefaultHomeWidgets = (shopName, mission) => {
     // Mission Statement
     {
       id: `mission-${Date.now() + 1}`,
+      type: 'mission-statement',
+      config: {
+        title: 'Our Mission',
+        content: shopData.mission || 'We are dedicated to providing exceptional products and services that exceed our customers\' expectations.'
+      },
+      visible: true
+    },
+    // Featured Products
+    {
+      id: `products-${Date.now() + 2}`,
+      type: 'product-carousel',
+      config: {
+        style: 'modern',
+        itemsToShow: 3,
+        autoPlay: false,
+        showArrows: true,
+        showDots: true
+      },
+      visible: true
+    },
+    // Services/Why Choose Us
+    {
+      id: `services-${Date.now() + 3}`,
       type: 'services',
       config: {
         style: 'grid',
-        title: 'Our Mission',
+        title: 'Why Choose Us',
         services: [
           {
-            icon: '🎯',
-            title: 'Our Vision',
-            description: mission || 'Delivering quality products and exceptional service to our customers.'
+            icon: 'Truck',
+            title: 'Fast Shipping',
+            description: 'Quick delivery to your door'
           },
           {
-            icon: '⭐',
-            title: 'Quality First',
-            description: 'We believe in providing only the best for our customers.'
+            icon: 'Shield',
+            title: 'Secure Payment',
+            description: 'Your payment is safe'
           },
           {
-            icon: '🤝',
-            title: 'Customer Focus',
-            description: 'Your satisfaction is our top priority.'
+            icon: 'Clock',
+            title: '24/7 Support',
+            description: 'Always here to help'
           },
           {
-            icon: '🚀',
-            title: 'Innovation',
-            description: 'Always improving and staying ahead of the curve.'
+            icon: 'Award',
+            title: 'Quality Guarantee',
+            description: 'Top-notch products'
           }
         ]
       },
       visible: true
     },
-    // Stats Dashboard
+    // Gallery
     {
-      id: `stats-${Date.now() + 2}`,
-      type: 'stats-dashboard',
+      id: `gallery-${Date.now() + 4}`,
+      type: 'gallery',
       config: {
-        style: 'stripe',
-        animate: true,
-        layout: 'grid'
+        style: 'masonry',
+        columns: 3,
+        title: 'Gallery Showcase',
+        images: [
+          { url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80' },
+          { url: 'https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=1200&q=80' },
+          { url: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1200&q=80' },
+          { url: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&q=80' },
+          { url: 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=1200&q=80' }
+        ]
       },
       visible: true
     },
-    // Featured Products Preview
+    // Contact Footer
     {
-      id: `products-${Date.now() + 3}`,
-      type: 'product-carousel',
+      id: `contact-${Date.now() + 5}`,
+      type: 'contact-form',
       config: {
-        style: 'amazon',
-        itemsToShow: 4,
-        autoPlay: true,
-        showArrows: true,
-        showDots: true
+        style: 'modern',
+        title: 'Contact Us',
+        showMap: false,
+        fields: ['name', 'email', 'message']
       },
       visible: true
     }
@@ -1808,88 +1836,20 @@ const handleSave = async () => {
     return;
   }
 
-  // ✅ CREATE DEFAULT HOME PAGE WIDGETS
-  const defaultHomeWidgets = createDefaultHomeWidgets(finalShopName, shopData.mission);
+  // CREATE DEFAULT HOME PAGE WIDGETS from shop data
+  const defaultHomeWidgets = createDefaultHomeWidgets(shopData);
 
   // Prepare data with proper profile handling
   const dataToSave = {
     ...shopData,
     name: finalShopName,
     theme: selectedTheme,
-    homeWidgets: defaultHomeWidgets, // ✅ Add default widgets
+    homeWidgets: defaultHomeWidgets, // Add widgets here
     layout: {
       namePosition: shopData.layout.namePosition,
       tabPosition: 'top',
       nameSize: shopNameFontSize
     },
-    // ADD THIS: Save default home page widgets
-    homeWidgets: [
-      {
-        id: 'hero-banner-default',
-        type: 'hero-banner',
-        visible: true,
-        config: {
-          style: 'apple',
-          height: 'large',
-          headline: shopData.name || 'Your Brand Name',
-          subtitle: 'Discover quality products crafted with care'
-        }
-      },
-      {
-        id: 'mission-default',
-        type: 'mission-statement',
-        visible: true,
-        config: {
-          title: 'Our Mission',
-          content: shopData.mission || 'We are dedicated to providing exceptional products...'
-        }
-      },
-      {
-        id: 'featured-items-default',
-        type: 'product-carousel',
-        visible: true,
-        config: {
-          style: 'modern',
-          itemsToShow: 3,
-          autoPlay: false
-        }
-      },
-      {
-        id: 'services-default',
-        type: 'services',
-        visible: true,
-        config: {
-          style: 'grid',
-          title: 'Why Choose Us'
-        }
-      },
-      {
-        id: 'gallery-default',
-        type: 'gallery',
-        visible: true,
-        config: {
-          style: 'instagram',
-          columns: 1,
-          title: 'Gallery Showcase',
-          images: [
-            { url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80' },
-            { url: 'https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=1200&q=80' },
-            { url: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1200&q=80' },
-            { url: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&q=80' },
-            { url: 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=1200&q=80' }
-          ]
-        }
-      },
-      {
-        id: 'contact-default',
-        type: 'contact-form',
-        visible: true,
-        config: {
-          style: 'modern',
-          title: 'Contact Us'
-        }
-      }
-    ],
     createdAt: new Date().toISOString()
   };
 
