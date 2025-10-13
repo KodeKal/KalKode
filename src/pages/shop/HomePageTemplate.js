@@ -21,7 +21,67 @@ const TemplateContainer = styled.div`
   margin: 0 auto;
 `;
 
-// Hero Banner with Brand Name
+const Tagline = styled.p`
+  font-size: clamp(0.9rem, 2vw, 1.4rem); /* Reduced from 1rem */
+  color: #FFFFFF;
+  max-width: 600px;
+  line-height: 1.6;
+  position: relative;
+  z-index: 1;
+  font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
+  text-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.8),
+    0 4px 8px rgba(0, 0, 0, 0.6);
+  font-weight: 500;
+  padding: 0 1rem;
+  
+  @media (max-width: 768px) {
+    font-size: clamp(0.85rem, 3vw, 1.1rem);
+    padding: 0 0.5rem;
+    max-width: 90%;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: clamp(0.8rem, 3.5vw, 1rem);
+  }
+`;
+
+const BrandName = styled.h1`
+  font-size: clamp(1.8rem, 6vw, 4.5rem); /* Reduced from 2.5rem to 1.8rem */
+  font-weight: 900;
+  color: #FFFFFF;
+  margin-bottom: 1rem;
+  position: relative;
+  z-index: 1;
+  font-family: ${props => props.theme?.fonts?.heading || "'Space Grotesk', sans-serif"};
+  text-shadow: 
+    0 0 20px rgba(0, 0, 0, 0.8),
+    0 0 40px ${props => props.theme?.colors?.accent || '#800000'},
+    2px 2px 4px rgba(0, 0, 0, 0.9);
+  letter-spacing: 1px; /* Reduced from 2px */
+  text-transform: uppercase;
+  filter: drop-shadow(0 0 10px ${props => props.theme?.colors?.accent || '#800000'});
+  
+  /* Add mobile fixes */
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  max-width: 100%;
+  padding: 0 1rem;
+  line-height: 1.2;
+  
+  @media (max-width: 768px) {
+    font-size: clamp(1.5rem, 8vw, 2.5rem); /* Even smaller for mobile */
+    letter-spacing: 0.5px;
+    padding: 0 0.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: clamp(1.2rem, 10vw, 2rem); /* Smallest for very small screens */
+    letter-spacing: 0;
+  }
+`;
+
 const HeroSection = styled.section`
   min-height: 500px;
   display: flex;
@@ -29,7 +89,7 @@ const HeroSection = styled.section`
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 4rem 2rem;
+  padding: 4rem 1rem; /* Reduced from 2rem */
   background: linear-gradient(
     135deg, 
     rgba(0, 0, 0, 0.7) 0%, 
@@ -44,8 +104,13 @@ const HeroSection = styled.section`
 
   @media (max-width: 768px) {
     min-height: 400px;
-    padding: 3rem 1.5rem;
+    padding: 3rem 0.5rem; /* More compact padding */
     margin-bottom: 2rem;
+  }
+  
+  @media (max-width: 480px) {
+    min-height: 350px;
+    padding: 2rem 0.5rem;
   }
 
   &::before {
@@ -60,39 +125,6 @@ const HeroSection = styled.section`
     0%, 100% { opacity: 0.3; }
     50% { opacity: 0.6; }
   }
-`;
-
-const BrandName = styled.h1`
-  font-size: clamp(2.5rem, 6vw, 4.5rem);
-  font-weight: 900;
-  color: #FFFFFF;
-  margin-bottom: 1rem;
-  position: relative;
-  z-index: 1;
-  font-family: ${props => props.theme?.fonts?.heading || "'Space Grotesk', sans-serif"};
-  text-shadow: 
-    0 0 20px rgba(0, 0, 0, 0.8),
-    0 0 40px ${props => props.theme?.colors?.accent || '#800000'},
-    2px 2px 4px rgba(0, 0, 0, 0.9);
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  
-  /* Add glowing effect */
-  filter: drop-shadow(0 0 10px ${props => props.theme?.colors?.accent || '#800000'});
-`;
-
-const Tagline = styled.p`
-  font-size: clamp(1rem, 2vw, 1.4rem);
-  color: #FFFFFF;
-  max-width: 600px;
-  line-height: 1.6;
-  position: relative;
-  z-index: 1;
-  font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
-  text-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.8),
-    0 4px 8px rgba(0, 0, 0, 0.6);
-  font-weight: 500;
 `;
 
 // Mission Statement Section

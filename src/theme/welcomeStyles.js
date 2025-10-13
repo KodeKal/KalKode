@@ -334,8 +334,8 @@ export const WELCOME_STYLES = {
     colors: {
       background: "#0D0D0D",
       text: "#FFFFFF",
-      accent: "#FFD700",
-      accentGradient: "linear-gradient(45deg, #FFD700, #FFA500, #FF6347)",
+      accent: "#5d0185ff",
+      accentGradient: "linear-gradient(45deg, #46049cff, #FFA500, #FF6347)",
       surface: "rgba(255, 215, 0, 0.3)"
     },
     fonts: {
@@ -456,8 +456,8 @@ export const WELCOME_STYLES = {
     colors: {
       background: "#0F0F23",
       text: "#00FFFF",
-      accent: "#FFFF00",
-      accentGradient: "linear-gradient(45deg, #FFFF00, #FF00FF)",
+      accent: "#4d4d1cff",
+      accentGradient: "linear-gradient(45deg, #808026ff, #FF00FF)",
       surface: "rgba(255, 255, 0, 0.2)"
     },
     fonts: {

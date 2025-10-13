@@ -531,12 +531,16 @@ export const HeroBannerWidget = ({ config, theme, editable, onUpdate }) => {
         ) : (
           <>
             <h1 style={{ 
-              fontSize: 'clamp(2rem, 5vw, 4rem)', 
+              fontSize: 'clamp(1.5rem, 5vw, 3.5rem)', 
               fontWeight: 'bold',
               color: 'white',
               textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
               marginBottom: '1rem',
-              lineHeight: 1.2
+              lineHeight: 1.2,
+              wordBreak: 'break-word',
+              overflowWrap: 'break-word',
+              maxWidth: '100%',
+              padding: '0 1rem'
             }}>
               {config.headline || "Welcome to Our Shop"}
             </h1>
