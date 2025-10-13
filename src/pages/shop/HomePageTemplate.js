@@ -578,7 +578,7 @@ const HomePageTemplate = ({ shopData, theme }) => {
           fontSize: '0.95rem',
           fontFamily: theme?.fonts?.body || "'Inter', sans-serif",
         }}>
-          📋 <strong>Preview Mode:</strong> Editable After Sign Up.
+          📋 Editable After Sign Up.
         </p>
       {/* Hero Banner */}
       <HeroSection theme={theme}>

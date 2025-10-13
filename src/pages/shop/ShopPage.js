@@ -2324,7 +2324,16 @@ const toggleItemExpansion = (itemId) => {
               title="Home"
             >
               <Home size={22} />
-            </HeaderTabButton>        
+            </HeaderTabButton> 
+
+            <HeaderTabButton
+              theme={shopData?.theme}
+              active={activeTab === 'shop'}
+              onClick={() => setActiveTab('shop')}
+              title="Shop"
+            >
+              <Store size={22} />
+            </HeaderTabButton>       
 
             <HeaderTabButton
               theme={shopData?.theme}
@@ -2334,16 +2343,6 @@ const toggleItemExpansion = (itemId) => {
             >
               <Users size={22} />
             </HeaderTabButton>        
-
-            <HeaderTabButton
-              theme={shopData?.theme}
-              active={activeTab === 'shop'}
-              onClick={() => setActiveTab('shop')}
-              title="Shop"
-            >
-              <Store size={22} />
-            </HeaderTabButton>        
-
             
           </HeaderRight>
         </Header>       

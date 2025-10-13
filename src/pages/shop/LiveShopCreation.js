@@ -202,12 +202,6 @@ const ShopNameInput = styled.input`
     color: ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
   }
 
-  /* ADD BLINKING CURSOR ANIMATION */
-  @keyframes blink {
-    0%, 49% { border-right: 2px solid ${props => props.theme?.colors?.accent || '#800000'}; }
-    50%, 100% { border-right: 2px solid transparent; }
-  }
-  
   &:focus {
     animation: blink 1s step-end infinite;
   }
@@ -1424,7 +1418,7 @@ const LiveShopCreation = () => {
   const [usernameAvailable, setUsernameAvailable] = useState(null);
 
   const [shopData, setShopData] = useState({
-    name: 'EnterBrandName', // ADD DEFAULT NAME HERE
+    name: '', // ADD DEFAULT NAME HERE
     description: '',
     profile: null,
     mission: '',
@@ -1451,7 +1445,7 @@ const LiveShopCreation = () => {
   // UPDATE checkUsernameAvailability function (around line 1050)
 const checkUsernameAvailability = async (shopName) => {
   // Skip check for empty or default names
-  if (!shopName || shopName.trim() === '' || shopName === 'EnterBrandName') {
+  if (!shopName || shopName.trim() === '' ) {
     setShopNameError('');
     setUsernameAvailable(null);
     return;
@@ -1498,7 +1492,7 @@ const checkUsernameAvailability = async (shopName) => {
   // UPDATE the debounced username check useEffect (around line 1100)
 useEffect(() => {
   // Don't check on initial mount or if name is the default placeholder
-  if (!shopData?.name || shopData.name === 'EnterBrandName') {
+  if (!shopData?.name || shopData.name.trim() === '') {
     setShopNameError('');
     setUsernameAvailable(null);
     return;
@@ -1807,7 +1801,7 @@ const handleSave = async () => {
   // Check if shop name is still default or empty
   let finalShopName = shopData.name;
   
-  if (!finalShopName || finalShopName === 'MyBrandName') {
+  if (!finalShopName || finalShopName === '') {
     const adjectives = ['Cool', 'Great', 'Super', 'Amazing', 'Awesome', 'Epic', 'Prime', 'Elite'];
     const nouns = ['Shop', 'Store', 'Market', 'Bazaar', 'Outlet', 'Hub', 'Spot', 'Place'];
     const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
@@ -1910,11 +1904,11 @@ const handleSave = async () => {
         <div className="shop-name-container">
           <ShopNameInputContainer>
             <ShopNameInput
-              value={shopData?.name || ''} // Add optional chaining and fallback
+              value={shopData?.name || ''}
               onChange={(e) => {
                 handleShopDataChange('name', e.target.value);
               }}
-              placeholder="EnterBrandName*" // Show asterisk in placeholder
+              placeholder="Enter Brand Name*"
               fontSize={shopNameFontSize}
               theme={selectedTheme}
               isError={!!shopNameError}
@@ -2379,7 +2373,7 @@ const handleSave = async () => {
         <Header theme={selectedTheme}>
           <HeaderLeft>
             <Logo onClick={() => navigate('/')} theme={selectedTheme}>
-              KALKODE
+              {shopData?.name || 'Your Brand Name'}
             </Logo>
           </HeaderLeft>
 

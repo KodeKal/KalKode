@@ -456,8 +456,8 @@ export const WELCOME_STYLES = {
     colors: {
       background: "#0F0F23",
       text: "#00FFFF",
-      accent: "#4d4d1cff",
-      accentGradient: "linear-gradient(45deg, #808026ff, #FF00FF)",
+      accent: "#6e6e14ff",
+      accentGradient: "linear-gradient(45deg, #fcfc04ff, #FF00FF)",
       surface: "rgba(255, 255, 0, 0.2)"
     },
     fonts: {
