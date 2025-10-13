@@ -603,20 +603,82 @@ const HomePageTemplate = ({ shopData, theme }) => {
       <FeaturedSection>
         <SectionTitle theme={theme}>Featured Products</SectionTitle>
         <ItemsGrid>
-          {(shopData?.items?.slice(0, 3) || [1, 2, 3]).map((item, index) => (
-            <ItemCard key={item?.id || index} theme={theme}>
-              <ItemImagePlaceholder theme={theme}>
-                <Package size={64} />
-              </ItemImagePlaceholder>
-              <ItemContent theme={theme}>
-                <h3>{item?.name || `Product ${index + 1}`}</h3>
-                <p>{item?.description || 'Premium quality product description'}</p>
-                <div className="price">
-                  ${item?.price || '99.99'}
-                </div>
-              </ItemContent>
-            </ItemCard>
-          ))}
+          {(shopData?.items?.slice(0, 3) || []).map((item, index) => {
+            // Get the first valid image or use null for placeholder
+            const itemImage = item?.images?.find(img => {
+              // Check if it's a string URL
+              if (typeof img === 'string') return true;
+              // Check if it's an object with preview
+              if (img?.preview) return true;
+              return false;
+            });
+            
+            // Get actual image source
+            const getImageSource = (img) => {
+              if (typeof img === 'string') return img;
+              if (img?.preview) return img.preview;
+              return null;
+            };
+            
+            const imageSource = getImageSource(itemImage);
+            
+            return (
+              <ItemCard key={item?.id || index} theme={theme}>
+                <ItemImagePlaceholder theme={theme}>
+                  {imageSource ? (
+                    <img 
+                      src={imageSource} 
+                      alt={item?.name || `Product ${index + 1}`}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '1rem',
+                      background: `${theme?.colors?.background}50`
+                    }}>
+                      <div style={{
+                        width: '80px',
+                        height: '80px',
+                        borderRadius: '50%',
+                        background: `${theme?.colors?.accent}20`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: `0 4px 12px ${theme?.colors?.accent}20`
+                      }}>
+                        <Package size={40} color={theme?.colors?.accent} />
+                      </div>
+                      <span style={{
+                        fontSize: '0.85rem',
+                        color: theme?.colors?.accent,
+                        fontWeight: '600',
+                        fontFamily: theme?.fonts?.body
+                      }}>
+                        No Image Available
+                      </span>
+                    </div>
+                  )}
+                </ItemImagePlaceholder>
+                <ItemContent theme={theme}>
+                  <h3>{item?.name || `Product ${index + 1}`}</h3>
+                  <p>{item?.description || 'Premium quality product description'}</p>
+                  <div className="price">
+                    ${item?.price ? parseFloat(item.price).toFixed(2) : '99.99'}
+                  </div>
+                </ItemContent>
+              </ItemCard>
+            );
+          })}
         </ItemsGrid>
       </FeaturedSection>
 

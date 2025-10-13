@@ -266,6 +266,7 @@ const HeaderRight = styled.div`
   gap: 0.75rem;
 `;
 
+// REPLACE the entire HeaderTabButton component with:
 const HeaderTabButton = styled.button`
   background: transparent;
   border: none;
@@ -275,26 +276,18 @@ const HeaderTabButton = styled.button`
   padding: 0.5rem;
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.25rem;
   transition: all 0.3s ease;
   position: relative;
+  min-width: 60px;
   
-  &:active {
-    transform: scale(0.9);
-  }
   
+  /* Remove the old underline */
   &::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: ${props => props.active ? '80%' : '0'};
-    height: 3px;
-    background: ${props => props.theme?.colors?.accent || '#800000'};
-    border-radius: 2px 2px 0 0;
-    transition: width 0.3s ease;
+    display: none;
   }
   
   @media (hover: hover) {
@@ -313,7 +306,30 @@ const HeaderTabButton = styled.button`
       height: 24px;
     }
   }
+  
+  .tab-label {
+    font-size: 0.45rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    
+    /* Neon effect when active */
+    ${props => props.active && `
+      color: ${props.theme?.colors?.accent || '#800000'};
+      text-shadow: 
+        0 0 10px ${props.theme?.colors?.accent || '#800000'},
+        0 0 20px ${props.theme?.colors?.accent || '#800000'},
+        0 0 30px ${props.theme?.colors?.accent || '#800000'};
+      font-weight: 700;
+    `}
+    
+    @media (min-width: 768px) {
+      font-size: 0.7rem;
+    }
+  }
 `;
+
 const EditModal = styled.div`
   display: none;
 
@@ -833,10 +849,25 @@ const ItemImageContainer = styled.div`
     opacity: 0.5;
     cursor: pointer;
     transition: all 0.3s ease;
+    padding: 1rem;
     
     &:hover {
       opacity: 0.8;
       background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(255, 255, 255, 0.05)'};
+      
+      /* Scale up the circle on hover */
+      > div:first-child {
+        transform: scale(1.1);
+        background: ${props => `${props.theme?.colors?.accent}25`};
+      }
+    }
+    
+    &:active {
+      opacity: 1;
+      
+      > div:first-child {
+        transform: scale(0.95);
+      }
     }
     
     span {
@@ -1980,8 +2011,26 @@ const handleSave = async () => {
                       <img src={currentImage} alt={currentItem.name || 'Item'} />
                     ) : (
                       <div className="placeholder">
-                        <Package size={24} />
-                        <span>Image</span>
+                        <div style={{
+                          width: '50px',
+                          height: '50px',
+                          borderRadius: '50%',
+                          background: `${selectedTheme?.colors?.accent}15`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginBottom: '0.5rem'
+                        }}>
+                          <Package size={24} color={selectedTheme?.colors?.accent} />
+                        </div>
+                        <span style={{
+                          fontSize: '0.7rem',
+                          fontWeight: '600',
+                          color: selectedTheme?.colors?.accent,
+                          textAlign: 'center'
+                        }}>
+                          Add Photo
+                        </span>
                       </div>
                     )}
                 
@@ -2045,18 +2094,81 @@ const handleSave = async () => {
                     
                   <ItemImageContainer theme={selectedTheme}>
                     <div className="image-container">
-                      <EditableImage
-                        value={item.images[item.currentImageIndex]}
-                        onChange={(value) => {
-                          const newImages = [...item.images];
-                          newImages[item.currentImageIndex] = value;
-                          handleItemUpdate(item.id, { images: newImages });
-                        }}
-                        theme={selectedTheme}
-                        height="100%"
-                        width="100%"
-                      />
+                      {item.images[item.currentImageIndex] ? (
+                        <EditableImage
+                          value={item.images[item.currentImageIndex]}
+                          onChange={(value) => {
+                            const newImages = [...item.images];
+                            newImages[item.currentImageIndex] = value;
+                            handleItemUpdate(item.id, { images: newImages });
+                          }}
+                          theme={selectedTheme}
+                          height="100%"
+                          width="100%"
+                        />
+                      ) : (
+                        <div 
+                          className="placeholder"
+                          onClick={() => document.getElementById(`image-upload-${item.id}-${item.currentImageIndex}`).click()}
+                        >
+                          <div style={{
+                            width: '80px',
+                            height: '80px',
+                            borderRadius: '50%',
+                            background: `${selectedTheme?.colors?.accent}15`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginBottom: '0.75rem',
+                            transition: 'all 0.3s ease'
+                          }}>
+                            <Package size={36} color={selectedTheme?.colors?.accent} />
+                          </div>
+                          <span style={{
+                            fontSize: '0.9rem',
+                            fontWeight: '600',
+                            color: selectedTheme?.colors?.accent,
+                            marginBottom: '0.25rem'
+                          }}>
+                            Add Product Photo
+                          </span>
+                          <span style={{
+                            fontSize: '0.75rem',
+                            opacity: 0.6,
+                            textAlign: 'center',
+                            maxWidth: '80%'
+                          }}>
+                            Click to upload your item image
+                          </span>
+                        </div>
+                      )}
                     </div>
+                    
+                    {/* Hidden file input */}
+                    <input
+                      type="file"
+                      id={`image-upload-${item.id}-${item.currentImageIndex}`}
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={async (e) => {
+                        if (e.target.files?.[0]) {
+                          const file = e.target.files[0];
+                          // Create preview URL
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            const newImages = [...item.images];
+                            newImages[item.currentImageIndex] = {
+                              file: file,
+                              preview: reader.result,
+                              type: file.type,
+                              name: file.name
+                            };
+                            handleItemUpdate(item.id, { images: newImages });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
                       
                     {validImages.length > 0 && (
                       <>
@@ -2378,7 +2490,6 @@ const handleSave = async () => {
           </HeaderLeft>
 
           <HeaderRight>
-            
             <HeaderTabButton
               theme={selectedTheme}
               active={activeTab === 'home'}
@@ -2386,8 +2497,9 @@ const handleSave = async () => {
               title="Home"
             >
               <Home size={22} />
+              <span className="tab-label">Home</span>
             </HeaderTabButton>
-
+            
             <HeaderTabButton
               theme={selectedTheme}
               active={activeTab === 'shop'}
@@ -2395,8 +2507,9 @@ const handleSave = async () => {
               title="Shop"
             >
               <Store size={22} />
+              <span className="tab-label">Shop</span>
             </HeaderTabButton>
-
+            
             <HeaderTabButton
               theme={selectedTheme}
               active={activeTab === 'community'}
@@ -2404,8 +2517,9 @@ const handleSave = async () => {
               title="Community"
             >
               <Users size={22} />
+              <span className="tab-label">Community</span>
             </HeaderTabButton>
-
+            
             {isAuthenticated && (
               <HeaderTabButton
                 onClick={handleLogout}
@@ -2413,6 +2527,7 @@ const handleSave = async () => {
                 title="Logout"
               >
                 <LogOut size={22} />
+                <span className="tab-label">Logout</span>
               </HeaderTabButton>
             )}
           </HeaderRight>

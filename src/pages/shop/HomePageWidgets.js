@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X, ChevronLeft, ChevronRight, Heart, MessageCircle, CalendarIcon, Star, Clock, Mail, Instagram, TrendingUp, Upload, Play, Pause, Phone, MapPin, Calendar, FileText, Image as ImageIcon } from 'lucide-react';
+import { Plus, X, ChevronLeft, ChevronRight, Heart, Package, MessageCircle, CalendarIcon, Star, Clock, Mail, Instagram, TrendingUp, Upload, Play, Pause, Phone, MapPin, Calendar, FileText, Image as ImageIcon } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase/config';
 import { auth } from '../../firebase/config';
@@ -274,13 +274,14 @@ const EventForm = ({ onSubmit, onCancel, theme }) => {
   );
 };
 
-// Add to HomePageWidgets.js
+// REPLACE the entire ProductCarouselWidget component:
+// REPLACE the FeaturedProductsWidget component (around line 50):
 export const FeaturedProductsWidget = ({ config, theme, items = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const itemsPerView = config.itemsToShow || 4;
 
   useEffect(() => {
-    if (config.autoPlay) {
+    if (config.autoPlay && items.length > itemsPerView) {
       const interval = setInterval(() => {
         setCurrentIndex((prev) => 
           prev + itemsPerView >= items.length ? 0 : prev + 1
@@ -292,13 +293,25 @@ export const FeaturedProductsWidget = ({ config, theme, items = [] }) => {
 
   const visibleItems = items.slice(currentIndex, currentIndex + itemsPerView);
 
+  // Helper to get image source
+  const getImageSource = (images) => {
+    if (!images || !Array.isArray(images)) return null;
+    
+    for (let img of images) {
+      if (typeof img === 'string') return img;
+      if (img?.preview) return img.preview;
+    }
+    return null;
+  };
+
   return (
     <div style={{ padding: '2rem', position: 'relative' }}>
       <h2 style={{ 
         marginBottom: '2rem', 
         color: theme?.colors?.accent,
         textAlign: 'center',
-        fontSize: '2rem'
+        fontSize: '2rem',
+        fontFamily: theme?.fonts?.heading
       }}>
         Featured Products
       </h2>
@@ -309,51 +322,125 @@ export const FeaturedProductsWidget = ({ config, theme, items = [] }) => {
         gap: '1.5rem',
         transition: 'all 0.5s ease'
       }}>
-        {visibleItems.map((item, index) => (
-          <div key={index} style={{
-            background: `${theme?.colors?.surface}80`,
-            borderRadius: '12px',
-            padding: '1rem',
-            border: `1px solid ${theme?.colors?.accent}30`,
-            transition: 'transform 0.3s ease'
-          }}>
-            <div style={{
-              height: '200px',
-              background: item.images?.[0] ? 
-                `url(${item.images[0]})` : 
-                `${theme?.colors?.background}50`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              borderRadius: '8px',
-              marginBottom: '1rem'
-            }} />
-            <h3 style={{ 
-              fontSize: '1rem', 
-              marginBottom: '0.5rem',
-              color: theme?.colors?.text
+        {visibleItems.map((item, index) => {
+          const imageSource = getImageSource(item.images);
+          
+          return (
+            <div key={item.id || index} style={{
+              background: `${theme?.colors?.surface}80`,
+              borderRadius: '12px',
+              padding: '1rem',
+              border: `1px solid ${theme?.colors?.accent}30`,
+              transition: 'transform 0.3s ease',
+              overflow: 'hidden',
+              cursor: 'pointer'
             }}>
-              {item.name}
-            </h3>
-            <p style={{ 
-              color: theme?.colors?.accent, 
-              fontWeight: 'bold',
-              fontSize: '1.2rem'
-            }}>
-              ${parseFloat(item.price || 0).toFixed(2)}
-            </p>
-          </div>
-        ))}
+              {/* Item Image */}
+              <div style={{
+                height: '200px',
+                background: `${theme?.colors?.background}50`,
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden'
+              }}>
+                {imageSource ? (
+                  <img 
+                    src={imageSource} 
+                    alt={item.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.75rem'
+                  }}>
+                    <div style={{
+                      width: '70px',
+                      height: '70px',
+                      borderRadius: '50%',
+                      background: `${theme?.colors?.accent}20`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: `0 4px 12px ${theme?.colors?.accent}20`
+                    }}>
+                      <Package size={35} color={theme?.colors?.accent} />
+                    </div>
+                    <span style={{
+                      fontSize: '0.8rem',
+                      color: theme?.colors?.accent,
+                      fontWeight: '600',
+                      opacity: 0.8
+                    }}>
+                      No Image
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Item Info */}
+              <h3 style={{ 
+                fontSize: '1rem', 
+                marginBottom: '0.5rem',
+                color: theme?.colors?.text,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                fontFamily: theme?.fonts?.heading
+              }}>
+                {item.name}
+              </h3>
+              <p style={{ 
+                color: theme?.colors?.accent, 
+                fontWeight: 'bold',
+                fontSize: '1.2rem',
+                fontFamily: theme?.fonts?.body
+              }}>
+                ${parseFloat(item.price || 0).toFixed(2)}
+              </p>
+              
+              {/* Optional: Show quantity */}
+              {item.quantity !== undefined && (
+                <span style={{
+                  display: 'inline-block',
+                  marginTop: '0.5rem',
+                  padding: '0.25rem 0.5rem',
+                  background: parseInt(item.quantity) > 0 ? 
+                    `${theme?.colors?.accent}20` : '#FF525230',
+                  color: parseInt(item.quantity) > 0 ? 
+                    theme?.colors?.accent : '#FF5252',
+                  borderRadius: '4px',
+                  fontSize: '0.75rem',
+                  fontWeight: '600'
+                }}>
+                  {parseInt(item.quantity) > 0 ? 
+                    `${item.quantity} in stock` : 
+                    'Sold Out'}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {items.length > itemsPerView && (
         <>
           <button
             onClick={() => setCurrentIndex((prev) => 
-              prev === 0 ? items.length - itemsPerView : prev - 1
+              prev === 0 ? Math.max(0, items.length - itemsPerView) : prev - 1
             )}
             style={{
               position: 'absolute',
-              left: '0',
+              left: '-1rem',
               top: '50%',
               transform: 'translateY(-50%)',
               background: theme?.colors?.accent,
@@ -365,8 +452,12 @@ export const FeaturedProductsWidget = ({ config, theme, items = [] }) => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'white'
+              color: 'white',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              transition: 'transform 0.2s'
             }}
+            onMouseEnter={(e) => e.target.style.transform = 'translateY(-50%) scale(1.1)'}
+            onMouseLeave={(e) => e.target.style.transform = 'translateY(-50%) scale(1)'}
           >
             <ChevronLeft size={24} />
           </button>
@@ -377,7 +468,7 @@ export const FeaturedProductsWidget = ({ config, theme, items = [] }) => {
             )}
             style={{
               position: 'absolute',
-              right: '0',
+              right: '-1rem',
               top: '50%',
               transform: 'translateY(-50%)',
               background: theme?.colors?.accent,
@@ -389,8 +480,12 @@ export const FeaturedProductsWidget = ({ config, theme, items = [] }) => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'white'
+              color: 'white',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              transition: 'transform 0.2s'
             }}
+            onMouseEnter={(e) => e.target.style.transform = 'translateY(-50%) scale(1.1)'}
+            onMouseLeave={(e) => e.target.style.transform = 'translateY(-50%) scale(1)'}
           >
             <ChevronRight size={24} />
           </button>

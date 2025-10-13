@@ -158,6 +158,7 @@ const FloatingButton = styled.button`
   }
 `;
 
+// REPLACE the existing HeaderTabButton with:
 const HeaderTabButton = styled.button`
   background: transparent;
   border: none;
@@ -167,27 +168,17 @@ const HeaderTabButton = styled.button`
   padding: 0.5rem;
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.25rem;
   transition: all 0.3s ease;
   position: relative;
+  min-width: 60px;
   
-  &:active {
-    transform: scale(0.9);
-  }
-  
-  /* Bottom underline indicator */
+  /* Remove old underline */
   &::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: ${props => props.active ? '80%' : '0'};
-    height: 3px;
-    background: ${props => props.theme?.colors?.accent || '#800000'};
-    border-radius: 2px 2px 0 0;
-    transition: width 0.3s ease;
+    display: none;
   }
   
   @media (hover: hover) {
@@ -204,6 +195,29 @@ const HeaderTabButton = styled.button`
     @media (min-width: 768px) {
       width: 24px;
       height: 24px;
+    }
+  }
+  
+  .tab-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    
+    /* Neon effect when active */
+    ${props => props.active && `
+      color: ${props.theme?.colors?.accent || '#800000'};
+      text-shadow: 
+        0 0 10px ${props.theme?.colors?.accent || '#800000'},
+        0 0 20px ${props.theme?.colors?.accent || '#800000'},
+        0 0 30px ${props.theme?.colors?.accent || '#800000'};
+      font-weight: 700;
+    `}
+    
+    @media (min-width: 768px) {
+      font-size: 0.7rem;
     }
   }
 `;
@@ -1561,6 +1575,7 @@ const handleGoHome = () => {
               title="Home"
             >
               <Home size={22} />
+              <span className="tab-label">Home</span>
             </HeaderTabButton>
 
             <HeaderTabButton
@@ -1570,6 +1585,7 @@ const handleGoHome = () => {
               title="Shop"
             >
               <Store size={22} />
+              <span className="tab-label">Shop</span>
             </HeaderTabButton>
 
             <HeaderTabButton
@@ -1579,6 +1595,7 @@ const handleGoHome = () => {
               title="Community"
             >
               <Users size={22} />
+              <span className="tab-label">Community</span>
             </HeaderTabButton>
           </HeaderRight>
         </Header>
