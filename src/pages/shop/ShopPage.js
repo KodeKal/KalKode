@@ -21,18 +21,9 @@ import QuantitySelector from '../../components/shop/QuantitySelector';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 import { signOut } from 'firebase/auth';
 import { RefreshCw, Pin, LogOut } from 'lucide-react';
-import HomePageEditor from './HomePageEditor';
 import { saveHomePageConfig } from '../../firebase/firebaseService';
 import SubdomainInfo from '../../components/SubdomainDisplay';
-import {
-  CountdownWidget,
-  TestimonialsWidget,
-  GalleryWidget,
-  SocialFeedWidget,
-  VideoWidget,
-  FAQWidget,
-  TeamWidget
-} from './HomePageWidgets';
+
 
 const ITEM_CATEGORIES = [
   'Electronics & Tech',
@@ -221,16 +212,16 @@ const HeaderTabButton = styled.button`
   color: ${props => props.active ? 
     props.theme?.colors?.accent : 
     `${props.theme?.colors?.text}60`};
-  padding: 0.5rem;
+  padding: 0.2rem;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
+  gap: 0.10rem;
   transition: all 0.3s ease;
   position: relative;
-  min-width: 60px;
+  min-width: 5px;
   
   &:active {
     transform: scale(0.95);
@@ -1870,46 +1861,7 @@ const ShopPage = () => {
     );
   };
 
-  const renderPublicWidget = (widget) => {
-    const props = {
-      config: widget.config,
-      theme: shopData?.theme
-    };
-
-    switch (widget.type) {
-      case 'hero-banner':
-        return <HeroBannerWidget {...props} />;
-      case 'mission-statement':
-        return <MissionStatementWidget {...props} />;
-      case 'product-carousel':
-        return <ProductCarouselWidget {...props} items={shopData?.items || []} />;
-      case 'services':
-        return <ServicesWidget {...props} />;
-      case 'gallery':
-        return <GalleryWidgetComponent {...props} />;
-      case 'contact-form':
-        return <ContactFormWidget {...props} />;
-      case 'stats-dashboard':
-        return <StatsWidget {...props} stats={shopData?.stats} />;
-      case 'countdown-timer':
-        return <CountdownWidget {...props} />;
-      case 'testimonials':
-        return <TestimonialsWidget {...props} />;
-      case 'social-feed':
-        return <SocialFeedWidget {...props} />;
-      case 'video-section':
-        return <VideoWidget {...props} />;
-      case 'faq-section':
-        return <FAQWidget {...props} />;
-      case 'team-section':
-        return <TeamWidget {...props} />;
-      case 'announcement-bar':
-        return <AnnouncementBar {...props} />;
-      default:
-        return null;
-    }
-  };
-
+  
 // ADD toggle function:
 const toggleItemExpansion = (itemId) => {
   setExpandedItems(prev => {
@@ -2228,56 +2180,12 @@ const toggleItemExpansion = (itemId) => {
   };
 
 
-  const renderHomePageWidgets = () => {
-  if (!shopData?.homeWidgets || shopData.homeWidgets.length === 0) {
-    return (
-      <div style={{ 
-        textAlign: 'center', 
-        padding: '4rem 1rem',
-        background: `${shopData?.theme?.colors?.surface}50`,
-        borderRadius: '12px'
-      }}>
-        <h2 style={{ color: shopData?.theme?.colors?.accent }}>
-          Welcome to {shopData?.name || 'Our Shop'}
-        </h2>
-        <p style={{ color: shopData?.theme?.colors?.text, opacity: 0.7 }}>
-          {shopData?.mission || 'Your home page widgets will appear here.'}
-        </p>
-        <button
-          onClick={() => setActiveTab('home')}
-          style={{
-            marginTop: '2rem',
-            background: shopData?.theme?.colors?.accent,
-            color: 'white',
-            border: 'none',
-            padding: '1rem 2rem',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '1rem',
-            fontWeight: '600'
-          }}
-        >
-          Edit Home Page
-        </button>
-      </div>
-    );
-  }
-
-  return shopData.homeWidgets
-    .filter(widget => widget.visible)
-    .map(widget => (
-      <div key={widget.id} style={{ marginBottom: '2rem' }}>
-        {renderPublicWidget(widget)}
-      </div>
-    ));
-};
-
-
+  
   // UPDATE handleAddItem function in ShopPage.js (around line 1400)
   const handleAddItem = () => {
     const newItem = {
       id: Date.now().toString(),
-      name: 'MyItemName', // ADD DEFAULT ITEM NAME
+      name: 'Item Name', // ADD DEFAULT ITEM NAME
       price: '',
       description: '',
       category: 'Other',
@@ -2727,9 +2635,9 @@ const toggleItemExpansion = (itemId) => {
                       <ItemContent>
                         <ItemHeader onClick={() => toggleItemExpansion(item.id)}>
                           <h3>
-                            {item.name && item.name !== 'MyItemName' ? 
+                            {item.name && item.name !== 'Item Name' ? 
                               item.name : 
-                              <span style={{ opacity: 0.5 }}>MyItemName</span>
+                              <span style={{ opacity: 0.5 }}>Item Name</span>
                             }
                           </h3>
                           <ExpandButton>
@@ -2825,16 +2733,7 @@ const toggleItemExpansion = (itemId) => {
 
           {activeTab === 'home' && (
           <>
-            {shopData?.homeWidgets && shopData.homeWidgets.length > 0 ? (
-              <HomePageEditor 
-                shopData={shopData}
-                theme={shopData?.theme}
-                onSave={async (data) => {
-                  setShopData(prev => ({ ...prev, ...data }));
-                  setOriginalShopData(prev => ({ ...prev, ...data }));
-                }}
-              />
-            ) : (
+            
               <div style={{ 
                 textAlign: 'center', 
                 padding: '4rem 1rem',
@@ -2848,7 +2747,6 @@ const toggleItemExpansion = (itemId) => {
                   Your template home page should have loaded. Try refreshing the page.
                 </p>
               </div>
-            )}
           </>
         )}
 

@@ -32,15 +32,6 @@ import {
   Users,
   LogOut
 } from 'lucide-react';
-import {
-  CountdownWidget,
-  TestimonialsWidget,
-  GalleryWidget,
-  SocialFeedWidget,
-  VideoWidget,
-  FAQWidget,
-  TeamWidget
-} from './HomePageWidgets';
 import TabPositioner from './components/TabPositioner';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 
@@ -1123,39 +1114,6 @@ const ShopPublicView = () => {
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
-  const renderPublicWidget = (widget) => {
-    const props = {
-      config: widget.config,
-      theme: shopData?.theme
-    };
-
-    switch (widget.type) {
-      case 'hero-banner':
-        return <HeroBannerWidget {...props} />;
-      case 'product-carousel':
-        return <ProductCarouselWidget {...props} items={shopData?.items || []} />;
-      case 'stats-dashboard':
-        return <StatsWidget {...props} stats={shopData?.stats} />;
-      case 'countdown-timer':
-        return <CountdownWidget {...props} />;
-      case 'testimonials':
-        return <TestimonialsWidget {...props} />;
-      case 'gallery':
-        return <GalleryWidget {...props} />;
-      case 'social-feed':
-        return <SocialFeedWidget {...props} />;
-      case 'video-section':
-        return <VideoWidget {...props} />;
-      case 'faq-section':
-        return <FAQWidget {...props} />;
-      case 'team-section':
-        return <TeamWidget {...props} />;
-      case 'announcement-bar':
-        return <AnnouncementBar {...props} />;
-      default:
-        return null;
-    }
-  };
 
   const togglePinStyle = () => {
     if (isPinned) {
@@ -1496,20 +1454,6 @@ const handleGoHome = () => {
   );
 
   const renderHomeView = () => {
-    if (shopData?.homeWidgets && shopData.homeWidgets.length > 0) {
-      return (
-        <div>
-          {shopData.homeWidgets
-            .filter(widget => widget.visible)
-            .map(widget => (
-              <div key={widget.id} style={{ marginBottom: '2rem' }}>
-                {renderPublicWidget(widget)}
-              </div>
-            ))}
-        </div>
-      );
-    }
-  
     // Fallback to existing home view content
     return (
       <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>

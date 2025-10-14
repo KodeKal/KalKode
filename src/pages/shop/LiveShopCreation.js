@@ -98,7 +98,7 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
 // Compact Floating Controls - positioned below header on right
 const FloatingControls = styled.div`
   position: fixed;
-  top: 70px; /* Just below header */
+  top: 70px; 
   right: 1rem;
   display: flex;
   gap: 0.5rem;
@@ -173,40 +173,6 @@ const ShopNameInputContainer = styled.div`
   position: relative;
 `;
 
-// In LiveShopCreation.js, update the ShopNameInput styled component (around line 250)
-
-const ShopNameInput = styled.input`
-  width: 100%;
-  text-align: center;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid ${props => props.isError ? '#ff4444' : `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
-  font-size: ${props => Math.min(props.fontSize || 2.5, 2)}rem;
-  font-family: ${props => props.theme?.fonts?.heading};
-  color: ${props => props.theme?.colors?.accent || '#800000'};
-  outline: none;
-  padding: 0.5rem;
-  transition: all 0.3s ease;
-  caret-color: ${props => props.theme?.colors?.accent || '#800000'}; /* ADD THIS LINE */
-  
-  @media (min-width: 768px) {
-    font-size: ${props => props.fontSize || '2.5rem'};
-  }
-
-  &:focus {
-    border-bottom-color: ${props => props.isError ? '#ff4444' : props.theme?.colors?.accent || '#800000'};
-    border-bottom-width: 3px;
-  }
-
-  &::placeholder {
-    color: ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
-  }
-
-  &:focus {
-    animation: blink 1s step-end infinite;
-  }
-`;
-
 const ShopNameError = styled.div`
   color: #ff4444;
   font-size: 0.8rem;
@@ -273,16 +239,16 @@ const HeaderTabButton = styled.button`
   color: ${props => props.active ? 
     props.theme?.colors?.accent : 
     `${props.theme?.colors?.text}60`};
-  padding: 0.5rem;
+  padding: 0.2rem;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
+  gap: 0.10rem;
   transition: all 0.3s ease;
   position: relative;
-  min-width: 60px;
+  min-width: 5px;
   
   
   /* Remove the old underline */
@@ -656,6 +622,38 @@ const MainContent = styled.div`
   
   @media (min-width: 768px) {
     padding: 80px 2rem 2rem 2rem; /* Reduced from 6rem (96px) to 80px - approximately 20% less */
+  }
+`;
+
+const ShopNameInput = styled.input`
+  width: 100%;
+  text-align: center;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid ${props => props.isError ? '#ff4444' : `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+  font-size: ${props => Math.min(props.fontSize || 2.5, 2)}rem;
+  font-family: ${props => props.theme?.fonts?.heading};
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  outline: none;
+  padding: 0.5rem;
+  transition: all 0.3s ease;
+  caret-color: ${props => props.theme?.colors?.accent || '#800000'}; /* ADD THIS LINE */
+  
+  @media (min-width: 768px) {
+    font-size: ${props => props.fontSize || '2.5rem'};
+  }
+
+  &:focus {
+    border-bottom-color: ${props => props.isError ? '#ff4444' : props.theme?.colors?.accent || '#800000'};
+    border-bottom-width: 3px;
+  }
+
+  &::placeholder {
+    color: ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
+  }
+
+  &:focus {
+    animation: blink 1s step-end infinite;
   }
 `;
 
@@ -1455,7 +1453,7 @@ const LiveShopCreation = () => {
     mission: '',
     items: [{
       id: Date.now().toString(),
-      name: 'MyItemName',
+      name: 'Item Name',
       price: '',
       description: '',
       category: 'Other',
@@ -1669,7 +1667,7 @@ useEffect(() => {
   const handleItemAdd = () => {
     const newItem = {
       id: Date.now().toString(),
-      name: 'MyItemName',
+      name: 'Item Name',
       price: '',
       description: '',
       category: 'Other',
@@ -2074,9 +2072,9 @@ const handleSave = async () => {
                     
                   <MobileTemplateContent theme={selectedTheme}>
                     <div className="item-name">
-                      {currentItem.name && currentItem.name !== 'MyItemName' ? 
+                      {currentItem.name && currentItem.name !== 'Item Name' ? 
                         currentItem.name : 
-                        <span style={{ opacity: 0.5 }}>MyItemName</span>
+                        <span style={{ opacity: 0.5 }}>Item Name</span>
                       }
                     </div>
                     <div className="item-price">
@@ -2197,9 +2195,9 @@ const handleSave = async () => {
                   <ItemContent>
                     <ItemHeader onClick={() => toggleItemExpansion(item.id)}>
                       <h4>
-                        {item.name && item.name !== 'MyItemName' ? 
+                        {item.name && item.name !== 'Item Name' ? 
                           item.name : 
-                          <span style={{ opacity: 0.5 }}>MyItemName</span>
+                          <span style={{ opacity: 0.5 }}>Item Name</span>
                         }
                       </h4>
                       <ExpandButton>
@@ -2212,7 +2210,7 @@ const handleSave = async () => {
                         <ValidatedEditableText
                           value={item.name}
                           onChange={(value) => handleItemUpdate(item.id, { name: value })}
-                          placeholder="MyItemName"
+                          placeholder="Item Name"
                           validationRules={VALIDATION_RULES.item.name}
                           theme={selectedTheme}
                         />
@@ -2381,7 +2379,7 @@ const handleSave = async () => {
         <ValidatedEditableText
           value={editingItem.name}
           onChange={(value) => setEditingItem({ ...editingItem, name: value })}
-          placeholder="MyItemName"
+          placeholder="Item Name"
                 validationRules={VALIDATION_RULES.item.name}
                 theme={selectedTheme}
               />
