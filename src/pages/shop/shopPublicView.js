@@ -1,6 +1,5 @@
 // src/pages/shop/shopPublicView.js - Mobile Optimized
 
-import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled, { ThemeProvider } from 'styled-components';
 import { doc, getDoc } from 'firebase/firestore';
@@ -11,6 +10,7 @@ import { auth } from '../../firebase/config';
 import { DEFAULT_THEME } from '../../theme/config/themes';
 import BuyDialog from '../../components/Transaction/BuyDialog';
 import OrderChat from '../../components/Chat/OrderChat';
+
 import { useLocation } from '../../contexts/LocationContext';
 import { getDistance } from 'geolib';
 import { 
@@ -32,6 +32,7 @@ import {
   Users,
   LogOut
 } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import TabPositioner from './components/TabPositioner';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 import {
@@ -42,7 +43,30 @@ import {
   LocalMarketTemplate
 } from './HomePageTemplate';
 
+// Cache shop data in memory to avoid refetching
+const shopCache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+// Prefetch function - can be called from router/link hover
+export const prefetchShopData = async (shopId) => {
+  const cached = shopCache.get(shopId);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  
+  const shopRef = doc(db, 'shops', shopId);
+  const shopSnap = await getDoc(shopRef);
+  
+  if (shopSnap.exists()) {
+    const data = shopSnap.data();
+    shopCache.set(shopId, {
+      data,
+      timestamp: Date.now()
+    });
+    return data;
+  }
+  return null;
+};
 
 // Mobile-first styled components following WelcomePage pattern
 const PageContainer = styled.div.attrs({ className: 'page-container' })`
@@ -912,6 +936,18 @@ const SearchIcon = styled.div`
   opacity: 0.8;
 `;
 
+const SkeletonCard = styled.div`
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}50`};
+  border-radius: 12px;
+  height: 400px;
+  animation: pulse 1.5s ease-in-out infinite;
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 0.8; }
+  }
+`;
+
 const ClearButton = styled.button`
   position: absolute;
   right: 2rem;
@@ -1063,28 +1099,121 @@ const LoadingSpinner = styled.div`
 const ShopPublicView = () => {
   const { shopId } = useParams();
   const navigate = useNavigate();
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigate('/');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
+  const { isAuthenticated } = useAuth();
+  const { userLocation } = useLocation();
+
+  // REMOVE loading state entirely
   const [shopData, setShopData] = useState(null);
   const [activeTab, setActiveTab] = useState('shop');
   const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState('gallery');
   const [isPinned, setIsPinned] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
   const [currentImageIndices, setCurrentImageIndices] = useState({});
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedChatItem, setSelectedChatItem] = useState(null);
-  const { userLocation } = useLocation();
-  const { isAuthenticated } = useAuth(); // ADD THIS LINE
+
+  // OPTIMIZED: Fetch data immediately, use cache
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchShopData = async () => {
+      try {
+        // Check cache first
+        const cached = shopCache.get(shopId);
+        if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+          console.log('✅ Using cached shop data');
+          if (mounted) {
+            setShopData(cached.data);
+            initializeImageIndices(cached.data);
+          }
+          return;
+        }
+
+        // Fetch from Firestore
+        const shopRef = doc(db, 'shops', shopId);
+        const shopSnap = await getDoc(shopRef);
+        
+        if (!shopSnap.exists()) {
+          if (mounted) setError('Shop not found');
+          return;
+        }
+        
+        const shop = shopSnap.data();
+
+        // Cache the data
+        shopCache.set(shopId, {
+          data: shop,
+          timestamp: Date.now()
+        });
+
+        if (mounted) {
+          setShopData(shop);
+          initializeImageIndices(shop);
+        }
+      } catch (err) {
+        console.error('Error fetching shop data:', err);
+        if (mounted) setError('Failed to load shop data');
+      }
+    };
+
+    fetchShopData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [shopId]);
+
+  // Helper function
+  const initializeImageIndices = (shop) => {
+    if (shop.items && Array.isArray(shop.items)) {
+      const indices = {};
+      shop.items.forEach(item => {
+        indices[item.id] = item.currentImageIndex || 0;
+      });
+      setCurrentImageIndices(indices);
+    }
+  };
+
+  // OPTIMIZED: Calculate distances only when needed, memoized
+  const itemsWithDistance = useMemo(() => {
+    if (!shopData?.items || !userLocation) return shopData?.items || [];
+
+    return shopData.items.map(item => {
+      if (item.coordinates?.lat && item.coordinates?.lng) {
+        try {
+          const distanceInMeters = getDistance(
+            { latitude: userLocation.latitude, longitude: userLocation.longitude },
+            { latitude: item.coordinates.lat, longitude: item.coordinates.lng }
+          );
+          const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
+          
+          return {
+            ...item,
+            distance: distanceInMeters,
+            distanceInMiles,
+            formattedDistance: `${distanceInMiles} mi`
+          };
+        } catch (e) {
+          console.warn('Error calculating distance:', e);
+          return item;
+        }
+      }
+      return item;
+    });
+  }, [shopData?.items, userLocation]);
+
+  // OPTIMIZED: Memoize filtered items
+  const filteredItems = useMemo(() => {
+    return itemsWithDistance.filter(item => 
+      !item.deleted && 
+      (searchTerm === '' || 
+        (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    );
+  }, [itemsWithDistance, searchTerm]);
 
   useEffect(() => {
     const pinnedStyleId = localStorage.getItem('pinnedStyleId');
@@ -1141,121 +1270,45 @@ const ShopPublicView = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchShopData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const shopRef = doc(db, 'shops', shopId);
-        const shopSnap = await getDoc(shopRef);
-        
-        if (!shopSnap.exists()) {
-          setError('Shop not found');
-          setLoading(false);
-          return;
-        }
-        
-        const shop = shopSnap.data();
 
-        if (userLocation && shop.items && Array.isArray(shop.items)) {
-          shop.items = shop.items.map(item => {
-            if (item.coordinates && item.coordinates.lat && item.coordinates.lng) {
-              try {
-                const distanceInMeters = getDistance(
-                  { latitude: userLocation.latitude, longitude: userLocation.longitude },
-                  { latitude: item.coordinates.lat, longitude: item.coordinates.lng }
-                );
-                const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
-                
-                return {
-                  ...item,
-                  distance: distanceInMeters,
-                  distanceInMiles,
-                  formattedDistance: `${distanceInMiles} mi`
-                };
-              } catch (e) {
-                console.warn('Error calculating distance for item:', e);
-                return item;
-              }
-            }
-            return item;
-          });
-        }
-        
-        setShopData(shop);
-        
-        // Initialize current image indices for items
-        if (shop.items && Array.isArray(shop.items)) {
-          const indices = {};
-          shop.items.forEach(item => {
-            indices[item.id] = item.currentImageIndex || 0;
-          });
-          setCurrentImageIndices(indices);
-        }
-        
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching shop data:', err);
-        setError('Failed to load shop data');
-        setLoading(false);
-      }
-    };
-    
-    if (shopId) {
-      fetchShopData();
-    }
-  }, [shopId, userLocation]);
-
-  const handleNextImage = (e, itemId) => {
-    e.stopPropagation();
-    const item = shopData.items.find(i => i.id === itemId);
-    if (item && item.images && item.images.filter(Boolean).length > 0) {
-      const validImages = item.images.filter(Boolean);
-      setCurrentImageIndices(prev => ({
-        ...prev,
-        [itemId]: (prev[itemId] + 1) % validImages.length
-      }));
-    }
-  };
+  
 
 const handleGoHome = () => {
   window.location.href = 'https://kalkode.com';
 };
 
-  const handlePrevImage = (e, itemId) => {
+  // OPTIMIZED: Memoize callbacks
+  const handleNextImage = useCallback((e, itemId) => {
     e.stopPropagation();
-    const item = shopData.items.find(i => i.id === itemId);
-    if (item && item.images && item.images.filter(Boolean).length > 0) {
-      const validImages = item.images.filter(Boolean);
-      setCurrentImageIndices(prev => ({
-        ...prev,
-        [itemId]: (prev[itemId] - 1 + validImages.length) % validImages.length
-      }));
-    }
-  };
+    setCurrentImageIndices(prev => {
+      const item = shopData.items.find(i => i.id === itemId);
+      if (item?.images) {
+        const validImages = item.images.filter(Boolean);
+        return {
+          ...prev,
+          [itemId]: (prev[itemId] + 1) % validImages.length
+        };
+      }
+      return prev;
+    });
+  }, [shopData?.items]);
 
-  // Filter items based on search term
-  const filteredItems = shopData?.items?.filter(item => 
-    !item.deleted && 
-    (searchTerm === '' || 
-      (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
-  ) || [];
+  const handlePrevImage = useCallback((e, itemId) => {
+    e.stopPropagation();
+    setCurrentImageIndices(prev => {
+      const item = shopData.items.find(i => i.id === itemId);
+      if (item?.images) {
+        const validImages = item.images.filter(Boolean);
+        return {
+          ...prev,
+          [itemId]: (prev[itemId] - 1 + validImages.length) % validImages.length
+        };
+      }
+      return prev;
+    });
+  }, [shopData?.items]);
 
-  if (loading) {
-    return (
-      <PageContainer>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '1rem' }}>
-          <LoadingSpinner />
-          <div>Loading shop...</div>
-        </div>
-      </PageContainer>
-    );
-  }
-
-  if (error) {
+if (error) {
     return (
       <PageContainer>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '1rem' }}>
@@ -1278,8 +1331,18 @@ const handleGoHome = () => {
     );
   }
 
+  
   const renderShopView = () => (
-    <>
+  <>
+    {!shopData ? (
+      // Show skeleton while loading
+      <ItemGrid viewMode={viewMode}>
+        {[1, 2, 3, 4].map(i => (
+          <SkeletonCard key={i} theme={DEFAULT_THEME} />
+        ))}
+      </ItemGrid>
+    ) : (
+      <>
       <ShopProfileSection fontSize={shopData?.layout?.nameSize || '2rem'}>
         <div className="profile-image">
           {shopData?.profile ? (
@@ -1421,19 +1484,6 @@ const handleGoHome = () => {
                         e.preventDefault();
                         e.stopPropagation();
 
-                        // CHECK AUTHENTICATION
-                        if (!isAuthenticated) {
-                          // Redirect to LiveShopCreation
-                              navigate('/auth', { 
-      state: { 
-        mode: 'login',
-        from: window.location.pathname
-      }
-    });
-                          return;
-                        }
-
-                        // Proceed with order if authenticated
                         setSelectedChatItem(item);
                         setChatOpen(true);
                       }}
@@ -1456,9 +1506,11 @@ const handleGoHome = () => {
               : "This shop doesn't have any items yet."}
           </p>
         </EmptyStateMessage>
-      )}
-    </>
-  );
+       )}
+      </>
+    )}
+  </>
+);
 
   // REPLACE renderHomeView in shopPublicView.js
 const renderHomeView = () => {
@@ -1599,19 +1651,21 @@ const renderHomeView = () => {
           }}
         />
 
-        {selectedChatItem && (
-          <OrderChat 
-            isOpen={chatOpen} 
-            onClose={() => {
-              setChatOpen(false);
-              setSelectedChatItem(null);
-            }} 
-            item={selectedChatItem}
-            shopId={shopId}
-            shopName={shopData?.name}
-            theme={shopData?.theme}
-          />
-        )}
+        <React.Suspense fallback={null}>
+          {selectedChatItem && (
+            <OrderChat 
+              isOpen={chatOpen} 
+              onClose={() => {
+                setChatOpen(false);
+                setSelectedChatItem(null);
+              }} 
+              item={selectedChatItem}
+              shopId={shopId}
+              shopName={shopData?.name}
+              theme={shopData?.theme}
+            />
+          )}
+        </React.Suspense>
       </PageContainer>
     </ThemeProvider>
   );

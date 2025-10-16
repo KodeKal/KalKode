@@ -1,9 +1,12 @@
 // src/components/Transaction/BuyDialog.js - Updated for quantity-based transactions
 
 import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { X, MapPin, PackageCheck, Plus, Minus } from 'lucide-react';
 import { TransactionService } from '../../services/TransactionService';
+import { AuthProvider, useAuth } from '../../contexts/AuthContext';
+
 
 const DialogOverlay = styled.div`
   position: fixed;
@@ -305,10 +308,15 @@ const BuyDialog = ({ item, sellerId, onClose, onTransactionCreated }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [requestedQuantity, setRequestedQuantity] = useState(1);
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
+  
+  
   
   const availableQuantity = parseInt(item.quantity) || 0;
   const unitPrice = parseFloat(item.price) || 0;
   const totalPrice = unitPrice * requestedQuantity;
+
   
   const handleQuantityChange = (delta) => {
     const newQuantity = Math.max(1, Math.min(availableQuantity, requestedQuantity + delta));
@@ -459,11 +467,28 @@ const BuyDialog = ({ item, sellerId, onClose, onTransactionCreated }) => {
             )}
             
             <Button 
-              onClick={handleSubmitRequest} 
+              onClick={() => {
+                // Check authentication first
+                if (!isAuthenticated) {
+                  // Redirect to login with return path
+                  navigate('/auth', { 
+                    state: { 
+                      mode: 'login',
+                      from: window.location.pathname,
+                      message: 'Please log in to place an order' // Optional
+                    }
+                  });
+                  return;
+                }
+                
+                // User is authenticated, proceed with order
+                handleSubmitRequest();
+              }} 
               disabled={loading || requestedQuantity <= 0 || requestedQuantity > availableQuantity}
               theme={item.theme}
             >
               {loading ? 'Sending Request...' : 
+               !isAuthenticated ? 'Log In to Order' : // Optional: Change button text when not authenticated
                `Request ${requestedQuantity} item${requestedQuantity > 1 ? 's' : ''} ($${totalPrice.toFixed(2)})`}
             </Button>
             

@@ -27,16 +27,15 @@ import MessagesPage from './pages/shop/MessagesPage';
 
 // Updated SubdomainHandler Component for App.js
 
+// src/App.js - Update SubdomainHandler component
+
 const SubdomainHandler = ({ shopUsername }) => {
   const [shopId, setShopId] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchShopByUsername = async () => {
       try {
-        setLoading(true);
-        
         console.log('🔍 Searching for shop with username:', shopUsername);
         
         const { collection, query, where, getDocs } = await import('firebase/firestore');
@@ -57,20 +56,7 @@ const SubdomainHandler = ({ shopUsername }) => {
         
         if (querySnapshot.empty) {
           console.error('❌ No shop found with username:', shopUsername);
-          
-          // Additional debugging: List all shops to verify data
-          const allShopsQuery = query(shopsRef);
-          const allShops = await getDocs(allShopsQuery);
-          console.log('📋 All shops in database:', 
-            allShops.docs.map(doc => ({ 
-              id: doc.id, 
-              name: doc.data().name,
-              username: doc.data().username 
-            }))
-          );
-          
           setError(`Shop "${shopUsername}" not found`);
-          setLoading(false);
           return;
         }
         
@@ -82,17 +68,10 @@ const SubdomainHandler = ({ shopUsername }) => {
         });
         
         setShopId(shopDoc.id);
-        setLoading(false);
         
       } catch (err) {
         console.error('💥 Error fetching shop by username:', err);
-        console.error('Error details:', {
-          code: err.code,
-          message: err.message,
-          stack: err.stack
-        });
         setError('Failed to load shop: ' + err.message);
-        setLoading(false);
       }
     };
 
@@ -101,40 +80,11 @@ const SubdomainHandler = ({ shopUsername }) => {
     } else {
       console.error('❌ No shopUsername provided to SubdomainHandler');
       setError('Invalid shop URL');
-      setLoading(false);
     }
   }, [shopUsername]);
 
-  if (loading) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        background: '#000',
-        color: '#fff',
-        flexDirection: 'column',
-        gap: '1rem'
-      }}>
-        <div className="spinner" style={{
-          width: '40px',
-          height: '40px',
-          border: '3px solid rgba(128, 0, 0, 0.1)',
-          borderRadius: '50%',
-          borderTopColor: '#800000',
-          animation: 'spin 1s linear infinite'
-        }}></div>
-        <div>Loading shop "{shopUsername}"...</div>
-        <style>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
+  // REMOVED: Loading state entirely
+  // Show nothing while loading, then redirect
   if (error) {
     return (
       <div style={{
@@ -188,7 +138,13 @@ const SubdomainHandler = ({ shopUsername }) => {
     );
   }
 
-  return <Navigate to={`/shop/${shopId}/view`} replace />;
+  // Redirect immediately when shopId is found
+  if (shopId) {
+    return <Navigate to={`/shop/${shopId}/view`} replace />;
+  }
+
+  // Show minimal loading (optional - can be removed entirely)
+  return null; // Or show skeleton if you prefer
 };
 
 // Route Guard for Subdomain
