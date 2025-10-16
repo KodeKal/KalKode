@@ -13,7 +13,7 @@ import EditableImage from './components/EditableComponents/EditableImage';
 import { DEFAULT_THEME } from '../../theme/config/themes';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase/config';
-import { ChevronUp, ChevronDown, Plus, Users, ChevronLeft, ChevronRight, X, Home, Store } from 'lucide-react';
+import { ChevronUp, ChevronDown, Plus, Users, ChevronLeft, ChevronRight, X, GripVertical, Home, Store } from 'lucide-react';
 import { Trash2, Save, RotateCcw } from 'lucide-react';
 import AddressInput from '../../components/shop/AddressInput';
 import ThemeSelector from '../../components/ThemeSelector/ThemeSelector';
@@ -23,6 +23,15 @@ import { signOut } from 'firebase/auth';
 import { RefreshCw, Pin, LogOut } from 'lucide-react';
 import { saveHomePageConfig } from '../../firebase/firebaseService';
 import SubdomainInfo from '../../components/SubdomainDisplay';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import {
+  StreetwearTemplate,
+  OrganizationTemplate,
+  TechTemplate,
+  MinimalistTemplate,
+  LocalMarketTemplate,
+  SECTION_TYPES
+} from './HomePageTemplate';
 
 
 const ITEM_CATEGORIES = [
@@ -306,37 +315,6 @@ const EditorControls = styled.div`
   /* Zoom adjustments */
   @media (max-width: 1366px) and (min-width: 1024px) {
     gap: 0.5rem;
-  }
-`;
-
-const IconButton = styled.button`
-  background: ${props => props.active ? 
-    props.theme?.colors?.accent || '#800000' : 
-    'transparent'};
-  border: 1px solid ${props => props.theme?.colors?.accent || '#800000'};
-  color: ${props => props.active ? 
-    'white' : 
-    props.theme?.colors?.accent || '#800000'};
-  padding: clamp(0.4rem, 0.8vw, 0.6rem);
-  border-radius: clamp(6px, 1vw, 8px);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  min-width: clamp(32px, 5vw, 40px);
-  min-height: clamp(32px, 5vw, 40px);
-  
-  &:hover {
-    background: ${props => props.active ? 
-      props.theme?.colors?.accent || '#800000' : 
-      `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
-    transform: scale(1.05);
-  }
-  
-  svg {
-    width: clamp(14px, 2.5vw, 18px);
-    height: clamp(14px, 2.5vw, 18px);
   }
 `;
 
@@ -1161,6 +1139,125 @@ const ItemContent = styled.div`
   }
 `;
 
+// Add these styled components in ShopPage.js
+
+const SectionEditorContainer = styled.div`
+  background: ${props => `${props.theme?.colors?.surface}50`};
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}40`};
+`;
+
+const SectionControls = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+`;
+
+const AddSectionDropdown = styled.select`
+  background: ${props => props.theme?.colors?.surface};
+  color: ${props => props.theme?.colors?.text};
+  border: 1px solid ${props => `${props.theme?.colors?.accent}40`};
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  
+  &:focus {
+    outline: none;
+    border-color: ${props => props.theme?.colors?.accent};
+  }
+`;
+
+const AddSectionButton = styled.button`
+  background: ${props => props.theme?.colors?.accent};
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px ${props => `${props.theme?.colors?.accent}40`};
+  }
+`;
+
+const SectionWrapper = styled.div`
+  background: ${props => `${props.theme?.colors?.background}90`};
+  border: 2px solid ${props => `${props.theme?.colors?.accent}30`};
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+`;
+
+const SectionHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}20`};
+`;
+
+const SectionTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+  
+  .icon {
+    font-size: 1.5rem;
+  }
+`;
+
+const SectionActions = styled.div`
+  display: flex;
+  gap: 0.5rem;
+`;
+
+const IconButton = styled.button`
+  background: transparent;
+  border: 1px solid ${props => props.theme?.colors?.accent};
+  color: ${props => props.theme?.colors?.accent};
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${props => `${props.theme?.colors?.accent}20`};
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  &.delete {
+    border-color: #ff4444;
+    color: #ff4444;
+
+    &:hover {
+      background: rgba(255, 68, 68, 0.2);
+    }
+  }
+`;
+
 const DeleteSection = styled.div`
   margin-top: 1.5rem;
   display: flex;
@@ -1642,224 +1739,337 @@ const ShopPage = () => {
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [originalUsername, setOriginalUsername] = useState('');
   const [expandedItems, setExpandedItems] = useState(new Set());
+  const [selectedHomeTemplate, setSelectedHomeTemplate] = useState(1);
+  const [homeSections, setHomeSections] = useState([]);
+  const [selectedSectionType, setSelectedSectionType] = React.useState('');
 
-  // ADD WIDGET COMPONENTS HERE - after shopData is defined
-  const MissionStatementWidget = ({ config, theme }) => {
-    return (
-      <div style={{
-        background: `${theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}50`,
-        borderRadius: '16px',
-        padding: 'clamp(2rem, 4vw, 3rem)',
-        textAlign: 'center',
-        margin: 'clamp(1.5rem, 3vw, 2rem) 0'
-      }}>
-        <h2 style={{
-          fontSize: 'clamp(1.5rem, 3vw, 2rem)',
-          color: theme?.colors?.accent || '#800000',
-          marginBottom: 'clamp(0.75rem, 1.5vw, 1rem)'
-        }}>
-          {config.title || 'Our Mission'}
-        </h2>
-        <p style={{
-          fontSize: 'clamp(1rem, 2vw, 1.2rem)',
-          color: `${theme?.colors?.text}E6` || 'rgba(255, 255, 255, 0.9)',
-          lineHeight: 1.8,
-          maxWidth: '800px',
-          margin: '0 auto'
-        }}>
-          {config.content || 'We are dedicated to providing exceptional products.'}
-        </p>
-      </div>
-    );
-  };
+  // Add this component BEFORE renderHomeView (around line 1400)
+const SectionEditor = () => {
+  const [selectedSectionType, setSelectedSectionType] = useState('');
 
-  const ServicesWidget = ({ config, theme }) => {
-    return (
-      <div style={{
-        background: `${theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}50`,
-        borderRadius: '16px',
-        padding: 'clamp(2rem, 4vw, 3rem)',
-        margin: 'clamp(1.5rem, 3vw, 2rem) 0'
-      }}>
-        <h2 style={{
-          fontSize: 'clamp(1.5rem, 3vw, 2rem)',
-          color: theme?.colors?.accent || '#800000',
-          marginBottom: 'clamp(1rem, 2vw, 2rem)',
-          textAlign: 'center'
+  return (
+    <SectionEditorContainer theme={shopData?.theme}>
+      <SectionControls>
+        <h3 style={{
+          margin: 0,
+          color: shopData?.theme?.colors?.accent,
+          fontSize: '1.2rem',
+          fontWeight: '600'
         }}>
-          {config.title || 'Our Services'}
-        </h2>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 'clamp(1rem, 2vw, 2rem)'
-        }}>
-          {config.services?.map((service, index) => (
-            <div key={index} style={{
-              textAlign: 'center',
-              padding: 'clamp(1rem, 2vw, 1.5rem)',
-              background: `${theme?.colors?.background}60`,
-              borderRadius: '12px'
-            }}>
-              <div style={{
-                fontSize: '2.5rem',
-                marginBottom: '1rem'
-              }}>
-                {service.icon === 'Truck' && '🚚'}
-                {service.icon === 'Shield' && '🛡️'}
-                {service.icon === 'Clock' && '⏰'}
-                {service.icon === 'Award' && '🏆'}
-              </div>
-              <h3 style={{
-                fontSize: 'clamp(1rem, 2vw, 1.1rem)',
-                color: theme?.colors?.text,
-                marginBottom: '0.5rem'
-              }}>
-                {service.title}
-              </h3>
-              <p style={{
-                fontSize: 'clamp(0.85rem, 1.5vw, 0.9rem)',
-                color: `${theme?.colors?.text}99`,
-                lineHeight: 1.5
-              }}>
-                {service.description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const GalleryWidgetComponent = ({ config, theme }) => {
-    const [currentSlide, setCurrentSlide] = React.useState(0);
-    const images = config.images || [];
-
-    return (
-      <div style={{
-        margin: 'clamp(1.5rem, 3vw, 2rem) 0'
-      }}>
-        <h2 style={{
-          fontSize: 'clamp(1.5rem, 3vw, 2rem)',
-          color: theme?.colors?.accent || '#800000',
-          marginBottom: 'clamp(1rem, 2vw, 2rem)',
-          textAlign: 'center'
-        }}>
-          {config.title || 'Gallery'}
-        </h2>
-        <div style={{
-          position: 'relative',
-          height: 'clamp(300px, 50vh, 500px)',
-          borderRadius: '16px',
-          overflow: 'hidden'
-        }}>
-          {images.map((img, index) => (
-            <div
-              key={index}
-              style={{
-                position: 'absolute',
-                width: '100%',
-                height: '100%',
-                backgroundImage: `url(${img.url})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                opacity: currentSlide === index ? 1 : 0,
-                transition: 'opacity 0.5s ease'
-              }}
-            />
-          ))}
-          <button
-            onClick={() => setCurrentSlide((currentSlide - 1 + images.length) % images.length)}
-            style={{
-              position: 'absolute',
-              left: '1rem',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: 'rgba(0,0,0,0.5)',
-              border: 'none',
-              borderRadius: '50%',
-              width: '48px',
-              height: '48px',
-              color: 'white',
-              cursor: 'pointer',
-              zIndex: 2
-            }}
+          Page Sections
+        </h3>
+        
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <AddSectionDropdown
+            theme={shopData?.theme}
+            value={selectedSectionType}
+            onChange={(e) => setSelectedSectionType(e.target.value)}
           >
-            ‹
-          </button>
-          <button
-            onClick={() => setCurrentSlide((currentSlide + 1) % images.length)}
-            style={{
-              position: 'absolute',
-              right: '1rem',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: 'rgba(0,0,0,0.5)',
-              border: 'none',
-              borderRadius: '50%',
-              width: '48px',
-              height: '48px',
-              color: 'white',
-              cursor: 'pointer',
-              zIndex: 2
+            <option value="">Select section type...</option>
+            {SECTION_TYPES.map(type => (
+              <option key={type.value} value={type.value}>
+                {type.icon} {type.label}
+              </option>
+            ))}
+          </AddSectionDropdown>
+          
+          <AddSectionButton
+            theme={shopData?.theme}
+            onClick={() => {
+              if (selectedSectionType) {
+                handleAddSection(selectedSectionType);
+                setSelectedSectionType('');
+              }
             }}
+            disabled={!selectedSectionType}
+            style={{ opacity: selectedSectionType ? 1 : 0.5 }}
           >
-            ›
-          </button>
+            <Plus size={20} />
+            Add Section
+          </AddSectionButton>
         </div>
-      </div>
-    );
+      </SectionControls>
+
+      {/* Section List */}
+      {homeSections.length === 0 ? (
+        <div style={{
+          textAlign: 'center',
+          padding: '3rem 1rem',
+          color: shopData?.theme?.colors?.text,
+          opacity: 0.6
+        }}>
+          <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
+            No sections yet
+          </p>
+          <p style={{ fontSize: '0.9rem' }}>
+            Add sections above to build your home page
+          </p>
+        </div>
+      ) : (
+        <div>
+          {homeSections
+            .sort((a, b) => a.order - b.order)
+            .map((section, index) => {
+              const sectionType = SECTION_TYPES.find(t => t.value === section.type);
+              
+              return (
+                <SectionWrapper key={section.id} theme={shopData?.theme}>
+                  <SectionHeader theme={shopData?.theme}>
+                    <SectionTitle>
+                      <GripVertical size={20} style={{ opacity: 0.5 }} />
+                      <span className="icon">{sectionType?.icon}</span>
+                      <span>{sectionType?.label || section.type}</span>
+                    </SectionTitle>
+                    
+                    <SectionActions>
+                      <IconButton
+                        theme={shopData?.theme}
+                        onClick={() => handleMoveSection(section.id, 'up')}
+                        disabled={index === 0}
+                        title="Move up"
+                      >
+                        <ChevronUp size={18} />
+                      </IconButton>
+                      
+                      <IconButton
+                        theme={shopData?.theme}
+                        onClick={() => handleMoveSection(section.id, 'down')}
+                        disabled={index === homeSections.length - 1}
+                        title="Move down"
+                      >
+                        <ChevronDown size={18} />
+                      </IconButton>
+                      
+                      <IconButton
+                        theme={shopData?.theme}
+                        className="delete"
+                        onClick={() => handleRemoveSection(section.id)}
+                        title="Delete section"
+                      >
+                        <Trash2 size={18} />
+                      </IconButton>
+                    </SectionActions>
+                  </SectionHeader>
+
+                  {/* Section Content Preview */}
+                  <div style={{
+                    background: `${shopData?.theme?.colors?.surface}30`,
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    fontSize: '0.9rem',
+                    opacity: 0.8
+                  }}>
+                    {section.type === 'hero-banner' && (
+                      <div>Hero: {section.config?.headline || 'No headline'}</div>
+                    )}
+                    {section.type === 'featured-items' && (
+                      <div>Showing {section.config?.itemCount || 4} items</div>
+                    )}
+                    {section.type === 'photo-gallery' && (
+                      <div>{section.config?.images?.length || 0} images in gallery</div>
+                    )}
+                    {section.type === 'featured-video' && (
+                      <div>{section.config?.youtubeUrl ? 'Video added' : 'No video yet'}</div>
+                    )}
+                    {section.type === 'mission-statement' && (
+                      <div>{section.config?.content?.slice(0, 60) || 'No content'}...</div>
+                    )}
+                    {section.type === 'calendar-events' && (
+                      <div>{section.config?.events?.length || 0} events</div>
+                    )}
+                    {section.type === 'services-grid' && (
+                      <div>{section.config?.services?.length || 0} services</div>
+                    )}
+                    {section.type === 'contact' && (
+                      <div>Contact info section</div>
+                    )}
+                    {section.type === 'text-block' && (
+                      <div>{section.config?.content?.slice(0, 60) || 'Empty text block'}...</div>
+                    )}
+                  </div>
+                </SectionWrapper>
+              );
+            })}
+        </div>
+      )}
+    </SectionEditorContainer>
+  );
+};
+
+  // BETTER: Replace renderHomeView with this simpler version
+const renderHomeView = () => {
+  const templates = {
+    1: StreetwearTemplate,
+    2: OrganizationTemplate,
+    3: TechTemplate,
+    4: MinimalistTemplate,
+    5: LocalMarketTemplate
   };
 
-  const ContactFormWidget = ({ config, theme }) => {
-    return (
+  const SelectedTemplate = templates[selectedHomeTemplate];
+
+  return (
+    <>
+      {/* Template Selector */}
+      <TemplateSelector />
+
+      {/* Section Editor */}
+      <SectionEditor />
+
+      {/* Template Preview */}
       <div style={{
-        background: `${theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}50`,
+        background: `${shopData?.theme?.colors?.surface}30`,
         borderRadius: '16px',
-        padding: 'clamp(2rem, 4vw, 3rem)',
-        margin: 'clamp(1.5rem, 3vw, 2rem) 0'
+        padding: '2rem 1rem',
+        border: `1px solid ${shopData?.theme?.colors?.accent}40`
       }}>
-        <h2 style={{
-          fontSize: 'clamp(1.5rem, 3vw, 2rem)',
-          color: theme?.colors?.accent || '#800000',
-          marginBottom: 'clamp(1rem, 2vw, 2rem)',
-          textAlign: 'center'
+        <h3 style={{
+          textAlign: 'center',
+          marginBottom: '2rem',
+          color: shopData?.theme?.colors?.accent,
+          fontSize: '1.3rem'
         }}>
-          {config.title || 'Contact Us'}
-        </h2>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: 'clamp(1rem, 2vw, 2rem)',
-          maxWidth: '800px',
-          margin: '0 auto'
-        }}>
-          <div>
-            <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span>📧</span>
-              <span>info@yourshop.com</span>
-            </div>
-            <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span>📞</span>
-              <span>(555) 123-4567</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span>📍</span>
-              <span>123 Shop Street, City, ST 12345</span>
-            </div>
+          Live Preview
+        </h3>
+        {SelectedTemplate && homeSections.length > 0 ? (
+          <SelectedTemplate 
+            shopData={shopData} 
+            theme={shopData?.theme}
+            sections={homeSections}
+            editable={true}
+            onUpdateSection={handleUpdateSection}
+          />
+        ) : (
+          <div style={{
+            textAlign: 'center',
+            padding: '3rem 2rem',
+            color: shopData?.theme?.colors?.text,
+            opacity: 0.6
+          }}>
+            <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>
+              Add sections above to see preview
+            </p>
           </div>
-          <div>
-            <h3 style={{ marginBottom: '0.5rem' }}>Business Hours</h3>
-            <div style={{ fontSize: '0.9rem', lineHeight: 1.8, opacity: 0.8 }}>
-              <div>Monday - Friday: 9:00 AM - 6:00 PM</div>
-              <div>Saturday: 10:00 AM - 4:00 PM</div>
-              <div>Sunday: Closed</div>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
-    );
+    </>
+  );
+};
+
+const handleAddSection = (sectionType) => {
+  const newSection = {
+    id: `section-${Date.now()}`,
+    type: sectionType,
+    order: homeSections.length,
+    config: getDefaultSectionConfig(sectionType)
   };
+  
+  setHomeSections([...homeSections, newSection]);
+};
+
+const getDefaultSectionConfig = (type) => {
+  switch (type) {
+    case 'hero-banner':
+      return {
+        headline: shopData?.name || 'Welcome',
+        subtitle: 'Discover amazing products',
+        backgroundImage: null,
+        height: '70vh'
+      };
+    case 'featured-items':
+      return {
+        title: 'Featured Items',
+        itemCount: 4
+      };
+    case 'photo-gallery':
+      return {
+        title: 'Gallery',
+        images: [],
+        displayStyle: 'grid'
+      };
+    case 'featured-video':
+      return {
+        title: 'Featured Video',
+        youtubeUrl: '',
+        videoId: null
+      };
+    case 'mission-statement':
+      return {
+        title: 'Our Mission',
+        content: shopData?.mission || ''
+      };
+    case 'calendar-events':
+      return {
+        title: 'Upcoming Events',
+        events: []
+      };
+    case 'services-grid':
+      return {
+        title: 'Our Services',
+        services: []
+      };
+    case 'contact':
+      return {
+        title: 'Get In Touch',
+        email: '',
+        phone: '',
+        address: ''
+      };
+    case 'text-block':
+      return {
+        title: '',
+        content: '',
+        alignment: 'left'
+      };
+    default:
+      return {};
+  }
+};
+
+const handleUpdateSection = (sectionId, newConfig) => {
+  setHomeSections(homeSections.map(section =>
+    section.id === sectionId ? { ...section, config: newConfig } : section
+  ));
+};
+
+const handleRemoveSection = (sectionId) => {
+  setHomeSections(homeSections.filter(section => section.id !== sectionId));
+};
+
+const handleReorderSections = (result) => {
+  if (!result.destination) return;
+
+  const items = Array.from(homeSections);
+  const [reorderedItem] = items.splice(result.source.index, 1);
+  items.splice(result.destination.index, 0, reorderedItem);
+
+  // Update order property
+  const reorderedItems = items.map((item, index) => ({
+    ...item,
+    order: index
+  }));
+
+  setHomeSections(reorderedItems);
+};
+
+const handleMoveSection = (sectionId, direction) => {
+  const currentIndex = homeSections.findIndex(s => s.id === sectionId);
+  if (currentIndex === -1) return;
+
+  const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+  if (newIndex < 0 || newIndex >= homeSections.length) return;
+
+  const items = Array.from(homeSections);
+  const [movedItem] = items.splice(currentIndex, 1);
+  items.splice(newIndex, 0, movedItem);
+
+  const reorderedItems = items.map((item, index) => ({
+    ...item,
+    order: index
+  }));
+
+  setHomeSections(reorderedItems);
+};
 
   
 // ADD toggle function:
@@ -1974,7 +2184,6 @@ const toggleItemExpansion = (itemId) => {
   const handleSave = async () => {
   if (!auth.currentUser || !hasUnsavedChanges) return;
 
-  // Validate before saving
   const shopValidation = validateShopData(shopData);
   const itemsValidation = validateAllItems(shopData.items);
   
@@ -1995,6 +2204,8 @@ const toggleItemExpansion = (itemId) => {
     const shopRef = doc(db, 'shops', auth.currentUser.uid);
     const updateData = cleanDataForFirestore({
       ...shopData,
+      selectedHomeTemplate,
+      homeSections, // ADD THIS LINE
       updatedAt: new Date().toISOString()
     });
 
@@ -2002,7 +2213,7 @@ const toggleItemExpansion = (itemId) => {
     
     setOriginalShopData(JSON.parse(JSON.stringify(shopData)));
     setHasUnsavedChanges(false);
-    setValidationErrors({}); // Clear errors
+    setValidationErrors({});
     
     console.log('Shop data saved successfully');
   } catch (error) {
@@ -2099,38 +2310,62 @@ const toggleItemExpansion = (itemId) => {
     }
   }, [shopData]);
 
-  useEffect(() => {
-    const loadShopData = async (userId) => {
-      try {
-        const shopDoc = await getDoc(doc(db, 'shops', userId));
-        if (shopDoc.exists()) {
-          const data = shopDoc.data();
-          
-          // Filter out deleted items
-          if (data.items) {
-            data.items = data.items.filter(item => !item.deleted);
-          }
-          
-          setShopData(data);
-          setOriginalShopData(JSON.parse(JSON.stringify(data))); // Deep clone
+  // Update the loadShopData function (around line 1100)
+// Update the loadShopData useEffect (around line 1100)
+useEffect(() => {
+  const loadShopData = async (userId) => {
+    try {
+      const shopDoc = await getDoc(doc(db, 'shops', userId));
+      if (shopDoc.exists()) {
+        const data = shopDoc.data();
+        
+        // Filter out deleted items
+        if (data.items) {
+          data.items = data.items.filter(item => !item.deleted);
         }
-        setIsReady(true);
-      } catch (error) {
-        console.error('Error loading shop data:', error);
-        setIsReady(true);
+        
+        setShopData(data);
+        setOriginalShopData(JSON.parse(JSON.stringify(data)));
+        
+        if (data.selectedHomeTemplate) {
+          setSelectedHomeTemplate(data.selectedHomeTemplate);
+        }
+        
+        // Load or initialize sections
+        if (data.homeSections && data.homeSections.length > 0) {
+          setHomeSections(data.homeSections);
+        } else {
+          // Initialize with default sections
+          const defaultSections = getDefaultSectionsForTemplate(data.selectedHomeTemplate || 1);
+          setHomeSections(defaultSections);
+          
+          // Auto-save the initialized sections
+          const shopRef = doc(db, 'shops', userId);
+          await updateDoc(shopRef, {
+            homeSections: defaultSections,
+            selectedHomeTemplate: data.selectedHomeTemplate || 1,
+            updatedAt: new Date().toISOString()
+          });
+          console.log('✅ Initialized home sections');
+        }
       }
-    };
+      setIsReady(true);
+    } catch (error) {
+      console.error('Error loading shop data:', error);
+      setIsReady(true);
+    }
+  };
 
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
-      loadShopData(user.uid);
-    });
+  const unsubscribe = auth.onAuthStateChanged((user) => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    loadShopData(user.uid);
+  });
 
-    return () => unsubscribe();
-  }, [navigate]);
+  return () => unsubscribe();
+}, [navigate]);
 
   // Don't render anything until ready
   if (!isReady) {
@@ -2179,7 +2414,120 @@ const toggleItemExpansion = (itemId) => {
     }));
   };
 
+  // Add this function in ShopPage.js if it doesn't exist (around line 1300)
+const getDefaultSectionsForTemplate = (templateId) => {
+  const baseHero = {
+    id: 'hero-1',
+    type: 'hero-banner',
+    order: 0,
+    config: {
+      headline: shopData?.name || 'Welcome',
+      subtitle: 'Discover amazing products',
+      backgroundImage: null,
+      height: '70vh'
+    }
+  };
 
+  const baseFeatured = {
+    id: 'featured-1',
+    type: 'featured-items',
+    order: 1,
+    config: {
+      title: 'Featured Items',
+      itemCount: 4
+    }
+  };
+
+  const baseMission = {
+    id: 'mission-1',
+    type: 'mission-statement',
+    order: 2,
+    config: {
+      title: 'Our Mission',
+      content: shopData?.mission || 'We are dedicated to providing exceptional products and services.'
+    }
+  };
+
+  switch (templateId) {
+    case 1: // Streetwear
+      return [
+        baseHero,
+        baseFeatured,
+        {
+          id: 'services-1',
+          type: 'services-grid',
+          order: 2,
+          config: {
+            title: 'Why Choose Us',
+            services: [
+              { id: '1', icon: 'Truck', title: 'Fast Shipping', description: 'Quick delivery to your door' },
+              { id: '2', icon: 'Shield', title: 'Secure Payment', description: 'Your payment is safe' },
+              { id: '3', icon: 'Clock', title: '24/7 Support', description: 'Always here to help' },
+              { id: '4', icon: 'Award', title: 'Quality Guarantee', description: 'Top-notch products' }
+            ]
+          }
+        }
+      ];
+    
+    case 2: // Organization
+      return [
+        baseHero,
+        baseMission,
+        {
+          id: 'events-1',
+          type: 'calendar-events',
+          order: 2,
+          config: {
+            title: 'Upcoming Events',
+            events: []
+          }
+        }
+      ];
+    
+    case 3: // Tech
+      return [
+        baseHero,
+        baseFeatured,
+        {
+          id: 'video-1',
+          type: 'featured-video',
+          order: 2,
+          config: {
+            title: 'Featured Tech',
+            youtubeUrl: '',
+            videoId: null
+          }
+        }
+      ];
+    
+    case 4: // Minimalist
+      return [
+        baseHero,
+        baseFeatured,
+        baseMission
+      ];
+    
+    case 5: // Local Market
+      return [
+        baseHero,
+        baseFeatured,
+        {
+          id: 'contact-1',
+          type: 'contact',
+          order: 2,
+          config: {
+            title: 'Visit Us',
+            email: '',
+            phone: '',
+            address: ''
+          }
+        }
+      ];
+    
+    default:
+      return [baseHero, baseFeatured, baseMission];
+  }
+};
   
   // UPDATE handleAddItem function in ShopPage.js (around line 1400)
   const handleAddItem = () => {
@@ -2231,6 +2579,109 @@ const toggleItemExpansion = (itemId) => {
       setUploading(prev => ({ ...prev, [itemId]: false }));
     }
   };
+
+  const templates = [
+    { id: 1, name: 'Streetwear', desc: 'Bold & Urban', component: StreetwearTemplate },
+    { id: 2, name: 'Organization', desc: 'Events & Calendar', component: OrganizationTemplate },
+    { id: 3, name: 'Tech', desc: 'Futuristic', component: TechTemplate },
+    { id: 4, name: 'Minimalist', desc: 'Clean & Elegant', component: MinimalistTemplate },
+    { id: 5, name: 'Local Market', desc: 'Community', component: LocalMarketTemplate }
+  ];
+
+// Replace TemplateSelector component (around line 1350)
+const TemplateSelector = () => {
+  const templates = [
+    { id: 1, name: 'Streetwear', desc: 'Bold & Urban', component: StreetwearTemplate },
+    { id: 2, name: 'Organization', desc: 'Events & Calendar', component: OrganizationTemplate },
+    { id: 3, name: 'Tech', desc: 'Futuristic', component: TechTemplate },
+    { id: 4, name: 'Minimalist', desc: 'Clean & Elegant', component: MinimalistTemplate },
+    { id: 5, name: 'Local Market', desc: 'Community', component: LocalMarketTemplate }
+  ];
+
+  const handleTemplateChange = (templateId) => {
+    setSelectedHomeTemplate(templateId);
+    // Reset sections to template defaults
+    const defaultSections = getDefaultSectionsForTemplate(templateId);
+    setHomeSections(defaultSections);
+  };
+
+  return (
+    <div style={{
+      marginBottom: '2rem',
+      padding: '1.5rem',
+      background: `${shopData?.theme?.colors?.surface}50`,
+      borderRadius: '12px',
+      border: `1px solid ${shopData?.theme?.colors?.accent}40`
+    }}>
+      <h3 style={{
+        fontSize: '1.2rem',
+        marginBottom: '1rem',
+        color: shopData?.theme?.colors?.accent,
+        fontWeight: '600'
+      }}>
+        Select Home Page Template
+      </h3>
+      <div style={{
+        display: 'flex',
+        gap: '0.75rem',
+        flexWrap: 'wrap'
+      }}>
+        {templates.map(template => (
+          <button
+            key={template.id}
+            onClick={() => handleTemplateChange(template.id)}
+            style={{
+              background: selectedHomeTemplate === template.id ? 
+                shopData?.theme?.colors?.accent : 'transparent',
+              color: selectedHomeTemplate === template.id ? 
+                'white' : shopData?.theme?.colors?.text,
+              border: `2px solid ${shopData?.theme?.colors?.accent}`,
+              padding: '0.75rem 1.25rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              fontWeight: '600',
+              fontSize: '0.9rem'
+            }}
+          >
+            <div>{template.name}</div>
+            <div style={{
+              fontSize: '0.7rem',
+              opacity: 0.8,
+              marginTop: '0.25rem'
+            }}>
+              {template.desc}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+
+  const SelectedTemplate = templates[selectedHomeTemplate];
+
+  // Add this function in ShopPage component
+const initializeHomeSections = (data) => {
+  // If shop already has sections, return data as-is
+  if (data.homeSections && Array.isArray(data.homeSections) && data.homeSections.length > 2) {
+    return data;
+  }
+
+  // Otherwise, add default sections
+  const templateId = data.selectedHomeTemplate || 1;
+  const defaultSections = getDefaultSectionsForTemplate(templateId);
+  
+  return {
+    ...data,
+    homeSections: defaultSections,
+    selectedHomeTemplate: templateId
+  };
+};
+
+
+
 
   return (
     <ThemeProvider theme={shopData?.theme || DEFAULT_THEME}>
@@ -2731,24 +3182,7 @@ const toggleItemExpansion = (itemId) => {
             </>
           )}
 
-          {activeTab === 'home' && (
-          <>
-            
-              <div style={{ 
-                textAlign: 'center', 
-                padding: '4rem 1rem',
-                background: `${shopData?.theme?.colors?.surface}50`,
-                borderRadius: '12px'
-              }}>
-                <h2 style={{ color: shopData?.theme?.colors?.accent }}>
-                  No widgets yet
-                </h2>
-                <p style={{ color: shopData?.theme?.colors?.text, opacity: 0.7 }}>
-                  Your template home page should have loaded. Try refreshing the page.
-                </p>
-              </div>
-          </>
-        )}
+          {activeTab === 'home' && renderHomeView()}
 
           {activeTab === 'community' && (
             <div>

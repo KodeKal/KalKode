@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import styled, { ThemeProvider, createGlobalStyle } from 'styled-components';
 import ValidatedEditableText from '../../components/common/ValidatedEditableText';
 import { VALIDATION_RULES, validateShopData, validateAllItems } from '../../utils/inputValidation';
-import HomePageTemplate from './HomePageTemplate'; 
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -39,6 +38,13 @@ import QuantitySelector from '../../components/shop/QuantitySelector';
 import { useAuth } from '../../contexts/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase/config';
+import {
+  StreetwearTemplate,
+  OrganizationTemplate,
+  TechTemplate,
+  MinimalistTemplate,
+  LocalMarketTemplate
+} from './HomePageTemplate';
 
 const ITEM_CATEGORIES = [
   'Electronics & Tech',
@@ -1445,12 +1451,14 @@ const LiveShopCreation = () => {
   const [shopNameError, setShopNameError] = useState('');
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
+  const [heroBackgroundImage, setHeroBackgroundImage] = useState(null);
 
   const [shopData, setShopData] = useState({
     name: '', // ADD DEFAULT NAME HERE
     description: '',
     profile: null,
     mission: '',
+    selectedHomeTemplate: 1,
     items: [{
       id: Date.now().toString(),
       name: 'Item Name',
@@ -1719,111 +1727,6 @@ useEffect(() => {
     });
   };
 
-const createDefaultHomeWidgets = (shopData) => {
-  return [
-    // Hero Banner with Shop Name
-    {
-      id: `hero-${Date.now()}`,
-      type: 'hero-banner',
-      config: {
-        style: 'apple',
-        height: 'large',
-        overlay: true,
-        parallax: false,
-        headline: shopData.name || 'Welcome to Our Shop',
-        subtitle: 'Discover Amazing Products',
-        ctaText: 'Shop Now',
-        backgroundImage: null
-      },
-      visible: true
-    },
-    // Mission Statement
-    {
-      id: `mission-${Date.now() + 1}`,
-      type: 'mission-statement',
-      config: {
-        title: 'Our Mission',
-        content: shopData.mission || 'We are dedicated to providing exceptional products and services that exceed our customers\' expectations.'
-      },
-      visible: true
-    },
-    // Featured Products
-    {
-      id: `products-${Date.now() + 2}`,
-      type: 'product-carousel',
-      config: {
-        style: 'modern',
-        itemsToShow: 3,
-        autoPlay: false,
-        showArrows: true,
-        showDots: true
-      },
-      visible: true
-    },
-    // Services/Why Choose Us
-    {
-      id: `services-${Date.now() + 3}`,
-      type: 'services',
-      config: {
-        style: 'grid',
-        title: 'Why Choose Us',
-        services: [
-          {
-            icon: 'Truck',
-            title: 'Fast Shipping',
-            description: 'Quick delivery to your door'
-          },
-          {
-            icon: 'Shield',
-            title: 'Secure Payment',
-            description: 'Your payment is safe'
-          },
-          {
-            icon: 'Clock',
-            title: '24/7 Support',
-            description: 'Always here to help'
-          },
-          {
-            icon: 'Award',
-            title: 'Quality Guarantee',
-            description: 'Top-notch products'
-          }
-        ]
-      },
-      visible: true
-    },
-    // Gallery
-    {
-      id: `gallery-${Date.now() + 4}`,
-      type: 'gallery',
-      config: {
-        style: 'masonry',
-        columns: 3,
-        title: 'Gallery Showcase',
-        images: [
-          { url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80' },
-          { url: 'https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=1200&q=80' },
-          { url: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1200&q=80' },
-          { url: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&q=80' },
-          { url: 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=1200&q=80' }
-        ]
-      },
-      visible: true
-    },
-    // Contact Footer
-    {
-      id: `contact-${Date.now() + 5}`,
-      type: 'contact-form',
-      config: {
-        style: 'modern',
-        title: 'Contact Us',
-        showMap: false,
-        fields: ['name', 'email', 'message']
-      },
-      visible: true
-    }
-  ];
-};
 
 // UPDATE handleSave function in LiveShopCreation.js (around line 1200)
 const handleSave = async () => {
@@ -1859,15 +1762,45 @@ const handleSave = async () => {
     return;
   }
 
-  // CREATE DEFAULT HOME PAGE WIDGETS from shop data
-  const defaultHomeWidgets = createDefaultHomeWidgets(shopData);
+  // Default sections for new shops
+  const defaultSections = [
+    {
+      id: 'hero-1',
+      type: 'hero-banner',
+      order: 0,
+      config: {
+        headline: finalShopName,
+        subtitle: 'Discover quality products crafted with care',
+        backgroundImage: heroBackgroundImage,
+        height: '70vh'
+      }
+    },
+    {
+      id: 'featured-1',
+      type: 'featured-items',
+      order: 1,
+      config: {
+        title: 'Featured Products',
+        itemCount: 4
+      }
+    },
+    {
+      id: 'mission-1',
+      type: 'mission-statement',
+      order: 2,
+      config: {
+        title: 'Our Mission',
+        content: 'We are dedicated to providing exceptional products and services.'
+      }
+    }
+  ];
 
-  // Prepare data with proper profile handling
   const dataToSave = {
     ...shopData,
     name: finalShopName,
     theme: selectedTheme,
-    homeWidgets: defaultHomeWidgets, // Add widgets here
+    selectedHomeTemplate: 1,
+    homeSections: defaultSections, // ADD THIS LINE
     layout: {
       namePosition: shopData.layout.namePosition,
       tabPosition: 'top',
@@ -2451,14 +2384,150 @@ const handleSave = async () => {
     </MainContent>
   );
 
-  const renderHomeView = () => (
+  // REPLACE the existing renderHomeView function (around line 1400-1450)
+  // REPLACE the existing renderHomeView function with this updated version:
+const renderHomeView = () => {
+  // Default sections for preview with background image
+  const previewSections = [
+    {
+      id: 'hero-preview',
+      type: 'hero-banner',
+      order: 0,
+      config: {
+        headline: shopData?.name || 'Your Brand Name',
+        subtitle: 'Discover quality products crafted with care',
+        backgroundImage: heroBackgroundImage, // Use state for background
+        height: '70vh'
+      }
+    },
+    {
+      id: 'featured-preview',
+      type: 'featured-items',
+      order: 1,
+      config: {
+        title: 'Featured Products',
+        itemCount: 4
+      }
+    },
+    {
+      id: 'mission-preview',
+      type: 'mission-statement',
+      order: 2,
+      config: {
+        title: 'Our Mission',
+        content: shopData?.mission || 'We are dedicated to providing exceptional products and services that exceed our customers\' expectations. Quality, innovation, and customer satisfaction are at the heart of everything we do.'
+      }
+    }
+  ];
+
+  const handleHeroBackgroundChange = (file) => {
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setHeroBackgroundImage(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
     <MainContent>
-      <HomePageTemplate 
-        shopData={shopData}
-        theme={selectedTheme}
-      />
+      {/* Preview Notice + Hero Background Upload */}
+      <div style={{
+        background: `${selectedTheme?.colors?.surface}50`,
+        borderRadius: '12px',
+        padding: '1.5rem',
+        marginBottom: '2rem',
+        border: `1px solid ${selectedTheme?.colors?.accent}40`
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1rem'
+        }}>
+          <p style={{
+            color: selectedTheme?.colors?.accent,
+            fontSize: '0.95rem',
+            fontWeight: '600',
+            margin: 0
+          }}>
+            📋 Home Page Preview - Fully editable after signup
+          </p>
+          
+          {/* Hero Background Image Upload */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem'
+          }}>
+            <label style={{
+              background: selectedTheme?.colors?.accent,
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'all 0.3s ease'
+            }}>
+              <span>🖼️</span>
+              {heroBackgroundImage ? 'Change Hero Background' : 'Add Hero Background'}
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    handleHeroBackgroundChange(e.target.files[0]);
+                  }
+                }}
+              />
+            </label>
+            
+            {heroBackgroundImage && (
+              <button
+                onClick={() => setHeroBackgroundImage(null)}
+                style={{
+                  background: 'transparent',
+                  border: `1px solid ${selectedTheme?.colors?.accent}`,
+                  color: selectedTheme?.colors?.accent,
+                  padding: '0.5rem 1rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  fontWeight: '600'
+                }}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Template Preview */}
+      <div style={{
+        background: `${selectedTheme?.colors?.surface}30`,
+        borderRadius: '16px',
+        padding: '2rem 1rem',
+        border: `1px solid ${selectedTheme?.colors?.accent}40`
+      }}>
+        <StreetwearTemplate 
+          shopData={shopData} 
+          theme={selectedTheme}
+          sections={previewSections}
+          editable={false}
+          onUpdateSection={null}
+        />
+      </div>
     </MainContent>
   );
+};
 
   const renderCommunityView = () => (
     <MainContent>

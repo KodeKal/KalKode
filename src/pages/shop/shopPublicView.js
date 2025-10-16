@@ -34,6 +34,13 @@ import {
 } from 'lucide-react';
 import TabPositioner from './components/TabPositioner';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
+import {
+  StreetwearTemplate,
+  OrganizationTemplate,
+  TechTemplate,
+  MinimalistTemplate,
+  LocalMarketTemplate
+} from './HomePageTemplate';
 
 
 
@@ -1453,28 +1460,32 @@ const handleGoHome = () => {
     </>
   );
 
-  const renderHomeView = () => {
-    // Fallback to existing home view content
-    return (
-      <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-        <h2 style={{ 
-          color: shopData?.theme?.colors?.accent || '#800000',
-          fontFamily: shopData?.theme?.fonts?.heading,
-          marginBottom: '1rem',
-          fontSize: '1.5rem'
-        }}>
-          Welcome to our Shop
-        </h2>
-        <p style={{ 
-          maxWidth: '800px',
-          margin: '0 auto',
-          lineHeight: '1.6'
-        }}>
-          {shopData?.mission || 'Our mission is to provide quality products and excellent service.'}
-        </p>
-      </div>
-    );
+  // REPLACE renderHomeView in shopPublicView.js
+const renderHomeView = () => {
+  const templates = {
+    1: StreetwearTemplate,
+    2: OrganizationTemplate,
+    3: TechTemplate,
+    4: MinimalistTemplate,
+    5: LocalMarketTemplate
   };
+
+  const SelectedTemplate = templates[shopData?.selectedHomeTemplate || 1];
+
+  return (
+    <div style={{ padding: '0 1rem' }}>
+      {SelectedTemplate && (
+        <SelectedTemplate 
+          shopData={shopData} 
+          theme={shopData?.theme}
+          sections={shopData?.homeSections || []}
+          editable={false}
+          onUpdateSection={null}
+        />
+      )}
+    </div>
+  );
+};
 
   const renderCommunityView = () => (
     <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
