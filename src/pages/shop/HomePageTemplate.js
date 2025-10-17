@@ -40,7 +40,7 @@ export const HeroBannerSection = ({ config, theme, editable, onUpdate }) => {
 
   return (
     <div style={{
-      minHeight: config?.height || 'clamp(40vh, 50vh, 70vh)',
+      minHeight: config?.height || 'clamp(30vh, 35vh, 50vh)', // CHANGED: More landscape-oriented
       background: config?.backgroundImage ? 
         `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${config.backgroundImage})` :
         `linear-gradient(135deg, ${theme?.colors?.accent}15 0%, ${theme?.colors?.background} 100%)`,
