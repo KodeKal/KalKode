@@ -28,7 +28,7 @@ import {
 
 // ==================== SECTION COMPONENTS ====================
 
-// Hero Banner Section
+// In HomePageTemplate.js, update HeroBannerSection (around line 30)
 export const HeroBannerSection = ({ config, theme, editable, onUpdate }) => {
   const [editingField, setEditingField] = useState(null);
 
@@ -51,9 +51,10 @@ export const HeroBannerSection = ({ config, theme, editable, onUpdate }) => {
       justifyContent: 'center',
       position: 'relative',
       overflow: 'hidden',
-      marginBottom: '3rem',
-      borderRadius: '16px',
-      cursor: editable ? 'pointer' : 'default'
+      marginBottom: '2rem',
+      borderRadius: '12px',
+      cursor: editable ? 'pointer' : 'default',
+      padding: '1rem' // ADD THIS for mobile spacing
     }}
     onClick={() => editable && document.getElementById(`hero-bg-upload-${config?.id}`)?.click()}
     >
@@ -74,13 +75,13 @@ export const HeroBannerSection = ({ config, theme, editable, onUpdate }) => {
           />
           <div style={{
             position: 'absolute',
-            top: '1rem',
-            right: '1rem',
+            top: '0.5rem', // CHANGED from 1rem
+            right: '0.5rem', // CHANGED from 1rem
             background: 'rgba(0,0,0,0.7)',
             color: 'white',
-            padding: '0.5rem 1rem',
+            padding: '0.4rem 0.8rem', // CHANGED from 0.5rem 1rem
             borderRadius: '8px',
-            fontSize: '0.85rem',
+            fontSize: '0.75rem', // CHANGED from 0.85rem
             zIndex: 10
           }}>
             Click to change background
@@ -92,8 +93,9 @@ export const HeroBannerSection = ({ config, theme, editable, onUpdate }) => {
         textAlign: 'center', 
         position: 'relative', 
         zIndex: 1, 
-        padding: '2rem',
-        maxWidth: '800px'
+        padding: '1rem', // CHANGED from 2rem
+        maxWidth: '800px',
+        width: '100%' // ADD THIS
       }}>
         {editable ? (
           <>
@@ -103,7 +105,7 @@ export const HeroBannerSection = ({ config, theme, editable, onUpdate }) => {
               onChange={(e) => handleUpdate('headline', e.target.value)}
               placeholder="Enter headline"
               style={{
-                fontSize: 'clamp(2.5rem, 8vw, 5rem)',
+                fontSize: 'clamp(1.5rem, 6vw, 5rem)', // CHANGED
                 fontWeight: '900',
                 margin: '0 0 1rem 0',
                 background: 'transparent',
@@ -119,7 +121,7 @@ export const HeroBannerSection = ({ config, theme, editable, onUpdate }) => {
               onChange={(e) => handleUpdate('subtitle', e.target.value)}
               placeholder="Enter subtitle"
               style={{
-                fontSize: 'clamp(1rem, 2.5vw, 1.5rem)',
+                fontSize: 'clamp(0.9rem, 2vw, 1.5rem)', // CHANGED
                 opacity: 0.9,
                 background: 'transparent',
                 border: 'none',
@@ -135,16 +137,16 @@ export const HeroBannerSection = ({ config, theme, editable, onUpdate }) => {
         ) : (
           <>
             <h1 style={{
-              fontSize: 'clamp(2.5rem, 8vw, 5rem)',
+              fontSize: 'clamp(1.5rem, 6vw, 5rem)', // CHANGED
               fontWeight: '900',
               margin: '0 0 1rem 0',
-              lineHeight: 0.9,
+              lineHeight: 1.1, // CHANGED from 0.9
               textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
             }}>
               {config?.headline || 'Welcome'}
             </h1>
             <p style={{
-              fontSize: 'clamp(1rem, 2.5vw, 1.5rem)',
+              fontSize: 'clamp(0.9rem, 2vw, 1.5rem)', // CHANGED
               opacity: 0.9,
               textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
             }}>

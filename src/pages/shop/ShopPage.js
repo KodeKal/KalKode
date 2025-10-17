@@ -30,7 +30,16 @@ import {
   TechTemplate,
   MinimalistTemplate,
   LocalMarketTemplate,
-  SECTION_TYPES
+  SECTION_TYPES,
+  HeroBannerSection,
+  FeaturedItemsSection,
+  PhotoGallerySection,
+  FeaturedVideoSection,
+  MissionStatementSection,
+  CalendarEventsSection,
+  ServicesGridSection,
+  ContactSection,
+  TextBlockSection
 } from './HomePageTemplate';
 
 
@@ -49,6 +58,70 @@ const ITEM_CATEGORIES = [
 ];
 
 
+const SectionTypeModal = styled.div`
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: ${props => props.theme?.colors?.background};
+  border: 2px solid ${props => props.theme?.colors?.accent};
+  border-radius: 12px;
+  padding: 1.5rem;
+  z-index: 1001;
+  max-width: 90vw;
+  width: 400px;
+  max-height: 80vh;
+  overflow-y: auto;
+`;
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  opacity: ${props => props.show ? 1 : 0};
+  pointer-events: ${props => props.show ? 'auto' : 'none'};
+  transition: opacity 0.3s ease;
+`;
+
+const SectionTypeOption = styled.button`
+  width: 100%;
+  background: ${props => `${props.theme?.colors?.surface}50`};
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30`};
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  &:hover {
+    border-color: ${props => props.theme?.colors?.accent};
+    background: ${props => `${props.theme?.colors?.accent}20`};
+  }
+
+  .icon {
+    font-size: 1.5rem;
+  }
+
+  .info {
+    flex: 1;
+    
+    .label {
+      color: ${props => props.theme?.colors?.text};
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 0.25rem;
+    }
+  }
+`;
+
 // Compact Floating Controls - positioned below header on right
 const FloatingControls = styled.div`
   position: fixed;
@@ -61,6 +134,228 @@ const FloatingControls = styled.div`
   @media (min-width: 768px) {
     top: 90px;
     right: 2rem;
+  }
+`;
+
+// Replace existing section styled components with these (around line 600)
+
+const TemplateSelectorWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  padding: 0 1rem;
+`;
+
+const TemplateSelectorContainer = styled.div`
+  background: ${props => `${props.theme?.colors?.surface}50`};
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}40`};
+  max-width: 900px;
+  width: 100%;
+`;
+
+const LivePreviewContainer = styled.div`
+  background: ${props => `${props.theme?.colors?.surface}30`};
+  border-radius: 16px;
+  padding: 1rem;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}40`};
+  
+  @media (min-width: 768px) {
+    padding: 2rem;
+  }
+`;
+
+const LivePreviewHeader = styled.h3`
+  text-align: center;
+  margin-bottom: 2rem;
+  color: ${props => props.theme?.colors?.accent};
+  font-size: 1.1rem;
+  
+  @media (min-width: 768px) {
+    font-size: 1.3rem;
+  }
+`;
+
+const SectionWrapper = styled.div`
+  background: ${props => `${props.theme?.colors?.surface}30`};
+  border: 2px solid ${props => `${props.theme?.colors?.accent}30`};
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  transition: all 0.3s ease;
+
+  @media (min-width: 768px) {
+    padding: 1.5rem;
+  }
+
+  &:hover {
+    border-color: ${props => props.theme?.colors?.accent};
+
+    .section-controls {
+      opacity: 1;
+    }
+  }
+`;
+
+const SectionControls = styled.div`
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+  background: ${props => `${props.theme?.colors?.background}E5`};
+  backdrop-filter: blur(10px);
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}40`};
+
+  @media (max-width: 768px) {
+    opacity: 1;
+    top: 0.25rem;
+    right: 0.25rem;
+    padding: 0.25rem;
+    gap: 0.25rem;
+  }
+`;
+
+const SectionControlButton = styled.button`
+  background: transparent;
+  border: 1px solid ${props => props.theme?.colors?.accent};
+  color: ${props => props.theme?.colors?.accent};
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  min-width: 32px;
+  min-height: 32px;
+
+  @media (max-width: 768px) {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 0.35rem;
+  }
+
+  &:hover {
+    background: ${props => `${props.theme?.colors?.accent}20`};
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  &.delete {
+    border-color: #ff4444;
+    color: #ff4444;
+
+    &:hover {
+      background: rgba(255, 68, 68, 0.2);
+    }
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    
+    @media (max-width: 768px) {
+      width: 14px;
+      height: 14px;
+    }
+  }
+`;
+
+const AddSectionCard = styled.div`
+  background: ${props => `${props.theme?.colors?.surface}30`};
+  border: 2px dashed ${props => `${props.theme?.colors?.accent}40`};
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: 120px;
+
+  @media (min-width: 768px) {
+    padding: 2rem;
+    min-height: 150px;
+  }
+
+  &:hover {
+    border-color: ${props => props.theme?.colors?.accent};
+    background: ${props => `${props.theme?.colors?.accent}10`};
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  .plus-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: ${props => `${props.theme?.colors?.accent}20`};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${props => props.theme?.colors?.accent};
+    transition: all 0.3s ease;
+    
+    @media (min-width: 768px) {
+      width: 48px;
+      height: 48px;
+    }
+
+    svg {
+      width: 24px;
+      height: 24px;
+      
+      @media (min-width: 768px) {
+        width: 28px;
+        height: 28px;
+      }
+    }
+  }
+
+  &:hover .plus-icon {
+    background: ${props => props.theme?.colors?.accent};
+    color: white;
+    transform: scale(1.1);
+  }
+
+  &:active .plus-icon {
+    transform: scale(1.05);
+  }
+
+  .add-text {
+    color: ${props => props.theme?.colors?.text};
+    font-size: 0.9rem;
+    font-weight: 600;
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+    
+    @media (min-width: 768px) {
+      font-size: 1rem;
+    }
+  }
+
+  &:hover .add-text {
+    opacity: 1;
   }
 `;
 
@@ -1139,124 +1434,6 @@ const ItemContent = styled.div`
   }
 `;
 
-// Add these styled components in ShopPage.js
-
-const SectionEditorContainer = styled.div`
-  background: ${props => `${props.theme?.colors?.surface}50`};
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  border: 1px solid ${props => `${props.theme?.colors?.accent}40`};
-`;
-
-const SectionControls = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-`;
-
-const AddSectionDropdown = styled.select`
-  background: ${props => props.theme?.colors?.surface};
-  color: ${props => props.theme?.colors?.text};
-  border: 1px solid ${props => `${props.theme?.colors?.accent}40`};
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  cursor: pointer;
-  
-  &:focus {
-    outline: none;
-    border-color: ${props => props.theme?.colors?.accent};
-  }
-`;
-
-const AddSectionButton = styled.button`
-  background: ${props => props.theme?.colors?.accent};
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px ${props => `${props.theme?.colors?.accent}40`};
-  }
-`;
-
-const SectionWrapper = styled.div`
-  background: ${props => `${props.theme?.colors?.background}90`};
-  border: 2px solid ${props => `${props.theme?.colors?.accent}30`};
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  position: relative;
-`;
-
-const SectionHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}20`};
-`;
-
-const SectionTitle = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-weight: 600;
-  font-size: 1.1rem;
-  
-  .icon {
-    font-size: 1.5rem;
-  }
-`;
-
-const SectionActions = styled.div`
-  display: flex;
-  gap: 0.5rem;
-`;
-
-const IconButton = styled.button`
-  background: transparent;
-  border: 1px solid ${props => props.theme?.colors?.accent};
-  color: ${props => props.theme?.colors?.accent};
-  padding: 0.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: ${props => `${props.theme?.colors?.accent}20`};
-  }
-
-  &:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-
-  &.delete {
-    border-color: #ff4444;
-    color: #ff4444;
-
-    &:hover {
-      background: rgba(255, 68, 68, 0.2);
-    }
-  }
-`;
 
 const DeleteSection = styled.div`
   margin-top: 1.5rem;
@@ -1739,207 +1916,106 @@ const ShopPage = () => {
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [originalUsername, setOriginalUsername] = useState('');
   const [expandedItems, setExpandedItems] = useState(new Set());
-  const [selectedHomeTemplate, setSelectedHomeTemplate] = useState(1);
-  const [homeSections, setHomeSections] = useState([]);
   const [selectedSectionType, setSelectedSectionType] = React.useState('');
 
-  // Add this component BEFORE renderHomeView (around line 1400)
-const SectionEditor = () => {
-  const [selectedSectionType, setSelectedSectionType] = useState('');
+  const [selectedHomeTemplate, setSelectedHomeTemplate] = useState(1);
+  const [homeSections, setHomeSections] = useState([]);
+  const [showSectionTypeModal, setShowSectionTypeModal] = useState(false); // ADD THIS LINE
 
-  return (
-    <SectionEditorContainer theme={shopData?.theme}>
-      <SectionControls>
-        <h3 style={{
-          margin: 0,
-          color: shopData?.theme?.colors?.accent,
-          fontSize: '1.2rem',
-          fontWeight: '600'
-        }}>
-          Page Sections
-        </h3>
-        
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <AddSectionDropdown
-            theme={shopData?.theme}
-            value={selectedSectionType}
-            onChange={(e) => setSelectedSectionType(e.target.value)}
-          >
-            <option value="">Select section type...</option>
-            {SECTION_TYPES.map(type => (
-              <option key={type.value} value={type.value}>
-                {type.icon} {type.label}
-              </option>
-            ))}
-          </AddSectionDropdown>
-          
-          <AddSectionButton
-            theme={shopData?.theme}
-            onClick={() => {
-              if (selectedSectionType) {
-                handleAddSection(selectedSectionType);
-                setSelectedSectionType('');
-              }
-            }}
-            disabled={!selectedSectionType}
-            style={{ opacity: selectedSectionType ? 1 : 0.5 }}
-          >
-            <Plus size={20} />
-            Add Section
-          </AddSectionButton>
-        </div>
-      </SectionControls>
 
-      {/* Section List */}
-      {homeSections.length === 0 ? (
-        <div style={{
-          textAlign: 'center',
-          padding: '3rem 1rem',
-          color: shopData?.theme?.colors?.text,
-          opacity: 0.6
-        }}>
-          <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
-            No sections yet
-          </p>
-          <p style={{ fontSize: '0.9rem' }}>
-            Add sections above to build your home page
-          </p>
-        </div>
-      ) : (
-        <div>
-          {homeSections
-            .sort((a, b) => a.order - b.order)
-            .map((section, index) => {
-              const sectionType = SECTION_TYPES.find(t => t.value === section.type);
-              
-              return (
-                <SectionWrapper key={section.id} theme={shopData?.theme}>
-                  <SectionHeader theme={shopData?.theme}>
-                    <SectionTitle>
-                      <GripVertical size={20} style={{ opacity: 0.5 }} />
-                      <span className="icon">{sectionType?.icon}</span>
-                      <span>{sectionType?.label || section.type}</span>
-                    </SectionTitle>
-                    
-                    <SectionActions>
-                      <IconButton
-                        theme={shopData?.theme}
-                        onClick={() => handleMoveSection(section.id, 'up')}
-                        disabled={index === 0}
-                        title="Move up"
-                      >
-                        <ChevronUp size={18} />
-                      </IconButton>
-                      
-                      <IconButton
-                        theme={shopData?.theme}
-                        onClick={() => handleMoveSection(section.id, 'down')}
-                        disabled={index === homeSections.length - 1}
-                        title="Move down"
-                      >
-                        <ChevronDown size={18} />
-                      </IconButton>
-                      
-                      <IconButton
-                        theme={shopData?.theme}
-                        className="delete"
-                        onClick={() => handleRemoveSection(section.id)}
-                        title="Delete section"
-                      >
-                        <Trash2 size={18} />
-                      </IconButton>
-                    </SectionActions>
-                  </SectionHeader>
-
-                  {/* Section Content Preview */}
-                  <div style={{
-                    background: `${shopData?.theme?.colors?.surface}30`,
-                    borderRadius: '8px',
-                    padding: '1rem',
-                    fontSize: '0.9rem',
-                    opacity: 0.8
-                  }}>
-                    {section.type === 'hero-banner' && (
-                      <div>Hero: {section.config?.headline || 'No headline'}</div>
-                    )}
-                    {section.type === 'featured-items' && (
-                      <div>Showing {section.config?.itemCount || 4} items</div>
-                    )}
-                    {section.type === 'photo-gallery' && (
-                      <div>{section.config?.images?.length || 0} images in gallery</div>
-                    )}
-                    {section.type === 'featured-video' && (
-                      <div>{section.config?.youtubeUrl ? 'Video added' : 'No video yet'}</div>
-                    )}
-                    {section.type === 'mission-statement' && (
-                      <div>{section.config?.content?.slice(0, 60) || 'No content'}...</div>
-                    )}
-                    {section.type === 'calendar-events' && (
-                      <div>{section.config?.events?.length || 0} events</div>
-                    )}
-                    {section.type === 'services-grid' && (
-                      <div>{section.config?.services?.length || 0} services</div>
-                    )}
-                    {section.type === 'contact' && (
-                      <div>Contact info section</div>
-                    )}
-                    {section.type === 'text-block' && (
-                      <div>{section.config?.content?.slice(0, 60) || 'Empty text block'}...</div>
-                    )}
-                  </div>
-                </SectionWrapper>
-              );
-            })}
-        </div>
-      )}
-    </SectionEditorContainer>
-  );
-};
-
-  // BETTER: Replace renderHomeView with this simpler version
+  // REPLACE renderHomeView (around line 1400)
+// REPLACE renderHomeView
 const renderHomeView = () => {
-  const templates = {
-    1: StreetwearTemplate,
-    2: OrganizationTemplate,
-    3: TechTemplate,
-    4: MinimalistTemplate,
-    5: LocalMarketTemplate
-  };
+  const renderSectionWithControls = (section, index) => {
+    const sectionProps = {
+      config: section.config,
+      theme: shopData?.theme,
+      shopItems: shopData?.items,
+      editable: true,
+      onUpdate: (newConfig) => handleUpdateSection(section.id, newConfig)
+    };
 
-  const SelectedTemplate = templates[selectedHomeTemplate];
+    let SectionComponent;
+    switch (section.type) {
+      case 'hero-banner':
+        SectionComponent = HeroBannerSection;
+        break;
+      case 'featured-items':
+        SectionComponent = FeaturedItemsSection;
+        break;
+      case 'photo-gallery':
+        SectionComponent = PhotoGallerySection;
+        break;
+      case 'featured-video':
+        SectionComponent = FeaturedVideoSection;
+        break;
+      case 'mission-statement':
+        SectionComponent = MissionStatementSection;
+        break;
+      case 'calendar-events':
+        SectionComponent = CalendarEventsSection;
+        break;
+      case 'services-grid':
+        SectionComponent = ServicesGridSection;
+        break;
+      case 'contact':
+        SectionComponent = ContactSection;
+        break;
+      case 'text-block':
+        SectionComponent = TextBlockSection;
+        break;
+      default:
+        return null;
+    }
+
+    return (
+      <SectionWrapper key={section.id} theme={shopData?.theme}>
+        <SectionControls className="section-controls">
+          <SectionControlButton
+            theme={shopData?.theme}
+            onClick={() => handleMoveSection(section.id, 'up')}
+            disabled={index === 0}
+            title="Move up"
+          >
+            <ChevronUp size={16} />
+          </SectionControlButton>
+          
+          <SectionControlButton
+            theme={shopData?.theme}
+            onClick={() => handleMoveSection(section.id, 'down')}
+            disabled={index === homeSections.length - 1}
+            title="Move down"
+          >
+            <ChevronDown size={16} />
+          </SectionControlButton>
+          
+          <SectionControlButton
+            theme={shopData?.theme}
+            className="delete"
+            onClick={() => handleRemoveSection(section.id)}
+            title="Delete section"
+          >
+            <Trash2 size={16} />
+          </SectionControlButton>
+        </SectionControls>
+
+        <SectionComponent {...sectionProps} />
+      </SectionWrapper>
+    );
+  };
 
   return (
     <>
-      {/* Template Selector */}
+      {/* Template Selector - Centered */}
       <TemplateSelector />
 
-      {/* Section Editor */}
-      <SectionEditor />
+      {/* Live Preview with Editable Sections */}
+      <LivePreviewContainer theme={shopData?.theme}>
+        <LivePreviewHeader theme={shopData?.theme}>
+          Live Preview - Edit Sections Below
+        </LivePreviewHeader>
 
-      {/* Template Preview */}
-      <div style={{
-        background: `${shopData?.theme?.colors?.surface}30`,
-        borderRadius: '16px',
-        padding: '2rem 1rem',
-        border: `1px solid ${shopData?.theme?.colors?.accent}40`
-      }}>
-        <h3 style={{
-          textAlign: 'center',
-          marginBottom: '2rem',
-          color: shopData?.theme?.colors?.accent,
-          fontSize: '1.3rem'
-        }}>
-          Live Preview
-        </h3>
-        {SelectedTemplate && homeSections.length > 0 ? (
-          <SelectedTemplate 
-            shopData={shopData} 
-            theme={shopData?.theme}
-            sections={homeSections}
-            editable={true}
-            onUpdateSection={handleUpdateSection}
-          />
-        ) : (
+        {homeSections.length === 0 ? (
           <div style={{
             textAlign: 'center',
             padding: '3rem 2rem',
@@ -1947,11 +2023,64 @@ const renderHomeView = () => {
             opacity: 0.6
           }}>
             <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>
-              Add sections above to see preview
+              No sections yet
+            </p>
+            <p style={{ fontSize: '0.9rem' }}>
+              Click the + button below to add your first section
             </p>
           </div>
+        ) : (
+          homeSections
+            .sort((a, b) => a.order - b.order)
+            .map((section, index) => renderSectionWithControls(section, index))
         )}
-      </div>
+
+        {/* Add Section Card */}
+        <AddSectionCard
+          theme={shopData?.theme}
+          onClick={() => setShowSectionTypeModal(true)}
+        >
+          <div className="plus-icon">
+            <Plus size={24} />
+          </div>
+          <div className="add-text">Add New Section</div>
+        </AddSectionCard>
+      </LivePreviewContainer>
+
+      {/* Section Type Modal */}
+      <ModalOverlay 
+        show={showSectionTypeModal} 
+        onClick={() => setShowSectionTypeModal(false)}
+      />
+      {showSectionTypeModal && (
+        <SectionTypeModal theme={shopData?.theme}>
+          <h3 style={{
+            margin: '0 0 1.5rem 0',
+            color: shopData?.theme?.colors?.accent,
+            fontSize: '1.1rem',
+            fontWeight: '600',
+            textAlign: 'center'
+          }}>
+            Choose Section Type
+          </h3>
+          
+          {SECTION_TYPES.map(type => (
+            <SectionTypeOption
+              key={type.value}
+              theme={shopData?.theme}
+              onClick={() => {
+                handleAddSection(type.value);
+                setShowSectionTypeModal(false);
+              }}
+            >
+              <span className="icon">{type.icon}</span>
+              <div className="info">
+                <div className="label">{type.label}</div>
+              </div>
+            </SectionTypeOption>
+          ))}
+        </SectionTypeModal>
+      )}
     </>
   );
 };
@@ -2588,74 +2717,71 @@ const getDefaultSectionsForTemplate = (templateId) => {
     { id: 5, name: 'Local Market', desc: 'Community', component: LocalMarketTemplate }
   ];
 
-// Replace TemplateSelector component (around line 1350)
+// Replace TemplateSelector component
 const TemplateSelector = () => {
   const templates = [
-    { id: 1, name: 'Streetwear', desc: 'Bold & Urban', component: StreetwearTemplate },
-    { id: 2, name: 'Organization', desc: 'Events & Calendar', component: OrganizationTemplate },
-    { id: 3, name: 'Tech', desc: 'Futuristic', component: TechTemplate },
-    { id: 4, name: 'Minimalist', desc: 'Clean & Elegant', component: MinimalistTemplate },
-    { id: 5, name: 'Local Market', desc: 'Community', component: LocalMarketTemplate }
+    { id: 1, name: 'Streetwear', desc: 'Bold & Urban' },
+    { id: 2, name: 'Organization', desc: 'Events & Calendar' },
+    { id: 3, name: 'Tech', desc: 'Futuristic' },
+    { id: 4, name: 'Minimalist', desc: 'Clean & Elegant' },
+    { id: 5, name: 'Local Market', desc: 'Community' }
   ];
 
   const handleTemplateChange = (templateId) => {
     setSelectedHomeTemplate(templateId);
-    // Reset sections to template defaults
     const defaultSections = getDefaultSectionsForTemplate(templateId);
     setHomeSections(defaultSections);
   };
 
   return (
-    <div style={{
-      marginBottom: '2rem',
-      padding: '1.5rem',
-      background: `${shopData?.theme?.colors?.surface}50`,
-      borderRadius: '12px',
-      border: `1px solid ${shopData?.theme?.colors?.accent}40`
-    }}>
-      <h3 style={{
-        fontSize: '1.2rem',
-        marginBottom: '1rem',
-        color: shopData?.theme?.colors?.accent,
-        fontWeight: '600'
-      }}>
-        Select Home Page Template
-      </h3>
-      <div style={{
-        display: 'flex',
-        gap: '0.75rem',
-        flexWrap: 'wrap'
-      }}>
-        {templates.map(template => (
-          <button
-            key={template.id}
-            onClick={() => handleTemplateChange(template.id)}
-            style={{
-              background: selectedHomeTemplate === template.id ? 
-                shopData?.theme?.colors?.accent : 'transparent',
-              color: selectedHomeTemplate === template.id ? 
-                'white' : shopData?.theme?.colors?.text,
-              border: `2px solid ${shopData?.theme?.colors?.accent}`,
-              padding: '0.75rem 1.25rem',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              fontWeight: '600',
-              fontSize: '0.9rem'
-            }}
-          >
-            <div>{template.name}</div>
-            <div style={{
-              fontSize: '0.7rem',
-              opacity: 0.8,
-              marginTop: '0.25rem'
-            }}>
-              {template.desc}
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
+    <TemplateSelectorWrapper>
+      <TemplateSelectorContainer theme={shopData?.theme}>
+        <h3 style={{
+          fontSize: '1.2rem',
+          marginBottom: '1rem',
+          color: shopData?.theme?.colors?.accent,
+          fontWeight: '600',
+          textAlign: 'center'
+        }}>
+          Select Home Page Template
+        </h3>
+        <div style={{
+          display: 'flex',
+          gap: '0.75rem',
+          flexWrap: 'wrap',
+          justifyContent: 'center'
+        }}>
+          {templates.map(template => (
+            <button
+              key={template.id}
+              onClick={() => handleTemplateChange(template.id)}
+              style={{
+                background: selectedHomeTemplate === template.id ? 
+                  shopData?.theme?.colors?.accent : 'transparent',
+                color: selectedHomeTemplate === template.id ? 
+                  'white' : shopData?.theme?.colors?.text,
+                border: `2px solid ${shopData?.theme?.colors?.accent}`,
+                padding: '0.75rem 1.25rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                fontWeight: '600',
+                fontSize: '0.85rem'
+              }}
+            >
+              <div>{template.name}</div>
+              <div style={{
+                fontSize: '0.7rem',
+                opacity: 0.8,
+                marginTop: '0.25rem'
+              }}>
+                {template.desc}
+              </div>
+            </button>
+          ))}
+        </div>
+      </TemplateSelectorContainer>
+    </TemplateSelectorWrapper>
   );
 };
 

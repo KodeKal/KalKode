@@ -480,8 +480,6 @@ const BuyDialog = ({ item, sellerId, onClose, onTransactionCreated }) => {
                   });
                   return;
                 }
-                
-                // User is authenticated, proceed with order
                 handleSubmitRequest();
               }} 
               disabled={loading || requestedQuantity <= 0 || requestedQuantity > availableQuantity}

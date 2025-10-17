@@ -1512,7 +1512,7 @@ if (error) {
   </>
 );
 
-  // REPLACE renderHomeView in shopPublicView.js
+  // In shopPublicView.js - REPLACE renderHomeView
 const renderHomeView = () => {
   const templates = {
     1: StreetwearTemplate,
@@ -1525,7 +1525,7 @@ const renderHomeView = () => {
   const SelectedTemplate = templates[shopData?.selectedHomeTemplate || 1];
 
   return (
-    <div style={{ padding: '0 1rem' }}>
+    <div style={{ padding: '0' }}> {/* CHANGED: Remove padding, let sections handle it */}
       {SelectedTemplate && (
         <SelectedTemplate 
           shopData={shopData} 
