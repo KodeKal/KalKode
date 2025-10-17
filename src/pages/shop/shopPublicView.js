@@ -349,8 +349,13 @@ const ShopProfileSection = styled.section`
   flex-direction: column;
   align-items: center;
   text-align: center;
-  margin: 0 0 1.5rem 0; /* Reduced from 2rem */
+  margin: 0 0 1.5rem 0;
   padding: 0 1rem 1rem 1rem;
+
+  @media (max-width: 768px) {
+    margin: 0 0 1rem 0;
+    padding: 0 0.75rem 0.75rem 0.75rem;
+  }
 
   .profile-image {
     margin-bottom: 1rem;
@@ -371,6 +376,13 @@ const ShopProfileSection = styled.section`
       border-width: 5px;
     }
     
+    @media (max-width: 480px) {
+      width: 100px;
+      height: 100px;
+      border-width: 3px;
+      margin-bottom: 0.75rem;
+    }
+    
     img {
       width: 100%;
       height: 100%;
@@ -389,6 +401,11 @@ const ShopProfileSection = styled.section`
     @media (min-width: 768px) {
       font-size: ${props => props.fontSize || '2.5rem'};
     }
+    
+    @media (max-width: 480px) {
+      font-size: 1.5rem;
+      margin: 0.25rem 0;
+    }
   }
 
   .shop-description {
@@ -401,6 +418,11 @@ const ShopProfileSection = styled.section`
     
     @media (min-width: 768px) {
       font-size: 1.1rem;
+    }
+    
+    @media (max-width: 480px) {
+      font-size: 0.9rem;
+      line-height: 1.4;
     }
   }
 `;
@@ -461,15 +483,57 @@ const HeaderButton = styled.button`
   }
 `;
 
+const SectionWrapper = styled.div`
+  background: ${props => `${props.theme?.colors?.surface}30`};
+  border: 2px solid ${props => `${props.theme?.colors?.accent}30`};
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  transition: all 0.3s ease;
+
+  @media (min-width: 768px) {
+    padding: 1.5rem;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+  }
+`;
+
+const LivePreviewContainer = styled.div`
+  background: ${props => `${props.theme?.colors?.surface}30`};
+  border-radius: 16px;
+  padding: 1rem;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}40`};
+  
+  @media (min-width: 768px) {
+    padding: 2rem;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.5rem;
+    border-radius: 12px;
+  }
+`;
+
 const MainContent = styled.main`
-  padding: 80px 1rem 2rem 1rem; /* Back to original padding */
+  padding: 80px 1rem 2rem 1rem;
   position: relative;
   z-index: 1;
+  max-width: 100%;
+  overflow-x: hidden;
   
   @media (min-width: 768px) {
     max-width: 1200px;
     margin: 0 auto;
     padding: 6rem 2rem 2rem 2rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 70px 0.75rem 1.5rem 0.75rem;
   }
 `;
 
@@ -590,7 +654,6 @@ const ViewToggle = styled.div`
   }
 `;
 
-// Mobile-friendly item grid
 const ItemGrid = styled.div`
   display: ${props => props.viewMode === 'gallery' ? 'grid' : 'flex'};
   
@@ -598,11 +661,20 @@ const ItemGrid = styled.div`
     grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
     
+    @media (max-width: 480px) {
+      gap: 0.5rem;
+    }
+    
     @media (min-width: 480px) {
       gap: 1rem;
     }
     
     @media (min-width: 768px) {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    
+    @media (min-width: 1024px) {
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 2rem;
     }
@@ -612,6 +684,11 @@ const ItemGrid = styled.div`
     padding: 1rem 0;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
+    
+    @media (max-width: 480px) {
+      gap: 0.75rem;
+      padding: 0.75rem 0;
+    }
     
     &::-webkit-scrollbar {
       height: 4px;
@@ -640,6 +717,11 @@ const ItemCard = styled.div`
     display: flex;
     flex-direction: column;
     
+    @media (max-width: 480px) {
+      min-height: 220px;
+      border-radius: 8px;
+    }
+    
     @media (min-width: 768px) {
       min-height: 400px;
       &:hover {
@@ -648,11 +730,16 @@ const ItemCard = styled.div`
       }
     }
   ` : `
-    flex: 0 0 300px;
-    height: 400px;
+    flex: 0 0 280px;
+    height: 380px;
     scroll-snap-align: start;
     display: flex;
     flex-direction: column;
+    
+    @media (max-width: 480px) {
+      flex: 0 0 260px;
+      height: 360px;
+    }
     
     @media (min-width: 768px) {
       flex: 0 0 350px;
@@ -898,6 +985,10 @@ const SearchContainer = styled.div`
     max-width: 600px;
     margin: 2rem auto 3rem;
   }
+  
+  @media (max-width: 480px) {
+    margin: 1rem 0 1.5rem;
+  }
 `;
 
 const SearchInput = styled.input`
@@ -914,6 +1005,11 @@ const SearchInput = styled.input`
   
   @media (min-width: 768px) {
     font-size: 1.1rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+    padding: 0.6rem 2.5rem 0.6rem 0.5rem;
   }
   
   &:focus {
@@ -983,6 +1079,11 @@ const EmptyStateMessage = styled.div`
     padding: 4rem 2rem;
   }
   
+  @media (max-width: 480px) {
+    padding: 2rem 0.75rem;
+    border-radius: 8px;
+  }
+  
   h3 {
     font-size: 1.3rem;
     margin-bottom: 1rem;
@@ -991,6 +1092,11 @@ const EmptyStateMessage = styled.div`
     
     @media (min-width: 768px) {
       font-size: 1.5rem;
+    }
+    
+    @media (max-width: 480px) {
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
     }
   }
   
@@ -1001,6 +1107,11 @@ const EmptyStateMessage = styled.div`
     
     @media (min-width: 768px) {
       font-size: 1rem;
+    }
+    
+    @media (max-width: 480px) {
+      font-size: 0.85rem;
+      line-height: 1.4;
     }
   }
 `;
@@ -1525,7 +1636,11 @@ const renderHomeView = () => {
   const SelectedTemplate = templates[shopData?.selectedHomeTemplate || 1];
 
   return (
-    <div style={{ padding: '0' }}> {/* CHANGED: Remove padding, let sections handle it */}
+    <div style={{ 
+      padding: '0',
+      maxWidth: '100%',
+      overflowX: 'hidden'
+    }}>
       {SelectedTemplate && (
         <SelectedTemplate 
           shopData={shopData} 
