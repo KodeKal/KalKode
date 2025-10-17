@@ -63,15 +63,36 @@ const SectionTypeModal = styled.div`
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: ${props => props.theme?.colors?.background};
+  background: ${props => props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.1)'};
+  backdrop-filter: blur(20px);
   border: 2px solid ${props => props.theme?.colors?.accent};
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 1.5rem;
   z-index: 1001;
   max-width: 90vw;
   width: 400px;
   max-height: 80vh;
   overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  @media (max-width: 768px) {
+    width: calc(100vw - 2rem);
+    max-height: 70vh;
+    padding: 1.25rem;
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${props => props.theme?.colors?.accent};
+    border-radius: 3px;
+  }
 `;
 
 const ModalOverlay = styled.div`
@@ -89,9 +110,9 @@ const ModalOverlay = styled.div`
 
 const SectionTypeOption = styled.button`
   width: 100%;
-  background: ${props => `${props.theme?.colors?.surface}50`};
-  border: 1px solid ${props => `${props.theme?.colors?.accent}30`};
-  border-radius: 8px;
+  background: ${props => props.theme?.colors?.background || 'rgba(0, 0, 0, 0.3)'};
+  border: 2px solid ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+  border-radius: 12px;
   padding: 1rem;
   margin-bottom: 0.75rem;
   cursor: pointer;
@@ -99,15 +120,31 @@ const SectionTypeOption = styled.button`
   text-align: left;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
+
+  @media (max-width: 768px) {
+    padding: 0.875rem;
+    gap: 0.75rem;
+    margin-bottom: 0.625rem;
+  }
 
   &:hover {
     border-color: ${props => props.theme?.colors?.accent};
-    background: ${props => `${props.theme?.colors?.accent}20`};
+    background: ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.2)'};
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px ${props => `${props.theme?.colors?.accent}40`};
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 
   .icon {
     font-size: 1.5rem;
+    
+    @media (max-width: 768px) {
+      font-size: 1.25rem;
+    }
   }
 
   .info {
@@ -118,7 +155,23 @@ const SectionTypeOption = styled.button`
       font-weight: 600;
       font-size: 0.95rem;
       margin-bottom: 0.25rem;
+      
+      @media (max-width: 768px) {
+        font-size: 0.875rem;
+      }
     }
+  }
+`;
+
+const TemplateSelectorWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  padding: 0 1rem;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 1.5rem;
+    padding: 0 0.5rem;
   }
 `;
 
@@ -137,15 +190,6 @@ const FloatingControls = styled.div`
   }
 `;
 
-// Replace existing section styled components with these (around line 600)
-
-const TemplateSelectorWrapper = styled.div`
-  display: flex;
-  justify-content: center;
-  margin-bottom: 2rem;
-  padding: 0 1rem;
-`;
-
 const TemplateSelectorContainer = styled.div`
   background: ${props => `${props.theme?.colors?.surface}50`};
   border-radius: 12px;
@@ -153,6 +197,11 @@ const TemplateSelectorContainer = styled.div`
   border: 1px solid ${props => `${props.theme?.colors?.accent}40`};
   max-width: 900px;
   width: 100%;
+  
+  @media (max-width: 768px) {
+    padding: 1rem;
+    border-radius: 8px;
+  }
 `;
 
 const LivePreviewContainer = styled.div`
@@ -163,6 +212,11 @@ const LivePreviewContainer = styled.div`
   
   @media (min-width: 768px) {
     padding: 2rem;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.75rem;
+    border-radius: 12px;
   }
 `;
 
@@ -188,6 +242,12 @@ const SectionWrapper = styled.div`
 
   @media (min-width: 768px) {
     padding: 1.5rem;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
   }
 
   &:hover {
@@ -275,7 +335,6 @@ const SectionControlButton = styled.button`
     }
   }
 `;
-
 const AddSectionCard = styled.div`
   background: ${props => `${props.theme?.colors?.surface}30`};
   border: 2px dashed ${props => `${props.theme?.colors?.accent}40`};
@@ -294,6 +353,13 @@ const AddSectionCard = styled.div`
   @media (min-width: 768px) {
     padding: 2rem;
     min-height: 150px;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    min-height: 100px;
+    gap: 0.75rem;
   }
 
   &:hover {
@@ -320,6 +386,11 @@ const AddSectionCard = styled.div`
       width: 48px;
       height: 48px;
     }
+    
+    @media (max-width: 768px) {
+      width: 36px;
+      height: 36px;
+    }
 
     svg {
       width: 24px;
@@ -328,6 +399,11 @@ const AddSectionCard = styled.div`
       @media (min-width: 768px) {
         width: 28px;
         height: 28px;
+      }
+      
+      @media (max-width: 768px) {
+        width: 20px;
+        height: 20px;
       }
     }
   }
@@ -351,6 +427,10 @@ const AddSectionCard = styled.div`
     
     @media (min-width: 768px) {
       font-size: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+      font-size: 0.85rem;
     }
   }
 
