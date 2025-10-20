@@ -1881,7 +1881,38 @@ const loadCategorizedItems = async () => {
     let itemsWithDistance = filteredItems;
     if (effectiveLocation) {
       itemsWithDistance = filteredItems.map(item => {
-        // ... existing distance calculation code ...
+        let itemCoords = item.coordinates;
+        if (!itemCoords && item.address) {
+          const coordsMatch = item.address.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+          if (coordsMatch) {
+            itemCoords = {
+              lat: parseFloat(coordsMatch[1]),
+              lng: parseFloat(coordsMatch[2])
+            };
+          }
+        }
+
+        if (itemCoords?.lat && itemCoords?.lng) {
+          try {
+            const distanceInMeters = getDistance(
+              { latitude: effectiveLocation.latitude, longitude: effectiveLocation.longitude },
+              { latitude: itemCoords.lat, longitude: itemCoords.lng }
+            );
+            const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
+
+            return {
+              ...item,
+              coordinates: itemCoords,
+              distance: distanceInMeters,
+              distanceInMiles,
+              formattedDistance: `${distanceInMiles} mi`
+            };
+          } catch (e) {
+            console.warn('Error calculating distance for item:', e);
+            return item;
+          }
+        }
+        return item;
       });
     }
 
