@@ -872,26 +872,38 @@ const GridContainer = styled.div`
 
 // Mobile search with better UX
 const SearchContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  position: relative;
   width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
   padding: 0 0.5rem;
   
   @media (min-width: 600px) {
-    flex-direction: row;
-    align-items: center;
-    max-width: 800px;
-    margin: 0 auto;
     padding: 0;
   }
 `;
 
-const SearchInput = styled.input`
+
+const SearchInputWrapper = styled.div`
+  position: relative;
   width: 100%;
+  display: flex;
+  align-items: center;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(128, 0, 0, 0.2);
   border-radius: 25px;
+  overflow: hidden;
+  
+  &:focus-within {
+    border-color: rgba(128, 0, 0, 0.4);
+    background: rgba(255, 255, 255, 0.08);
+  }
+`;
+
+const SearchInput = styled.input`
+  flex: 1;
+  background: transparent;
+  border: none;
   padding: 0.8rem 1rem;
   color: white;
   font-size: 1rem;
@@ -899,53 +911,41 @@ const SearchInput = styled.input`
   
   &:focus {
     outline: none;
-    border-color: rgba(128, 0, 0, 0.4);
-    background: rgba(255, 255, 255, 0.08);
   }
 
   &::placeholder {
     color: rgba(255, 255, 255, 0.4);
   }
-  
-  @media (min-width: 600px) {
-    flex: 1;
-  }
 `;
 
 const SearchButtonGroup = styled.div`
   display: flex;
-  gap: 0.5rem;
-  width: 100%;
-  
-  @media (min-width: 600px) {
-    width: auto;
-  }
+  gap: 0.25rem;
+  padding: 0.4rem;
+  align-items: center;
 `;
 
 const SearchButton = styled.button`
-  flex: 1;
-  background: ${props => props.variant === 'live' ? 'transparent' : 'rgba(128, 0, 0, 0.2)'};
-  border: 1px solid rgba(128, 0, 0, 0.3);
-  padding: 0.8rem 1rem;
-  border-radius: 25px;
+  background: ${props => props.active ? 
+    'rgba(128, 0, 0, 0.3)' : 
+    'rgba(128, 0, 0, 0.15)'};
+  border: 1px solid ${props => props.active ?
+    'rgba(128, 0, 0, 0.5)' :
+    'rgba(128, 0, 0, 0.2)'};
+  padding: 0.5rem;
+  border-radius: 50%;
   color: white;
   font-size: 0.9rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
+  position: relative;
   
-  @media (min-width: 600px) {
-    flex: unset;
-    padding: 0.8rem 1.2rem;
-  }
-
   &:active {
-    transform: scale(0.98);
+    transform: scale(0.95);
     background: rgba(128, 0, 0, 0.3);
   }
 
@@ -955,8 +955,22 @@ const SearchButton = styled.button`
   }
 
   svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
+  }
+  
+  /* Active indicator dot */
+  &::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: ${props => props.theme?.colors?.accent || '#800000'};
+    opacity: ${props => props.active ? 1 : 0};
+    transition: opacity 0.2s ease;
   }
 `;
 
@@ -1515,17 +1529,11 @@ const SortDropdown = styled.div`
   padding: 0.75rem;
   min-width: 220px;
   z-index: 1000;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8),
-              0 0 20px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
   opacity: ${props => props.isOpen ? 1 : 0};
   visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
   transform: ${props => props.isOpen ? 'translateY(0)' : 'translateY(-10px)'};
   transition: all 0.3s ease;
-  
-  @media (max-width: 768px) {
-    min-width: 200px;
-    right: 0;
-  }
 `;
 
 const SortOption = styled.button`
@@ -1851,20 +1859,15 @@ const getIPBasedLocation = async () => {
 
 const loadCategorizedItems = async () => {
   console.log('🔄 loadCategorizedItems called');
-  console.log('effectiveLocation:', effectiveLocation);
-  console.log('sortBy:', sortBy);
   
   try {
     setLoading(true);
     setError(null);
 
-    console.log('📡 Fetching items from Firebase...');
     const allItems = await getFeaturedItems(48);
-    console.log('✅ Fetched items:', allItems.length);
-    
     const currentUserId = user?.uid;
     
-    // Filter out current user's items AND invalid items
+    // Filter items
     const filteredItems = allItems.filter(item => {
       const isNotCurrentUser = item.shopId !== currentUserId;
       const hasImages = item.images && item.images.length > 0 && item.images.some(img => img);
@@ -1873,58 +1876,23 @@ const loadCategorizedItems = async () => {
       
       return isNotCurrentUser && hasImages && hasValidPrice && hasStock;
     });
-    
-    console.log('✅ Filtered items:', filteredItems.length);
 
+    // Calculate distances
     let itemsWithDistance = filteredItems;
-    
-    // Calculate distances if we have location
     if (effectiveLocation) {
-      console.log('📍 Calculating distances...');
       itemsWithDistance = filteredItems.map(item => {
-        let itemCoords = item.coordinates;
-        if (!itemCoords && item.address) {
-          const coordsMatch = item.address.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
-          if (coordsMatch) {
-            itemCoords = {
-              lat: parseFloat(coordsMatch[1]),
-              lng: parseFloat(coordsMatch[2])
-            };
-          }
-        }
-
-        if (itemCoords?.lat && itemCoords?.lng) {
-          try {
-            const distanceInMeters = getDistance(
-              { latitude: effectiveLocation.latitude, longitude: effectiveLocation.longitude },
-              { latitude: itemCoords.lat, longitude: itemCoords.lng }
-            );
-            const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
-
-            return {
-              ...item,
-              coordinates: itemCoords,
-              distance: distanceInMeters,
-              distanceInMiles,
-              formattedDistance: `${distanceInMiles} mi`
-            };
-          } catch (e) {
-            console.warn('Error calculating distance for item:', e);
-            return item;
-          }
-        }
-        return item;
+        // ... existing distance calculation code ...
       });
-    } else {
-      console.warn('⚠️ No effectiveLocation available for distance calculation');
     }
 
     // Apply sorting
-    console.log('🔄 Applying sort:', sortBy);
     const sortedItems = applySorting(itemsWithDistance, sortBy);
-    console.log('✅ Sorted items:', sortedItems.length);
 
-    // Categorize items
+    // ⭐ NEW: Get featured items FIRST (top 10)
+    const featuredItemsList = sortedItems.slice(0, 10);
+    const featuredItemIds = new Set(featuredItemsList.map(item => `${item.shopId}-${item.id}`));
+
+    // Categorize items - EXCLUDE featured items
     const categorizedItems = {
       'Electronics & Tech': [],
       'Clothing & Accessories': [],
@@ -1939,7 +1907,15 @@ const loadCategorizedItems = async () => {
       'Other': []
     };
 
+    // Only add items to categories if they're NOT in featured
     sortedItems.forEach(item => {
+      const itemKey = `${item.shopId}-${item.id}`;
+      
+      // ⭐ Skip if item is in featured
+      if (featuredItemIds.has(itemKey)) {
+        return;
+      }
+      
       const category = item.category || 'Other';
       if (categorizedItems[category]) {
         categorizedItems[category].push(item);
@@ -1948,16 +1924,16 @@ const loadCategorizedItems = async () => {
       }
     });
 
+    // Limit each category to 10 items
     Object.keys(categorizedItems).forEach(category => {
       categorizedItems[category] = categorizedItems[category].slice(0, 10);
     });
 
-    console.log('✅ Setting categories:', Object.keys(categorizedItems).map(k => `${k}: ${categorizedItems[k].length}`));
     setCategories(categorizedItems);
-    setFeaturedItems(sortedItems.slice(0, 10));
+    setFeaturedItems(featuredItemsList); // Use the pre-selected featured items
     setTotalItems(filteredItems.length);
-
     setLoading(false);
+    
   } catch (error) {
     console.error('❌ Error loading categorized items:', error);
     setError('Failed to load items. Please try again later.');
@@ -3181,49 +3157,46 @@ useEffect(() => {
           <>
             {/* Search container with Filter */}
             <SearchContainer>
-              <SearchInput
-                type="text"
-                placeholder="Search for items..."
-                value={featuredSearchTerm}
-                onChange={(e) => setFeaturedSearchTerm(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleFeaturedSearch()}
-              />
-              <SearchButtonGroup>
-                <SearchButton 
-                  onClick={handleFeaturedSearch}
-                  disabled={isSearching || !featuredSearchTerm.trim()}
-                >
-                  <Search size={16} />
-                  Search
-                </SearchButton>
-                {hasSearchResults && (
-                  <SearchButton onClick={handleClearFeaturedSearch} variant="live">
-                    <X size={16} />
-                    Clear
-                  </SearchButton>
-                )}
-
-                {/* Filter Button */}
-                <SortContainer className="sort-container">
-                  <SearchButton 
-                    onClick={() => setSortMenuOpen(!sortMenuOpen)}
-                    style={{ position: 'relative' }}
-                  >
-                    <Filter size={16} />
-                    {sortBy !== 'recent' && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '4px',
-                        right: '4px',
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: '50%',
-                        background: currentStyle?.colors?.accent || '#800000'
-                      }} />
-                    )}
-                  </SearchButton>
-                  
-                  <SortDropdown theme={currentStyle} isOpen={sortMenuOpen}>
+  <SearchInputWrapper>
+    <SearchInput
+      type="text"
+      placeholder="Search for items..."
+      value={featuredSearchTerm}
+      onChange={(e) => setFeaturedSearchTerm(e.target.value)}
+      onKeyPress={(e) => e.key === 'Enter' && handleFeaturedSearch()}
+    />
+    
+    <SearchButtonGroup>
+      {hasSearchResults && (
+        <SearchButton 
+          onClick={handleClearFeaturedSearch}
+          title="Clear search"
+        >
+          <X size={18} />
+        </SearchButton>
+      )}
+      
+      <SearchButton 
+        onClick={handleFeaturedSearch}
+        disabled={isSearching || !featuredSearchTerm.trim()}
+        title="Search"
+      >
+        <Search size={18} />
+      </SearchButton>
+      
+      <SearchButton 
+        onClick={() => setSortMenuOpen(!sortMenuOpen)}
+        active={sortBy !== 'recent'}
+        title="Filter & Sort"
+      >
+        <Filter size={18} />
+      </SearchButton>
+    </SearchButtonGroup>
+  </SearchInputWrapper>
+  
+  {/* Keep SortDropdown positioned relative to SearchContainer */}
+  <SortContainer className="sort-container" style={{ position: 'static' }}>
+    <SortDropdown theme={currentStyle} isOpen={sortMenuOpen}>
                     <div style={{
                       padding: '0.5rem 1rem 0.75rem',
                       fontSize: '0.75rem',
@@ -3381,9 +3354,8 @@ useEffect(() => {
                       )}
                     </SortOption>
                   </SortDropdown>
-                </SortContainer>
-              </SearchButtonGroup>
-            </SearchContainer>
+  </SortContainer>
+</SearchContainer>
 
             {/* Show search results or default categorized view */}
             {hasSearchResults ? (

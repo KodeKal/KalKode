@@ -27,287 +27,125 @@ import {
 
 // ==================== TEMPLATE-SPECIFIC FRAMES ====================
 
-// Streetwear Template Frame - Bold, Urban, Edgy
+// Streetwear Template Frame - Subtle Urban
 const StreetwearFrame = ({ children, theme }) => {
   return (
     <div style={{
-      background: `linear-gradient(135deg, ${theme?.colors?.background}00 0%, ${theme?.colors?.accent}05 50%, ${theme?.colors?.background}00 100%)`,
-      border: `3px solid ${theme?.colors?.accent}`,
-      borderRadius: '4px',
+      background: `linear-gradient(180deg, ${theme?.colors?.background}00 0%, ${theme?.colors?.accent}03 20%, ${theme?.colors?.accent}05 50%, ${theme?.colors?.accent}03 80%, ${theme?.colors?.background}00 100%)`,
+      borderRadius: '8px',
       position: 'relative',
       overflow: 'hidden',
-      boxShadow: `0 0 30px ${theme?.colors?.accent}40, inset 0 0 30px ${theme?.colors?.accent}10`
+      padding: '1px'
     }}>
-      {/* Diagonal stripes background */}
+      {/* Subtle border glow */}
       <div style={{
         position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: `repeating-linear-gradient(
-          45deg,
-          transparent,
-          transparent 10px,
-          ${theme?.colors?.accent}03 10px,
-          ${theme?.colors?.accent}03 20px
-        )`,
-        pointerEvents: 'none',
-        zIndex: 0
-      }} />
-      
-      {/* Corner brackets - urban style */}
-      <div style={{
-        position: 'absolute',
-        top: '10px',
-        left: '10px',
-        width: '40px',
-        height: '40px',
-        borderTop: `4px solid ${theme?.colors?.accent}`,
-        borderLeft: `4px solid ${theme?.colors?.accent}`,
-        zIndex: 1,
-        pointerEvents: 'none'
-      }} />
-      <div style={{
-        position: 'absolute',
-        top: '10px',
-        right: '10px',
-        width: '40px',
-        height: '40px',
-        borderTop: `4px solid ${theme?.colors?.accent}`,
-        borderRight: `4px solid ${theme?.colors?.accent}`,
-        zIndex: 1,
-        pointerEvents: 'none'
-      }} />
-      <div style={{
-        position: 'absolute',
-        bottom: '10px',
-        left: '10px',
-        width: '40px',
-        height: '40px',
-        borderBottom: `4px solid ${theme?.colors?.accent}`,
-        borderLeft: `4px solid ${theme?.colors?.accent}`,
-        zIndex: 1,
-        pointerEvents: 'none'
-      }} />
-      <div style={{
-        position: 'absolute',
-        bottom: '10px',
-        right: '10px',
-        width: '40px',
-        height: '40px',
-        borderBottom: `4px solid ${theme?.colors?.accent}`,
-        borderRight: `4px solid ${theme?.colors?.accent}`,
-        zIndex: 1,
+        inset: 0,
+        borderRadius: '8px',
+        padding: '1px',
+        background: `linear-gradient(180deg, ${theme?.colors?.accent}30, ${theme?.colors?.accent}10, ${theme?.colors?.accent}30)`,
+        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+        WebkitMaskComposite: 'xor',
+        maskComposite: 'exclude',
         pointerEvents: 'none'
       }} />
       
-      <div style={{ position: 'relative', zIndex: 1 }}>
+      <div style={{ 
+        position: 'relative', 
+        zIndex: 1,
+        background: theme?.colors?.background,
+        borderRadius: '7px'
+      }}>
         {children}
       </div>
     </div>
   );
 };
 
-// Organization Template Frame - Professional, Clean, Structured
+// Organization Template Frame - Clean Professional
 const OrganizationFrame = ({ children, theme }) => {
   return (
     <div style={{
-      background: `${theme?.colors?.surface}15`,
-      borderRadius: '24px',
-      border: `2px solid ${theme?.colors?.accent}30`,
+      background: `linear-gradient(180deg, ${theme?.colors?.surface}08 0%, transparent 100%)`,
+      borderRadius: '16px',
       position: 'relative',
       overflow: 'hidden',
-      boxShadow: `0 10px 40px ${theme?.colors?.accent}15`,
-      backdropFilter: 'blur(10px)'
+      border: `1px solid ${theme?.colors?.accent}15`
     }}>
-      {/* Top accent bar */}
+      {/* Subtle top accent */}
       <div style={{
-        height: '6px',
-        background: `linear-gradient(90deg, ${theme?.colors?.accent}, ${theme?.colors?.accent}60, ${theme?.colors?.accent})`,
+        height: '2px',
+        background: `linear-gradient(90deg, transparent, ${theme?.colors?.accent}60, transparent)`,
         position: 'absolute',
         top: 0,
-        left: 0,
-        right: 0,
+        left: '20%',
+        right: '20%',
         zIndex: 2
       }} />
       
-      {/* Side accent bars */}
-      <div style={{
-        position: 'absolute',
-        left: 0,
-        top: '6px',
-        bottom: 0,
-        width: '3px',
-        background: `linear-gradient(180deg, ${theme?.colors?.accent}80, transparent)`,
-        zIndex: 1
-      }} />
-      <div style={{
-        position: 'absolute',
-        right: 0,
-        top: '6px',
-        bottom: 0,
-        width: '3px',
-        background: `linear-gradient(180deg, ${theme?.colors?.accent}80, transparent)`,
-        zIndex: 1
-      }} />
-      
-      {/* Subtle grid pattern */}
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundImage: `
-          linear-gradient(${theme?.colors?.accent}08 1px, transparent 1px),
-          linear-gradient(90deg, ${theme?.colors?.accent}08 1px, transparent 1px)
-        `,
-        backgroundSize: '50px 50px',
-        pointerEvents: 'none',
-        opacity: 0.5
-      }} />
-      
-      <div style={{ position: 'relative', zIndex: 1, paddingTop: '6px' }}>
+      <div style={{ position: 'relative', zIndex: 1 }}>
         {children}
       </div>
     </div>
   );
 };
 
-// Tech/Gaming Template Frame - Futuristic, Digital, Dynamic
+// Tech/Gaming Template Frame - Subtle Futuristic
 const TechFrame = ({ children, theme }) => {
   return (
     <div style={{
-      background: `linear-gradient(135deg, ${theme?.colors?.background}95 0%, ${theme?.colors?.accent}08 100%)`,
-      borderRadius: '16px',
-      border: `2px solid ${theme?.colors?.accent}`,
+      background: `radial-gradient(circle at 50% 0%, ${theme?.colors?.accent}08 0%, transparent 50%)`,
+      borderRadius: '12px',
       position: 'relative',
       overflow: 'hidden',
-      boxShadow: `0 0 40px ${theme?.colors?.accent}50, 0 0 80px ${theme?.colors?.accent}20`,
-      backdropFilter: 'blur(20px)'
+      border: `1px solid ${theme?.colors?.accent}20`
     }}>
-      {/* Animated scanline effect */}
+      {/* Minimal corner accents */}
       <div style={{
         position: 'absolute',
         top: 0,
         left: 0,
-        right: 0,
-        height: '2px',
-        background: `linear-gradient(90deg, transparent, ${theme?.colors?.accent}, transparent)`,
-        animation: 'scanline 3s linear infinite',
-        zIndex: 2,
-        opacity: 0.6
-      }} />
-      
-      {/* Circuit board pattern */}
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: `
-          radial-gradient(circle at 20% 30%, ${theme?.colors?.accent}15 0%, transparent 50%),
-          radial-gradient(circle at 80% 70%, ${theme?.colors?.accent}10 0%, transparent 50%)
-        `,
+        width: '30px',
+        height: '30px',
+        borderTop: `2px solid ${theme?.colors?.accent}40`,
+        borderLeft: `2px solid ${theme?.colors?.accent}40`,
+        borderTopLeftRadius: '12px',
         pointerEvents: 'none'
       }} />
-      
-      {/* Corner tech elements */}
-      {[
-        { top: '15px', left: '15px', rotate: '0deg' },
-        { top: '15px', right: '15px', rotate: '90deg' },
-        { bottom: '15px', left: '15px', rotate: '270deg' },
-        { bottom: '15px', right: '15px', rotate: '180deg' }
-      ].map((pos, i) => (
-        <div key={i} style={{
-          position: 'absolute',
-          ...pos,
-          width: '30px',
-          height: '30px',
-          border: `2px solid ${theme?.colors?.accent}`,
-          borderRight: 'none',
-          borderBottom: 'none',
-          transform: `rotate(${pos.rotate})`,
-          zIndex: 1,
-          pointerEvents: 'none'
-        }}>
-          <div style={{
-            position: 'absolute',
-            top: '-2px',
-            left: '-2px',
-            width: '8px',
-            height: '8px',
-            background: theme?.colors?.accent,
-            boxShadow: `0 0 10px ${theme?.colors?.accent}`
-          }} />
-        </div>
-      ))}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: '30px',
+        height: '30px',
+        borderTop: `2px solid ${theme?.colors?.accent}40`,
+        borderRight: `2px solid ${theme?.colors?.accent}40`,
+        borderTopRightRadius: '12px',
+        pointerEvents: 'none'
+      }} />
       
       <div style={{ position: 'relative', zIndex: 1 }}>
         {children}
       </div>
-      
-      <style>{`
-        @keyframes scanline {
-          from { top: 0; }
-          to { top: 100%; }
-        }
-      `}</style>
     </div>
   );
 };
 
-// Minimalist Template Frame - Clean, Elegant, Simple
+// Minimalist Template Frame - Ultra Clean
 const MinimalistFrame = ({ children, theme }) => {
   return (
     <div style={{
-      background: `${theme?.colors?.surface}08`,
-      borderRadius: '32px',
-      border: `1px solid ${theme?.colors?.accent}20`,
+      background: 'transparent',
+      borderRadius: '24px',
       position: 'relative',
-      overflow: 'hidden',
-      boxShadow: `0 20px 60px ${theme?.colors?.accent}10`,
-      backdropFilter: 'blur(40px)'
+      overflow: 'hidden'
     }}>
-      {/* Minimal corner accents */}
-      {[
-        { top: '20px', left: '20px' },
-        { top: '20px', right: '20px' },
-        { bottom: '20px', left: '20px' },
-        { bottom: '20px', right: '20px' }
-      ].map((pos, i) => (
-        <div key={i} style={{
-          position: 'absolute',
-          ...pos,
-          width: '2px',
-          height: '20px',
-          background: theme?.colors?.accent,
-          opacity: 0.3,
-          zIndex: 1,
-          pointerEvents: 'none'
-        }}>
-          <div style={{
-            position: 'absolute',
-            [pos.top ? 'top' : 'bottom']: 0,
-            [pos.left ? 'left' : 'right']: 0,
-            width: '20px',
-            height: '2px',
-            background: theme?.colors?.accent,
-            opacity: 0.3
-          }} />
-        </div>
-      ))}
-      
-      {/* Subtle gradient overlay */}
+      {/* Almost invisible border */}
       <div style={{
         position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '200px',
-        background: `linear-gradient(180deg, ${theme?.colors?.accent}05 0%, transparent 100%)`,
+        inset: 0,
+        borderRadius: '24px',
+        border: `1px solid ${theme?.colors?.accent}10`,
         pointerEvents: 'none'
       }} />
       
@@ -318,143 +156,57 @@ const MinimalistFrame = ({ children, theme }) => {
   );
 };
 
-// Local Market Template Frame - Warm, Community, Welcoming
+// Local Market Template Frame - Warm Welcoming
 const LocalMarketFrame = ({ children, theme }) => {
   return (
     <div style={{
-      background: `${theme?.colors?.surface}20`,
-      borderRadius: '20px',
-      border: `3px solid ${theme?.colors?.accent}40`,
+      background: `linear-gradient(180deg, ${theme?.colors?.accent}05 0%, transparent 30%, transparent 70%, ${theme?.colors?.accent}05 100%)`,
+      borderRadius: '16px',
       position: 'relative',
       overflow: 'hidden',
-      boxShadow: `0 15px 45px ${theme?.colors?.accent}25`,
-      backdropFilter: 'blur(15px)'
+      border: `1px solid ${theme?.colors?.accent}20`
     }}>
-      {/* Decorative header strip */}
-      <div style={{
-        height: '50px',
-        background: `linear-gradient(90deg, 
-          ${theme?.colors?.accent}30 0%, 
-          ${theme?.colors?.accent}20 25%,
-          ${theme?.colors?.accent}30 50%,
-          ${theme?.colors?.accent}20 75%,
-          ${theme?.colors?.accent}30 100%
-        )`,
-        borderBottom: `2px solid ${theme?.colors?.accent}60`,
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        {/* Decorative circles */}
-        {[...Array(5)].map((_, i) => (
-          <div key={i} style={{
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            background: theme?.colors?.accent,
-            margin: '0 8px',
-            opacity: 0.6
-          }} />
-        ))}
-      </div>
-      
-      {/* Side borders with pattern */}
+      {/* Subtle top decoration */}
       <div style={{
         position: 'absolute',
+        top: 0,
         left: 0,
-        top: '50px',
-        bottom: 0,
-        width: '20px',
-        background: `repeating-linear-gradient(
-          0deg,
-          ${theme?.colors?.accent}20,
-          ${theme?.colors?.accent}20 10px,
-          transparent 10px,
-          transparent 20px
-        )`,
-        borderRight: `1px solid ${theme?.colors?.accent}40`,
-        zIndex: 1
-      }} />
-      <div style={{
-        position: 'absolute',
         right: 0,
-        top: '50px',
-        bottom: 0,
-        width: '20px',
-        background: `repeating-linear-gradient(
-          0deg,
-          ${theme?.colors?.accent}20,
-          ${theme?.colors?.accent}20 10px,
-          transparent 10px,
-          transparent 20px
-        )`,
-        borderLeft: `1px solid ${theme?.colors?.accent}40`,
+        height: '8px',
+        background: `linear-gradient(90deg, transparent, ${theme?.colors?.accent}15, transparent)`,
         zIndex: 1
       }} />
       
-      {/* Corner decorative elements */}
-      {[
-        { bottom: '15px', left: '15px' },
-        { bottom: '15px', right: '15px' }
-      ].map((pos, i) => (
-        <div key={i} style={{
-          position: 'absolute',
-          ...pos,
-          width: '50px',
-          height: '50px',
-          zIndex: 1,
-          pointerEvents: 'none'
-        }}>
-          <div style={{
-            width: '100%',
-            height: '100%',
-            border: `3px solid ${theme?.colors?.accent}`,
-            borderTop: 'none',
-            borderRadius: '0 0 50% 50%',
-            opacity: 0.4
-          }} />
-        </div>
-      ))}
-      
-      <div style={{ position: 'relative', zIndex: 1, paddingTop: '0' }}>
+      <div style={{ position: 'relative', zIndex: 1, paddingTop: '8px' }}>
         {children}
       </div>
     </div>
   );
 };
 
-// ==================== TEMPLATE-SPECIFIC DIVIDERS ====================
+// ==================== SUBTLE DIVIDERS ====================
 
 const StreetwearDivider = ({ theme }) => (
   <div style={{
-    height: '60px',
+    height: '100px',
+    background: `linear-gradient(180deg, 
+      ${theme?.colors?.background}00 0%, 
+      ${theme?.colors?.accent}03 30%,
+      ${theme?.colors?.accent}05 50%,
+      ${theme?.colors?.accent}03 70%,
+      ${theme?.colors?.background}00 100%)`,
     position: 'relative',
-    overflow: 'hidden',
-    margin: '2rem 0'
+    margin: '0'
   }}>
-    {/* Bold diagonal slash */}
+    {/* Subtle horizontal line */}
     <div style={{
       position: 'absolute',
       top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%) rotate(-10deg)',
-      width: '80%',
-      height: '4px',
-      background: `linear-gradient(90deg, transparent, ${theme?.colors?.accent}, transparent)`,
-      opacity: 0.6
-    }} />
-    {/* Secondary slash */}
-    <div style={{
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%) rotate(-10deg)',
-      width: '60%',
-      height: '2px',
-      background: `linear-gradient(90deg, transparent, ${theme?.colors?.accent}, transparent)`,
-      marginTop: '8px',
-      opacity: 0.4
+      left: '10%',
+      right: '10%',
+      height: '1px',
+      background: `linear-gradient(90deg, transparent, ${theme?.colors?.accent}20, transparent)`,
+      transform: 'translateY(-50%)'
     }} />
   </div>
 );
@@ -462,134 +214,74 @@ const StreetwearDivider = ({ theme }) => (
 const OrganizationDivider = ({ theme }) => (
   <div style={{
     height: '80px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    background: `linear-gradient(180deg, 
+      transparent 0%, 
+      ${theme?.colors?.surface}05 50%, 
+      transparent 100%)`,
     position: 'relative',
-    margin: '3rem 0'
-  }}>
-    {/* Centered ornamental divider */}
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '20px'
-    }}>
-      <div style={{
-        width: '100px',
-        height: '1px',
-        background: `linear-gradient(90deg, transparent, ${theme?.colors?.accent}80)`
-      }} />
-      <div style={{
-        width: '8px',
-        height: '8px',
-        borderRadius: '50%',
-        background: theme?.colors?.accent,
-        boxShadow: `0 0 10px ${theme?.colors?.accent}`
-      }} />
-      <div style={{
-        width: '40px',
-        height: '2px',
-        background: theme?.colors?.accent
-      }} />
-      <div style={{
-        width: '8px',
-        height: '8px',
-        borderRadius: '50%',
-        background: theme?.colors?.accent,
-        boxShadow: `0 0 10px ${theme?.colors?.accent}`
-      }} />
-      <div style={{
-        width: '100px',
-        height: '1px',
-        background: `linear-gradient(90deg, ${theme?.colors?.accent}80, transparent)`
-      }} />
-    </div>
-  </div>
+    margin: '0'
+  }} />
 );
 
 const TechDivider = ({ theme }) => (
   <div style={{
-    height: '100px',
+    height: '120px',
     position: 'relative',
-    overflow: 'hidden',
-    margin: '2rem 0'
+    margin: '0',
+    background: `radial-gradient(ellipse at center, ${theme?.colors?.accent}05 0%, transparent 70%)`
   }}>
-    {/* Digital wave effect */}
-    <svg width="100%" height="100" viewBox="0 0 1200 100" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="techGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" style={{ stopColor: 'transparent' }} />
-          <stop offset="50%" style={{ stopColor: theme?.colors?.accent, stopOpacity: 0.6 }} />
-          <stop offset="100%" style={{ stopColor: 'transparent' }} />
-        </linearGradient>
-      </defs>
-      <path
-        d="M 0,50 L 100,50 L 120,30 L 140,50 L 160,50 L 180,70 L 200,50 L 300,50 L 320,30 L 340,50 L 360,50 L 380,70 L 400,50 L 600,50 L 620,30 L 640,50 L 660,50 L 680,70 L 700,50 L 800,50 L 820,30 L 840,50 L 860,50 L 880,70 L 900,50 L 1000,50 L 1020,30 L 1040,50 L 1060,50 L 1080,70 L 1100,50 L 1200,50"
-        fill="none"
-        stroke="url(#techGradient)"
-        strokeWidth="2"
-      />
-    </svg>
+    {/* Subtle checkerboard pattern */}
+    <div style={{
+      position: 'absolute',
+      inset: 0,
+      backgroundImage: `
+        linear-gradient(45deg, ${theme?.colors?.accent}02 25%, transparent 25%),
+        linear-gradient(-45deg, ${theme?.colors?.accent}02 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, ${theme?.colors?.accent}02 75%),
+        linear-gradient(-45deg, transparent 75%, ${theme?.colors?.accent}02 75%)
+      `,
+      backgroundSize: '20px 20px',
+      backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
+      opacity: 0.3
+    }} />
   </div>
 );
 
 const MinimalistDivider = ({ theme }) => (
   <div style={{
-    height: '100px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: '4rem 0'
+    height: '120px',
+    background: 'transparent',
+    position: 'relative',
+    margin: '0'
   }}>
-    {/* Simple elegant line */}
+    {/* Ultra subtle gradient */}
     <div style={{
-      width: '200px',
+      position: 'absolute',
+      top: '50%',
+      left: '30%',
+      right: '30%',
       height: '1px',
-      background: `linear-gradient(90deg, transparent, ${theme?.colors?.accent}40, transparent)`,
-      position: 'relative'
-    }}>
-      {/* Center dot */}
-      <div style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: '4px',
-        height: '4px',
-        borderRadius: '50%',
-        background: theme?.colors?.accent,
-        opacity: 0.6
-      }} />
-    </div>
+      background: `linear-gradient(90deg, transparent, ${theme?.colors?.accent}08, transparent)`,
+      transform: 'translateY(-50%)'
+    }} />
   </div>
 );
 
 const LocalMarketDivider = ({ theme }) => (
   <div style={{
-    height: '80px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: '2rem 0',
-    position: 'relative'
+    height: '100px',
+    position: 'relative',
+    margin: '0',
+    background: `linear-gradient(180deg, transparent 0%, ${theme?.colors?.accent}04 50%, transparent 100%)`
   }}>
-    {/* Decorative market-style divider */}
+    {/* Subtle dots pattern */}
     <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '10px'
-    }}>
-      {[...Array(7)].map((_, i) => (
-        <div key={i} style={{
-          width: i === 3 ? '30px' : '15px',
-          height: i === 3 ? '30px' : '15px',
-          borderRadius: '50%',
-          background: i === 3 ? theme?.colors?.accent : `${theme?.colors?.accent}60`,
-          boxShadow: i === 3 ? `0 0 15px ${theme?.colors?.accent}60` : 'none',
-          transition: 'all 0.3s ease'
-        }} />
-      ))}
-    </div>
+      position: 'absolute',
+      inset: 0,
+      backgroundImage: `radial-gradient(circle, ${theme?.colors?.accent}08 1px, transparent 1px)`,
+      backgroundSize: '30px 30px',
+      opacity: 0.4
+    }} />
   </div>
 );
 
@@ -605,6 +297,7 @@ const SectionWrapper = ({ children, theme, noPadding = false }) => {
     </div>
   );
 };
+
 
 // ==================== HERO BANNER SECTION ====================
 export const HeroBannerSection = ({ config, theme, editable, onUpdate }) => {
