@@ -123,43 +123,44 @@ const LocationIndicator2 = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  background: ${props => `${props.theme?.colors?.surface || 'rgba(0, 0, 0, 0.4)'}CC`};
-  backdrop-filter: blur(10px);
-  padding: 0.75rem 1.5rem;
-  border-radius: 25px;
-  border: 1px solid ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.4)'};
-  margin: 1.5rem auto;
-  max-width: 500px;
-  width: 90%;
+  gap: 0.25rem;
+  background: transparent;
+  padding: 0;
+  margin: 1rem auto 0.5rem;
+  max-width: 800px;
+  width: auto;
   transition: all 0.3s ease;
   position: relative;
   
   @media (max-width: 768px) {
-    width: 95%;
-    padding: 0.6rem 1rem;
-    gap: 0.5rem;
+    gap: 0.2rem;
+    margin: 0.75rem auto 0.25rem;
+  }
+  
+  @media (min-width: 768px) {
+    gap: 0.3rem;
   }
   
   .location-icon-btn {
     background: transparent;
     border: none;
-    color: ${props => props.theme?.colors?.accent || '#800000'};
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.25rem;
-    border-radius: 50%;
+    padding: 0;
+    margin: 0;
     transition: all 0.2s ease;
     flex-shrink: 0;
+    opacity: 0.9;
     
     &:hover {
-      background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+      opacity: 1;
+      transform: scale(1.05);
     }
     
     &:active {
-      transform: scale(0.9);
+      transform: scale(0.95);
     }
     
     &:disabled {
@@ -168,82 +169,101 @@ const LocationIndicator2 = styled.div`
     }
     
     svg {
-      width: 20px;
-      height: 20px;
+      width: 0.625rem;
+      height: 0.625rem;
+      color: ${props => props.theme?.colors?.accent || '#800000'};
       
       @media (max-width: 768px) {
-        width: 18px;
-        height: 18px;
+        width: 0.55rem;
+        height: 0.55rem;
+      }
+      
+      @media (min-width: 768px) {
+        width: 1.125rem;
+        height: 1.125rem;
       }
     }
   }
   
   .location-input {
-    flex: 1;
     background: transparent;
     border: none;
-    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
-    font-size: 0.95rem;
+    background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 1.25rem;
+    font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
+    letter-spacing: 0.5px;
     outline: none;
     text-align: center;
     cursor: default;
-    min-width: 0; /* Allow text to shrink */
+    width: auto;
+    line-height: 1.2;
+    font-weight: 600;
+    padding: 0;
+    margin: 0;
+    flex-shrink: 0;
     
     &::placeholder {
-      color: ${props => `${props.theme?.colors?.text}50` || 'rgba(255, 255, 255, 0.5)'};
+      background: ${props => props.theme?.colors?.accentGradient ? 
+        `${props.theme.colors.accentGradient.replace(')', '60)')}` : 
+        'linear-gradient(45deg, rgba(128, 0, 0, 0.6), rgba(74, 4, 4, 0.6))'};
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
       font-style: italic;
     }
     
+    @media (min-width: 768px) {
+      font-size: 2.25rem;
+      line-height: 1.2;
+      letter-spacing: 1px;
+    }
+    
     @media (max-width: 768px) {
-      font-size: 0.85rem;
+      font-size: 1.1rem;
+      letter-spacing: 0.3px;
+    }
+  }
+  
+  .location-type {
+    font-size: 0.55rem;
+    opacity: 0.7;
+    background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0;
+    white-space: nowrap;
+    
+    @media (min-width: 768px) {
+      font-size: 0.65rem;
+    }
+    
+    @media (max-width: 768px) {
+      font-size: 0.5rem;
     }
   }
   
   .updating-spinner {
-    width: 16px;
-    height: 16px;
+    width: 0.625rem;
+    height: 0.625rem;
     border: 2px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
     border-radius: 50%;
     border-top-color: ${props => props.theme?.colors?.accent || '#800000'};
     animation: spin 1s linear infinite;
-  }
-  
-  .pin-icon-btn {
-    background: transparent;
-    border: none;
-    color: ${props => props.theme?.colors?.accent || '#800000'};
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.25rem;
-    border-radius: 50%;
-    transition: all 0.2s ease;
-    opacity: ${props => props.isPinned ? 1 : 0.5};
-    flex-shrink: 0;
     
-    &:hover:not(:disabled) {
-      background: ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
-      opacity: 1;
+    @media (min-width: 768px) {
+      width: 1.125rem;
+      height: 1.125rem;
     }
     
-    &:active:not(:disabled) {
-      transform: scale(0.9);
-    }
-    
-    &:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-    
-    svg {
-      width: 18px;
-      height: 18px;
-      
-      @media (max-width: 768px) {
-        width: 16px;
-        height: 16px;
-      }
+    @media (max-width: 768px) {
+      width: 0.55rem;
+      height: 0.55rem;
     }
   }
   
@@ -314,16 +334,15 @@ const MainContent = styled.main`
   }
 `;
 
-// Mobile-optimized welcome section
 const WelcomeSection = styled.section`
   text-align: center;
-  margin: 2rem 0;
+  margin: 2rem 0 1rem;
   position: relative;
 
   h1 {
     font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
     font-size: 2.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -333,6 +352,7 @@ const WelcomeSection = styled.section`
     @media (min-width: 768px) {
       font-size: 4.5rem;
       letter-spacing: 2px;
+      margin-bottom: 1rem;
     }
   }
 
@@ -2255,6 +2275,9 @@ const handleLocationToCity = async () => {
     setEffectiveLocation(locationToSave);
     setIsIPLocation(false);
     
+    setCityRegion(cityName);
+    setCityInputValue(cityName);
+
     // Re-fetch items with new location
     console.log('🔄 Re-fetching items with new location...');
     if (activeTab === 'featured') {
@@ -2993,99 +3016,126 @@ useEffect(() => {
 
       <MainContent isAuthenticated={isAuthenticated}>
 
-        <LocationIndicator2 theme={currentStyle} isPinned={isCityPinned}>
-          <button 
-            className="location-icon-btn"
-            onClick={handleLocationToCity}
-            disabled={isConvertingToCity}
-            title="Get region from current location"
-          >
-            {isConvertingToCity ? (
-              <div className="updating-spinner" />
-            ) : (
-              <Navigation size={20} />
-            )}
-          </button>
-          
-          <input
-            type="text"
-            className="location-input"
-            value={
-              cityInputValue ? 
-                (isIPLocation ? `${cityInputValue} - IP-based` : `${cityInputValue} - Percise` ) :
-                (effectiveLocation && isIPLocation ? 
-                  `${effectiveLocation.city}, ${effectiveLocation.region} (IP-based)` : 
-                  'Load Location')
-            }
-            onChange={(e) => setCityInputValue(e.target.value)}
-            placeholder="Load Location"
-            readOnly
-          />
-
-          <button
-            className="pin-icon-btn"
-            onClick={handleToggleCityPin}
-            disabled={!cityRegion || cityRegion === 'Not available' || cityRegion === 'Error'}
-            title={isCityPinned ? "Unpin location" : "Pin location"}
-          >
-            <Pin 
-              size={18} 
-              fill={isCityPinned ? currentStyle.colors.accent : "none"}
-            />
-          </button>
-        </LocationIndicator2>
-        
         <WelcomeSection theme={currentStyle}>
-          {isAuthenticated && shopData ? (
-            <>
-              <ProfileSection>
-                <ProfileImage theme={currentStyle}>
-                  {shopData.profile ? (
-                    <img src={shopData.profile} alt={shopData.name || 'Shop Profile'} />
-                  ) : (
-                    <div style={{ 
-                      width: '100%', 
-                      height: '100%', 
-                      background: currentStyle?.colors?.accent || '#800000',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#fff',
-                      fontSize: '2rem'
-                    }}>
-                      {(shopData.name?.charAt(0) || user.email?.charAt(0) || 'S').toUpperCase()}
-                    </div>
-                  )}
-                </ProfileImage>
-                <ShopName theme={currentStyle}>{shopData.name || 'My Shop'}</ShopName>
-              </ProfileSection>         
+        {isAuthenticated && shopData ? (
+          <>
+            
+            
+            <ProfileSection>
+              <ProfileImage theme={currentStyle}>
+                {shopData.profile ? (
+                  <img src={shopData.profile} alt={shopData.name || 'Shop Profile'} />
+                ) : (
+                  <div style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    background: currentStyle?.colors?.accent || '#800000',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    fontSize: '2rem'
+                  }}>
+                    {(shopData.name?.charAt(0) || user.email?.charAt(0) || 'S').toUpperCase()}
+                  </div>
+                )}
+              </ProfileImage>
+              <ShopName theme={currentStyle}>{shopData.name || 'My Shop'}</ShopName>
+              <LocationIndicator2 theme={currentStyle}>
+              <button 
+                className="location-icon-btn"
+                onClick={handleLocationToCity}
+                disabled={isConvertingToCity}
+                title="Get region from current location"
+              >
+                {isConvertingToCity ? (
+                  <div className="updating-spinner" />
+                ) : (
+                  <Navigation size={16} />
+                )}
+              </button>
+              
+              <input
+                type="text"
+                className="location-input"
+                value={
+                  cityInputValue ? 
+                    cityInputValue :
+                    (effectiveLocation && isIPLocation ? 
+                      `${effectiveLocation.city}, ${effectiveLocation.region}` : 
+                      'Load Location')
+                }
+                onChange={(e) => setCityInputValue(e.target.value)}
+                placeholder="Load Location"
+                readOnly
+              />
 
-              <MotivationalMessage theme={currentStyle}>
-                {motivationalMessage}
-              </MotivationalMessage>
-            </>
-          ) : (
-            <>
-              <h1>Welcome to KalKode</h1>
-              <p>Trade With Your Community.</p>
+              {cityInputValue && (
+                <span className="location-type">
+                  {isIPLocation ? '(IP-based)' : '(Precise)'}
+                </span>
+              )}
+            </LocationIndicator2>
+            </ProfileSection>         
+              
+          </>
+        ) : (
+          <>
 
-              <ActionButtonContainer>
-                <ActionButton theme={currentStyle} onClick={handleOpenShop}>
-                  Open Up Shop
-                </ActionButton>
-                <ActionButton 
-                  theme={currentStyle}
-                  onClick={handleLogin}
-                  variant="outline"
-                >
-                  Sign In
-                </ActionButton>
-              </ActionButtonContainer>
-            </>
-          )}
+            <LocationIndicator2 theme={currentStyle}>
+              <button 
+                className="location-icon-btn"
+                onClick={handleLocationToCity}
+                disabled={isConvertingToCity}
+                title="Get region from current location"
+              >
+                {isConvertingToCity ? (
+                  <div className="updating-spinner" />
+                ) : (
+                  <Navigation size={16} />
+                )}
+              </button>
+              
+              <input
+                type="text"
+                className="location-input"
+                value={
+                  cityInputValue ? 
+                    cityInputValue :
+                    (effectiveLocation && isIPLocation ? 
+                      `${effectiveLocation.city}, ${effectiveLocation.region}` : 
+                      'Load Location')
+                }
+                onChange={(e) => setCityInputValue(e.target.value)}
+                placeholder="Load Location"
+                readOnly
+              />
+              
+              {cityInputValue && (
+                <span className="location-type">
+                  {isIPLocation ? '(IP-based)' : '(Precise)'}
+                </span>
+              )}
+            </LocationIndicator2>
 
-
-        </WelcomeSection>
+            <h1>Welcome to KalKode</h1>
+            <p>Trade With Your Community.</p>
+        
+            <ActionButtonContainer>
+              <ActionButton theme={currentStyle} onClick={handleOpenShop}>
+                Open Up Shop
+              </ActionButton>
+              <ActionButton 
+                theme={currentStyle}
+                onClick={handleLogin}
+                variant="outline"
+              >
+                Sign In
+              </ActionButton>
+            </ActionButtonContainer>
+          </>
+        )}
+      </WelcomeSection>
 
         <TabContainer>
           <Tab 
