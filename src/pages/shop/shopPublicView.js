@@ -9,7 +9,6 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase/config';
 import { DEFAULT_THEME } from '../../theme/config/themes';
 import BuyDialog from '../../components/Transaction/BuyDialog';
-import OrderChat from '../../components/Chat/OrderChat';
 
 import { useLocation } from '../../contexts/LocationContext';
 import { getDistance } from 'geolib';
@@ -1222,8 +1221,9 @@ const ShopPublicView = () => {
   const [isPinned, setIsPinned] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentImageIndices, setCurrentImageIndices] = useState({});
-  const [chatOpen, setChatOpen] = useState(false);
-  const [selectedChatItem, setSelectedChatItem] = useState(null);
+
+  const [selectedBuyItem, setSelectedBuyItem] = useState(null);
+  const [buyDialogOpen, setBuyDialogOpen] = useState(false);
 
   // OPTIMIZED: Fetch data immediately, use cache
   useEffect(() => {
@@ -1594,9 +1594,10 @@ if (error) {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-
-                        setSelectedChatItem(item);
-                        setChatOpen(true);
+                      
+                        // Open BuyDialog instead of OrderChat
+                        setSelectedBuyItem(item);
+                        setBuyDialogOpen(true);
                       }}
                     >
                       <ShoppingCart size={14} />
@@ -1758,26 +1759,22 @@ const renderHomeView = () => {
           </FloatingButton>
         </FloatingControls>
 
-        <ChatOverlay 
-          isOpen={chatOpen} 
-          onClick={() => {
-            setChatOpen(false);
-            setSelectedChatItem(null);
-          }}
-        />
-
         <React.Suspense fallback={null}>
-          {selectedChatItem && (
-            <OrderChat 
-              isOpen={chatOpen} 
+          {selectedBuyItem && buyDialogOpen && (
+            <BuyDialog 
+              item={selectedBuyItem}
+              sellerId={shopId}
               onClose={() => {
-                setChatOpen(false);
-                setSelectedChatItem(null);
-              }} 
-              item={selectedChatItem}
-              shopId={shopId}
-              shopName={shopData?.name}
-              theme={shopData?.theme}
+                setBuyDialogOpen(false);
+                setSelectedBuyItem(null);
+              }}
+              onTransactionCreated={(transactionId) => {
+                console.log('Transaction created:', transactionId);
+                setBuyDialogOpen(false);
+                setSelectedBuyItem(null);
+                // Optionally navigate to transaction page
+                // navigate(`/transactions/${transactionId}`);
+              }}
             />
           )}
         </React.Suspense>

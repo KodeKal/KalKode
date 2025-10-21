@@ -361,13 +361,18 @@ const WelcomeSection = styled.section`
     line-height: 1.5;
     max-width: 600px;
     margin: 0 auto;
-    color: ${props => `${props.theme?.colors?.text}CC` || 'rgba(255, 255, 255, 0.8)'};
     padding: 0 1rem;
+    background: linear-gradient(135deg, #C0C0C0 0%, #E8E8E8 50%, #A8A8A8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 500;
+    letter-spacing: 0.5px;
     
     @media (min-width: 768px) {
       font-size: 1.2rem;
       line-height: 1.6;
       max-width: 800px;
+      letter-spacing: 0.8px;
     }
   }
 `;
@@ -3082,6 +3087,24 @@ useEffect(() => {
         ) : (
           <>
 
+            <h1>Welcome to KalKode</h1>
+            <p>Your Community Marketplace.</p>
+
+            
+        
+            <ActionButtonContainer>
+              <ActionButton theme={currentStyle} onClick={handleOpenShop}>
+                Open Up Shop
+              </ActionButton>
+              <ActionButton 
+                theme={currentStyle}
+                onClick={handleLogin}
+                variant="outline"
+              >
+                Sign In
+              </ActionButton>
+            </ActionButtonContainer>
+
             <LocationIndicator2 theme={currentStyle}>
               <button 
                 className="location-icon-btn"
@@ -3117,22 +3140,6 @@ useEffect(() => {
                 </span>
               )}
             </LocationIndicator2>
-
-            <h1>Welcome to KalKode</h1>
-            <p>Trade With Your Community.</p>
-        
-            <ActionButtonContainer>
-              <ActionButton theme={currentStyle} onClick={handleOpenShop}>
-                Open Up Shop
-              </ActionButton>
-              <ActionButton 
-                theme={currentStyle}
-                onClick={handleLogin}
-                variant="outline"
-              >
-                Sign In
-              </ActionButton>
-            </ActionButtonContainer>
           </>
         )}
       </WelcomeSection>

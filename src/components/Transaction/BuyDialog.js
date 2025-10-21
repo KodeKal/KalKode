@@ -490,15 +490,6 @@ const BuyDialog = ({ item, sellerId, onClose, onTransactionCreated }) => {
                `Request ${requestedQuantity} item${requestedQuantity > 1 ? 's' : ''} ($${totalPrice.toFixed(2)})`}
             </Button>
             
-            <div style={{
-              fontSize: '0.85rem',
-              opacity: 0.8,
-              textAlign: 'center',
-              marginTop: '1rem',
-              lineHeight: '1.4'
-            }}>
-              The seller will review your quantity request and can accept or adjust the quantity before you make payment.
-            </div>
           </>
         )}
         
