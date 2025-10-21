@@ -2992,6 +2992,49 @@ useEffect(() => {
       </Header>
 
       <MainContent isAuthenticated={isAuthenticated}>
+
+        <LocationIndicator2 theme={currentStyle} isPinned={isCityPinned}>
+          <button 
+            className="location-icon-btn"
+            onClick={handleLocationToCity}
+            disabled={isConvertingToCity}
+            title="Get region from current location"
+          >
+            {isConvertingToCity ? (
+              <div className="updating-spinner" />
+            ) : (
+              <Navigation size={20} />
+            )}
+          </button>
+          
+          <input
+            type="text"
+            className="location-input"
+            value={
+              cityInputValue ? 
+                (isIPLocation ? `${cityInputValue} - IP-based` : `${cityInputValue} - Percise` ) :
+                (effectiveLocation && isIPLocation ? 
+                  `${effectiveLocation.city}, ${effectiveLocation.region} (IP-based)` : 
+                  'Load Location')
+            }
+            onChange={(e) => setCityInputValue(e.target.value)}
+            placeholder="Load Location"
+            readOnly
+          />
+
+          <button
+            className="pin-icon-btn"
+            onClick={handleToggleCityPin}
+            disabled={!cityRegion || cityRegion === 'Not available' || cityRegion === 'Error'}
+            title={isCityPinned ? "Unpin location" : "Pin location"}
+          >
+            <Pin 
+              size={18} 
+              fill={isCityPinned ? currentStyle.colors.accent : "none"}
+            />
+          </button>
+        </LocationIndicator2>
+        
         <WelcomeSection theme={currentStyle}>
           {isAuthenticated && shopData ? (
             <>
@@ -3072,47 +3115,7 @@ useEffect(() => {
         </TabContainer>
 
 
-        <LocationIndicator2 theme={currentStyle} isPinned={isCityPinned}>
-          <button 
-            className="location-icon-btn"
-            onClick={handleLocationToCity}
-            disabled={isConvertingToCity}
-            title="Get region from current location"
-          >
-            {isConvertingToCity ? (
-              <div className="updating-spinner" />
-            ) : (
-              <Navigation size={20} />
-            )}
-          </button>
-          
-          <input
-            type="text"
-            className="location-input"
-            value={
-              cityInputValue ? 
-                (isIPLocation ? `${cityInputValue} - IP-based` : `Nearby Area: ${cityInputValue}` ) :
-                (effectiveLocation && isIPLocation ? 
-                  `${effectiveLocation.city}, ${effectiveLocation.region} (IP-based)` : 
-                  'Load Locations')
-            }
-            onChange={(e) => setCityInputValue(e.target.value)}
-            placeholder="Load Locations"
-            readOnly
-          />
-
-          <button
-            className="pin-icon-btn"
-            onClick={handleToggleCityPin}
-            disabled={!cityRegion || cityRegion === 'Not available' || cityRegion === 'Error'}
-            title={isCityPinned ? "Unpin location" : "Pin location"}
-          >
-            <Pin 
-              size={18} 
-              fill={isCityPinned ? currentStyle.colors.accent : "none"}
-            />
-          </button>
-        </LocationIndicator2>
+        
 
 
         {/* Nearby Items Tab */}
