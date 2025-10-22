@@ -1767,6 +1767,7 @@ useEffect(() => {
     const newService = {
       id: Date.now().toString(),
       name: 'Service Name',
+      price: '',
       description: '',
       category: 'Other',
       images: [null, null, null],
@@ -1905,12 +1906,14 @@ const handleSave = async () => {
     name: finalShopName,
     theme: selectedTheme,
     selectedHomeTemplate: 1,
-    homeSections: defaultSections, // ADD THIS LINE
+    homeSections: defaultSections,
     layout: {
       namePosition: shopData.layout.namePosition,
       tabPosition: 'top',
       nameSize: shopNameFontSize
     },
+    items: shopData.items || [], // Ensure items array exists
+    services: shopData.services || [], // ADD: Ensure services array exists
     createdAt: new Date().toISOString()
   };
 
@@ -2423,8 +2426,8 @@ const handleSave = async () => {
                         }
                       </div>
                       <div className="item-price">
-                        {currentService.slots ? `${currentService.slots} slots` : 
-                          <span className="empty-text">0 slots</span>}
+                        {currentService.price ? `$${parseFloat(currentService.price).toFixed(2)}` : 
+      <                   span className="empty-text">$0.00</span>}
                       </div>
                     </MobileTemplateContent>
                   </MobileTemplateCard>
@@ -2542,6 +2545,13 @@ const handleSave = async () => {
                             theme={selectedTheme}
                           />
                           <ValidatedEditableText
+                            value={service.price}
+                            onChange={(value) => handleServiceUpdate(service.id, { price: value })}
+                            placeholder="Cost"
+                            validationRules={VALIDATION_RULES.item.price}
+                            theme={selectedTheme}
+                          />
+                          <ValidatedEditableText
                             value={service.description}
                             onChange={(value) => handleServiceUpdate(service.id, { description: value })}
                             placeholder="Service Description"
@@ -2561,14 +2571,6 @@ const handleSave = async () => {
                             ))}
                           </CategorySelect>
                           <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ 
-                              display: 'block',
-                              marginBottom: '0.5rem',
-                              fontSize: '0.9rem',
-                              color: selectedTheme?.colors?.text
-                            }}>
-                              Available Slots
-                            </label>
                             <QuantitySelector 
                               value={parseInt(service.slots) || 1}
                               onChange={(value) => handleServiceUpdate(service.id, { slots: value })}
@@ -2703,15 +2705,13 @@ const handleSave = async () => {
               theme={selectedTheme}
             />
 
-            {!editingItem.isService && (
-              <ValidatedEditableText
-                value={editingItem.price}
-                onChange={(value) => setEditingItem({ ...editingItem, price: value })}
-                placeholder="Price"
-                validationRules={VALIDATION_RULES.item.price}
-                theme={selectedTheme}
-              />
-            )}
+            <ValidatedEditableText
+              value={editingItem.price}
+              onChange={(value) => setEditingItem({ ...editingItem, price: value })}
+              placeholder="Cost"
+              validationRules={VALIDATION_RULES.item.price}
+              theme={selectedTheme}
+            />
 
             <ValidatedEditableText
               value={editingItem.description}
@@ -2735,14 +2735,6 @@ const handleSave = async () => {
             </CategorySelect>
             
             <div style={{ marginBottom: '1rem' }}>
-              <label style={{ 
-                display: 'block',
-                marginBottom: '0.5rem',
-                fontSize: '0.9rem',
-                color: selectedTheme?.colors?.text
-              }}>
-                {editingItem.isService ? 'Available Slots' : 'Quantity'}
-              </label>
               <QuantitySelector 
                 value={parseInt(editingItem.isService ? editingItem.slots : editingItem.quantity) || 1}
                 onChange={(value) => setEditingItem({ 

@@ -2,6 +2,9 @@
 import React, { useRef, useState } from 'react';
 import styled from 'styled-components';
 import { Plus, X } from 'lucide-react';
+import { compressImage } from '../../../../utils/imageCompression';
+
+
 
 const ImageContainer = styled.div`
   position: relative;
@@ -69,26 +72,47 @@ const EditableImage = ({
     inputRef.current?.click();
   };
 
-  const handleImageChange = (e) => {
+  // UPDATE handleImageChange function
+  const handleImageChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Validate file
-    if (file.size > 5 * 1024 * 1024) { // 5MB
-      alert('File size must be less than 5MB');
+  
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
       return;
     }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      onChange({
-        file: file,
-        preview: reader.result,
-        type: file.type,
-        name: file.name
-      });
-    };
-    reader.readAsDataURL(file);
+  
+    // Validate original file size (before compression)
+    if (file.size > 10 * 1024 * 1024) { // 10MB max for original
+      alert('Original file size must be less than 10MB');
+      return;
+    }
+  
+    try {
+      // Show loading state (optional - add to component state)
+      // setCompressing(true);
+    
+      // Compress the image
+      const compressedFile = await compressImage(file);
+    
+      // Create preview from compressed file
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onChange({
+          file: compressedFile, // Use compressed file
+          preview: reader.result,
+          type: compressedFile.type,
+          name: compressedFile.name
+        });
+      };
+      reader.readAsDataURL(compressedFile);
+    } catch (error) {
+      console.error('Error compressing image:', error);
+      alert('Failed to process image. Please try another file.');
+    } finally {
+      // setCompressing(false);
+    }
   };
 
   const handleRemove = (e) => {

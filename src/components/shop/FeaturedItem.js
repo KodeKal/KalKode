@@ -671,10 +671,8 @@ const FeaturedItem = ({ item, showDistance, theme, onItemClick }) => {
             onClick={(e) => {
               e.stopPropagation();
               if (item.shopUsername) {
-                // Navigate to subdomain
                 window.location.href = getSubdomainUrl(item.shopUsername);
               } else {
-                // Fallback to old route if no username
                 navigate(`/shop/${item.shopId}/view`);
               }
             }}
@@ -691,6 +689,29 @@ const FeaturedItem = ({ item, showDistance, theme, onItemClick }) => {
                 {item.formattedDistance}
               </div>
             </>
+          )}
+
+          {/* ADD: Show stock/slots status */}
+          {item.isService ? (
+            // For services, check slots
+            parseInt(item.slots) > 0 && (
+              <>
+                <span className="divider">•</span>
+                <div className="distance">
+                  {item.slots} {parseInt(item.slots) === 1 ? 'slot' : 'slots'}
+                </div>
+              </>
+            )
+          ) : (
+            // For items, check quantity
+            parseInt(item.quantity) > 0 && (
+              <>
+                <span className="divider">•</span>
+                <div className="distance">
+                  {item.quantity} in stock
+                </div>
+              </>
+            )
           )}
         </div>
       </ItemInfo>

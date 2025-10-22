@@ -1914,6 +1914,7 @@ const [serviceCategories, setServiceCategories] = useState({
   'Other': []
 });
 
+// UPDATE the filtering logic in loadCategorizedServices
 const loadCategorizedServices = async () => {
   try {
     setLoading(true);
@@ -1925,6 +1926,7 @@ const loadCategorizedServices = async () => {
     const filteredServices = allServices.filter(service => {
       const isNotCurrentUser = service.shopId !== currentUserId;
       const hasImages = service.images && service.images.length > 0 && service.images.some(img => img);
+      // CHANGE: Check slots instead of quantity
       const hasValidSlots = service.slots && !isNaN(parseInt(service.slots)) && parseInt(service.slots) > 0;
       const isActive = !service.deleted;
       
@@ -2820,7 +2822,12 @@ useEffect(() => {
 
   // Adjust quantity
   const adjustQuantity = (delta) => {
-    const maxQuantity = parseInt(zoomedItem?.quantity) || 1;
+    const maxQuantity = parseInt(
+      zoomedItem.isService ? 
+        zoomedItem.slots : 
+        zoomedItem.quantity
+    ) || 1;
+    
     const newQuantity = Math.max(1, Math.min(maxQuantity, orderQuantity + delta));
     setOrderQuantity(newQuantity);
   };
@@ -3350,7 +3357,7 @@ useEffect(() => {
                       key={`search-${service.shopId}-${service.id}`} 
                       item={{
                         ...service,
-                        price: `${service.slots} slots`, // Display slots instead of price
+                        price: `${service.price}`, // Display slots instead of price
                         isService: true
                       }}
                       theme={currentStyle}
@@ -3379,7 +3386,7 @@ useEffect(() => {
                       <FeaturedItem
                         item={{
                           ...service,
-                          price: `${service.slots} slots`,
+                          price: `${service.price}`,
                           isService: true
                         }}
                         theme={currentStyle}
@@ -3396,7 +3403,7 @@ useEffect(() => {
                       key={`featured-mobile-${service.shopId}-${service.id}`}
                       item={{
                         ...service,
-                        price: `${service.slots} slots`,
+                        price: `${service.price}`,
                         isService: true
                       }}
                       theme={currentStyle}
@@ -3428,7 +3435,7 @@ useEffect(() => {
                             <FeaturedItem
                               item={{
                                 ...service,
-                                price: `${service.slots} slots`,
+                                price: `${service.price}`,
                                 isService: true
                               }}
                               theme={currentStyle}
@@ -3445,7 +3452,7 @@ useEffect(() => {
                             key={`${categoryName}-mobile-${service.shopId}-${service.id}`}
                             item={{
                               ...service,
-                              price: `${service.slots} slots`,
+                              price: `${service.price}`,
                               isService: true
                             }}
                             theme={currentStyle}
@@ -3958,28 +3965,52 @@ useEffect(() => {
                   </>
                 )}
                 
-                {zoomedItem.quantity !== undefined && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <div style={{
-                      width: '5px',
-                      height: '5px',
-                      borderRadius: '50%',
-                      background: parseInt(zoomedItem.quantity) > 0 ? '#4CAF50' : '#FF5252'
-                    }} />
-                    <span style={{
-                      color: parseInt(zoomedItem.quantity) > 0 ? '#4CAF50' : '#FF5252',
-                      fontWeight: '500'
-                    }}>
-                      {parseInt(zoomedItem.quantity) > 0 ? 
-                        `${zoomedItem.quantity} in stock` : 
-                        'Out of stock'
-                      }
-                    </span>
-                  </div>
+                {/* UPDATE: Stock/Slots Status in zoomed view */}
+                {zoomedItem.isService ? (
+                  // For services, show slots availability
+                  parseInt(zoomedItem.slots) !== undefined && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <div style={{
+                        width: '5px',
+                        height: '5px',
+                        borderRadius: '50%',
+                        background: parseInt(zoomedItem.slots) > 0 ? '#4CAF50' : '#FF5252'
+                      }} />
+                      <span style={{
+                        color: parseInt(zoomedItem.slots) > 0 ? '#4CAF50' : '#FF5252',
+                        fontWeight: '500'
+                      }}>
+                        {parseInt(zoomedItem.slots) > 0 ? 
+                          `${zoomedItem.slots} ${parseInt(zoomedItem.slots) === 1 ? 'slot' : 'slots'} available` : 
+                          'No slots available'
+                        }
+                      </span>
+                    </div>
+                  )
+                ) : (
+                  // For items, show quantity
+                  zoomedItem.quantity !== undefined && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <div style={{
+                        width: '5px',
+                        height: '5px',
+                        borderRadius: '50%',
+                        background: parseInt(zoomedItem.quantity) > 0 ? '#4CAF50' : '#FF5252'
+                      }} />
+                      <span style={{
+                        color: parseInt(zoomedItem.quantity) > 0 ? '#4CAF50' : '#FF5252',
+                        fontWeight: '500'
+                      }}>
+                        {parseInt(zoomedItem.quantity) > 0 ? 
+                          `${zoomedItem.quantity} in stock` : 
+                          'Out of stock'
+                        }
+                      </span>
+                    </div>
+                  )
                 )}
               </div>
               
-              {/* Quantity Selector */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -3993,9 +4024,9 @@ useEffect(() => {
                   fontWeight: '600',
                   color: currentStyle?.colors?.text || '#FFFFFF'
                 }}>
-                  Qty
+                  {zoomedItem.isService ? 'Slots' : 'Qty'}
                 </span>
-                
+
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <button 
                     onClick={() => adjustQuantity(-1)}
@@ -4029,7 +4060,7 @@ useEffect(() => {
                 
                   <button 
                     onClick={() => adjustQuantity(1)}
-                    disabled={orderQuantity >= parseInt(zoomedItem.quantity || 1)}
+                    disabled={orderQuantity >= parseInt(zoomedItem.isService ? zoomedItem.slots : zoomedItem.quantity || 1)}
                     style={{
                       width: '24px',
                       height: '24px',
@@ -4040,8 +4071,8 @@ useEffect(() => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      cursor: orderQuantity >= parseInt(zoomedItem.quantity || 1) ? 'not-allowed' : 'pointer',
-                      opacity: orderQuantity >= parseInt(zoomedItem.quantity || 1) ? 0.3 : 1
+                      cursor: orderQuantity >= parseInt(zoomedItem.isService ? zoomedItem.slots : zoomedItem.quantity || 1) ? 'not-allowed' : 'pointer',
+                      opacity: orderQuantity >= parseInt(zoomedItem.isService ? zoomedItem.slots : zoomedItem.quantity || 1) ? 0.3 : 1
                     }}
                   >
                     <Plus size={12} />
@@ -4052,15 +4083,21 @@ useEffect(() => {
               {/* Order Button */}
               <button 
                 onClick={handleDirectOrder}
-                disabled={parseInt(zoomedItem.quantity || 0) < 1 || orderQuantity > parseInt(zoomedItem.quantity || 0)}
+                disabled={
+                  zoomedItem.isService ? 
+                    (parseInt(zoomedItem.slots || 0) < 1 || orderQuantity > parseInt(zoomedItem.slots || 0)) :
+                    (parseInt(zoomedItem.quantity || 0) < 1 || orderQuantity > parseInt(zoomedItem.quantity || 0))
+                }
                 style={{
                   width: '100%',
                   padding: '0.75rem',
                   borderRadius: '8px',
                   border: 'none',
-                  background: parseInt(zoomedItem.quantity || 0) < 1 ? 
-                    `${currentStyle?.colors?.accent || '#800000'}40` : 
-                    currentStyle?.colors?.accent || '#800000',
+                  background: (zoomedItem.isService ? 
+                    parseInt(zoomedItem.slots || 0) : 
+                    parseInt(zoomedItem.quantity || 0)) < 1 ? 
+                      `${currentStyle?.colors?.accent || '#800000'}40` : 
+                      currentStyle?.colors?.accent || '#800000',
                   color: 'white',
                   fontSize: '0.9rem',
                   fontWeight: '600',
@@ -4068,19 +4105,23 @@ useEffect(() => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.5rem',
-                  cursor: parseInt(zoomedItem.quantity || 0) < 1 ? 'not-allowed' : 'pointer',
+                  cursor: (zoomedItem.isService ? 
+                    parseInt(zoomedItem.slots || 0) : 
+                    parseInt(zoomedItem.quantity || 0)) < 1 ? 'not-allowed' : 'pointer',
                   transition: 'all 0.3s'
                 }}
               >
-                {parseInt(zoomedItem.quantity || 0) < 1 ? (
+                {(zoomedItem.isService ? 
+                  parseInt(zoomedItem.slots || 0) : 
+                  parseInt(zoomedItem.quantity || 0)) < 1 ? (
                   <>
                     <X size={16} />
-                    Out of Stock
+                    {zoomedItem.isService ? 'No Slots Available' : 'Out of Stock'}
                   </>
                 ) : (
                   <>
                     <ShoppingCart size={16} />
-                    Order {orderQuantity > 1 && `${orderQuantity} `}· ${(parseFloat(zoomedItem.price || 0) * orderQuantity).toFixed(2)}
+                    {zoomedItem.isService ? 'Book' : 'Order'} {orderQuantity > 1 && `${orderQuantity} `}· ${(parseFloat(zoomedItem.price || 0) * orderQuantity).toFixed(2)}
                   </>
                 )}
               </button>

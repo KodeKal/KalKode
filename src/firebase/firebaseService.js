@@ -97,6 +97,7 @@ export const getShopByUsername = async (username) => {
 
 // ============= UPDATE EXISTING FUNCTIONS =============
 
+// UPDATE saveShopData to include services
 export const saveShopData = async (userId, data) => {
   try {
     const hasShop = await checkExistingShop(userId);
@@ -112,7 +113,6 @@ export const saveShopData = async (userId, data) => {
       username = await generateUsername(data.name);
     }
 
-    // Log homeWidgets to verify they exist
     console.log('Home widgets being saved:', data.homeWidgets);
 
     // Clean data before saving to Firestore
@@ -123,7 +123,7 @@ export const saveShopData = async (userId, data) => {
       username: username,
       theme: cleanDataForFirestore(data.theme) || {},
       layout: cleanDataForFirestore(data.layout) || {},
-      homeWidgets: data.homeWidgets || [], // ADD THIS LINE
+      homeWidgets: data.homeWidgets || [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       userId: userId,
@@ -140,6 +140,19 @@ export const saveShopData = async (userId, data) => {
         tags: item.tags || [],
         images: []
       })) || [],
+      // ADD: Services array
+      services: data.services?.map(service => ({
+        id: service.id || Date.now().toString(),
+        name: service.name || '',
+        price: service.price || '',
+        description: service.description || '',
+        category: service.category || 'Other',
+        slots: service.slots || 1,
+        currentImageIndex: service.currentImageIndex || 0,
+        address: service.address || '',
+        coordinates: service.coordinates || null,
+        images: []
+      })) || [],
       profile: null
     };
 
@@ -147,7 +160,9 @@ export const saveShopData = async (userId, data) => {
       userId,
       username: shopData.username,
       name: shopData.name,
-      widgetCount: shopData.homeWidgets?.length || 0
+      widgetCount: shopData.homeWidgets?.length || 0,
+      itemCount: shopData.items?.length || 0,
+      serviceCount: shopData.services?.length || 0 // ADD log
     });
 
     // Save initial clean data
@@ -159,12 +174,9 @@ export const saveShopData = async (userId, data) => {
       try {
         let profileUrl;
 
-        // Handle different profile formats
         if (typeof data.profile === 'string') {
-          // Already a URL
           profileUrl = data.profile;
         } else if (data.profile.file instanceof File || data.profile.file instanceof Blob) {
-          // Upload file
           profileUrl = await uploadImageWithCORS(
             data.profile.file,
             `shops/${userId}/profile/profile-${Date.now()}`
@@ -177,7 +189,7 @@ export const saveShopData = async (userId, data) => {
             profile: profileUrl,
             updatedAt: new Date().toISOString()
           });
-          console.log('Profile image uploaded:', profileUrl); // Debug log
+          console.log('Profile image uploaded:', profileUrl);
         }
       } catch (profileError) {
         console.error('Profile upload failed:', profileError);
@@ -226,8 +238,49 @@ export const saveShopData = async (userId, data) => {
       });
     }
 
+    // ADD: Service images upload
+    if (Array.isArray(data.services)) {
+      const processedServices = await Promise.all(data.services.map(async (service) => {
+        const processedService = {
+          id: service.id || Date.now().toString(),
+          name: service.name || '',
+          price: service.price || '',
+          description: service.description || '',
+          category: service.category || 'Other',
+          currentImageIndex: service.currentImageIndex || 0,
+          slots: service.slots || 1,
+          address: service.address || '',
+          coordinates: service.coordinates || null,
+          images: []
+        };
+      
+        if (Array.isArray(service.images)) {
+          const imageUrls = await Promise.all(service.images.map(async (image, index) => {
+            if (!image?.file) return null;
+
+            return await uploadImageWithCORS(
+              image.file,
+              `shops/${userId}/services/${processedService.id}/image-${index}-${Date.now()}`
+            );
+          }));
+
+          processedService.images = imageUrls.filter(Boolean);
+        }
+      
+        return processedService;
+      }));
+      
+      shopData.services = processedServices;
+
+      // Update services in Firestore
+      await updateDoc(shopRef, {
+        services: processedServices,
+        updatedAt: new Date().toISOString()
+      });
+    }
+
     console.log('Shop data saved successfully with username:', shopData.username);
-    return { ...shopData, username }; // Return username in response
+    return { ...shopData, username };
     
   } catch (error) {
     console.error('Error in saveShopData:', error);
@@ -280,6 +333,7 @@ export const getFeaturedServices = async (limitCount = 6) => {
   }
 };
 // UPDATE: saveInitialShop to include username and fix locations
+// UPDATE saveInitialShop to handle services
 export const saveInitialShop = async (userId, data) => {
   try {
     const batch = writeBatch(db);
@@ -297,7 +351,7 @@ export const saveInitialShop = async (userId, data) => {
       name: data.name || '',
       description: data.description || '',
       mission: data.mission || '',
-      username: username, // ADD USERNAME
+      username: username,
       theme: cleanDataForFirestore(data.theme) || {},
       layout: cleanDataForFirestore(data.layout) || {},
       status: 'active',
@@ -307,6 +361,7 @@ export const saveInitialShop = async (userId, data) => {
       updatedAt: new Date().toISOString(),
       stats: {
         items: 0,
+        services: 0, // ADD services count
         views: 0,
         likes: 0
       }
@@ -314,9 +369,9 @@ export const saveInitialShop = async (userId, data) => {
 
     batch.set(shopRef, shopDoc);
 
-    // 2. Process items - DECLARE items and locations here
+    // 2. Process items
     const items = [];
-    const locations = []; // FIX: Declare locations array
+    const locations = [];
 
     if (Array.isArray(data.items)) {
       for (const item of data.items) {
@@ -370,7 +425,61 @@ export const saveInitialShop = async (userId, data) => {
       }
     }
 
-    // 3. Upload and set profile image if exists
+    // ADD: 3. Process services
+    const services = [];
+    if (Array.isArray(data.services)) {
+      for (const service of data.services) {
+        const serviceId = `${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const serviceRef = doc(db, 'services', serviceId);
+
+        // Process images
+        const imageUrls = await Promise.all(service.images.map(async (image, index) => {
+          if (!image?.file) return null;
+          return await uploadImageWithCORS(
+            image.file,
+            `shops/${userId}/services/${serviceId}/image-${index}-${Date.now()}`
+          );
+        }));
+
+        const serviceDoc = {
+          id: serviceId,
+          shopId: userId,
+          name: service.name || '',
+          price: service.price || '',
+          description: service.description || '',
+          category: service.category || 'Other',
+          images: imageUrls.filter(Boolean),
+          status: 'active',
+          address: service.address || '',
+          coordinates: service.coordinates || null,
+          slots: service.slots || 1,
+          views: 0,
+          likes: 0,
+          deleted: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        batch.set(serviceRef, serviceDoc);
+        services.push(serviceDoc);
+
+        // If service has location, create location document
+        if (service.coordinates) {
+          const locationRef = doc(db, 'locations', serviceId);
+          const locationDoc = {
+            serviceId,
+            shopId: userId,
+            address: service.address,
+            coordinates: service.coordinates,
+            createdAt: new Date().toISOString()
+          };
+          batch.set(locationRef, locationDoc);
+          locations.push(locationDoc);
+        }
+      }
+    }
+
+    // 4. Upload and set profile image if exists
     if (data.profile?.file) {
       const profileUrl = await uploadImageWithCORS(
         data.profile.file,
@@ -381,25 +490,29 @@ export const saveInitialShop = async (userId, data) => {
       }
     }
 
-    // 4. Update stats
+    // 5. Update stats
     const statsRef = doc(db, 'stats', userId);
     batch.set(statsRef, {
       shopId: userId,
       views: 0,
       likes: 0,
       items: items.length,
+      services: services.length, // ADD services count
       lastUpdated: new Date().toISOString()
     });
 
-    // 5. Commit everything
+    // 6. Commit everything
     await batch.commit();
 
     console.log('Initial shop saved with username:', username);
+    console.log('Items saved:', items.length);
+    console.log('Services saved:', services.length); // ADD log
 
     return {
       ...shopDoc,
       items,
-      locations // Now this is properly defined
+      services, // ADD services to return
+      locations
     };
 
   } catch (error) {

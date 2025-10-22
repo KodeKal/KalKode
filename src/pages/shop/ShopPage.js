@@ -21,6 +21,7 @@ import QuantitySelector from '../../components/shop/QuantitySelector';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 import { signOut } from 'firebase/auth';
 import { RefreshCw, Pin, LogOut } from 'lucide-react';
+import { compressProfileImage } from '../../utils/imageCompression';
 import { saveHomePageConfig } from '../../firebase/firebaseService';
 import SubdomainInfo from '../../components/SubdomainDisplay';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
@@ -2231,6 +2232,7 @@ const handleAddService = () => {
   const newService = {
     id: Date.now().toString(),
     name: 'Service Name',
+    price: '',
     description: '',
     category: 'Other',
     images: [null, null, null],
@@ -2630,6 +2632,14 @@ useEffect(() => {
           data.items = data.items.filter(item => !item.deleted);
         }
         
+        // ADD: Filter out deleted services
+        if (data.services) {
+          data.services = data.services.filter(service => !service.deleted);
+        } else {
+          // Initialize services array if it doesn't exist
+          data.services = [];
+        }
+        
         setShopData(data);
         setOriginalShopData(JSON.parse(JSON.stringify(data)));
         
@@ -2641,11 +2651,9 @@ useEffect(() => {
         if (data.homeSections && data.homeSections.length > 0) {
           setHomeSections(data.homeSections);
         } else {
-          // Initialize with default sections
           const defaultSections = getDefaultSectionsForTemplate(data.selectedHomeTemplate || 1);
           setHomeSections(defaultSections);
           
-          // Auto-save the initialized sections
           const shopRef = doc(db, 'shops', userId);
           await updateDoc(shopRef, {
             homeSections: defaultSections,
@@ -2654,6 +2662,11 @@ useEffect(() => {
           });
           console.log('✅ Initialized home sections');
         }
+        
+        console.log('✅ Shop data loaded:', {
+          items: data.items?.length || 0,
+          services: data.services?.length || 0
+        });
       }
       setIsReady(true);
     } catch (error) {
@@ -2854,33 +2867,50 @@ const getDefaultSectionsForTemplate = (templateId) => {
   };
 
   // Handle image uploads (these still need to upload to storage)
+  // REPLACE the entire handleImageUpload function
   const handleImageUpload = async (itemId, imageIndex, file) => {
     try {
       setUploading(prev => ({ ...prev, [itemId]: true }));
-      
+
+      // ADD: Import compression utility
+      const { compressImage } = await import('../../utils/imageCompression');
+
+      // Compress the image before upload
+      const compressedFile = await compressImage(file);
+
       const storageRef = ref(
         storage, 
         `shops/${auth.currentUser.uid}/items/${itemId}/image-${imageIndex}-${Date.now()}`
       );
-      
-      // Also update the direct upload in ShopPage.js handleImageUpload
-      // Replace the metadata object with:
+
       const metadata = {
-        contentType: file.type || 'image/jpeg',
+        contentType: compressedFile.type || 'image/jpeg',
         cacheControl: 'public, max-age=31536000'
       };
 
-      const snapshot = await uploadBytes(storageRef, file, metadata);
+      const snapshot = await uploadBytes(storageRef, compressedFile, metadata);
       const imageUrl = await getDownloadURL(snapshot.ref);
-      
-      // Update local state only
-      const currentItem = shopData.items.find(item => item.id === itemId);
-      const newImages = [...currentItem.images];
-      newImages[imageIndex] = imageUrl;
-      
-      handleItemUpdate(itemId, { images: newImages });
+
+      // FIX: Check both items and services
+      const currentItem = shopData.items?.find(item => item.id === itemId);
+      const currentService = shopData.services?.find(service => service.id === itemId);
+
+      if (currentItem) {
+        // Update item image
+        const newImages = [...currentItem.images];
+        newImages[imageIndex] = imageUrl;
+        handleItemUpdate(itemId, { images: newImages });
+      } else if (currentService) {
+        // Update service image
+        const newImages = [...currentService.images];
+        newImages[imageIndex] = imageUrl;
+        handleServiceUpdate(itemId, { images: newImages });
+      } else {
+        console.error('Item/Service not found:', itemId);
+      }
     } catch (error) {
       console.error('Error uploading image:', error);
+      alert('Failed to upload image. Please try again.');
     } finally {
       setUploading(prev => ({ ...prev, [itemId]: false }));
     }
@@ -3103,47 +3133,47 @@ const initializeHomeSections = (data) => {
                         objectFit: 'cover',
                         cursor: 'pointer'
                       }}
-                      onClick={() => {
+                      onClick={async () => {
                         const input = document.createElement('input');
                         input.type = 'file';
                         input.accept = 'image/*';
                         input.onchange = async (e) => {
                           if (e.target.files?.[0]) {
                             try {
-                              const file = e.target.files[0];
+                              const file = e.target.files[0];                     
+
+                              // Compress profile image (smaller size for profiles)
+                              const compressedFile = await compressProfileImage(file);                      
 
                               // Create preview
                               const reader = new FileReader();
                               reader.onloadend = () => {
-                                // Update local state with preview first for immediate feedback
                                 handleUpdateShop({ 
                                   profile: {
-                                    file: file,
+                                    file: compressedFile, // Use compressed
                                     preview: reader.result,
-                                    type: file.type,
-                                    name: file.name
+                                    type: compressedFile.type,
+                                    name: compressedFile.name
                                   }
                                 });
                               };
-                              reader.readAsDataURL(file);
+                              reader.readAsDataURL(compressedFile);                     
 
                               // Upload to Firebase
                               const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-                              const { storage } = await import('../../firebase/config');
-                              const { auth } = await import('../../firebase/config');
+                              const { storage, auth } = await import('../../firebase/config');                      
 
                               const profileRef = ref(
                                 storage, 
                                 `shops/${auth.currentUser.uid}/profile/profile-${Date.now()}`
                               );
-                              const metadata = {
-                                contentType: file.type || 'image/jpeg',
+                              
+                              const snapshot = await uploadBytes(profileRef, compressedFile, {
+                                contentType: compressedFile.type,
                                 cacheControl: 'public, max-age=31536000'
-                              };
-                              const snapshot = await uploadBytes(profileRef, file, metadata);
+                              });
+                              
                               const imageUrl = await getDownloadURL(snapshot.ref);
-
-                              // Update with actual URL
                               handleUpdateShop({ profile: imageUrl });
                             } catch (error) {
                               console.error('Error uploading profile image:', error);
@@ -3594,6 +3624,12 @@ const initializeHomeSections = (data) => {
                                 theme={shopData?.theme}
                               />
                               <ValidatedEditableText
+                                value={service.price}
+                                onChange={(value) => handleServiceUpdate(service.id, { price: value })}
+                                placeholder="Price"
+                                theme={shopData?.theme}
+                              />
+                              <ValidatedEditableText
                                 value={service.description}
                                 onChange={(value) => handleServiceUpdate(service.id, { description: value })}
                                 placeholder="Service Description"
@@ -3612,14 +3648,6 @@ const initializeHomeSections = (data) => {
                                 ))}
                               </CategorySelect>
                               <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ 
-                                  display: 'block',
-                                  marginBottom: '0.5rem',
-                                  fontSize: '0.9rem',
-                                  color: shopData?.theme?.colors?.text
-                                }}>
-                                  Available Slots
-                                </label>
                                 <QuantitySelector 
                                   value={parseInt(service.slots) || 1}
                                   onChange={(value) => handleServiceUpdate(service.id, { slots: value })}
