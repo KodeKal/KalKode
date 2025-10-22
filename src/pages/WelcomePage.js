@@ -3,7 +3,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
-import { getFeaturedItems } from '../firebase/firebaseService';
+import { getFeaturedItems, getFeaturedServices } from '../firebase/firebaseService';
 import FeaturedItem from '../components/shop/FeaturedItem';
 import { Search, Package, Navigation, Film, Filter, Store, Plus, Minus, Pin, ChevronLeft, ChevronRight, X, MessageCircle, ShoppingCart, RefreshCw, LogOut } from 'lucide-react';
 import { getDistance } from 'geolib';
@@ -1666,14 +1666,14 @@ const WelcomePage = () => {
   const [sortBy, setSortBy] = useState('recent'); // 'recent', 'proximity', 'price-low', 'price-high'
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
+  const [featuredServices, setFeaturedServices] = useState([]);
+  const [serviceSearchTerm, setServiceSearchTerm] = useState('');
+  const [serviceSearchResults, setServiceSearchResults] = useState([]);
+  const [hasServiceSearchResults, setHasServiceSearchResults] = useState(false);
 
   
   const { user, isAuthenticated } = useAuth();
   const [shopData, setShopData] = useState(null);
-  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
-  const [isMessageVisible, setIsMessageVisible] = useState(true);
-  const [isSliderPaused, setIsSliderPaused] = useState(false);
-  const [sliderPosition, setSliderPosition] = useState(0);
   const sliderRef = useRef(null);
   const sliderAnimationRef = useRef(null);
   const [zoomedItem, setZoomedItem] = useState(null);
@@ -1796,6 +1796,24 @@ const saveLocationToStorage = (location) => {
   }
 };
 
+const handleServiceSearch = async () => {
+  // Similar to handleFeaturedSearch but for services
+  if (!serviceSearchTerm.trim()) {
+    setServiceSearchResults([]);
+    setHasServiceSearchResults(false);
+    return;
+  }
+  
+  // Implement service search logic
+};
+
+const handleClearServiceSearch = () => {
+  setServiceSearchTerm('');
+  setServiceSearchResults([]);
+  setHasServiceSearchResults(false);
+  setError(null);
+};
+
 const getLocationFromStorage = () => {
   try {
     const stored = localStorage.getItem(LOCATION_STORAGE_KEY);
@@ -1879,6 +1897,111 @@ const getIPBasedLocation = async () => {
     setCityInputValue('Houston, Texas');
     
     return fallbackLocation;
+  }
+};
+
+const [serviceCategories, setServiceCategories] = useState({
+  'Professional Services': [],
+  'Home Services': [],
+  'Personal Care': [],
+  'Education & Tutoring': [],
+  'Health & Wellness': [],
+  'Creative Services': [],
+  'Technology Services': [],
+  'Automotive Services': [],
+  'Event Services': [],
+  'Consulting': [],
+  'Other': []
+});
+
+const loadCategorizedServices = async () => {
+  try {
+    setLoading(true);
+    setError(null);
+
+    const allServices = await getFeaturedServices(48);
+    const currentUserId = user?.uid;
+    
+    const filteredServices = allServices.filter(service => {
+      const isNotCurrentUser = service.shopId !== currentUserId;
+      const hasImages = service.images && service.images.length > 0 && service.images.some(img => img);
+      const hasValidSlots = service.slots && !isNaN(parseInt(service.slots)) && parseInt(service.slots) > 0;
+      const isActive = !service.deleted;
+      
+      return isNotCurrentUser && hasImages && hasValidSlots && isActive;
+    });
+
+    // Calculate distances
+    let servicesWithDistance = filteredServices;
+    if (effectiveLocation) {
+      servicesWithDistance = filteredServices.map(service => {
+        let serviceCoords = service.coordinates;
+        if (serviceCoords?.lat && serviceCoords?.lng) {
+          try {
+            const distanceInMeters = getDistance(
+              { latitude: effectiveLocation.latitude, longitude: effectiveLocation.longitude },
+              { latitude: serviceCoords.lat, longitude: serviceCoords.lng }
+            );
+            const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
+
+            return {
+              ...service,
+              coordinates: serviceCoords,
+              distance: distanceInMeters,
+              distanceInMiles,
+              formattedDistance: `${distanceInMiles} mi`
+            };
+          } catch (e) {
+            console.warn('Error calculating distance for service:', e);
+            return service;
+          }
+        }
+        return service;
+      });
+    }
+
+    const sortedServices = applySorting(servicesWithDistance, sortBy);
+    const featuredServicesList = sortedServices.slice(0, 10);
+    const featuredServiceIds = new Set(featuredServicesList.map(service => `${service.shopId}-${service.id}`));
+
+    const categorizedServices = {
+      'Professional Services': [],
+      'Home Services': [],
+      'Personal Care': [],
+      'Education & Tutoring': [],
+      'Health & Wellness': [],
+      'Creative Services': [],
+      'Technology Services': [],
+      'Automotive Services': [],
+      'Event Services': [],
+      'Consulting': [],
+      'Other': []
+    };
+
+    sortedServices.forEach(service => {
+      const serviceKey = `${service.shopId}-${service.id}`;
+      if (featuredServiceIds.has(serviceKey)) return;
+      
+      const category = service.category || 'Other';
+      if (categorizedServices[category]) {
+        categorizedServices[category].push(service);
+      } else {
+        categorizedServices['Other'].push(service);
+      }
+    });
+
+    Object.keys(categorizedServices).forEach(category => {
+      categorizedServices[category] = categorizedServices[category].slice(0, 10);
+    });
+
+    setServiceCategories(categorizedServices);
+    setFeaturedServices(featuredServicesList);
+    setLoading(false);
+    
+  } catch (error) {
+    console.error('Error loading categorized services:', error);
+    setError('Failed to load services. Please try again later.');
+    setLoading(false);
   }
 };
 
@@ -2881,7 +3004,10 @@ useEffect(() => {
             setLoading(false);
           }
           return;
-        case 'nearby':
+        case 'services':
+          if (effectiveLocation) {
+            await loadCategorizedServices();
+          }
           setLoading(false);
           break;
         case 'media':
@@ -3151,15 +3277,15 @@ useEffect(() => {
             onClick={() => setActiveTab('featured')}
           >
             <Package size={16} />
-            Featured
+            Products
           </Tab>
           <Tab
             theme={currentStyle} 
-            active={activeTab === 'nearby'} 
-            onClick={() => setActiveTab('nearby')}
+            active={activeTab === 'services'} 
+            onClick={() => setActiveTab('services')}
           >
             <Navigation size={16} />
-            Nearby
+            Services
           </Tab>
           <Tab
             theme={currentStyle} 
@@ -3172,76 +3298,170 @@ useEffect(() => {
         </TabContainer>
 
 
-        
-
-
-        {/* Nearby Items Tab */}
-        {activeTab === 'nearby' && (
-          <>
-            <SearchContainer>
+        {/* services Tab */}
+        {activeTab === 'services' && (
+        <>
+          <SearchContainer>
+            <SearchInputWrapper>
               <SearchInput
                 type="text"
-                placeholder="Enter address or ZIP code..."
-                value={searchAddress}
-                onChange={(e) => setSearchAddress(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddressSearch()}
+                placeholder="Search for services..."
+                value={serviceSearchTerm}
+                onChange={(e) => setServiceSearchTerm(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleServiceSearch()}
               />
+
               <SearchButtonGroup>
+                {hasServiceSearchResults && (
+                  <SearchButton 
+                    onClick={handleClearServiceSearch}
+                    title="Clear search"
+                  >
+                    <X size={18} />
+                  </SearchButton>
+                )}
+
                 <SearchButton 
-                  onClick={handleAddressSearch}
-                  disabled={searching || !searchAddress.trim()}
+                  onClick={handleServiceSearch}
+                  disabled={isSearching || !serviceSearchTerm.trim()}
+                  title="Search"
                 >
-                  <Navigation size={16} />
-                  Search
-                </SearchButton>
-                <SearchButton 
-                  onClick={handleLiveLocation}
-                  disabled={searching}
-                  variant="live"
-                >
-                  <Navigation size={16} />
-                  Current
+                  <Search size={18} />
                 </SearchButton>
               </SearchButtonGroup>
-            </SearchContainer>
-
-            <GridContainer>
-              {error ? (
+            </SearchInputWrapper>
+          </SearchContainer>
+              
+          {hasServiceSearchResults ? (
+            <div>
+              <CategoryHeader theme={currentStyle}>
+                <h2>Search Results ({serviceSearchResults.length})</h2>
+              </CategoryHeader>
+          
+              {serviceSearchResults.length === 0 ? (
                 <EmptyGridMessage>
-                  <h3>Oops!</h3>
-                  <p>{error}</p>
+                  <h3>No Services Found</h3>
+                  <p>No services match your search criteria.</p>
                 </EmptyGridMessage>
-              ) : loading ? (
-                <div style={{ textAlign: 'center', gridColumn: '1/-1' }}>
-                  <LoadingSpinner />
-                </div>
-              ) : !hasSearched ? (
-                <EmptyGridMessage>
-                  <h3>Find Items Near You</h3>
-                  <p>Enter your address or use current location to discover items in your area</p>
-                </EmptyGridMessage>
-              ) : nearbyItems.length === 0 ? (
-                <EmptyGridMessage>
-                  <h3>No Items Found</h3>
-                  <p>No items found in this location. Try searching a different area.</p>
-                </EmptyGridMessage>
-              ) : (              
-                nearbyItems.map(item => (
-                  <FeaturedItem 
-                    key={`${item.shopId}-${item.id}`} 
-                    item={{
-                      ...item,
-                      location: item.formattedDistance
-                    }}
-                    showDistance={true}
-                    theme={currentStyle}
-                    onItemClick={handleItemClick}
-                  />
-                ))
+              ) : (
+                <GridContainer>
+                  {serviceSearchResults.map(service => (
+                    <FeaturedItem 
+                      key={`search-${service.shopId}-${service.id}`} 
+                      item={{
+                        ...service,
+                        price: `${service.slots} slots`, // Display slots instead of price
+                        isService: true
+                      }}
+                      theme={currentStyle}
+                      onItemClick={handleItemClick}
+                      showDistance={true}
+                    />
+                  ))}
+                </GridContainer>
               )}
-            </GridContainer>
-          </>
-        )}
+            </div>
+          ) : (
+            <div>
+              {/* Featured Services */}
+              <CategoryHeader theme={currentStyle}>
+                <h2>Featured Services</h2>
+                <span className="view-all">
+                  {featuredServices.length} services
+                </span>
+              </CategoryHeader>
+          
+              <CategoryGridWrapper>
+                <div className="desktop-grid" style={{ display: 'contents' }}>
+                  {featuredServices.map(service => (
+                    <div key={`featured-${service.shopId}-${service.id}`} className="desktop-only" 
+                         style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
+                      <FeaturedItem
+                        item={{
+                          ...service,
+                          price: `${service.slots} slots`,
+                          isService: true
+                        }}
+                        theme={currentStyle}
+                        onItemClick={handleItemClick}
+                        showDistance={true}
+                      />
+                    </div>
+                  ))}
+                </div>
+                
+                <CategoryScrollableGrid theme={currentStyle} className="mobile-only">
+                  {featuredServices.map(service => (
+                    <FeaturedItem
+                      key={`featured-mobile-${service.shopId}-${service.id}`}
+                      item={{
+                        ...service,
+                        price: `${service.slots} slots`,
+                        isService: true
+                      }}
+                      theme={currentStyle}
+                      onItemClick={handleItemClick}
+                      showDistance={true}
+                    />
+                  ))}
+                </CategoryScrollableGrid>
+              </CategoryGridWrapper>
+                
+              {/* Service Categories */}
+              {Object.entries(serviceCategories).map(([categoryName, services]) => {
+                if (services.length === 0) return null;
+
+                return (
+                  <div key={categoryName} style={{ marginTop: '3rem' }}>
+                    <CategoryHeader theme={currentStyle}>
+                      <h2>{categoryName}</h2>
+                      <span className="view-all">
+                        {services.length} services
+                      </span>
+                    </CategoryHeader>
+                
+                    <CategoryGridWrapper>
+                      <div className="desktop-grid" style={{ display: 'contents' }}>
+                        {services.map(service => (
+                          <div key={`${categoryName}-${service.shopId}-${service.id}`} className="desktop-only"
+                               style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
+                            <FeaturedItem
+                              item={{
+                                ...service,
+                                price: `${service.slots} slots`,
+                                isService: true
+                              }}
+                              theme={currentStyle}
+                              onItemClick={handleItemClick}
+                              showDistance={true}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <CategoryScrollableGrid theme={currentStyle} className="mobile-only" itemCount={services.length}>
+                        {services.map(service => (
+                          <FeaturedItem
+                            key={`${categoryName}-mobile-${service.shopId}-${service.id}`}
+                            item={{
+                              ...service,
+                              price: `${service.slots} slots`,
+                              isService: true
+                            }}
+                            theme={currentStyle}
+                            onItemClick={handleItemClick}
+                            showDistance={true}
+                          />
+                        ))}
+                      </CategoryScrollableGrid>
+                    </CategoryGridWrapper>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
 
         {/* Featured Items Tab */}
         {activeTab === 'featured' && (

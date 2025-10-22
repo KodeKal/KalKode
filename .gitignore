@@ -24,3 +24,5 @@ yarn-debug.log*
 yarn-error.log*
 .lh/src/pages/shop/shopPublicView.js.json
 *.json
+*.json
+.lh/src/pages/shop/LiveShopCreation.js.json

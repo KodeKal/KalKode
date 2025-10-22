@@ -60,6 +60,20 @@ const ITEM_CATEGORIES = [
   'Other'
 ];
 
+const SERVICE_CATEGORIES = [
+  'Professional Services',
+  'Home Services',
+  'Personal Care',
+  'Education & Tutoring',
+  'Health & Wellness',
+  'Creative Services',
+  'Technology Services',
+  'Automotive Services',
+  'Event Services',
+  'Consulting',
+  'Other'
+];
+
 // Mobile-first styled components
 const PageContainer = styled.div.attrs({ className: 'page-container' })`
   min-height: 100vh;
@@ -1452,6 +1466,54 @@ const LiveShopCreation = () => {
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [heroBackgroundImage, setHeroBackgroundImage] = useState(null);
+  const [shopContentType, setShopContentType] = useState('products');
+
+  const ShopTabContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem 0 1.5rem;
+  padding: 0 1rem;
+`;
+
+const ShopTab = styled.button`
+  background: ${props => props.active ? 
+    props.theme?.colors?.accent || '#800000' : 'transparent'};
+  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+  color: ${props => props.active ? 
+    'white' : props.theme?.colors?.accent || '#800000'};
+  padding: 0.75rem 2rem;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  @media (min-width: 768px) {
+    padding: 0.875rem 2.5rem;
+    font-size: 1rem;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background: ${props => props.active ? 
+        props.theme?.colors?.primary || '#4A0404' : 
+        `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+    }
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+`;
 
   const [shopData, setShopData] = useState({
     name: '', // ADD DEFAULT NAME HERE
@@ -1472,6 +1534,7 @@ const LiveShopCreation = () => {
       tags: [],
       quantity: 1
     }],
+    services: [],
     layout: {
       namePosition: 'left',
       tabPosition: 'top'
@@ -1699,6 +1762,32 @@ useEffect(() => {
     }
   };
 
+  // Add after handleAddItem function (around line 1400)
+  const handleAddService = () => {
+    const newService = {
+      id: Date.now().toString(),
+      name: 'Service Name',
+      description: '',
+      category: 'Other',
+      images: [null, null, null],
+      currentImageIndex: 0,
+      address: '',
+      coordinates: null,
+      slots: 1
+    };
+
+    // Add to beginning
+    setShopData(prev => ({
+      ...prev,
+      services: [newService, ...(prev.services || [])]
+    }));
+
+    // Auto-expand on desktop
+    if (window.innerWidth >= 768) {
+      setExpandedItems(new Set([newService.id]));
+    }
+  };
+
   const handleItemUpdate = (itemId, updates) => {
     setShopData(prev => ({
       ...prev,
@@ -1708,10 +1797,26 @@ useEffect(() => {
     }));
   };
 
+  const handleServiceUpdate = (serviceId, updates) => {
+    setShopData(prev => ({
+      ...prev,
+      services: prev.services.map(service => 
+        service.id === serviceId ? { ...service, ...updates } : service
+      )
+    }));
+  };
+
   const handleItemDelete = (itemId) => {
     setShopData(prev => ({
       ...prev,
       items: prev.items.filter(item => item.id !== itemId)
+    }));
+  };
+
+  const handleServiceDelete = (serviceId) => {
+    setShopData(prev => ({
+      ...prev,
+      services: prev.services.filter(service => service.id !== serviceId)
     }));
   };
 
@@ -1851,538 +1956,833 @@ const handleSave = async () => {
 };
 
   const renderShopView = () => (
-    <MainContent>
-      <ShopProfileSection fontSize={shopNameFontSize}>
-        <div className="profile-image">
-          <EditableImage
-            value={shopData.profile}
-            onChange={(value) => handleShopDataChange('profile', value)}
+  <MainContent>
+    <ShopProfileSection fontSize={shopNameFontSize}>
+      <div className="profile-image">
+        <EditableImage
+          value={shopData.profile}
+          onChange={(value) => handleShopDataChange('profile', value)}
+          theme={selectedTheme}
+          round
+          width="100%"
+          height="100%"
+        />
+      </div>
+      <div className="shop-name-container">
+        <ShopNameInputContainer>
+          <ShopNameInput
+            value={shopData?.name || ''}
+            onChange={(e) => {
+              handleShopDataChange('name', e.target.value);
+            }}
+            placeholder="Enter Brand Name*"
+            fontSize={shopNameFontSize}
             theme={selectedTheme}
-            round
-            width="100%"
-            height="100%"
+            isError={!!shopNameError}
           />
-        </div>
-        <div className="shop-name-container">
-          <ShopNameInputContainer>
-            <ShopNameInput
-              value={shopData?.name || ''}
-              onChange={(e) => {
-                handleShopDataChange('name', e.target.value);
-              }}
-              placeholder="Enter Brand Name*"
-              fontSize={shopNameFontSize}
-              theme={selectedTheme}
-              isError={!!shopNameError}
-            />
-            {checkingUsername && (
-              <ShopNameError theme={selectedTheme}>
-                Checking availability...
-              </ShopNameError>
-            )}
-            {shopNameError && (
-              <ShopNameError theme={selectedTheme}>
-                {shopNameError}
-              </ShopNameError>
-            )}
-            {usernameAvailable && !checkingUsername && shopData.name !== 'EnterBrandName' && (
-              <ShopNameSuccess theme={selectedTheme}>
-                ✓ Shop name available
-              </ShopNameSuccess>
-            )}
-          </ShopNameInputContainer>
-        </div>
-        <div className="shop-description-container">
-          <ValidatedEditableText
-            value={shopData.description}
-            onChange={(value) => handleShopDataChange('description', value)}
-            placeholder="Shop Description"
-            multiline={false}
-            validationRules={VALIDATION_RULES.shop.description}
-            theme={selectedTheme}
-          />
-        </div>
-      </ShopProfileSection>
+          {checkingUsername && (
+            <ShopNameError theme={selectedTheme}>
+              Checking availability...
+            </ShopNameError>
+          )}
+          {shopNameError && (
+            <ShopNameError theme={selectedTheme}>
+              {shopNameError}
+            </ShopNameError>
+          )}
+          {usernameAvailable && !checkingUsername && shopData.name !== 'EnterBrandName' && (
+            <ShopNameSuccess theme={selectedTheme}>
+              ✓ Shop name available
+            </ShopNameSuccess>
+          )}
+        </ShopNameInputContainer>
+      </div>
+      <div className="shop-description-container">
+        <ValidatedEditableText
+          value={shopData.description}
+          onChange={(value) => handleShopDataChange('description', value)}
+          placeholder="Shop Description"
+          multiline={false}
+          validationRules={VALIDATION_RULES.shop.description}
+          theme={selectedTheme}
+        />
+      </div>
+    </ShopProfileSection>
 
-      <AddItemButton onClick={handleItemAdd} theme={selectedTheme}>
-        <Plus size={20} />
-        Add Item
-      </AddItemButton>
+    {/* Shop Content Type Tabs */}
+    <ShopTabContainer>
+      <ShopTab
+        active={shopContentType === 'products'}
+        onClick={() => setShopContentType('products')}
+        theme={selectedTheme}
+      >
+        <Package size={18} />
+        Products
+      </ShopTab>
+      <ShopTab
+        active={shopContentType === 'services'}
+        onClick={() => setShopContentType('services')}
+        theme={selectedTheme}
+      >
+        <Store size={18} />
+        Services
+      </ShopTab>
+    </ShopTabContainer>
 
-      <ItemsContainer>
-        <ItemsGrid>
-          {shopData.items.map(item => {
-            const isExpanded = expandedItems.has(item.id);
-                    
-            // FIX: Get the item directly from shopData.items each time to ensure fresh data
-            const currentItem = shopData.items.find(i => i.id === item.id);
-            const validImages = currentItem.images.filter(Boolean);
-            const currentImageIndex = currentItem.currentImageIndex || 0;
-            const currentImage = validImages[currentImageIndex] || null;
-                    
-            return (
-              <React.Fragment key={item.id}>
-                {/* Mobile Template Card */}
-                <MobileTemplateCard 
-                  theme={selectedTheme}
-                  onClick={() => {
-                    // Create a deep copy of the current item
-                    const itemToEdit = shopData.items.find(i => i.id === item.id);
-                    console.log('Opening item for edit:', itemToEdit);
-                    setEditingItem({
-                      ...itemToEdit,
-                      // Ensure all arrays are properly copied
-                      images: [...itemToEdit.images],
-                      currentImageIndex: itemToEdit.currentImageIndex || 0
-                    });
-                  }}
-                >
-                  <MobileTemplateImageContainer theme={selectedTheme}>
-                    {currentImage ? (
-                      <img src={currentImage} alt={currentItem.name || 'Item'} />
-                    ) : (
-                      <div className="placeholder">
-                        <div style={{
-                          width: '50px',
-                          height: '50px',
-                          borderRadius: '50%',
-                          background: `${selectedTheme?.colors?.accent}15`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          marginBottom: '0.5rem'
-                        }}>
-                          <Package size={24} color={selectedTheme?.colors?.accent} />
-                        </div>
-                        <span style={{
-                          fontSize: '0.7rem',
-                          fontWeight: '600',
-                          color: selectedTheme?.colors?.accent,
-                          textAlign: 'center'
-                        }}>
-                          Add Photo
-                        </span>
-                      </div>
-                    )}
-                
-                    {/* Carousel arrows for mobile */}
-                    {validImages.length > 1 && (
-                      <>
-                        <button 
-                          className="mobile-carousel-arrow left"
-                          onClick={(e) => handleMobilePrevImage(e, currentItem.id)}
-                        >
-                          <ChevronLeft size={12} />
-                        </button>
-                        <button 
-                          className="mobile-carousel-arrow right"
-                          onClick={(e) => handleMobileNextImage(e, currentItem.id)}
-                        >
-                          <ChevronRight size={12} />
-                        </button>
-                    
-                        {/* Image dots */}
-                        <div className="image-dots">
-                          {validImages.map((_, index) => (
-                            <div 
-                              key={index}
-                              className={`dot ${index === currentImageIndex ? 'active' : ''}`}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                
-                    <MobileDeleteButton 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleItemDelete(currentItem.id);
-                      }}
-                    >
-                      <X size={12} />
-                    </MobileDeleteButton>
-                  </MobileTemplateImageContainer>
-                    
-                  <MobileTemplateContent theme={selectedTheme}>
-                    <div className="item-name">
-                      {currentItem.name && currentItem.name !== 'Item Name' ? 
-                        currentItem.name : 
-                        <span style={{ opacity: 0.5 }}>Item Name</span>
-                      }
-                    </div>
-                    <div className="item-price">
-                      {currentItem.price ? `$${parseFloat(currentItem.price).toFixed(2)}` : 
-                        <span className="empty-text">$0.00</span>}
-                    </div>
-                  </MobileTemplateContent>
-                </MobileTemplateCard>
+    {/* Conditional Rendering based on shopContentType */}
+    {shopContentType === 'products' ? (
+      <>
+        <AddItemButton onClick={handleItemAdd} theme={selectedTheme}>
+          <Plus size={20} />
+          Add Product
+        </AddItemButton>
 
-                {/* Desktop Card - Original Design */}
-                <DesktopItemCard theme={selectedTheme}>
-                  <DeleteButton onClick={() => handleItemDelete(item.id)}>
-                    <X size={16} />
-                  </DeleteButton>
-                    
-                  <ItemImageContainer theme={selectedTheme}>
-                    <div className="image-container">
-                      {item.images[item.currentImageIndex] ? (
-                        <EditableImage
-                          value={item.images[item.currentImageIndex]}
-                          onChange={(value) => {
-                            const newImages = [...item.images];
-                            newImages[item.currentImageIndex] = value;
-                            handleItemUpdate(item.id, { images: newImages });
-                          }}
-                          theme={selectedTheme}
-                          height="100%"
-                          width="100%"
-                        />
+        <ItemsContainer>
+          <ItemsGrid>
+            {shopData.items.map(item => {
+              const isExpanded = expandedItems.has(item.id);
+              const currentItem = shopData.items.find(i => i.id === item.id);
+              const validImages = currentItem.images.filter(Boolean);
+              const currentImageIndex = currentItem.currentImageIndex || 0;
+              const currentImage = validImages[currentImageIndex] || null;
+              
+              return (
+                <React.Fragment key={item.id}>
+                  {/* Mobile Template Card */}
+                  <MobileTemplateCard 
+                    theme={selectedTheme}
+                    onClick={() => {
+                      const itemToEdit = shopData.items.find(i => i.id === item.id);
+                      setEditingItem({
+                        ...itemToEdit,
+                        images: [...itemToEdit.images],
+                        currentImageIndex: itemToEdit.currentImageIndex || 0,
+                        isService: false
+                      });
+                    }}
+                  >
+                    <MobileTemplateImageContainer theme={selectedTheme}>
+                      {currentImage ? (
+                        <img src={currentImage} alt={currentItem.name || 'Item'} />
                       ) : (
-                        <div 
-                          className="placeholder"
-                          onClick={() => document.getElementById(`image-upload-${item.id}-${item.currentImageIndex}`).click()}
-                        >
+                        <div className="placeholder">
                           <div style={{
-                            width: '80px',
-                            height: '80px',
+                            width: '50px',
+                            height: '50px',
                             borderRadius: '50%',
                             background: `${selectedTheme?.colors?.accent}15`,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            marginBottom: '0.75rem',
-                            transition: 'all 0.3s ease'
+                            marginBottom: '0.5rem'
                           }}>
-                            <Package size={36} color={selectedTheme?.colors?.accent} />
+                            <Package size={24} color={selectedTheme?.colors?.accent} />
                           </div>
                           <span style={{
-                            fontSize: '0.9rem',
+                            fontSize: '0.7rem',
                             fontWeight: '600',
                             color: selectedTheme?.colors?.accent,
-                            marginBottom: '0.25rem'
+                            textAlign: 'center'
                           }}>
-                            Add Product Photo
-                          </span>
-                          <span style={{
-                            fontSize: '0.75rem',
-                            opacity: 0.6,
-                            textAlign: 'center',
-                            maxWidth: '80%'
-                          }}>
-                            Click to upload your item image
+                            Add Photo
                           </span>
                         </div>
                       )}
-                    </div>
-                    
-                    {/* Hidden file input */}
-                    <input
-                      type="file"
-                      id={`image-upload-${item.id}-${item.currentImageIndex}`}
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={async (e) => {
-                        if (e.target.files?.[0]) {
-                          const file = e.target.files[0];
-                          // Create preview URL
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            const newImages = [...item.images];
-                            newImages[item.currentImageIndex] = {
-                              file: file,
-                              preview: reader.result,
-                              type: file.type,
-                              name: file.name
-                            };
-                            handleItemUpdate(item.id, { images: newImages });
-                          };
-                          reader.readAsDataURL(file);
-                        }
-                      }}
-                    />
                       
-                    {validImages.length > 0 && (
-                      <>
-                        <button 
-                          className="carousel-arrow left"
-                          onClick={() => {
-                            const newIndex = ((item.currentImageIndex - 1) + 3) % 3;
-                            handleItemUpdate(item.id, { currentImageIndex: newIndex });
-                          }}
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-                        <button 
-                          className="carousel-arrow right"
-                          onClick={() => {
-                            const newIndex = (item.currentImageIndex + 1) % 3;
-                            handleItemUpdate(item.id, { currentImageIndex: newIndex });
-                          }}
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-                      </>
-                    )}
-                  </ItemImageContainer>
-
-                  <ItemContent>
-                    <ItemHeader onClick={() => toggleItemExpansion(item.id)}>
-                      <h4>
-                        {item.name && item.name !== 'Item Name' ? 
-                          item.name : 
+                      {validImages.length > 1 && (
+                        <>
+                          <button 
+                            className="mobile-carousel-arrow left"
+                            onClick={(e) => handleMobilePrevImage(e, currentItem.id)}
+                          >
+                            <ChevronLeft size={12} />
+                          </button>
+                          <button 
+                            className="mobile-carousel-arrow right"
+                            onClick={(e) => handleMobileNextImage(e, currentItem.id)}
+                          >
+                            <ChevronRight size={12} />
+                          </button>
+                          <div className="image-dots">
+                            {validImages.map((_, index) => (
+                              <div 
+                                key={index}
+                                className={`dot ${index === currentImageIndex ? 'active' : ''}`}
+                              />
+                            ))}
+                          </div>
+                        </>
+                      )}
+                      
+                      <MobileDeleteButton 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleItemDelete(currentItem.id);
+                        }}
+                      >
+                        <X size={12} />
+                      </MobileDeleteButton>
+                    </MobileTemplateImageContainer>
+                    
+                    <MobileTemplateContent theme={selectedTheme}>
+                      <div className="item-name">
+                        {currentItem.name && currentItem.name !== 'Item Name' ? 
+                          currentItem.name : 
                           <span style={{ opacity: 0.5 }}>Item Name</span>
                         }
-                      </h4>
-                      <ExpandButton>
-                        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                      </ExpandButton>
-                    </ItemHeader>
-
-                    <ItemDetails expanded={isExpanded}>
-                      <div className="details-content">
-                        <ValidatedEditableText
-                          value={item.name}
-                          onChange={(value) => handleItemUpdate(item.id, { name: value })}
-                          placeholder="Item Name"
-                          validationRules={VALIDATION_RULES.item.name}
-                          theme={selectedTheme}
-                        />
-                        <ValidatedEditableText
-                          value={item.price}
-                          onChange={(value) => handleItemUpdate(item.id, { price: value })}
-                          placeholder="Price"
-                          validationRules={VALIDATION_RULES.item.price}
-                          theme={selectedTheme}
-                        />
-                        <ValidatedEditableText
-                          value={item.description}
-                          onChange={(value) => handleItemUpdate(item.id, { description: value })}
-                          placeholder="Item Description"
-                          validationRules={VALIDATION_RULES.item.description}
-                          multiline
-                          theme={selectedTheme}
-                        />
-                        <CategorySelect
-                          value={item.category || 'Other'}
-                          onChange={(e) => handleItemUpdate(item.id, { category: e.target.value })}
-                          theme={selectedTheme}
-                        >
-                          {ITEM_CATEGORIES.map(category => (
-                            <option key={category} value={category}>
-                              {category}
-                            </option>
-                          ))}
-                        </CategorySelect>
-                        <QuantitySelector 
-                          value={parseInt(item.quantity) || 1}
-                          onChange={(value) => handleItemUpdate(item.id, { quantity: value })}
-                          theme={selectedTheme}
-                          min={0}
-                          max={9999}
-                        />
-                        <AddressInput
-                          address={item.address || ''}
-                          onAddressChange={(value) => handleItemUpdate(item.id, { 
-                            address: value
-                          })}
-                          onLocationSelect={(location) => {
-                            console.log('Location selected:', location);
-                            if (location?.coordinates) {
-                              handleItemUpdate(item.id, {
-                                address: location.address,
-                                coordinates: location.coordinates
-                              });
-                            } else if (!location?.address) {
-                              handleItemUpdate(item.id, {
-                                address: '',
-                                coordinates: null
-                              });
-                            }
-                          }}
-                        />
                       </div>
-                    </ItemDetails>
-                  </ItemContent>
-                </DesktopItemCard>
-              </React.Fragment>
-            );
-          })}
-        </ItemsGrid>
-      </ItemsContainer>
+                      <div className="item-price">
+                        {currentItem.price ? `$${parseFloat(currentItem.price).toFixed(2)}` : 
+                          <span className="empty-text">$0.00</span>}
+                      </div>
+                    </MobileTemplateContent>
+                  </MobileTemplateCard>
 
-      {/* Mobile Edit Modal */}
-      {editingItem && (
-        <EditModal onClick={() => setEditingItem(null)}>
-          <EditModalContent 
-            theme={selectedTheme}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Image Section - 50% */}
-      <EditModalImageSection>
-              {/* Action Buttons on Image */}
-              <ImageActionButtons>
-                <ImageActionButton 
-                  className="check"
-                  onClick={async () => {
-                    console.log('Saving item:', editingItem);
+                  {/* Desktop Card */}
+                  <DesktopItemCard theme={selectedTheme}>
+                    <DeleteButton onClick={() => handleItemDelete(item.id)}>
+                      <X size={16} />
+                    </DeleteButton>
                     
-                    // Process images - extract the preview URL or keep string URLs
-                    const processedImages = editingItem.images.map((img) => {
-                      // If it's already a string URL, keep it
-                      if (typeof img === 'string') return img;
+                    <ItemImageContainer theme={selectedTheme}>
+                      <div className="image-container">
+                        {item.images[item.currentImageIndex] ? (
+                          <EditableImage
+                            value={item.images[item.currentImageIndex]}
+                            onChange={(value) => {
+                              const newImages = [...item.images];
+                              newImages[item.currentImageIndex] = value;
+                              handleItemUpdate(item.id, { images: newImages });
+                            }}
+                            theme={selectedTheme}
+                            height="100%"
+                            width="100%"
+                          />
+                        ) : (
+                          <div 
+                            className="placeholder"
+                            onClick={() => document.getElementById(`image-upload-${item.id}-${item.currentImageIndex}`).click()}
+                          >
+                            <div style={{
+                              width: '80px',
+                              height: '80px',
+                              borderRadius: '50%',
+                              background: `${selectedTheme?.colors?.accent}15`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginBottom: '0.75rem',
+                              transition: 'all 0.3s ease'
+                            }}>
+                              <Package size={36} color={selectedTheme?.colors?.accent} />
+                            </div>
+                            <span style={{
+                              fontSize: '0.9rem',
+                              fontWeight: '600',
+                              color: selectedTheme?.colors?.accent,
+                              marginBottom: '0.25rem'
+                            }}>
+                              Add Product Photo
+                            </span>
+                          </div>
+                        )}
+                      </div>
                       
-                      // If it's null or undefined, keep it
-                      if (!img) return null;
+                      <input
+                        type="file"
+                        id={`image-upload-${item.id}-${item.currentImageIndex}`}
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={async (e) => {
+                          if (e.target.files?.[0]) {
+                            const file = e.target.files[0];
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              const newImages = [...item.images];
+                              newImages[item.currentImageIndex] = {
+                                file: file,
+                                preview: reader.result,
+                                type: file.type,
+                                name: file.name
+                              };
+                              handleItemUpdate(item.id, { images: newImages });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
                       
-                      // If it's the EditableImage format with preview, use the preview
-                      if (img?.preview) return img.preview;
-                      
-                      // If it's a File object, create blob URL
-                      if (img instanceof File) {
-                        return URL.createObjectURL(img);
-                      }
-                      
-                      return img;
-                    });
-                    
-                    const updatedItem = {
-                      ...editingItem,
-                      images: processedImages
-                    };
-                    
-                    console.log('Processed item with images:', updatedItem);
-                    handleItemUpdate(editingItem.id, updatedItem);
-                    setEditingItem(null);
-                  }}
-                  title="Save changes"
-                >
-                  <Check size={20} />
-                </ImageActionButton>
-                <ImageActionButton 
-                  className="close"
-                  onClick={() => setEditingItem(null)}
-                  title="Discard changes"
-                >
-                  <X size={20} />
-                </ImageActionButton>
-              </ImageActionButtons>
-                
-              <ItemImageContainer theme={selectedTheme} style={{ height: '100%' }}>
-                <div className="image-container">
-                  <EditableImage
-                    value={editingItem.images[editingItem.currentImageIndex]}
-              onChange={(value) => {
-                const newImages = [...editingItem.images];
-                newImages[editingItem.currentImageIndex] = value;
-                setEditingItem({ ...editingItem, images: newImages });
-              }}
-              theme={selectedTheme}
-              height="100%"
-              width="100%"
-                  />
-                </div>
+                      {validImages.length > 0 && (
+                        <>
+                          <button 
+                            className="carousel-arrow left"
+                            onClick={() => {
+                              const newIndex = ((item.currentImageIndex - 1) + 3) % 3;
+                              handleItemUpdate(item.id, { currentImageIndex: newIndex });
+                            }}
+                          >
+                            <ChevronLeft size={16} />
+                          </button>
+                          <button 
+                            className="carousel-arrow right"
+                            onClick={() => {
+                              const newIndex = (item.currentImageIndex + 1) % 3;
+                              handleItemUpdate(item.id, { currentImageIndex: newIndex });
+                            }}
+                          >
+                            <ChevronRight size={16} />
+                          </button>
+                        </>
+                      )}
+                    </ItemImageContainer>
 
-                {editingItem.images.filter(Boolean).length > 1 && (
-                  <>
-              <button 
-                className="carousel-arrow left"
-                onClick={() => {
-                  const newIndex = ((editingItem.currentImageIndex - 1) + 3) % 3;
-                  setEditingItem({ ...editingItem, currentImageIndex: newIndex });
-                }}
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <button 
-                className="carousel-arrow right"
-                onClick={() => {
-                  const newIndex = (editingItem.currentImageIndex + 1) % 3;
-                  setEditingItem({ ...editingItem, currentImageIndex: newIndex });
-                }}
-              >
-                <ChevronRight size={16} />
-              </button>
-                  </>
-                )}
-              </ItemImageContainer>
-            </EditModalImageSection>
-              
-            {/* Scrollable Info Section - 50% */}
-      <EditModalBody>
-        <ValidatedEditableText
-          value={editingItem.name}
-          onChange={(value) => setEditingItem({ ...editingItem, name: value })}
-          placeholder="Item Name"
-                validationRules={VALIDATION_RULES.item.name}
-                theme={selectedTheme}
-              />
+                    <ItemContent>
+                      <ItemHeader onClick={() => toggleItemExpansion(item.id)}>
+                        <h4>
+                          {item.name && item.name !== 'Item Name' ? 
+                            item.name : 
+                            <span style={{ opacity: 0.5 }}>Item Name</span>
+                          }
+                        </h4>
+                        <ExpandButton>
+                          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        </ExpandButton>
+                      </ItemHeader>
 
-              <ValidatedEditableText
-          value={editingItem.price}
-          onChange={(value) => setEditingItem({ ...editingItem, price: value })}
-          placeholder="Price"
-          validationRules={VALIDATION_RULES.item.price}
+                      <ItemDetails expanded={isExpanded}>
+                        <div className="details-content">
+                          <ValidatedEditableText
+                            value={item.name}
+                            onChange={(value) => handleItemUpdate(item.id, { name: value })}
+                            placeholder="Item Name"
+                            validationRules={VALIDATION_RULES.item.name}
+                            theme={selectedTheme}
+                          />
+                          <ValidatedEditableText
+                            value={item.price}
+                            onChange={(value) => handleItemUpdate(item.id, { price: value })}
+                            placeholder="Price"
+                            validationRules={VALIDATION_RULES.item.price}
+                            theme={selectedTheme}
+                          />
+                          <ValidatedEditableText
+                            value={item.description}
+                            onChange={(value) => handleItemUpdate(item.id, { description: value })}
+                            placeholder="Item Description"
+                            validationRules={VALIDATION_RULES.item.description}
+                            multiline
+                            theme={selectedTheme}
+                          />
+                          <CategorySelect
+                            value={item.category || 'Other'}
+                            onChange={(e) => handleItemUpdate(item.id, { category: e.target.value })}
+                            theme={selectedTheme}
+                          >
+                            {ITEM_CATEGORIES.map(category => (
+                              <option key={category} value={category}>
+                                {category}
+                              </option>
+                            ))}
+                          </CategorySelect>
+                          <QuantitySelector 
+                            value={parseInt(item.quantity) || 1}
+                            onChange={(value) => handleItemUpdate(item.id, { quantity: value })}
+                            theme={selectedTheme}
+                            min={0}
+                            max={9999}
+                          />
+                          <AddressInput
+                            address={item.address || ''}
+                            onAddressChange={(value) => handleItemUpdate(item.id, { 
+                              address: value
+                            })}
+                            onLocationSelect={(location) => {
+                              if (location?.coordinates) {
+                                handleItemUpdate(item.id, {
+                                  address: location.address,
+                                  coordinates: location.coordinates
+                                });
+                              } else if (!location?.address) {
+                                handleItemUpdate(item.id, {
+                                  address: '',
+                                  coordinates: null
+                                });
+                              }
+                            }}
+                          />
+                        </div>
+                      </ItemDetails>
+                    </ItemContent>
+                  </DesktopItemCard>
+                </React.Fragment>
+              );
+            })}
+          </ItemsGrid>
+        </ItemsContainer>
+      </>
+    ) : (
+      <>
+        <AddItemButton onClick={handleAddService} theme={selectedTheme}>
+          <Plus size={20} />
+          Add Service
+        </AddItemButton>
+
+        <ItemsContainer>
+          <ItemsGrid>
+            {shopData.services.map(service => {
+              const isExpanded = expandedItems.has(service.id);
+              const currentService = shopData.services.find(s => s.id === service.id);
+              const validImages = currentService.images.filter(Boolean);
+              const currentImageIndex = currentService.currentImageIndex || 0;
+              const currentImage = validImages[currentImageIndex] || null;
+
+              return (
+                <React.Fragment key={service.id}>
+                  {/* Mobile Service Card */}
+                  <MobileTemplateCard 
+                    theme={selectedTheme}
+                    onClick={() => {
+                      const serviceToEdit = shopData.services.find(s => s.id === service.id);
+                      setEditingItem({
+                        ...serviceToEdit,
+                        images: [...serviceToEdit.images],
+                        currentImageIndex: serviceToEdit.currentImageIndex || 0,
+                        isService: true
+                      });
+                    }}
+                  >
+                    <MobileTemplateImageContainer theme={selectedTheme}>
+                      {currentImage ? (
+                        <img src={currentImage} alt={currentService.name || 'Service'} />
+                      ) : (
+                        <div className="placeholder">
+                          <div style={{
+                            width: '50px',
+                            height: '50px',
+                            borderRadius: '50%',
+                            background: `${selectedTheme?.colors?.accent}15`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginBottom: '0.5rem'
+                          }}>
+                            <Store size={24} color={selectedTheme?.colors?.accent} />
+                          </div>
+                          <span>Add Photo</span>
+                        </div>
+                      )}
+
+                      {validImages.length > 1 && (
+                        <>
+                          <button 
+                            className="mobile-carousel-arrow left"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const newIndex = ((currentImageIndex - 1) + validImages.length) % validImages.length;
+                              handleServiceUpdate(currentService.id, { currentImageIndex: newIndex });
+                            }}
+                          >
+                            <ChevronLeft size={12} />
+                          </button>
+                          <button 
+                            className="mobile-carousel-arrow right"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const newIndex = (currentImageIndex + 1) % validImages.length;
+                              handleServiceUpdate(currentService.id, { currentImageIndex: newIndex });
+                            }}
+                          >
+                            <ChevronRight size={12} />
+                          </button>
+                          <div className="image-dots">
+                            {validImages.map((_, index) => (
+                              <div 
+                                key={index}
+                                className={`dot ${index === currentImageIndex ? 'active' : ''}`}
+                              />
+                            ))}
+                          </div>
+                        </>
+                      )}
+
+                      <MobileDeleteButton 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleServiceDelete(currentService.id);
+                        }}
+                      >
+                        <X size={12} />
+                      </MobileDeleteButton>
+                    </MobileTemplateImageContainer>
+                    
+                    <MobileTemplateContent theme={selectedTheme}>
+                      <div className="item-name">
+                        {currentService.name && currentService.name !== 'Service Name' ? 
+                          currentService.name : 
+                          <span style={{ opacity: 0.5 }}>Service Name</span>
+                        }
+                      </div>
+                      <div className="item-price">
+                        {currentService.slots ? `${currentService.slots} slots` : 
+                          <span className="empty-text">0 slots</span>}
+                      </div>
+                    </MobileTemplateContent>
+                  </MobileTemplateCard>
+
+                  {/* Desktop Service Card */}
+                  <DesktopItemCard theme={selectedTheme}>
+                    <DeleteButton onClick={() => handleServiceDelete(service.id)}>
+                      <X size={16} />
+                    </DeleteButton>
+                    
+                    <ItemImageContainer theme={selectedTheme}>
+                      <div className="image-container">
+                        {service.images[service.currentImageIndex] ? (
+                          <EditableImage
+                            value={service.images[service.currentImageIndex]}
+                            onChange={(value) => {
+                              const newImages = [...service.images];
+                              newImages[service.currentImageIndex] = value;
+                              handleServiceUpdate(service.id, { images: newImages });
+                            }}
+                            theme={selectedTheme}
+                            height="100%"
+                            width="100%"
+                          />
+                        ) : (
+                          <div 
+                            className="placeholder"
+                            onClick={() => document.getElementById(`service-image-upload-${service.id}-${service.currentImageIndex}`).click()}
+                          >
+                            <div style={{
+                              width: '80px',
+                              height: '80px',
+                              borderRadius: '50%',
+                              background: `${selectedTheme?.colors?.accent}15`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginBottom: '0.75rem'
+                            }}>
+                              <Store size={36} color={selectedTheme?.colors?.accent} />
+                            </div>
+                            <span>Add Service Photo</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <input
+                        type="file"
+                        id={`service-image-upload-${service.id}-${service.currentImageIndex}`}
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={async (e) => {
+                          if (e.target.files?.[0]) {
+                            const file = e.target.files[0];
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              const newImages = [...service.images];
+                              newImages[service.currentImageIndex] = {
+                                file: file,
+                                preview: reader.result,
+                                type: file.type,
+                                name: file.name
+                              };
+                              handleServiceUpdate(service.id, { images: newImages });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+
+                      {validImages.length > 0 && (
+                        <>
+                          <button 
+                            className="carousel-arrow left"
+                            onClick={() => {
+                              const newIndex = ((service.currentImageIndex - 1) + 3) % 3;
+                              handleServiceUpdate(service.id, { currentImageIndex: newIndex });
+                            }}
+                          >
+                            <ChevronLeft size={16} />
+                          </button>
+                          <button 
+                            className="carousel-arrow right"
+                            onClick={() => {
+                              const newIndex = (service.currentImageIndex + 1) % 3;
+                              handleServiceUpdate(service.id, { currentImageIndex: newIndex });
+                            }}
+                          >
+                            <ChevronRight size={16} />
+                          </button>
+                        </>
+                      )}
+                    </ItemImageContainer>
+                    
+                    <ItemContent>
+                      <ItemHeader onClick={() => toggleItemExpansion(service.id)}>
+                        <h4>
+                          {service.name && service.name !== 'Service Name' ? 
+                            service.name : 
+                            <span style={{ opacity: 0.5 }}>Service Name</span>
+                          }
+                        </h4>
+                        <ExpandButton>
+                          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        </ExpandButton>
+                      </ItemHeader>
+                      
+                      <ItemDetails expanded={isExpanded}>
+                        <div className="details-content">
+                          <ValidatedEditableText
+                            value={service.name}
+                            onChange={(value) => handleServiceUpdate(service.id, { name: value })}
+                            placeholder="Service Name"
+                            validationRules={VALIDATION_RULES.item.name}
+                            theme={selectedTheme}
+                          />
+                          <ValidatedEditableText
+                            value={service.description}
+                            onChange={(value) => handleServiceUpdate(service.id, { description: value })}
+                            placeholder="Service Description"
+                            validationRules={VALIDATION_RULES.item.description}
+                            multiline
+                            theme={selectedTheme}
+                          />
+                          <CategorySelect
+                            value={service.category || 'Other'}
+                            onChange={(e) => handleServiceUpdate(service.id, { category: e.target.value })}
+                            theme={selectedTheme}
+                          >
+                            {SERVICE_CATEGORIES.map(category => (
+                              <option key={category} value={category}>
+                                {category}
+                              </option>
+                            ))}
+                          </CategorySelect>
+                          <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ 
+                              display: 'block',
+                              marginBottom: '0.5rem',
+                              fontSize: '0.9rem',
+                              color: selectedTheme?.colors?.text
+                            }}>
+                              Available Slots
+                            </label>
+                            <QuantitySelector 
+                              value={parseInt(service.slots) || 1}
+                              onChange={(value) => handleServiceUpdate(service.id, { slots: value })}
+                              theme={selectedTheme}
+                              min={0}
+                              max={9999}
+                            />
+                          </div>
+                          <AddressInput
+                            address={service.address || ''}
+                            onAddressChange={(value) => handleServiceUpdate(service.id, { 
+                              address: value
+                            })}
+                            onLocationSelect={(location) => {
+                              if (location?.coordinates) {
+                                handleServiceUpdate(service.id, {
+                                  address: location.address,
+                                  coordinates: location.coordinates
+                                });
+                              } else if (!location?.address) {
+                                handleServiceUpdate(service.id, {
+                                  address: '',
+                                  coordinates: null
+                                });
+                              }
+                            }}
+                          />
+                        </div>
+                      </ItemDetails>
+                    </ItemContent>
+                  </DesktopItemCard>
+                </React.Fragment>
+              );
+            })}
+          </ItemsGrid>
+        </ItemsContainer>
+      </>
+    )}
+
+    {/* Mobile Edit Modal */}
+    {editingItem && (
+      <EditModal onClick={() => setEditingItem(null)}>
+        <EditModalContent 
           theme={selectedTheme}
-              />
-
-              <ValidatedEditableText
-                value={editingItem.description}
-          onChange={(value) => setEditingItem({ ...editingItem, description: value })}
-          placeholder="Item Description"
-          validationRules={VALIDATION_RULES.item.description}
-          multiline
-                theme={selectedTheme}
-        />
-
-        <CategorySelect
-          value={editingItem.category || 'Other'}
-          onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
-                theme={selectedTheme}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <EditModalImageSection>
+            <ImageActionButtons>
+              <ImageActionButton 
+                className="check"
+                onClick={async () => {
+                  const processedImages = editingItem.images.map((img) => {
+                    if (typeof img === 'string') return img;
+                    if (!img) return null;
+                    if (img?.preview) return img.preview;
+                    if (img instanceof File) return URL.createObjectURL(img);
+                    return img;
+                  });
+                  
+                  const updatedItem = {
+                    ...editingItem,
+                    images: processedImages
+                  };
+                  
+                  // Update based on type
+                  if (editingItem.isService) {
+                    handleServiceUpdate(editingItem.id, updatedItem);
+                  } else {
+                    handleItemUpdate(editingItem.id, updatedItem);
+                  }
+                  setEditingItem(null);
+                }}
+                title="Save changes"
               >
-                {ITEM_CATEGORIES.map(category => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-                ))}
-              </CategorySelect>
-              
+                <Check size={20} />
+              </ImageActionButton>
+              <ImageActionButton 
+                className="close"
+                onClick={() => setEditingItem(null)}
+                title="Discard changes"
+              >
+                <X size={20} />
+              </ImageActionButton>
+            </ImageActionButtons>
+            
+            <ItemImageContainer theme={selectedTheme} style={{ height: '100%' }}>
+              <div className="image-container">
+                <EditableImage
+                  value={editingItem.images[editingItem.currentImageIndex]}
+                  onChange={(value) => {
+                    const newImages = [...editingItem.images];
+                    newImages[editingItem.currentImageIndex] = value;
+                    setEditingItem({ ...editingItem, images: newImages });
+                  }}
+                  theme={selectedTheme}
+                  height="100%"
+                  width="100%"
+                />
+              </div>
+
+              {editingItem.images.filter(Boolean).length > 1 && (
+                <>
+                  <button 
+                    className="carousel-arrow left"
+                    onClick={() => {
+                      const newIndex = ((editingItem.currentImageIndex - 1) + 3) % 3;
+                      setEditingItem({ ...editingItem, currentImageIndex: newIndex });
+                    }}
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button 
+                    className="carousel-arrow right"
+                    onClick={() => {
+                      const newIndex = (editingItem.currentImageIndex + 1) % 3;
+                      setEditingItem({ ...editingItem, currentImageIndex: newIndex });
+                    }}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </>
+              )}
+            </ItemImageContainer>
+          </EditModalImageSection>
+          
+          <EditModalBody>
+            <ValidatedEditableText
+              value={editingItem.name}
+              onChange={(value) => setEditingItem({ ...editingItem, name: value })}
+              placeholder={editingItem.isService ? "Service Name" : "Item Name"}
+              validationRules={VALIDATION_RULES.item.name}
+              theme={selectedTheme}
+            />
+
+            {!editingItem.isService && (
+              <ValidatedEditableText
+                value={editingItem.price}
+                onChange={(value) => setEditingItem({ ...editingItem, price: value })}
+                placeholder="Price"
+                validationRules={VALIDATION_RULES.item.price}
+                theme={selectedTheme}
+              />
+            )}
+
+            <ValidatedEditableText
+              value={editingItem.description}
+              onChange={(value) => setEditingItem({ ...editingItem, description: value })}
+              placeholder={editingItem.isService ? "Service Description" : "Item Description"}
+              validationRules={VALIDATION_RULES.item.description}
+              multiline
+              theme={selectedTheme}
+            />
+
+            <CategorySelect
+              value={editingItem.category || 'Other'}
+              onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+              theme={selectedTheme}
+            >
+              {(editingItem.isService ? SERVICE_CATEGORIES : ITEM_CATEGORIES).map(category => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </CategorySelect>
+            
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ 
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontSize: '0.9rem',
+                color: selectedTheme?.colors?.text
+              }}>
+                {editingItem.isService ? 'Available Slots' : 'Quantity'}
+              </label>
               <QuantitySelector 
-                value={parseInt(editingItem.quantity) || 1}
-                onChange={(value) => setEditingItem({ ...editingItem, quantity: value })}
+                value={parseInt(editingItem.isService ? editingItem.slots : editingItem.quantity) || 1}
+                onChange={(value) => setEditingItem({ 
+                  ...editingItem, 
+                  [editingItem.isService ? 'slots' : 'quantity']: value 
+                })}
                 theme={selectedTheme}
                 min={0}
                 max={9999}
               />
+            </div>
 
-              <AddressInput
-                address={editingItem.address || ''}
-                onAddressChange={(value) => setEditingItem({ 
-                  ...editingItem, 
-                  address: value
-                })}
-                onLocationSelect={(location) => {
-                  console.log('Location selected:', location);
-                  if (location?.coordinates) {
-                    setEditingItem({
-                      ...editingItem,
-                      address: location.address,
-                      coordinates: location.coordinates
-                    });
-                  } else if (!location?.address) {
-                    setEditingItem({
-                      ...editingItem,
-                      address: '',
-                      coordinates: null
-                    });
-                  }
-                }}
-              />
-            </EditModalBody>
-          </EditModalContent>
-        </EditModal>
-      )}
-    </MainContent>
-  );
+            <AddressInput
+              address={editingItem.address || ''}
+              onAddressChange={(value) => setEditingItem({ 
+                ...editingItem, 
+                address: value
+              })}
+              onLocationSelect={(location) => {
+                if (location?.coordinates) {
+                  setEditingItem({
+                    ...editingItem,
+                    address: location.address,
+                    coordinates: location.coordinates
+                  });
+                } else if (!location?.address) {
+                  setEditingItem({
+                    ...editingItem,
+                    address: '',
+                    coordinates: null
+                  });
+                }
+              }}
+            />
+          </EditModalBody>
+        </EditModalContent>
+      </EditModal>
+    )}
+  </MainContent>
+);
 
   // REPLACE the existing renderHomeView function (around line 1400-1450)
   // REPLACE the existing renderHomeView function with this updated version:

@@ -13,7 +13,7 @@ import EditableImage from './components/EditableComponents/EditableImage';
 import { DEFAULT_THEME } from '../../theme/config/themes';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase/config';
-import { ChevronUp, ChevronDown, Plus, Users, ChevronLeft, ChevronRight, X, GripVertical, Home, Store } from 'lucide-react';
+import { ChevronUp, ChevronDown, Plus, Users, ChevronLeft, ChevronRight, X, GripVertical, Package, Home, Store } from 'lucide-react';
 import { Trash2, Save, RotateCcw } from 'lucide-react';
 import AddressInput from '../../components/shop/AddressInput';
 import ThemeSelector from '../../components/ThemeSelector/ThemeSelector';
@@ -54,6 +54,20 @@ const ITEM_CATEGORIES = [
   'Automotive',
   'Collectibles & Art',
   'Food & Beverages',
+  'Other'
+];
+
+const SERVICE_CATEGORIES = [
+  'Professional Services',
+  'Home Services',
+  'Personal Care',
+  'Education & Tutoring',
+  'Health & Wellness',
+  'Creative Services',
+  'Technology Services',
+  'Automotive Services',
+  'Event Services',
+  'Consulting',
   'Other'
 ];
 
@@ -1974,6 +1988,53 @@ const cleanDataForFirestore = (data) => {
   return data;
 };
 
+const ShopTabContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem 0 1.5rem;
+  padding: 0 1rem;
+`;
+
+const ShopTab = styled.button`
+  background: ${props => props.active ? 
+    props.theme?.colors?.accent || '#800000' : 'transparent'};
+  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+  color: ${props => props.active ? 
+    'white' : props.theme?.colors?.accent || '#800000'};
+  padding: 0.75rem 2rem;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  @media (min-width: 768px) {
+    padding: 0.875rem 2.5rem;
+    font-size: 1rem;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background: ${props => props.active ? 
+        props.theme?.colors?.primary || '#4A0404' : 
+        `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+    }
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+`;
+
 
 const ShopPage = () => {
   const navigate = useNavigate();
@@ -1998,6 +2059,7 @@ const ShopPage = () => {
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [selectedSectionType, setSelectedSectionType] = React.useState('');
 
+  const [shopContentType, setShopContentType] = useState('products');
   const [selectedHomeTemplate, setSelectedHomeTemplate] = useState(1);
   const [homeSections, setHomeSections] = useState([]);
   const [showSectionTypeModal, setShowSectionTypeModal] = useState(false); // ADD THIS LINE
@@ -2163,6 +2225,41 @@ const renderHomeView = () => {
       )}
     </>
   );
+};
+
+const handleAddService = () => {
+  const newService = {
+    id: Date.now().toString(),
+    name: 'Service Name',
+    description: '',
+    category: 'Other',
+    images: [null, null, null],
+    currentImageIndex: 0,
+    address: '',
+    coordinates: null,
+    slots: 1
+  };
+
+  const updatedServices = [...(shopData.services || []), newService];
+  setShopData(prev => ({ ...prev, services: updatedServices }));
+};
+
+const handleServiceUpdate = (serviceId, updates) => {
+  const updatedServices = shopData.services.map(service =>
+    service.id === serviceId ? { ...service, ...updates } : service
+  );
+
+  setShopData(prev => ({
+    ...prev,
+    services: updatedServices
+  }));
+};
+
+const handleServiceDelete = (serviceId) => {
+  setShopData(prev => ({
+    ...prev,
+    services: prev.services.filter(service => service.id !== serviceId)
+  }));
 };
 
 const handleAddSection = (sectionType) => {
@@ -2993,9 +3090,8 @@ const initializeHomeSections = (data) => {
 
         <MainContent>
           {activeTab === 'shop' && (
-            <>
-
-              <ShopProfileSection>
+          <>
+            <ShopProfileSection>
                 <div className="profile-image">
                   {shopData?.profile && typeof shopData.profile === 'string' ? (
                     <img 
@@ -3190,203 +3286,389 @@ const initializeHomeSections = (data) => {
                 </div>
               </ShopProfileSection>
 
-              
+            {/* Shop Content Type Tabs */}
+            <ShopTabContainer>
+              <ShopTab
+                active={shopContentType === 'products'}
+                onClick={() => setShopContentType('products')}
+                theme={shopData?.theme}
+              >
+                <Package size={18} />
+                Products
+              </ShopTab>
+              <ShopTab
+                active={shopContentType === 'services'}
+                onClick={() => setShopContentType('services')}
+                theme={shopData?.theme}
+              >
+                <Store size={18} />
+                Services
+              </ShopTab>
+            </ShopTabContainer>
 
-              <AddItemButton onClick={handleAddItem} theme={shopData?.theme}>
-                <Plus size={20} />
-                Add Item
-              </AddItemButton>
-
-              <ItemGrid>
-                {shopData?.items?.map(item => {
-                  // ADD THIS LINE - define isExpanded for each item in the map
-                  const isExpanded = expandedItems.has(item.id);
-
-                  return (
-                    <ItemCard key={item.id}>
-
-                      <ItemImageContainer>
-                        {uploading[item.id] && (
-                          <UploadingOverlay>
-                            <LoadingSpinner />
-                          </UploadingOverlay>
-                        )}
-                        <div 
-                          className="image-container"
-                          onClick={() => {
-                            if (!item.images[item.currentImageIndex]) {
-                              document.getElementById(`image-upload-${item.id}-${item.currentImageIndex}`).click();
-                            }
-                          }}
-                        >
-                          {item.images[item.currentImageIndex] ? (
-                            <img 
-                              src={item.images[item.currentImageIndex]} 
-                              alt={item.name}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                              onError={(e) => {
-                                console.error('Image failed to load:', {
-                                  src: e.target.src,
-                                  itemId: item.id,
-                                  currentIndex: item.currentImageIndex
-                                });
-                              }}
-                            />
-                          ) : (
-                            <div className="placeholder">
-                              <Plus size={24} />
-                              <span>Upload Image</span>
-                            </div>
+            {/* Conditional rendering based on shopContentType */}
+            {shopContentType === 'products' ? (
+              <>
+                <AddItemButton onClick={handleAddItem} theme={shopData?.theme}>
+                  <Plus size={20} />
+                  Add Product
+                </AddItemButton>
+            
+                <ItemGrid>
+                  {shopData?.items?.map(item => {
+                    const isExpanded = expandedItems.has(item.id);
+                  
+                    return (
+                      <ItemCard key={item.id}>
+                        <DeleteButton onClick={() => handleDeleteItem(item.id)}>
+                          <X size={16} />
+                        </DeleteButton>
+                    
+                        <ItemImageContainer>
+                          {uploading[item.id] && (
+                            <UploadingOverlay>
+                              <LoadingSpinner />
+                            </UploadingOverlay>
                           )}
-                        </div>
-                        
-                        {item.images.some(img => img) && (
-                          <>
-                            <button 
-                              className="carousel-arrow left"
-                              onClick={() => {
-                                const newIndex = ((item.currentImageIndex - 1) + 3) % 3;
-                                handleItemUpdate(item.id, { currentImageIndex: newIndex });
-                              }}
-                            >
-                              <ChevronLeft size={16} />
-                            </button>
-                            <button 
-                              className="carousel-arrow right"
-                              onClick={() => {
-                                const newIndex = (item.currentImageIndex + 1) % 3;
-                                handleItemUpdate(item.id, { currentImageIndex: newIndex });
-                              }}
-                            >
-                              <ChevronRight size={16} />
-                            </button>
-                          </>
-                        )}
-
-                        {item.images[item.currentImageIndex] && (
-                          <button 
-                            className="add-image"
+                          <div 
+                            className="image-container"
                             onClick={() => {
-                              const newImages = [...item.images];
-                              newImages[item.currentImageIndex] = null;
-                              handleItemUpdate(item.id, { images: newImages });
+                              if (!item.images[item.currentImageIndex]) {
+                                document.getElementById(`image-upload-${item.id}-${item.currentImageIndex}`).click();
+                              }
                             }}
                           >
-                            <X size={16} />
-                          </button>
-                        )}
-
-                        <input
-                          type="file"
-                          id={`image-upload-${item.id}-${item.currentImageIndex}`}
-                          accept="image/*"
-                          style={{ display: 'none' }}
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              handleImageUpload(item.id, item.currentImageIndex, e.target.files[0]);
-                            }
-                          }}
-                        />
-                      </ItemImageContainer>
-                        
-                      <ItemContent>
-                        <ItemHeader onClick={() => toggleItemExpansion(item.id)}>
-                          <h3>
-                            {item.name && item.name !== 'Item Name' ? 
-                              item.name : 
-                              <span style={{ opacity: 0.5 }}>Item Name</span>
-                            }
-                          </h3>
-                          <ExpandButton>
-                            {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                          </ExpandButton>
-                        </ItemHeader>
+                            {item.images[item.currentImageIndex] ? (
+                              <img 
+                                src={item.images[item.currentImageIndex]} 
+                                alt={item.name}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            ) : (
+                              <div className="placeholder">
+                                <Plus size={24} />
+                                <span>Upload Image</span>
+                              </div>
+                            )}
+                          </div>
                           
-                        <ItemDetails expanded={isExpanded}>
-                          <div className="details-content">
-                            <ValidatedEditableText
-                              value={item.name}
-                              onChange={(value) => handleItemUpdate(item.id, { name: value })}
-                              placeholder="Item Name"
-                              theme={shopData?.theme}
-                            />
-
-                            <ValidatedEditableText
-                              value={item.price}
-                              onChange={(value) => handleItemUpdate(item.id, { price: value })}
-                              placeholder="Price"
-                              theme={shopData?.theme}
-                            />
-
-                            <ValidatedEditableText
-                              value={item.description}
-                              onChange={(value) => handleItemUpdate(item.id, { description: value })}
-                              placeholder="Item Description"
-                              multiline
-                              theme={shopData?.theme}
-                            />
-
-                            <CategorySelect
-                              value={item.category || 'Other'}
-                              onChange={(e) => handleItemUpdate(item.id, { category: e.target.value })}
-                              theme={shopData?.theme}
-                            >
-                              {ITEM_CATEGORIES.map(category => (
-                                <option key={category} value={category}>
-                                  {category}
-                                </option>
-                              ))}
-                            </CategorySelect>
-                            
-                            <QuantitySelector 
-                              value={parseInt(item.quantity) || 1}
-                              onChange={(value) => handleItemUpdate(item.id, { quantity: value })}
-                              theme={shopData?.theme}
-                              min={0}
-                              max={9999}
-                            />
-
-                            <AddressInput
-                              address={item.address || ''}
-                              onAddressChange={(value) => handleItemUpdate(item.id, { 
-                                address: value
-                              })}
-                              onLocationSelect={(location) => {
-                                console.log('Location selected:', location);
-                                if (location?.coordinates) {
-                                  handleItemUpdate(item.id, {
-                                    address: location.address,
-                                    coordinates: location.coordinates
-                                  });
-                                } else if (!location?.address) {
-                                  handleItemUpdate(item.id, {
-                                    address: '',
-                                    coordinates: null
-                                  });
-                                }
-                              }}
-                            />
-
-                            <DeleteSection>
-                              <DeleteItemButton
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteItem(item.id);
+                          {item.images.some(img => img) && (
+                            <>
+                              <button 
+                                className="carousel-arrow left"
+                                onClick={() => {
+                                  const newIndex = ((item.currentImageIndex - 1) + 3) % 3;
+                                  handleItemUpdate(item.id, { currentImageIndex: newIndex });
                                 }}
                               >
-                                <Trash2 size={16} />
-                                Remove Item
-                              </DeleteItemButton>
-                            </DeleteSection>
+                                <ChevronLeft size={16} />
+                              </button>
+                              <button 
+                                className="carousel-arrow right"
+                                onClick={() => {
+                                  const newIndex = (item.currentImageIndex + 1) % 3;
+                                  handleItemUpdate(item.id, { currentImageIndex: newIndex });
+                                }}
+                              >
+                                <ChevronRight size={16} />
+                              </button>
+                            </>
+                          )}
+
+                          {item.images[item.currentImageIndex] && (
+                            <button 
+                              className="add-image"
+                              onClick={() => {
+                                const newImages = [...item.images];
+                                newImages[item.currentImageIndex] = null;
+                                handleItemUpdate(item.id, { images: newImages });
+                              }}
+                            >
+                              <X size={16} />
+                            </button>
+                          )}
+
+                          <input
+                            type="file"
+                            id={`image-upload-${item.id}-${item.currentImageIndex}`}
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                handleImageUpload(item.id, item.currentImageIndex, e.target.files[0]);
+                              }
+                            }}
+                          />
+                        </ItemImageContainer>
+                          
+                        <ItemContent>
+                          <ItemHeader onClick={() => toggleItemExpansion(item.id)}>
+                            <h3>
+                              {item.name && item.name !== 'Item Name' ? 
+                                item.name : 
+                                <span style={{ opacity: 0.5 }}>Item Name</span>
+                              }
+                            </h3>
+                            <ExpandButton>
+                              {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                            </ExpandButton>
+                          </ItemHeader>
+                            
+                          <ItemDetails expanded={isExpanded}>
+                            <div className="details-content">
+                              <ValidatedEditableText
+                                value={item.name}
+                                onChange={(value) => handleItemUpdate(item.id, { name: value })}
+                                placeholder="Item Name"
+                                theme={shopData?.theme}
+                              />
+                              <ValidatedEditableText
+                                value={item.price}
+                                onChange={(value) => handleItemUpdate(item.id, { price: value })}
+                                placeholder="Price"
+                                theme={shopData?.theme}
+                              />
+                              <ValidatedEditableText
+                                value={item.description}
+                                onChange={(value) => handleItemUpdate(item.id, { description: value })}
+                                placeholder="Item Description"
+                                multiline
+                                theme={shopData?.theme}
+                              />
+                              <CategorySelect
+                                value={item.category || 'Other'}
+                                onChange={(e) => handleItemUpdate(item.id, { category: e.target.value })}
+                                theme={shopData?.theme}
+                              >
+                                {ITEM_CATEGORIES.map(category => (
+                                  <option key={category} value={category}>
+                                    {category}
+                                  </option>
+                                ))}
+                              </CategorySelect>
+                              <QuantitySelector 
+                                value={parseInt(item.quantity) || 1}
+                                onChange={(value) => handleItemUpdate(item.id, { quantity: value })}
+                                theme={shopData?.theme}
+                                min={0}
+                                max={9999}
+                              />
+                              <AddressInput
+                                address={item.address || ''}
+                                onAddressChange={(value) => handleItemUpdate(item.id, { 
+                                  address: value
+                                })}
+                                onLocationSelect={(location) => {
+                                  if (location?.coordinates) {
+                                    handleItemUpdate(item.id, {
+                                      address: location.address,
+                                      coordinates: location.coordinates
+                                    });
+                                  } else if (!location?.address) {
+                                    handleItemUpdate(item.id, {
+                                      address: '',
+                                      coordinates: null
+                                    });
+                                  }
+                                }}
+                              />
+                              <DeleteSection>
+                                <DeleteItemButton
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteItem(item.id);
+                                  }}
+                                >
+                                  <Trash2 size={16} />
+                                  Remove Item
+                                </DeleteItemButton>
+                              </DeleteSection>
+                            </div>
+                          </ItemDetails>
+                        </ItemContent>
+                      </ItemCard>
+                    );
+                  })}
+                </ItemGrid>
+              </>
+            ) : (
+              <>
+                <AddItemButton onClick={handleAddService} theme={shopData?.theme}>
+                  <Plus size={20} />
+                  Add Service
+                </AddItemButton>
+            
+                <ItemGrid>
+                  {shopData?.services?.map(service => {
+                    const isExpanded = expandedItems.has(service.id);
+                  
+                    return (
+                      <ItemCard key={service.id}>
+                        <DeleteButton onClick={() => handleServiceDelete(service.id)}>
+                          <X size={16} />
+                        </DeleteButton>
+                    
+                        <ItemImageContainer>
+                          {uploading[service.id] && (
+                            <UploadingOverlay>
+                              <LoadingSpinner />
+                            </UploadingOverlay>
+                          )}
+                          <div 
+                            className="image-container"
+                            onClick={() => {
+                              if (!service.images[service.currentImageIndex]) {
+                                document.getElementById(`service-image-upload-${service.id}-${service.currentImageIndex}`).click();
+                              }
+                            }}
+                          >
+                            {service.images[service.currentImageIndex] ? (
+                              <img 
+                                src={service.images[service.currentImageIndex]} 
+                                alt={service.name}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            ) : (
+                              <div className="placeholder">
+                                <Store size={24} />
+                                <span>Upload Image</span>
+                              </div>
+                            )}
                           </div>
-                        </ItemDetails>
-                      </ItemContent>
-                    </ItemCard>
-                  );
-                })}
-              </ItemGrid>            
-            </>
-          )}
+                          
+                          {service.images.some(img => img) && (
+                            <>
+                              <button 
+                                className="carousel-arrow left"
+                                onClick={() => {
+                                  const newIndex = ((service.currentImageIndex - 1) + 3) % 3;
+                                  handleServiceUpdate(service.id, { currentImageIndex: newIndex });
+                                }}
+                              >
+                                <ChevronLeft size={16} />
+                              </button>
+                              <button 
+                                className="carousel-arrow right"
+                                onClick={() => {
+                                  const newIndex = (service.currentImageIndex + 1) % 3;
+                                  handleServiceUpdate(service.id, { currentImageIndex: newIndex });
+                                }}
+                              >
+                                <ChevronRight size={16} />
+                              </button>
+                            </>
+                          )}
+
+                          <input
+                            type="file"
+                            id={`service-image-upload-${service.id}-${service.currentImageIndex}`}
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                handleImageUpload(service.id, service.currentImageIndex, e.target.files[0]);
+                              }
+                            }}
+                          />
+                        </ItemImageContainer>
+                          
+                        <ItemContent>
+                          <ItemHeader onClick={() => toggleItemExpansion(service.id)}>
+                            <h3>
+                              {service.name && service.name !== 'Service Name' ? 
+                                service.name : 
+                                <span style={{ opacity: 0.5 }}>Service Name</span>
+                              }
+                            </h3>
+                            <ExpandButton>
+                              {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                            </ExpandButton>
+                          </ItemHeader>
+                            
+                          <ItemDetails expanded={isExpanded}>
+                            <div className="details-content">
+                              <ValidatedEditableText
+                                value={service.name}
+                                onChange={(value) => handleServiceUpdate(service.id, { name: value })}
+                                placeholder="Service Name"
+                                theme={shopData?.theme}
+                              />
+                              <ValidatedEditableText
+                                value={service.description}
+                                onChange={(value) => handleServiceUpdate(service.id, { description: value })}
+                                placeholder="Service Description"
+                                multiline
+                                theme={shopData?.theme}
+                              />
+                              <CategorySelect
+                                value={service.category || 'Other'}
+                                onChange={(e) => handleServiceUpdate(service.id, { category: e.target.value })}
+                                theme={shopData?.theme}
+                              >
+                                {SERVICE_CATEGORIES.map(category => (
+                                  <option key={category} value={category}>
+                                    {category}
+                                  </option>
+                                ))}
+                              </CategorySelect>
+                              <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ 
+                                  display: 'block',
+                                  marginBottom: '0.5rem',
+                                  fontSize: '0.9rem',
+                                  color: shopData?.theme?.colors?.text
+                                }}>
+                                  Available Slots
+                                </label>
+                                <QuantitySelector 
+                                  value={parseInt(service.slots) || 1}
+                                  onChange={(value) => handleServiceUpdate(service.id, { slots: value })}
+                                  theme={shopData?.theme}
+                                  min={0}
+                                  max={9999}
+                                />
+                              </div>
+                              <AddressInput
+                                address={service.address || ''}
+                                onAddressChange={(value) => handleServiceUpdate(service.id, { 
+                                  address: value
+                                })}
+                                onLocationSelect={(location) => {
+                                  if (location?.coordinates) {
+                                    handleServiceUpdate(service.id, {
+                                      address: location.address,
+                                      coordinates: location.coordinates
+                                    });
+                                  } else if (!location?.address) {
+                                    handleServiceUpdate(service.id, {
+                                      address: '',
+                                      coordinates: null
+                                    });
+                                  }
+                                }}
+                              />
+                              <DeleteSection>
+                                <DeleteItemButton
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleServiceDelete(service.id);
+                                  }}
+                                >
+                                  <Trash2 size={16} />
+                                  Remove Service
+                                </DeleteItemButton>
+                              </DeleteSection>
+                            </div>
+                          </ItemDetails>
+                        </ItemContent>
+                      </ItemCard>
+                    );
+                  })}
+                </ItemGrid>
+              </>
+            )}
+          </>
+        )}
 
           {activeTab === 'home' && renderHomeView()}
 

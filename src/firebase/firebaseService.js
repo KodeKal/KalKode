@@ -235,7 +235,50 @@ export const saveShopData = async (userId, data) => {
   }
 };
 
-// UPDATE: saveInitialShop to include username
+// Add after getFeaturedItems function (around line 400)
+
+export const getFeaturedServices = async (limitCount = 6) => {
+  try {
+    const shopsRef = collection(db, 'shops');
+    const querySnapshot = await getDocs(shopsRef);
+    
+    let allServices = [];
+    querySnapshot.docs.forEach(doc => {
+      const shopData = doc.data();
+      if (shopData?.services && Array.isArray(shopData.services)) {
+        const shopServices = shopData.services
+          .filter(service => {
+            const hasImages = service.images && service.images.length > 0 && service.images.some(img => img);
+            const hasValidSlots = service.slots && !isNaN(parseInt(service.slots)) && parseInt(service.slots) > 0;
+            const isActive = !service.deleted;
+            
+            return hasImages && hasValidSlots && isActive;
+          })
+          .map(service => ({
+            ...service,
+            shopId: doc.id,
+            shopName: shopData.name || 'Unknown Shop',
+            shopUsername: shopData.username,
+            shopTheme: shopData.theme || {},
+            slots: service.slots || 1
+          }));
+        allServices = [...allServices, ...shopServices];
+      }
+    });
+
+    // Sort by most recent first
+    allServices.sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+      const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+      return dateB - dateA;
+    });
+
+    return allServices.slice(0, limitCount);
+  } catch (error) {
+    console.error('Error fetching featured services:', error);
+    throw error;
+  }
+};
 // UPDATE: saveInitialShop to include username and fix locations
 export const saveInitialShop = async (userId, data) => {
   try {
