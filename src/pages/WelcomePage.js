@@ -1419,23 +1419,26 @@ const CategoryGridWrapper = styled.div`
   }
 `;
 
-// Replace the CategoryScrollableGrid styled component with this corrected version:
-
 const CategoryScrollableGrid = styled.div`
   display: none;
   
   @media (max-width: 768px) {
     display: grid;
     grid-auto-flow: column;
-    grid-template-rows: repeat(2, 1fr);
-    grid-template-columns: repeat(5, minmax(280px, 1fr)); /* Increased from 200px */
-    gap: 1rem; /* Increased from 0.75rem */
+    /* ✅ Dynamic rows: 1 row if 5 or fewer items, 2 rows if more */
+    grid-template-rows: ${props => props.itemCount <= 5 ? '1fr' : 'repeat(2, 1fr)'};
+    grid-template-columns: ${props => {
+      const cols = Math.ceil(props.itemCount / (props.itemCount <= 5 ? 1 : 2));
+      return `repeat(${cols}, minmax(280px, 1fr))`;
+    }};
+    gap: 1rem;
     overflow-x: auto;
     overflow-y: hidden;
     padding-bottom: 0.5rem;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-    min-height: 85vh; /* Add minimum height to stretch vertically */
+    /* ✅ Dynamic height based on row count */
+    min-height: ${props => props.itemCount <= 5 ? '42.5vh' : '85vh'};
     
     &::-webkit-scrollbar {
       height: 4px;
@@ -1454,12 +1457,15 @@ const CategoryScrollableGrid = styled.div`
     > * {
       scroll-snap-align: start;
       min-width: 0;
-      height: 100%; /* Make items stretch to full height */
+      height: 100%;
     }
   }
   
   @media (max-width: 480px) {
-    grid-template-columns: repeat(5, minmax(240px, 1fr)); /* Increased from 160px */
+    grid-template-columns: ${props => {
+      const cols = Math.ceil(props.itemCount / (props.itemCount <= 5 ? 1 : 2));
+      return `repeat(${cols}, minmax(240px, 1fr))`;
+    }};
     gap: 0.75rem;
   }
 `;
@@ -1666,10 +1672,19 @@ const WelcomePage = () => {
   const [sortBy, setSortBy] = useState('recent'); // 'recent', 'proximity', 'price-low', 'price-high'
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
+  
+  const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [productSearchResults, setProductSearchResults] = useState([]);
+  const [hasProductSearchResults, setHasProductSearchResults] = useState(false);
+  
   const [featuredServices, setFeaturedServices] = useState([]);
   const [serviceSearchTerm, setServiceSearchTerm] = useState('');
   const [serviceSearchResults, setServiceSearchResults] = useState([]);
   const [hasServiceSearchResults, setHasServiceSearchResults] = useState(false);
+  
+  const [mediaSearchTerm, setMediaSearchTerm] = useState('');
+  const [mediaSearchResults, setMediaSearchResults] = useState([]);
+  const [hasMediaSearchResults, setHasMediaSearchResults] = useState(false);
 
   
   const { user, isAuthenticated } = useAuth();
@@ -1796,23 +1811,6 @@ const saveLocationToStorage = (location) => {
   }
 };
 
-const handleServiceSearch = async () => {
-  // Similar to handleFeaturedSearch but for services
-  if (!serviceSearchTerm.trim()) {
-    setServiceSearchResults([]);
-    setHasServiceSearchResults(false);
-    return;
-  }
-  
-  // Implement service search logic
-};
-
-const handleClearServiceSearch = () => {
-  setServiceSearchTerm('');
-  setServiceSearchResults([]);
-  setHasServiceSearchResults(false);
-  setError(null);
-};
 
 const getLocationFromStorage = () => {
   try {
@@ -2538,117 +2536,23 @@ useEffect(() => {
   };
 
   // Search featured items
-  const searchFeaturedItems = async (searchTerm) => {
-    if (!searchTerm.trim()) {
-      setSearchResults([]);
-      setHasSearchResults(false);
-      return;
-    }
   
-    try {
-      setIsSearching(true);
-      setError(null);
-    
-      const shopsRef = collection(db, 'shops');
-      const snapshot = await getDocs(shopsRef);
-      
-      let allMatchingItems = [];
-      const currentUserId = user?.uid;
-      
-      snapshot.docs.forEach(doc => {
-        const shopData = doc.data();
-        
-        if (doc.id === currentUserId) {
-          return;
-        }
-        
-        if (shopData?.items && Array.isArray(shopData.items)) {
-          shopData.items
-            .filter(item => !item.deleted)
-            .forEach(item => {
-              const itemName = (item.name || '').toLowerCase();
-              const itemDescription = (item.description || '').toLowerCase();
-              const searchLower = searchTerm.toLowerCase();
-              
-              if (itemName.includes(searchLower) || itemDescription.includes(searchLower)) {
-                allMatchingItems.push({
-                  ...item,
-                  shopId: doc.id,
-                  shopName: shopData.name || 'Unknown Shop',
-                  shopTheme: shopData.theme
-                });
-              }
-            });
-        }
-      });
-    
-      if (userLocation) {
-        allMatchingItems = allMatchingItems.map(item => {
-          if (item.coordinates && item.coordinates.lat && item.coordinates.lng) {
-            try {
-              const distanceInMeters = getDistance(
-                { latitude: userLocation.latitude, longitude: userLocation.longitude },
-                { latitude: item.coordinates.lat, longitude: item.coordinates.lng }
-              );
-              const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
-              
-              return {
-                ...item,
-                distance: distanceInMeters,
-                distanceInMiles,
-                formattedDistance: `${distanceInMiles} mi`
-              };
-            } catch (e) {
-              console.warn('Error calculating distance for item:', e);
-              return item;
-            }
-          }
-          return item;
-        });
-      }
-    
-      setSearchResults(allMatchingItems);
-      setHasSearchResults(true);
-      
-      if (allMatchingItems.length === 0) {
-        setError(`No items found matching "${searchTerm}"`);
-      }
-    } catch (error) {
-      console.error('Error searching items:', error);
-      setError('Failed to search items. Please try again later.');
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-
-  // Handle featured search
-  const handleFeaturedSearch = () => {
-    if (featuredSearchTerm.trim()) {
-      searchFeaturedItems(featuredSearchTerm);
-    }
-  };
 
   const handleRowScroll = (categoryName, rowNumber, scrollLeft) => {
-  const row1Id = `${categoryName}-row1`;
-  const row2Id = `${categoryName}-row2`;
-  
-  const row1Element = document.getElementById(row1Id);
-  const row2Element = document.getElementById(row2Id);
-  
-  if (rowNumber === 1 && row2Element) {
-    row2Element.scrollLeft = scrollLeft;
-  } else if (rowNumber === 2 && row1Element) {
-    row1Element.scrollLeft = scrollLeft;
-  }
-};
-
-  const handleClearFeaturedSearch = () => {
-    setFeaturedSearchTerm('');
-    setSearchResults([]);
-    setHasSearchResults(false);
-    setError(null);
+    const row1Id = `${categoryName}-row1`;
+    const row2Id = `${categoryName}-row2`;
+    
+    const row1Element = document.getElementById(row1Id);
+    const row2Element = document.getElementById(row2Id);
+    
+    if (rowNumber === 1 && row2Element) {
+      row2Element.scrollLeft = scrollLeft;
+    } else if (rowNumber === 2 && row1Element) {
+      row1Element.scrollLeft = scrollLeft;
+    }
   };
+
+  
 
   // Fetch nearby items
   const fetchNearbyItems = async () => {
@@ -2790,35 +2694,296 @@ useEffect(() => {
     }
   };
 
-  // Handle item click
-  const handleItemClick = (item) => {
-    setZoomedItem(item);
-    setOrderQuantity(1);
-    setCurrentImageIndex(0); // Reset image index
-    
-    const scrollY = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
-    document.body.style.overflow = 'hidden';
-    
-    document.body.setAttribute('data-scroll-y', scrollY);
-  };
+  // ✅ REPLACE: No scroll tracking
+  // ✅ BEST SOLUTION: Store scroll, prevent default behavior
+const handleItemClick = (item) => {
+  setZoomedItem(item);
+  setOrderQuantity(1);
+  setCurrentImageIndex(0);
+  
+  // Get current scroll position
+  const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+  
+  // Store it
+  window.lastScrollPosition = scrollY;
+  
+  // Lock scroll
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${scrollY}px`;
+  document.body.style.left = '0';
+  document.body.style.right = '0';
+  document.body.style.width = '100%';
+};
 
-  // Handle close zoom
-  const handleCloseZoom = () => {
-    setZoomedItem(null);
-    setCurrentImageIndex(0);
+const handleCloseZoom = () => {
+  setZoomedItem(null);
+  setCurrentImageIndex(0);
+  
+  // Get stored position
+  const scrollY = window.lastScrollPosition || 0;
+  
+  // Unlock scroll
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.left = '';
+  document.body.style.right = '';
+  document.body.style.width = '';
+  
+  // Restore scroll WITHOUT smooth behavior
+  window.scrollTo({
+    top: scrollY,
+    left: 0,
+    behavior: 'instant' // Use 'instant' instead of 'auto'
+  });
+  
+  // Clear stored position
+  delete window.lastScrollPosition;
+};
+
+// ✅ ADD: Search function for Services
+const searchServices = async (searchTerm) => {
+  if (!searchTerm.trim()) {
+    setServiceSearchResults([]);
+    setHasServiceSearchResults(false);
+    return;
+  }
+
+  try {
+    setIsSearching(true);
+    setError(null);
+  
+    const shopsRef = collection(db, 'shops');
+    const snapshot = await getDocs(shopsRef);
     
-    const scrollY = document.body.getAttribute('data-scroll-y') || '0';
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.width = '';
-    document.body.style.overflow = '';
-    document.body.removeAttribute('data-scroll-y');
+    let allMatchingServices = [];
+    const currentUserId = user?.uid;
     
-    window.scrollTo(0, parseInt(scrollY));
-  };
+    snapshot.docs.forEach(doc => {
+      const shopData = doc.data();
+      
+      if (doc.id === currentUserId) {
+        return;
+      }
+      
+      if (shopData?.services && Array.isArray(shopData.services)) {
+        shopData.services
+          .filter(service => !service.deleted)
+          .forEach(service => {
+            const serviceName = (service.name || '').toLowerCase();
+            const serviceDescription = (service.description || '').toLowerCase();
+            const searchLower = searchTerm.toLowerCase();
+            
+            if (serviceName.includes(searchLower) || serviceDescription.includes(searchLower)) {
+              allMatchingServices.push({
+                ...service,
+                shopId: doc.id,
+                shopName: shopData.name || 'Unknown Shop',
+                shopTheme: shopData.theme,
+                isService: true
+              });
+            }
+          });
+      }
+    });
+  
+    if (effectiveLocation) {
+      allMatchingServices = allMatchingServices.map(service => {
+        if (service.coordinates && service.coordinates.lat && service.coordinates.lng) {
+          try {
+            const distanceInMeters = getDistance(
+              { latitude: effectiveLocation.latitude, longitude: effectiveLocation.longitude },
+              { latitude: service.coordinates.lat, longitude: service.coordinates.lng }
+            );
+            const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
+            
+            return {
+              ...service,
+              distance: distanceInMeters,
+              distanceInMiles,
+              formattedDistance: `${distanceInMiles} mi`
+            };
+          } catch (e) {
+            console.warn('Error calculating distance for service:', e);
+            return service;
+          }
+        }
+        return service;
+      });
+    }
+  
+    setServiceSearchResults(allMatchingServices);
+    setHasServiceSearchResults(true);
+    
+    if (allMatchingServices.length === 0) {
+      setError(`No services found matching "${searchTerm}"`);
+    }
+  } catch (error) {
+    console.error('Error searching services:', error);
+    setError('Failed to search services. Please try again later.');
+  } finally {
+    setIsSearching(false);
+  }
+};
+
+// ✅ ADD: Search function for Products
+const searchProducts = async (searchTerm) => {
+  if (!searchTerm.trim()) {
+    setProductSearchResults([]);
+    setHasProductSearchResults(false);
+    return;
+  }
+
+  try {
+    setIsSearching(true);
+    setError(null);
+  
+    const shopsRef = collection(db, 'shops');
+    const snapshot = await getDocs(shopsRef);
+    
+    let allMatchingItems = [];
+    const currentUserId = user?.uid;
+    
+    snapshot.docs.forEach(doc => {
+      const shopData = doc.data();
+      
+      if (doc.id === currentUserId) {
+        return;
+      }
+      
+      if (shopData?.items && Array.isArray(shopData.items)) {
+        shopData.items
+          .filter(item => !item.deleted)
+          .forEach(item => {
+            const itemName = (item.name || '').toLowerCase();
+            const itemDescription = (item.description || '').toLowerCase();
+            const searchLower = searchTerm.toLowerCase();
+            
+            if (itemName.includes(searchLower) || itemDescription.includes(searchLower)) {
+              allMatchingItems.push({
+                ...item,
+                shopId: doc.id,
+                shopName: shopData.name || 'Unknown Shop',
+                shopTheme: shopData.theme
+              });
+            }
+          });
+      }
+    });
+  
+    if (effectiveLocation) {
+      allMatchingItems = allMatchingItems.map(item => {
+        if (item.coordinates && item.coordinates.lat && item.coordinates.lng) {
+          try {
+            const distanceInMeters = getDistance(
+              { latitude: effectiveLocation.latitude, longitude: effectiveLocation.longitude },
+              { latitude: item.coordinates.lat, longitude: item.coordinates.lng }
+            );
+            const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
+            
+            return {
+              ...item,
+              distance: distanceInMeters,
+              distanceInMiles,
+              formattedDistance: `${distanceInMiles} mi`
+            };
+          } catch (e) {
+            console.warn('Error calculating distance for item:', e);
+            return item;
+          }
+        }
+        return item;
+      });
+    }
+  
+    setProductSearchResults(allMatchingItems);
+    setHasProductSearchResults(true);
+    
+    if (allMatchingItems.length === 0) {
+      setError(`No items found matching "${searchTerm}"`);
+    }
+  } catch (error) {
+    console.error('Error searching items:', error);
+    setError('Failed to search items. Please try again later.');
+  } finally {
+    setIsSearching(false);
+  }
+};
+
+// ✅ ADD: Get active search term
+const getActiveSearchTerm = () => {
+  switch (activeTab) {
+    case 'featured': return productSearchTerm;
+    case 'services': return serviceSearchTerm;
+    case 'media': return mediaSearchTerm;
+    default: return '';
+  }
+};
+
+// ✅ ADD: Set active search term
+const setActiveSearchTerm = (value) => {
+  switch (activeTab) {
+    case 'featured':
+      setProductSearchTerm(value);
+      break;
+    case 'services':
+      setServiceSearchTerm(value);
+      break;
+    case 'media':
+      setMediaSearchTerm(value);
+      break;
+  }
+};
+
+// ✅ ADD: Handle search based on active tab
+const handleSearch = () => {
+  switch (activeTab) {
+    case 'featured':
+      if (productSearchTerm.trim()) {
+        searchProducts(productSearchTerm);
+      }
+      break;
+    case 'services':
+      if (serviceSearchTerm.trim()) {
+        searchServices(serviceSearchTerm);
+      }
+      break;
+    case 'media':
+      // Media search coming soon
+      break;
+  }
+};
+
+// ✅ ADD: Clear search based on active tab
+const handleClearSearch = () => {
+  switch (activeTab) {
+    case 'featured':
+      setProductSearchTerm('');
+      setProductSearchResults([]);
+      setHasProductSearchResults(false);
+      break;
+    case 'services':
+      setServiceSearchTerm('');
+      setServiceSearchResults([]);
+      setHasServiceSearchResults(false);
+      break;
+    case 'media':
+      setMediaSearchTerm('');
+      setMediaSearchResults([]);
+      setHasMediaSearchResults(false);
+      break;
+  }
+  setError(null);
+};
+
+// ✅ ADD: Check if current tab has search results
+const hasActiveSearchResults = () => {
+  switch (activeTab) {
+    case 'featured': return hasProductSearchResults;
+    case 'services': return hasServiceSearchResults;
+    case 'media': return hasMediaSearchResults;
+    default: return false;
+  }
+};
 
   // Adjust quantity
   const adjustQuantity = (delta) => {
@@ -3201,10 +3366,10 @@ useEffect(() => {
                     cityInputValue :
                     (effectiveLocation && isIPLocation ? 
                       `${effectiveLocation.city}, ${effectiveLocation.region}` : 
-                      'Load Location')
+                      'Loading Location')
                 }
                 onChange={(e) => setCityInputValue(e.target.value)}
-                placeholder="Load Location"
+                placeholder="Loading Location"
                 readOnly
               />
 
@@ -3220,8 +3385,8 @@ useEffect(() => {
         ) : (
           <>
 
-            <h1>Welcome to KalKode</h1>
-            <p>Your Community Marketplace.</p>
+            <h1>KALKODE</h1>
+            <p>Neigborhood Marketplace.</p>
 
             
         
@@ -3260,10 +3425,10 @@ useEffect(() => {
                     cityInputValue :
                     (effectiveLocation && isIPLocation ? 
                       `${effectiveLocation.city}, ${effectiveLocation.region}` : 
-                      'Load Location')
+                      'Loading Location')
                 }
                 onChange={(e) => setCityInputValue(e.target.value)}
-                placeholder="Load Location"
+                placeholder="Loading Location"
                 readOnly
               />
               
@@ -3304,41 +3469,333 @@ useEffect(() => {
           </Tab>
         </TabContainer>
 
+        {/* Search container with Filter */}
+            <SearchContainer>
+              <SearchInputWrapper>
+                <SearchInput
+                  type="text"
+                  placeholder={`Search for ${activeTab === 'featured' ? 'products' : activeTab === 'services' ? 'services' : 'media'}...`}
+                  value={getActiveSearchTerm()}
+                  onChange={(e) => setActiveSearchTerm(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                />
 
-        {/* services Tab */}
-        {activeTab === 'services' && (
-        <>
-          <SearchContainer>
-            <SearchInputWrapper>
-              <SearchInput
-                type="text"
-                placeholder="Search for services..."
-                value={serviceSearchTerm}
-                onChange={(e) => setServiceSearchTerm(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleServiceSearch()}
-              />
+                <SearchButtonGroup>
+                  {hasActiveSearchResults() && (
+                    <SearchButton 
+                      onClick={handleClearSearch}
+                      title="Clear search"
+                    >
+                      <X size={18} />
+                    </SearchButton>
+                  )}
 
-              <SearchButtonGroup>
-                {hasServiceSearchResults && (
                   <SearchButton 
-                    onClick={handleClearServiceSearch}
-                    title="Clear search"
+                    onClick={handleSearch}
+                    disabled={isSearching || !getActiveSearchTerm().trim()}
+                    title="Search"
                   >
-                    <X size={18} />
+                    <Search size={18} />
                   </SearchButton>
-                )}
 
-                <SearchButton 
-                  onClick={handleServiceSearch}
-                  disabled={isSearching || !serviceSearchTerm.trim()}
-                  title="Search"
-                >
-                  <Search size={18} />
-                </SearchButton>
-              </SearchButtonGroup>
-            </SearchInputWrapper>
-          </SearchContainer>
-              
+                  {(activeTab === 'featured' || activeTab === 'services') && (
+                    <SearchButton 
+                      onClick={() => setSortMenuOpen(!sortMenuOpen)}
+                      active={sortBy !== 'recent'}
+                      title="Filter & Sort"
+                    >
+                      <Filter size={18} />
+                    </SearchButton>
+                  )}
+                </SearchButtonGroup>
+              </SearchInputWrapper>
+                
+              {/* Keep SortDropdown positioned relative to SearchContainer */}
+              <SortContainer className="sort-container" style={{ position: 'static' }}>
+                <SortDropdown theme={currentStyle} isOpen={sortMenuOpen}>
+                                <div style={{
+                                  padding: '0.5rem 1rem 0.75rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '700',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '1px',
+                                  color: currentStyle?.colors?.accent || '#800000',
+                                  borderBottom: `2px solid ${currentStyle?.colors?.accent || '#800000'}`,
+                                  marginBottom: '0.75rem',
+                                  fontFamily: currentStyle?.fonts?.heading || 'inherit'
+                                }}>
+                                  Sort By
+                                </div>
+                              
+                                <SortOption 
+                                  theme={currentStyle}
+                                  active={sortBy === 'recent'}
+                                  onClick={() => {
+                                    if (!userLocation) {
+                                      requestLocation();
+                                      return;
+                                    }
+                                    setSortBy('recent');
+                                    setSortMenuOpen(false);
+                                    loadCategorizedItems();
+                                  }}
+                                >
+                                  <Package size={16} />
+                                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                    <span>Most Recent</span>
+                                    <span style={{ 
+                                      fontSize: '0.7rem', 
+                                      opacity: 0.7,
+                                      fontWeight: '400'
+                                    }}>
+                                      All items, newest first
+                                    </span>
+                                  </div>
+                                  {!userLocation && (
+                                    <span style={{ 
+                                      fontSize: '0.65rem', 
+                                      opacity: 0.6,
+                                      marginLeft: 'auto',
+                                      fontStyle: 'italic'
+                                    }}>
+                                      (needs location)
+                                    </span>
+                                  )}
+                                </SortOption>
+                                
+                                <SortOption 
+                                  theme={currentStyle}
+                                  active={sortBy === 'proximity'}
+                                  onClick={() => {
+                                    if (!userLocation) {
+                                      requestLocation();
+                                    }
+                                    setSortBy('proximity');
+                                    setSortMenuOpen(false);
+                                    loadCategorizedItems();
+                                  }}
+                                >
+                                  <Navigation size={16} />
+                                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                    <span>Closest First</span>
+                                    <span style={{ 
+                                      fontSize: '0.7rem', 
+                                      opacity: 0.7,
+                                      fontWeight: '400'
+                                    }}>
+                                      All items by distance
+                                    </span>
+                                  </div>
+                                  {!userLocation && (
+                                    <span style={{ 
+                                      fontSize: '0.65rem', 
+                                      opacity: 0.6,
+                                      marginLeft: 'auto',
+                                      fontStyle: 'italic'
+                                    }}>
+                                      (needs location)
+                                    </span>
+                                  )}
+                                </SortOption>
+                                
+                                <SortOption 
+                                  theme={currentStyle}
+                                  active={sortBy === 'price-low'}
+                                  onClick={() => {
+                                    if (!userLocation) {
+                                      requestLocation();
+                                      return;
+                                    }
+                                    setSortBy('price-low');
+                                    setSortMenuOpen(false);
+                                    loadCategorizedItems();
+                                  }}
+                                >
+                                  <span style={{ fontSize: '1rem', fontWeight: '600' }}>$</span>
+                                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                    <span>Price: Low to High</span>
+                                    <span style={{ 
+                                      fontSize: '0.7rem', 
+                                      opacity: 0.7,
+                                      fontWeight: '400'
+                                    }}>
+                                      All items by price
+                                    </span>
+                                  </div>
+                                  {!userLocation && (
+                                    <span style={{ 
+                                      fontSize: '0.65rem', 
+                                      opacity: 0.6,
+                                      marginLeft: 'auto',
+                                      fontStyle: 'italic'
+                                    }}>
+                                      (needs location)
+                                    </span>
+                                  )}
+                                </SortOption>
+                                
+                                <SortOption 
+                                  theme={currentStyle}
+                                  active={sortBy === 'price-high'}
+                                  onClick={() => {
+                                    if (!userLocation) {
+                                      requestLocation();
+                                      return;
+                                    }
+                                    setSortBy('price-high');
+                                    setSortMenuOpen(false);
+                                    loadCategorizedItems();
+                                  }}
+                                >
+                                  <span style={{ fontSize: '1rem', fontWeight: '600' }}>$$$</span>
+                                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                    <span>Price: High to Low</span>
+                                    <span style={{ 
+                                      fontSize: '0.7rem', 
+                                      opacity: 0.7,
+                                      fontWeight: '400'
+                                    }}>
+                                      All items by price
+                                    </span>
+                                  </div>
+                                  {!userLocation && (
+                                    <span style={{ 
+                                      fontSize: '0.65rem', 
+                                      opacity: 0.6,
+                                      marginLeft: 'auto',
+                                      fontStyle: 'italic'
+                                    }}>
+                                      (needs location)
+                                    </span>
+                                  )}
+                                </SortOption>
+                              </SortDropdown>
+              </SortContainer>
+            </SearchContainer>
+
+
+        {activeTab === 'featured' && (
+        <>
+          {hasProductSearchResults ? (
+            <div>
+              <CategoryHeader theme={currentStyle}>
+                <h2>Search Results ({productSearchResults.length})</h2>
+              </CategoryHeader>
+          
+              {productSearchResults.length === 0 ? (
+                <EmptyGridMessage>
+                  <h3>No Items Found</h3>
+                  <p>No items match your search criteria.</p>
+                </EmptyGridMessage>
+              ) : (
+                <GridContainer>
+                  {productSearchResults.map(item => (
+                    <FeaturedItem 
+                      key={`search-${item.shopId}-${item.id}`}
+                      item={item}
+                      theme={currentStyle}
+                      onItemClick={handleItemClick}
+                      showDistance={true}
+                    />
+                  ))}
+                </GridContainer>
+              )}
+            </div>
+          ) : (
+              <div>
+                {/* Featured Items */}
+                <CategoryHeader theme={currentStyle}>
+                  <h2>Featured Items</h2>
+                  <span className="view-all">{featuredItems.length} items</span>
+                </CategoryHeader>
+          
+                <CategoryGridWrapper>
+                  <div className="desktop-grid" style={{ display: 'contents' }}>
+                    {featuredItems.map(item => (
+                      <div key={`featured-${item.shopId}-${item.id}`} className="desktop-only" 
+                           style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
+                        <FeaturedItem
+                          item={item}
+                          theme={currentStyle}
+                          onItemClick={handleItemClick}
+                          showDistance={true}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* ✅ CRITICAL: Pass itemCount prop */}
+                  <CategoryScrollableGrid 
+                    theme={currentStyle} 
+                    className="mobile-only"
+                    itemCount={featuredItems.length}
+                  >
+                    {featuredItems.map(item => (
+                      <FeaturedItem
+                        key={`featured-mobile-${item.shopId}-${item.id}`}
+                        item={item}
+                        theme={currentStyle}
+                        onItemClick={handleItemClick}
+                        showDistance={true}
+                      />
+                    ))}
+                  </CategoryScrollableGrid>
+                </CategoryGridWrapper>
+                  
+                {/* Category Sections - ✅ ALSO FIX HERE */}
+                {Object.entries(categories).map(([categoryName, items]) => {
+                  if (items.length === 0) return null;
+                
+                  return (
+                    <div key={categoryName} style={{ marginTop: '3rem' }}>
+                      <CategoryHeader theme={currentStyle}>
+                        <h2>{categoryName}</h2>
+                        <span className="view-all">{items.length} items</span>
+                      </CategoryHeader>
+                  
+                      <CategoryGridWrapper>
+                        <div className="desktop-grid" style={{ display: 'contents' }}>
+                          {items.map(item => (
+                            <div key={`${categoryName}-${item.shopId}-${item.id}`} className="desktop-only"
+                                 style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
+                              <FeaturedItem
+                                item={item}
+                                theme={currentStyle}
+                                onItemClick={handleItemClick}
+                                showDistance={true}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* ✅ CRITICAL: Pass itemCount={items.length} */}
+                        <CategoryScrollableGrid 
+                          theme={currentStyle} 
+                          className="mobile-only" 
+                          itemCount={items.length}
+                        >
+                          {items.map(item => (
+                            <FeaturedItem
+                              key={`${categoryName}-mobile-${item.shopId}-${item.id}`}
+                              item={item}
+                              theme={currentStyle}
+                              onItemClick={handleItemClick}
+                              showDistance={true}
+                            />
+                          ))}
+                        </CategoryScrollableGrid>
+                      </CategoryGridWrapper>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+        </>
+      )}
+      
+      {/* ✅ SAME FIX FOR SERVICES TAB */}
+      {activeTab === 'services' && (
+        <>
           {hasServiceSearchResults ? (
             <div>
               <CategoryHeader theme={currentStyle}>
@@ -3354,12 +3811,8 @@ useEffect(() => {
                 <GridContainer>
                   {serviceSearchResults.map(service => (
                     <FeaturedItem 
-                      key={`search-${service.shopId}-${service.id}`} 
-                      item={{
-                        ...service,
-                        price: `${service.price}`, // Display slots instead of price
-                        isService: true
-                      }}
+                      key={`search-${service.shopId}-${service.id}`}
+                      item={service}
                       theme={currentStyle}
                       onItemClick={handleItemClick}
                       showDistance={true}
@@ -3369,435 +3822,95 @@ useEffect(() => {
               )}
             </div>
           ) : (
-            <div>
-              {/* Featured Services */}
-              <CategoryHeader theme={currentStyle}>
-                <h2>Featured Services</h2>
-                <span className="view-all">
-                  {featuredServices.length} services
-                </span>
-              </CategoryHeader>
-          
-              <CategoryGridWrapper>
-                <div className="desktop-grid" style={{ display: 'contents' }}>
-                  {featuredServices.map(service => (
-                    <div key={`featured-${service.shopId}-${service.id}`} className="desktop-only" 
-                         style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
-                      <FeaturedItem
-                        item={{
-                          ...service,
-                          price: `${service.price}`,
-                          isService: true
-                        }}
-                        theme={currentStyle}
-                        onItemClick={handleItemClick}
-                        showDistance={true}
-                      />
-                    </div>
-                  ))}
-                </div>
-                
-                <CategoryScrollableGrid theme={currentStyle} className="mobile-only">
-                  {featuredServices.map(service => (
-                    <FeaturedItem
-                      key={`featured-mobile-${service.shopId}-${service.id}`}
-                      item={{
-                        ...service,
-                        price: `${service.price}`,
-                        isService: true
-                      }}
-                      theme={currentStyle}
-                      onItemClick={handleItemClick}
-                      showDistance={true}
-                    />
-                  ))}
-                </CategoryScrollableGrid>
-              </CategoryGridWrapper>
-                
-              {/* Service Categories */}
-              {Object.entries(serviceCategories).map(([categoryName, services]) => {
-                if (services.length === 0) return null;
-
-                return (
-                  <div key={categoryName} style={{ marginTop: '3rem' }}>
-                    <CategoryHeader theme={currentStyle}>
-                      <h2>{categoryName}</h2>
-                      <span className="view-all">
-                        {services.length} services
-                      </span>
-                    </CategoryHeader>
-                
-                    <CategoryGridWrapper>
-                      <div className="desktop-grid" style={{ display: 'contents' }}>
-                        {services.map(service => (
-                          <div key={`${categoryName}-${service.shopId}-${service.id}`} className="desktop-only"
-                               style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
-                            <FeaturedItem
-                              item={{
-                                ...service,
-                                price: `${service.price}`,
-                                isService: true
-                              }}
-                              theme={currentStyle}
-                              onItemClick={handleItemClick}
-                              showDistance={true}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                      
-                      <CategoryScrollableGrid theme={currentStyle} className="mobile-only" itemCount={services.length}>
-                        {services.map(service => (
-                          <FeaturedItem
-                            key={`${categoryName}-mobile-${service.shopId}-${service.id}`}
-                            item={{
-                              ...service,
-                              price: `${service.price}`,
-                              isService: true
-                            }}
-                            theme={currentStyle}
-                            onItemClick={handleItemClick}
-                            showDistance={true}
-                          />
-                        ))}
-                      </CategoryScrollableGrid>
-                    </CategoryGridWrapper>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </>
-      )}
-
-        {/* Featured Items Tab */}
-        {activeTab === 'featured' && (
-          <>
-            {/* Search container with Filter */}
-            <SearchContainer>
-  <SearchInputWrapper>
-    <SearchInput
-      type="text"
-      placeholder="Search for items..."
-      value={featuredSearchTerm}
-      onChange={(e) => setFeaturedSearchTerm(e.target.value)}
-      onKeyPress={(e) => e.key === 'Enter' && handleFeaturedSearch()}
-    />
-    
-    <SearchButtonGroup>
-      {hasSearchResults && (
-        <SearchButton 
-          onClick={handleClearFeaturedSearch}
-          title="Clear search"
-        >
-          <X size={18} />
-        </SearchButton>
-      )}
-      
-      <SearchButton 
-        onClick={handleFeaturedSearch}
-        disabled={isSearching || !featuredSearchTerm.trim()}
-        title="Search"
-      >
-        <Search size={18} />
-      </SearchButton>
-      
-      <SearchButton 
-        onClick={() => setSortMenuOpen(!sortMenuOpen)}
-        active={sortBy !== 'recent'}
-        title="Filter & Sort"
-      >
-        <Filter size={18} />
-      </SearchButton>
-    </SearchButtonGroup>
-  </SearchInputWrapper>
-  
-  {/* Keep SortDropdown positioned relative to SearchContainer */}
-  <SortContainer className="sort-container" style={{ position: 'static' }}>
-    <SortDropdown theme={currentStyle} isOpen={sortMenuOpen}>
-                    <div style={{
-                      padding: '0.5rem 1rem 0.75rem',
-                      fontSize: '0.75rem',
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
-                      color: currentStyle?.colors?.accent || '#800000',
-                      borderBottom: `2px solid ${currentStyle?.colors?.accent || '#800000'}`,
-                      marginBottom: '0.75rem',
-                      fontFamily: currentStyle?.fonts?.heading || 'inherit'
-                    }}>
-                      Sort By
-                    </div>
-                  
-                    <SortOption 
-                      theme={currentStyle}
-                      active={sortBy === 'recent'}
-                      onClick={() => {
-                        if (!userLocation) {
-                          requestLocation();
-                          return;
-                        }
-                        setSortBy('recent');
-                        setSortMenuOpen(false);
-                        loadCategorizedItems();
-                      }}
-                    >
-                      <Package size={16} />
-                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                        <span>Most Recent</span>
-                        <span style={{ 
-                          fontSize: '0.7rem', 
-                          opacity: 0.7,
-                          fontWeight: '400'
-                        }}>
-                          All items, newest first
-                        </span>
-                      </div>
-                      {!userLocation && (
-                        <span style={{ 
-                          fontSize: '0.65rem', 
-                          opacity: 0.6,
-                          marginLeft: 'auto',
-                          fontStyle: 'italic'
-                        }}>
-                          (needs location)
-                        </span>
-                      )}
-                    </SortOption>
-                    
-                    <SortOption 
-                      theme={currentStyle}
-                      active={sortBy === 'proximity'}
-                      onClick={() => {
-                        if (!userLocation) {
-                          requestLocation();
-                        }
-                        setSortBy('proximity');
-                        setSortMenuOpen(false);
-                        loadCategorizedItems();
-                      }}
-                    >
-                      <Navigation size={16} />
-                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                        <span>Closest First</span>
-                        <span style={{ 
-                          fontSize: '0.7rem', 
-                          opacity: 0.7,
-                          fontWeight: '400'
-                        }}>
-                          All items by distance
-                        </span>
-                      </div>
-                      {!userLocation && (
-                        <span style={{ 
-                          fontSize: '0.65rem', 
-                          opacity: 0.6,
-                          marginLeft: 'auto',
-                          fontStyle: 'italic'
-                        }}>
-                          (needs location)
-                        </span>
-                      )}
-                    </SortOption>
-                    
-                    <SortOption 
-                      theme={currentStyle}
-                      active={sortBy === 'price-low'}
-                      onClick={() => {
-                        if (!userLocation) {
-                          requestLocation();
-                          return;
-                        }
-                        setSortBy('price-low');
-                        setSortMenuOpen(false);
-                        loadCategorizedItems();
-                      }}
-                    >
-                      <span style={{ fontSize: '1rem', fontWeight: '600' }}>$</span>
-                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                        <span>Price: Low to High</span>
-                        <span style={{ 
-                          fontSize: '0.7rem', 
-                          opacity: 0.7,
-                          fontWeight: '400'
-                        }}>
-                          All items by price
-                        </span>
-                      </div>
-                      {!userLocation && (
-                        <span style={{ 
-                          fontSize: '0.65rem', 
-                          opacity: 0.6,
-                          marginLeft: 'auto',
-                          fontStyle: 'italic'
-                        }}>
-                          (needs location)
-                        </span>
-                      )}
-                    </SortOption>
-                    
-                    <SortOption 
-                      theme={currentStyle}
-                      active={sortBy === 'price-high'}
-                      onClick={() => {
-                        if (!userLocation) {
-                          requestLocation();
-                          return;
-                        }
-                        setSortBy('price-high');
-                        setSortMenuOpen(false);
-                        loadCategorizedItems();
-                      }}
-                    >
-                      <span style={{ fontSize: '1rem', fontWeight: '600' }}>$$$</span>
-                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                        <span>Price: High to Low</span>
-                        <span style={{ 
-                          fontSize: '0.7rem', 
-                          opacity: 0.7,
-                          fontWeight: '400'
-                        }}>
-                          All items by price
-                        </span>
-                      </div>
-                      {!userLocation && (
-                        <span style={{ 
-                          fontSize: '0.65rem', 
-                          opacity: 0.6,
-                          marginLeft: 'auto',
-                          fontStyle: 'italic'
-                        }}>
-                          (needs location)
-                        </span>
-                      )}
-                    </SortOption>
-                  </SortDropdown>
-  </SortContainer>
-</SearchContainer>
-
-            {/* Show search results or default categorized view */}
-            {hasSearchResults ? (
               <div>
                 <CategoryHeader theme={currentStyle}>
-                  <h2>Search Results ({searchResults.length})</h2>
+                  <h2>Featured Services</h2>
+                  <span className="view-all">{featuredServices.length} services</span>
                 </CategoryHeader>
-
-                {error ? (
-                  <EmptyGridMessage>
-                    <h3>No Results Found</h3>
-                    <p>{error}</p>
-                  </EmptyGridMessage>
-                ) : isSearching ? (
-                  <div style={{ textAlign: 'center', padding: '2rem' }}>
-                    <LoadingSpinner />
+            
+                <CategoryGridWrapper>
+                  <div className="desktop-grid" style={{ display: 'contents' }}>
+                    {featuredServices.map(service => (
+                      <div key={`featured-${service.shopId}-${service.id}`} className="desktop-only" 
+                           style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
+                        <FeaturedItem
+                          item={{ ...service, price: `${service.price}`, isService: true }}
+                          theme={currentStyle}
+                          onItemClick={handleItemClick}
+                          showDistance={true}
+                        />
+                      </div>
+                    ))}
                   </div>
-                ) : searchResults.length === 0 ? (
-                  <EmptyGridMessage>
-                    <h3>No Items Found</h3>
-                    <p>No items match your search criteria.</p>
-                  </EmptyGridMessage>
-                ) : (
-                  <GridContainer>
-                    {searchResults.map(item => (
-                      <FeaturedItem 
-                        key={`search-${item.shopId}-${item.id}`} 
-                        item={item}
+                  
+                  {/* ✅ Pass itemCount */}
+                  <CategoryScrollableGrid 
+                    theme={currentStyle} 
+                    className="mobile-only"
+                    itemCount={featuredServices.length}
+                  >
+                    {featuredServices.map(service => (
+                      <FeaturedItem
+                        key={`featured-mobile-${service.shopId}-${service.id}`}
+                        item={{ ...service, price: `${service.price}`, isService: true }}
                         theme={currentStyle}
                         onItemClick={handleItemClick}
                         showDistance={true}
                       />
                     ))}
-                  </GridContainer>
-                )}
-              </div>
-            ) : (
-              <div>
-                {/* Featured Items Slider */}
-                <CategoryHeader theme={currentStyle}>
-                  <h2>Featured Items</h2>
-                  <span className="view-all">
-                    {featuredItems.length} items
-                  </span>
-                </CategoryHeader>
-
-                <CategoryGridWrapper>
-                {/* Desktop: Show all items in grid */}
-                <div className="desktop-grid" style={{ display: 'contents' }}>
-                  {featuredItems.map(item => (
-                    <div key={`featured-${item.shopId}-${item.id}`} className="desktop-only" 
-                         style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
-                      <FeaturedItem
-                        item={item}
-                        theme={currentStyle}
-                        onItemClick={handleItemClick}
-                        showDistance={true}
-                      />
+                  </CategoryScrollableGrid>
+                </CategoryGridWrapper>
+                  
+                {/* Service Categories */}
+                {Object.entries(serviceCategories).map(([categoryName, services]) => {
+                  if (services.length === 0) return null;
+                
+                  return (
+                    <div key={categoryName} style={{ marginTop: '3rem' }}>
+                      <CategoryHeader theme={currentStyle}>
+                        <h2>{categoryName}</h2>
+                        <span className="view-all">{services.length} services</span>
+                      </CategoryHeader>
+                  
+                      <CategoryGridWrapper>
+                        <div className="desktop-grid" style={{ display: 'contents' }}>
+                          {services.map(service => (
+                            <div key={`${categoryName}-${service.shopId}-${service.id}`} className="desktop-only"
+                                 style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
+                              <FeaturedItem
+                                item={{ ...service, price: `${service.price}`, isService: true }}
+                                theme={currentStyle}
+                                onItemClick={handleItemClick}
+                                showDistance={true}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* ✅ Pass itemCount */}
+                        <CategoryScrollableGrid 
+                          theme={currentStyle} 
+                          className="mobile-only" 
+                          itemCount={services.length}
+                        >
+                          {services.map(service => (
+                            <FeaturedItem
+                              key={`${categoryName}-mobile-${service.shopId}-${service.id}`}
+                              item={{ ...service, price: `${service.price}`, isService: true }}
+                              theme={currentStyle}
+                              onItemClick={handleItemClick}
+                              showDistance={true}
+                            />
+                          ))}
+                        </CategoryScrollableGrid>
+                      </CategoryGridWrapper>
                     </div>
-                  ))}
-                </div>
-                
-                {/* Mobile: Show all 10 items in a 2-row scrollable grid */}
-                <CategoryScrollableGrid theme={currentStyle} className="mobile-only">
-                  {featuredItems.map(item => (
-                    <FeaturedItem
-                      key={`featured-mobile-${item.shopId}-${item.id}`}
-                      item={item}
-                      theme={currentStyle}
-                      onItemClick={handleItemClick}
-                      showDistance={true}
-                    />
-                  ))}
-                </CategoryScrollableGrid>
-              </CategoryGridWrapper>
-                
-              {Object.entries(categories).map(([categoryName, items]) => {
-          if (items.length === 0) return null;
-                      
-          return (
-            <div key={categoryName} style={{ marginTop: '3rem' }}>
-              <CategoryHeader theme={currentStyle}>
-                <h2>{categoryName}</h2>
-                <span className="view-all">
-                  {items.length} items
-                </span>
-              </CategoryHeader>
-          
-              <CategoryGridWrapper>
-                {/* Desktop: Show all items in grid */}
-                <div className="desktop-grid" style={{ display: 'contents' }}>
-                  {items.map(item => (
-                    <div key={`${categoryName}-${item.shopId}-${item.id}`} className="desktop-only"
-                         style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
-                      <FeaturedItem
-                        item={item}
-                        theme={currentStyle}
-                        onItemClick={handleItemClick}
-                        showDistance={true}
-                      />
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Mobile: Show all items in a scrollable grid (1 or 2 rows based on count) */}
-                <CategoryScrollableGrid theme={currentStyle} className="mobile-only" itemCount={items.length}>
-                  {items.map(item => (
-                    <FeaturedItem
-                      key={`${categoryName}-mobile-${item.shopId}-${item.id}`}
-                      item={item}
-                      theme={currentStyle}
-                      onItemClick={handleItemClick}
-                      showDistance={true}
-                    />
-                  ))}
-                </CategoryScrollableGrid>
-              </CategoryGridWrapper>
-            </div>
-          );
-        })}
+                  );
+                })}
               </div>
             )}
-          </>
-        )}
+        </>
+      )}
 
         {/* Media Tab */}
         {activeTab === 'media' && (

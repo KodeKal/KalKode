@@ -16,6 +16,8 @@ import {
   ShoppingCart, 
   Heart, 
   MessageCircle, 
+  Package,
+  Briefcase,
   Navigation, 
   ChevronLeft, 
   ChevronRight, 
@@ -66,6 +68,53 @@ export const prefetchShopData = async (shopId) => {
   }
   return null;
 };
+
+const ShopTabContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem 0 1.5rem;
+  padding: 0 1rem;
+`;
+
+const ShopTab = styled.button`
+  background: ${props => props.active ? 
+    props.theme?.colors?.accent || '#800000' : 'transparent'};
+  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+  color: ${props => props.active ? 
+    'white' : props.theme?.colors?.accent || '#800000'};
+  padding: 0.75rem 2rem;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  @media (min-width: 768px) {
+    padding: 0.875rem 2.5rem;
+    font-size: 1rem;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background: ${props => props.active ? 
+        props.theme?.colors?.primary || '#4A0404' : 
+        `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.2)'};
+    }
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+`;
 
 // Mobile-first styled components following WelcomePage pattern
 const PageContainer = styled.div.attrs({ className: 'page-container' })`
@@ -1224,6 +1273,7 @@ const ShopPublicView = () => {
 
   const [selectedBuyItem, setSelectedBuyItem] = useState(null);
   const [buyDialogOpen, setBuyDialogOpen] = useState(false);
+  const [shopContentType, setShopContentType] = useState('products');
 
   // OPTIMIZED: Fetch data immediately, use cache
   useEffect(() => {
@@ -1289,9 +1339,13 @@ const ShopPublicView = () => {
 
   // OPTIMIZED: Calculate distances only when needed, memoized
   const itemsWithDistance = useMemo(() => {
-    if (!shopData?.items || !userLocation) return shopData?.items || [];
+    const items = shopContentType === 'products' ? 
+      (shopData?.items || []) : 
+      (shopData?.services || []);
+    
+    if (!items || !userLocation) return items;
 
-    return shopData.items.map(item => {
+    return items.map(item => {
       if (item.coordinates?.lat && item.coordinates?.lng) {
         try {
           const distanceInMeters = getDistance(
@@ -1313,7 +1367,7 @@ const ShopPublicView = () => {
       }
       return item;
     });
-  }, [shopData?.items, userLocation]);
+  }, [shopData?.items, shopData?.services, userLocation, shopContentType]);
 
   // OPTIMIZED: Memoize filtered items
   const filteredItems = useMemo(() => {
@@ -1444,185 +1498,240 @@ if (error) {
 
   
   const renderShopView = () => (
-  <>
-    {!shopData ? (
-      // Show skeleton while loading
-      <ItemGrid viewMode={viewMode}>
-        {[1, 2, 3, 4].map(i => (
-          <SkeletonCard key={i} theme={DEFAULT_THEME} />
-        ))}
-      </ItemGrid>
-    ) : (
-      <>
-      <ShopProfileSection fontSize={shopData?.layout?.nameSize || '2rem'}>
-        <div className="profile-image">
-          {shopData?.profile ? (
-            <img src={shopData.profile} alt={shopData.name || 'Shop'} />
-          ) : (
-            <div style={{ 
-              width: '100%', 
-              height: '100%', 
-              background: shopData?.theme?.colors?.accent || '#800000',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontSize: '2rem'
-            }}>
-              {shopData?.name?.charAt(0) || 'S'}
-            </div>
-          )}
-        </div>
-        <h1 className="shop-name">{shopData?.name || 'Shop Name'}</h1>
-        <p className="shop-description">{shopData?.description}</p>
-      </ShopProfileSection>
-      
-      <SearchContainer>
-        <SearchInput 
-          placeholder="Search items..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        {searchTerm ? (
-          <ClearButton onClick={() => setSearchTerm('')}>
-            <X size={18} />
-          </ClearButton>
-        ) : (
-          <SearchIcon>
-            <Search size={18} />
-          </SearchIcon>
-        )}
-      </SearchContainer>
-      
-      {filteredItems.length > 0 ? (
+    <>
+      {!shopData ? (
         <ItemGrid viewMode={viewMode}>
-          {filteredItems.map((item) => {
-            const validImages = item.images?.filter(Boolean) || [];
-            const imageIndex = currentImageIndices[item.id] || 0;
-            
-            return (
-              <ItemCard key={item.id} viewMode={viewMode}>
-                <ItemImageContainer viewMode={viewMode}>
-                  {validImages.length > 0 ? (
-                    <img 
-                      src={validImages[imageIndex % validImages.length]} 
-                      alt={item.name} 
-                    />
-                  ) : (
-                    <div style={{
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: shopData?.theme?.colors?.text || '#fff',
-                      opacity: 0.5,
-                      fontSize: '0.8rem'
-                    }}>
-                      No Image Available
-                    </div>
-                  )}
-                  
-                  {validImages.length > 1 && (
-                    <>
-                      <button 
-                        className="carousel-arrow left"
-                        onClick={(e) => handlePrevImage(e, item.id)}
-                      >
-                        <ChevronLeft size={14} />
-                      </button>
-                      <button 
-                        className="carousel-arrow right"
-                        onClick={(e) => handleNextImage(e, item.id)}
-                      >
-                        <ChevronRight size={14} />
-                      </button>
-                    </>
-                  )}
-                </ItemImageContainer>
-                
-                <ItemContent>
-                  {item.category && item.category !== 'Other' && (
-                    <CategoryBadge theme={shopData?.theme}>
-                      {item.category}
-                    </CategoryBadge>
-                  )}
-
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    marginBottom: '0.5rem'
-                  }}>
-                    <h3 style={{ margin: 0, flex: 1 }}>{item.name}</h3>
-
-                    {item.quantity !== undefined && (
-                      <span style={{
-                        background: parseInt(item.quantity) > 0 ? 
-                          `${shopData?.theme?.colors?.accent || '#800000'}30` : '#FF525230',
-                        color: parseInt(item.quantity) > 0 ? 
-                          shopData?.theme?.colors?.accent || '#800000' : '#FF5252',
-                        padding: '2px 6px',
-                        borderRadius: '8px',
-                        fontSize: '0.7rem',
-                        fontWeight: '500',
-                        marginLeft: '0.5rem',
-                        flexShrink: 0
-                      }}>
-                        {parseInt(item.quantity) > 0 ? `x${item.quantity}` : 'Sold Out'}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="price">
-                    ${parseFloat(item.price || 0).toFixed(2)}
-                  </div>
-                  <div className="description">
-                    {item.description}
-                  </div>
-                  
-                  {item.formattedDistance && (
-                    <ItemLocation>
-                      <Navigation size={12} />
-                      {item.formattedDistance} from you
-                    </ItemLocation>
-                  )}
-                  
-                  <ActionButtons>
-                    <ActionButton 
-                      className="primary"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      
-                        // Open BuyDialog instead of OrderChat
-                        setSelectedBuyItem(item);
-                        setBuyDialogOpen(true);
-                      }}
-                    >
-                      <ShoppingCart size={14} />
-                      Order
-                    </ActionButton>
-                  </ActionButtons>
-                </ItemContent>
-              </ItemCard>
-            );
-          })}
+          {[1, 2, 3, 4].map(i => (
+            <SkeletonCard key={i} theme={DEFAULT_THEME} />
+          ))}
         </ItemGrid>
       ) : (
-        <EmptyStateMessage>
-          <h3>No Items Found</h3>
-          <p>
-            {searchTerm 
-              ? `No items match your search for "${searchTerm}"`
-              : "This shop doesn't have any items yet."}
-          </p>
-        </EmptyStateMessage>
-       )}
-      </>
-    )}
-  </>
-);
+        <>
+          <ShopProfileSection fontSize={shopData?.layout?.nameSize || '2rem'}>
+            <div className="profile-image">
+              {shopData?.profile ? (
+                <img src={shopData.profile} alt={shopData.name || 'Shop'} />
+              ) : (
+                <div style={{ 
+                  width: '100%', 
+                  height: '100%', 
+                  background: shopData?.theme?.colors?.accent || '#800000',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  fontSize: '2rem'
+                }}>
+                  {shopData?.name?.charAt(0) || 'S'}
+                </div>
+              )}
+            </div>
+            <h1 className="shop-name">{shopData?.name || 'Shop Name'}</h1>
+            <p className="shop-description">{shopData?.description}</p>
+          </ShopProfileSection>
+
+          {/* ADD: Products/Services Tabs */}
+          <ShopTabContainer>
+            <ShopTab
+              active={shopContentType === 'products'}
+              onClick={() => setShopContentType('products')}
+              theme={shopData?.theme}
+            >
+              <Package size={18} />
+              Products
+            </ShopTab>
+            <ShopTab
+              active={shopContentType === 'services'}
+              onClick={() => setShopContentType('services')}
+              theme={shopData?.theme}
+            >
+              <Briefcase size={18} />
+              Services
+            </ShopTab>
+          </ShopTabContainer>
+          
+          <SearchContainer>
+            <SearchInput 
+              placeholder={`Search ${shopContentType}...`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            {searchTerm ? (
+              <ClearButton onClick={() => setSearchTerm('')}>
+                <X size={18} />
+              </ClearButton>
+            ) : (
+              <SearchIcon>
+                <Search size={18} />
+              </SearchIcon>
+            )}
+          </SearchContainer>
+          
+          {filteredItems.length > 0 ? (
+            <ItemGrid viewMode={viewMode}>
+              {filteredItems.map((item) => {
+                const validImages = item.images?.filter(Boolean) || [];
+                const imageIndex = currentImageIndices[item.id] || 0;
+                
+                return (
+                  <ItemCard key={item.id} viewMode={viewMode}>
+                    <ItemImageContainer viewMode={viewMode}>
+                      {validImages.length > 0 ? (
+                        <img 
+                          src={validImages[imageIndex % validImages.length]} 
+                          alt={item.name} 
+                        />
+                      ) : (
+                        <div style={{
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: shopData?.theme?.colors?.text || '#fff',
+                          opacity: 0.5,
+                          fontSize: '0.8rem'
+                        }}>
+                          No Image Available
+                        </div>
+                      )}
+                      
+                      {validImages.length > 1 && (
+                        <>
+                          <button 
+                            className="carousel-arrow left"
+                            onClick={(e) => handlePrevImage(e, item.id)}
+                          >
+                            <ChevronLeft size={14} />
+                          </button>
+                          <button 
+                            className="carousel-arrow right"
+                            onClick={(e) => handleNextImage(e, item.id)}
+                          >
+                            <ChevronRight size={14} />
+                          </button>
+                        </>
+                      )}
+                    </ItemImageContainer>
+                    
+                    <ItemContent>
+                      {item.category && item.category !== 'Other' && (
+                        <CategoryBadge theme={shopData?.theme}>
+                          {item.category}
+                        </CategoryBadge>
+                      )}
+
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: '0.5rem'
+                      }}>
+                        <h3 style={{ margin: 0, flex: 1 }}>{item.name}</h3>
+
+                        {/* Show quantity for products, slots for services */}
+                        {shopContentType === 'products' && item.quantity !== undefined && (
+                          <span style={{
+                            background: parseInt(item.quantity) > 0 ? 
+                              `${shopData?.theme?.colors?.accent || '#800000'}30` : '#FF525230',
+                            color: parseInt(item.quantity) > 0 ? 
+                              shopData?.theme?.colors?.accent || '#800000' : '#FF5252',
+                            padding: '2px 6px',
+                            borderRadius: '8px',
+                            fontSize: '0.7rem',
+                            fontWeight: '500',
+                            marginLeft: '0.5rem',
+                            flexShrink: 0
+                          }}>
+                            {parseInt(item.quantity) > 0 ? `x${item.quantity}` : 'Sold Out'}
+                          </span>
+                        )}
+                        
+                        {shopContentType === 'services' && item.slots !== undefined && (
+                          <span style={{
+                            background: parseInt(item.slots) > 0 ? 
+                              `${shopData?.theme?.colors?.accent || '#800000'}30` : '#FF525230',
+                            color: parseInt(item.slots) > 0 ? 
+                              shopData?.theme?.colors?.accent || '#800000' : '#FF5252',
+                            padding: '2px 6px',
+                            borderRadius: '8px',
+                            fontSize: '0.7rem',
+                            fontWeight: '500',
+                            marginLeft: '0.5rem',
+                            flexShrink: 0
+                          }}>
+                            {parseInt(item.slots) > 0 ? `${item.slots} slots` : 'Fully Booked'}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Only show price for products */}
+                      {shopContentType === 'products' && (
+                        <div className="price">
+                          ${parseFloat(item.price || 0).toFixed(2)}
+                        </div>
+                      )}
+                      
+                      <div className="description">
+                        {item.description}
+                      </div>
+                      
+                      {item.formattedDistance && (
+                        <ItemLocation>
+                          <Navigation size={12} />
+                          {item.formattedDistance} from you
+                        </ItemLocation>
+                      )}
+                      
+                      <ActionButtons>
+                        {shopContentType === 'products' ? (
+                          <ActionButton 
+                            className="primary"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelectedBuyItem(item);
+                              setBuyDialogOpen(true);
+                            }}
+                          >
+                            <ShoppingCart size={14} />
+                            Order
+                          </ActionButton>
+                        ) : (
+                          <ActionButton 
+                            className="primary"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              // TODO: Open service booking dialog
+                              alert('Service booking coming soon!');
+                            }}
+                          >
+                            <MessageCircle size={14} />
+                            Book Service
+                          </ActionButton>
+                        )}
+                      </ActionButtons>
+                    </ItemContent>
+                  </ItemCard>
+                );
+              })}
+            </ItemGrid>
+          ) : (
+            <EmptyStateMessage>
+              <h3>No {shopContentType === 'products' ? 'Products' : 'Services'} Found</h3>
+              <p>
+                {searchTerm 
+                  ? `No ${shopContentType} match your search for "${searchTerm}"`
+                  : `This shop doesn't have any ${shopContentType} yet.`}
+              </p>
+            </EmptyStateMessage>
+          )}
+        </>
+      )}
+    </>
+  );
+
 
   // In shopPublicView.js - REPLACE renderHomeView
 const renderHomeView = () => {
@@ -1682,14 +1791,12 @@ const renderHomeView = () => {
     <ThemeProvider theme={shopData?.theme || DEFAULT_THEME}>
       <PageContainer>
         <Header theme={shopData?.theme}>
-          {/* Left: Shop Name/Logo */}
           <HeaderLeft>
             <Logo theme={shopData?.theme} onClick={handleGoHome}>
               {shopData?.name || 'SHOP'}
             </Logo>
           </HeaderLeft>
 
-          {/* Right: Tab Buttons */}
           <HeaderRight>
             <HeaderTabButton
               theme={shopData?.theme}
@@ -1724,7 +1831,6 @@ const renderHomeView = () => {
         </Header>
 
         <MainContent>
-          {/* Profile Cover and Shop View */}
           {activeTab === 'shop' && (
             <>
               <ProfileCover 
@@ -1738,7 +1844,6 @@ const renderHomeView = () => {
           {activeTab === 'community' && renderCommunityView()}
         </MainContent>
 
-        {/* Floating Controls - Bottom Right */}
         <FloatingControls>
           <FloatingButton
             onClick={refreshTheme}
@@ -1772,8 +1877,6 @@ const renderHomeView = () => {
                 console.log('Transaction created:', transactionId);
                 setBuyDialogOpen(false);
                 setSelectedBuyItem(null);
-                // Optionally navigate to transaction page
-                // navigate(`/transactions/${transactionId}`);
               }}
             />
           )}

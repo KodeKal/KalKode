@@ -681,16 +681,6 @@ const FeaturedItem = ({ item, showDistance, theme, onItemClick }) => {
             {item.shopName}
           </div>
           
-          {item.formattedDistance && (
-            <>
-              <span className="divider">•</span>
-              <div className="distance">
-                <Navigation size={12} />
-                {item.formattedDistance}
-              </div>
-            </>
-          )}
-
           {/* ADD: Show stock/slots status */}
           {item.isService ? (
             // For services, check slots
