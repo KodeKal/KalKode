@@ -74,7 +74,9 @@ const ItemCard = styled.div`
   flex-direction: column;
   position: relative;
   z-index: 1;
-  height: fit-content;
+  
+  /* ✅ FIXED: Let card height adapt to content naturally */
+  height: 100%;
   
   &:hover {
     transform: translateY(-5px);
@@ -84,7 +86,6 @@ const ItemCard = styled.div`
   
   @media (max-width: 768px) {
     border-radius: 10px;
-    height: 100%; /* Stretch to full available height */
     
     &:hover {
       transform: translateY(-3px);
@@ -108,25 +109,111 @@ const ItemCard = styled.div`
   }
 `;
 
-const ItemInfo = styled.div`
-  padding: 0.75rem 1rem;
-  height: 25%;
-  min-height: 80px;
+// ✅ ADD: Skinny top bar for shop name and distance
+const TopBar = styled.div`
+  padding: 0.4rem 0.75rem;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(0, 0, 0, 0.6)'}CC`};
+  backdrop-filter: blur(4px);
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
   gap: 0.5rem;
-  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}`};
-
-  .info-row {
+  height: 32px;
+  flex-shrink: 0;
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}15` || 'rgba(255, 255, 255, 0.05)'};
+  
+  .shop-name {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    cursor: pointer;
+    transition: all 0.2s ease;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    
+    &:hover {
+      opacity: 0.8;
+      transform: translateX(2px);
+    }
+    
+    svg {
+      flex-shrink: 0;
+    }
   }
+  
+  .distance {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    opacity: 0.8;
+    white-space: nowrap;
+    
+    svg {
+      flex-shrink: 0;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.35rem 0.65rem;
+    height: 30px;
+    
+    .shop-name {
+      font-size: 0.7rem;
+      gap: 0.25rem;
+      
+      svg {
+        width: 11px;
+        height: 11px;
+      }
+    }
+    
+    .distance {
+      font-size: 0.65rem;
+      gap: 0.25rem;
+      
+      svg {
+        width: 10px;
+        height: 10px;
+      }
+    }
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.3rem 0.6rem;
+    height: 28px;
+    
+    .shop-name {
+      font-size: 0.65rem;
+    }
+    
+    .distance {
+      font-size: 0.6rem;
+    }
+  }
+`;
+
+const ItemInfo = styled.div`
+  padding: 0.5rem 0.75rem;
+  height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}`};
+  gap: 0.75rem;
+  border-top: 1px solid ${props => `${props.theme?.colors?.accent}15` || 'rgba(255, 255, 255, 0.05)'};
 
   .item-name {
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: ${props => props.theme?.colors?.text || '#FFFFFF'};
     margin: 0;
     overflow: hidden;
@@ -135,124 +222,135 @@ const ItemInfo = styled.div`
     font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
     font-weight: 600;
     flex: 1;
+    line-height: 1.2;
   }
 
   .price {
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: ${props => props.theme?.colors?.accent || '#800000'};
     font-weight: bold;
     white-space: nowrap;
-  }
-
-  .shop-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.85rem;
-    color: ${props => props.theme?.colors?.text || 'rgba(255, 255, 255, 0.7)'};
-    opacity: 0.8;
-  }
-
-  .shop-name {
-    cursor: pointer;
-    transition: color 0.2s ease;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    
-    &:hover {
-      color: ${props => props.theme?.colors?.accent || '#800000'};
-      opacity: 1;
-    }
-  }
-
-  .divider {
-    opacity: 0.5;
-  }
-
-  .distance {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    white-space: nowrap;
-  }
-  
-  /* Mobile responsive adjustments */
-  @media (max-width: 768px) {
-    padding: 0.6rem 0.85rem;
-    min-height: 70px;
-    gap: 0.4rem;
-    
-    .item-name {
-      font-size: 0.95rem;
-    }
-    
-    .price {
-      font-size: 0.95rem;
-    }
-    
-    .shop-info {
-      font-size: 0.8rem;
-    }
+    flex-shrink: 0;
   }
   
   @media (max-width: 768px) {
-    padding: 1rem 1.25rem; /* Increased padding */
-    min-height: 100px; /* Increased from 70px */
-    gap: 0.6rem;
+    padding: 0.45rem 0.65rem;
+    height: 42px;
     
     .item-name {
-      font-size: 1.1rem; /* Increased from 0.95rem */
+      font-size: 0.9rem;
     }
     
     .price {
-      font-size: 1.1rem; /* Increased from 0.95rem */
-    }
-    
-    .shop-info {
-      font-size: 0.9rem; /* Increased from 0.8rem */
+      font-size: 0.9rem;
     }
   }
   
   @media (max-width: 480px) {
-    padding: 0.875rem 1rem; /* Increased */
-    min-height: 90px; /* Increased from 60px */
+    padding: 0.4rem 0.6rem;
+    height: 40px;
     gap: 0.5rem;
     
     .item-name {
-      font-size: 1rem; /* Increased from 0.9rem */
+      font-size: 0.85rem;
     }
     
     .price {
-      font-size: 1rem; /* Increased from 0.9rem */
-    }
-    
-    .shop-info {
-      font-size: 0.85rem; /* Increased from 0.75rem */
-      gap: 0.5rem;
+      font-size: 0.85rem;
     }
   }
 `;
 
+const ShopNameOverlay = styled.div`
+  position: absolute;
+  bottom: 0.3rem;
+  left: 0.3rem;
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  font-size: 0.75rem;
+  font-weight: 600;
+  z-index: 2;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 60%;
+  
+  &:hover {
+    transform: scale(1.05);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9),
+                 0 0 12px rgba(0, 0, 0, 0.7);
+  }
+  
+  .shop-icon {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+  }
+  
+  .shop-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  @media (max-width: 480px) {
+    top: 0.5rem;
+    left: 0.5rem;
+    font-size: 0.7rem;
+    gap: 0.25rem;
+    
+    svg {
+      width: 11px;
+      height: 11px;
+    }
+  }
+`;
+
+const DistanceOverlay = styled.div`
+  position: absolute;
+  bottom: 0.30rem;
+  right: 0.30rem;
+  color: ${props => props.theme?.colors?.accent || '#800000'};
+  font-size: 0.75rem;
+  font-weight: 600;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  
+  svg {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+  }
+  
+  @media (max-width: 480px) {
+    top: 0.5rem;
+    right: 0.5rem;
+    font-size: 0.7rem;
+    gap: 0.25rem;
+    
+    svg {
+      width: 11px;
+      height: 11px;
+    }
+  }
+`;
+
+
 const ImageSection = styled.div`
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1;
+  /* ✅ FIXED: Aspect ratio ensures uniform image container */
+  aspect-ratio: 1 / 1; /* Square images */
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   background: ${props => `${props.theme?.colors?.background || '#000000'}50`};
+  flex-shrink: 0; /* Prevent shrinking */
 
   img {
     width: 100%;
     height: 100%;
-    object-fit: ${props => props.isExpanded ? 'contain' : 'cover'};
-  }
-  
-  @media (max-width: 768px) {
-    aspect-ratio: 4 / 3; /* Make images taller on mobile */
-    flex: 1; /* Allow image to grow within card */
+    object-fit: cover; /* ✅ Fills the space while maintaining aspect ratio */
   }
 
   .carousel-arrow {
@@ -292,9 +390,11 @@ const ImageSection = styled.div`
   }
   
   @media (max-width: 768px) {
+    aspect-ratio: 4 / 3; /* Slightly taller on mobile for better visibility */
+    
     .carousel-arrow {
-      width: 32px; /* Increased from 28px */
-      height: 32px;
+      width: 28px;
+      height: 28px;
       
       &.left {
         left: 0.75rem;
@@ -305,16 +405,18 @@ const ImageSection = styled.div`
       }
       
       svg {
-        width: 16px;
-        height: 16px;
+        width: 14px;
+        height: 14px;
       }
     }
   }
   
   @media (max-width: 480px) {
+    aspect-ratio: 1 / 1; /* Back to square on small mobile */
+    
     .carousel-arrow {
-      width: 28px; /* Increased from 24px */
-      height: 28px;
+      width: 24px;
+      height: 24px;
       
       &.left {
         left: 0.5rem;
@@ -325,8 +427,8 @@ const ImageSection = styled.div`
       }
       
       svg {
-        width: 16px; /* Increased from 14px */
-        height: 16px;
+        width: 12px;
+        height: 12px;
       }
     }
     
@@ -636,11 +738,35 @@ const FeaturedItem = ({ item, showDistance, theme, onItemClick }) => {
       theme={itemTheme}
       className={`item-card-${item.id}`}
     >
+      {/* ✅ NEW: Skinny Top Bar */}
+      <TopBar theme={itemTheme}>
+        <div 
+          className="shop-name"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (item.shopUsername) {
+              window.location.href = getSubdomainUrl(item.shopUsername);
+            } else {
+              navigate(`/shop/${item.shopId}/view`);
+            }
+          }}
+        >
+          <Store size={12} />
+          <span>{item.shopName}</span>
+        </div>
+        
+        {item.formattedDistance && (
+          <div className="distance">
+            <Navigation size={11} />
+            <span>{item.formattedDistance}</span>
+          </div>
+        )}
+      </TopBar> 
+
+      {/* ✅ Image takes remaining space */}
       <ImageSection theme={itemTheme}>
         <img src={getDisplayImage()} alt={item.name} />
-        
-        
-        
+
         {(item.images?.filter(Boolean).length > 1) && (
           <>
             <button className="carousel-arrow left" onClick={handlePrevImage}>
@@ -651,62 +777,16 @@ const FeaturedItem = ({ item, showDistance, theme, onItemClick }) => {
             </button>
           </>
         )}
-        
-        {item.formattedDistance && (
-          <Distance theme={itemTheme}>{item.formattedDistance}</Distance>
-        )}
-      </ImageSection>
+      </ImageSection> 
 
+      {/* ✅ Skinny Bottom Bar */}
       <ItemInfo theme={itemTheme}>
-        {/* First Row: Item Name & Price */}
-        <div className="info-row">
-          <h3 className="item-name">{item.name}</h3>
-          <div className="price">${formatPrice(item.price)}</div>
-        </div>
-
-        {/* Second Row: Shop Name & Distance */}
-        <div className="shop-info">
-          <div 
-            className="shop-name"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (item.shopUsername) {
-                window.location.href = getSubdomainUrl(item.shopUsername);
-              } else {
-                navigate(`/shop/${item.shopId}/view`);
-              }
-            }}
-            style={{ cursor: 'pointer' }}
-          >
-            {item.shopName}
-          </div>
-          
-          {/* ADD: Show stock/slots status */}
-          {item.isService ? (
-            // For services, check slots
-            parseInt(item.slots) > 0 && (
-              <>
-                <span className="divider">•</span>
-                <div className="distance">
-                  {item.slots} {parseInt(item.slots) === 1 ? 'slot' : 'slots'}
-                </div>
-              </>
-            )
-          ) : (
-            // For items, check quantity
-            parseInt(item.quantity) > 0 && (
-              <>
-                <span className="divider">•</span>
-                <div className="distance">
-                  {item.quantity} in stock
-                </div>
-              </>
-            )
-          )}
-        </div>
+        <h3 className="item-name">{item.name}</h3>
+        <div className="price">${formatPrice(item.price)}</div>
       </ItemInfo>
     </ItemCard>
-  );      
+  );
+         
 };
 
 export default FeaturedItem;
