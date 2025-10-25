@@ -338,19 +338,21 @@ const DistanceOverlay = styled.div`
 const ImageSection = styled.div`
   position: relative;
   width: 100%;
-  /* ✅ FIXED: Aspect ratio ensures uniform image container */
-  aspect-ratio: 1 / 1; /* Square images */
+  /* ✅ KEEP: Square aspect ratio */
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   background: ${props => `${props.theme?.colors?.background || '#000000'}50`};
-  flex-shrink: 0; /* Prevent shrinking */
+  flex-shrink: 0;
+  flex-grow: 1; /* ✅ ADD: Allow to grow to fill available space */
 
   img {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* ✅ Fills the space while maintaining aspect ratio */
+    object-fit: cover; /* ✅ Already correct */
+    display: block; /* ✅ ADD: Remove any inline spacing */
   }
 
   .carousel-arrow {

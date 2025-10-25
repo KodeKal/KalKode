@@ -871,13 +871,16 @@ const Tab = styled.button`
   }
 `;
 
-// Mobile-optimized grid with better touch targets
 const GridContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem;
   margin-top: 1.5rem;
   padding: 0 0.25rem;
+  
+  /* ✅ ADD: Force consistent row heights */
+  grid-auto-rows: 1fr;
+  align-items: stretch;
   
   @media (min-width: 480px) {
     gap: 1rem;
@@ -1425,7 +1428,6 @@ const CategoryScrollableGrid = styled.div`
   @media (max-width: 768px) {
     display: grid;
     grid-auto-flow: column;
-    /* ✅ Dynamic rows: 1 row if 5 or fewer items, 2 rows if more */
     grid-template-rows: ${props => props.itemCount <= 5 ? '1fr' : 'repeat(2, 1fr)'};
     grid-template-columns: ${props => {
       const cols = Math.ceil(props.itemCount / (props.itemCount <= 5 ? 1 : 2));
@@ -1437,8 +1439,10 @@ const CategoryScrollableGrid = styled.div`
     padding-bottom: 0.5rem;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-    /* ✅ Dynamic height based on row count */
     min-height: ${props => props.itemCount <= 5 ? '42.5vh' : '85vh'};
+    
+    /* ✅ ADD: Consistent heights */
+    align-items: stretch;
     
     &::-webkit-scrollbar {
       height: 4px;
@@ -1457,7 +1461,7 @@ const CategoryScrollableGrid = styled.div`
     > * {
       scroll-snap-align: start;
       min-width: 0;
-      height: 100%;
+      /* ✅ REMOVE: height: 100%; (let natural height work) */
     }
   }
   
