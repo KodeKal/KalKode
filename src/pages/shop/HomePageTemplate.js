@@ -25,6 +25,82 @@ import {
   CheckCircle
 } from 'lucide-react';
 
+// ADD these animation keyframes at the top after imports
+const fadeInUp = `
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+`;
+
+const slideInLeft = `
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+`;
+
+const scaleIn = `
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+`;
+
+const pulse = `
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+`;
+
+// UPDATE SectionWrapper with animation
+const SectionWrapper = ({ children, theme, noPadding = false, delay = 0 }) => {
+  return (
+    <div style={{
+      position: 'relative',
+      padding: noPadding ? '0' : 'clamp(2rem, 4vw, 4rem) clamp(1rem, 2vw, 2rem)',
+      background: 'transparent',
+      animation: 'fadeInUp 0.6s ease-out forwards',
+      animationDelay: `${delay}s`,
+      opacity: 0
+    }}>
+      <style>{fadeInUp}</style>
+      {children}
+    </div>
+  );
+};
+
+// ADD pulse animation style injection
+const pulseStyle = `
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+`;
+
 // ==================== TEMPLATE-SPECIFIC FRAMES ====================
 
 // Streetwear Template Frame - Subtle Urban
@@ -286,335 +362,7 @@ const LocalMarketDivider = ({ theme }) => (
 );
 
 // ==================== SECTION WRAPPER ====================
-const SectionWrapper = ({ children, theme, noPadding = false }) => {
-  return (
-    <div style={{
-      position: 'relative',
-      padding: noPadding ? '0' : 'clamp(2rem, 4vw, 4rem) clamp(1rem, 2vw, 2rem)',
-      background: 'transparent'
-    }}>
-      {children}
-    </div>
-  );
-};
 
-
-// ==================== HERO BANNER SECTION ====================
-export const HeroBannerSection = ({ config, theme, editable, onUpdate }) => {
-  const [editingField, setEditingField] = useState(null);
-
-  const handleUpdate = (field, value) => {
-    if (editable && onUpdate) {
-      onUpdate({ ...config, [field]: value });
-    }
-  };
-
-  return (
-    <SectionWrapper theme={theme} noPadding>
-      <div style={{
-        minHeight: config?.height || 'clamp(35vh, 45vh, 60vh)',
-        background: config?.backgroundImage ? 
-          `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${config.backgroundImage})` :
-          `linear-gradient(135deg, ${theme?.colors?.accent}15 0%, ${theme?.colors?.background}50 100%)`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        overflow: 'hidden',
-        cursor: editable ? 'pointer' : 'default',
-        padding: 'clamp(1.5rem, 3vw, 3rem)'
-      }}
-      onClick={() => editable && document.getElementById(`hero-bg-upload-${config?.id}`)?.click()}
-      >
-        {editable && (
-          <>
-            <input
-              type="file"
-              id={`hero-bg-upload-${config?.id}`}
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={(e) => {
-                if (e.target.files?.[0]) {
-                  const reader = new FileReader();
-                  reader.onloadend = () => handleUpdate('backgroundImage', reader.result);
-                  reader.readAsDataURL(e.target.files[0]);
-                }
-              }}
-            />
-            <div style={{
-              position: 'absolute',
-              top: 'clamp(0.5rem, 1vw, 0.75rem)',
-              left: 'clamp(0.5rem, 1vw, 0.75rem)',
-              background: 'rgba(0,0,0,0.7)',
-              color: 'white',
-              padding: 'clamp(0.4rem, 0.8vw, 0.5rem) clamp(0.8rem, 1.5vw, 1rem)',
-              borderRadius: '8px',
-              fontSize: 'clamp(0.75rem, 1.3vw, 0.85rem)',
-              zIndex: 10
-            }}>
-              Click to change background
-            </div>
-          </>
-        )}
-        
-        <div style={{ 
-          textAlign: 'center', 
-          position: 'relative', 
-          zIndex: 1, 
-          padding: 'clamp(1rem, 2vw, 2rem)',
-          maxWidth: '900px',
-          width: '100%',
-          background: 'rgba(0,0,0,0.3)',
-          borderRadius: '16px',
-          backdropFilter: 'blur(10px)'
-        }}>
-          {editable ? (
-            <>
-              <input
-                type="text"
-                value={config?.headline || ''}
-                onChange={(e) => handleUpdate('headline', e.target.value)}
-                placeholder="Enter headline"
-                style={{
-                  fontSize: 'clamp(1.5rem, 5vw, 4rem)',
-                  fontWeight: '900',
-                  margin: '0 0 clamp(0.75rem, 1.5vw, 1rem) 0',
-                  background: 'transparent',
-                  border: 'none',
-                  color: theme?.colors?.text,
-                  textAlign: 'center',
-                  width: '100%',
-                  outline: 'none'
-                }}
-              />
-              <textarea
-                value={config?.subtitle || ''}
-                onChange={(e) => handleUpdate('subtitle', e.target.value)}
-                placeholder="Enter subtitle"
-                style={{
-                  fontSize: 'clamp(1rem, 2vw, 1.5rem)',
-                  opacity: 0.9,
-                  background: 'transparent',
-                  border: 'none',
-                  color: theme?.colors?.text,
-                  textAlign: 'center',
-                  width: '100%',
-                  outline: 'none',
-                  resize: 'none',
-                  minHeight: 'clamp(50px, 10vw, 80px)'
-                }}
-              />
-            </>
-          ) : (
-            <>
-              <h1 style={{
-                fontSize: 'clamp(1.5rem, 5vw, 4rem)',
-                fontWeight: '900',
-                margin: '0 0 clamp(0.75rem, 1.5vw, 1rem) 0',
-                lineHeight: 1.1,
-                textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-                color: theme?.colors?.text
-              }}>
-                {config?.headline || 'Welcome'}
-              </h1>
-              <p style={{
-                fontSize: 'clamp(1rem, 2vw, 1.5rem)',
-                opacity: 0.9,
-                textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
-                color: theme?.colors?.text
-              }}>
-                {config?.subtitle || 'Discover amazing products'}
-              </p>
-            </>
-          )}
-        </div>
-      </div>
-    </SectionWrapper>
-  );
-};
-
-// ==================== FEATURED ITEMS SECTION ====================
-export const FeaturedItemsSection = ({ config, theme, shopItems, editable, onUpdate }) => {
-  const items = shopItems?.filter(item => !item.deleted).slice(0, config?.itemCount || 4) || [];
-
-  const getItemImage = (item) => {
-    if (!item?.images || item.images.length === 0) return null;
-    
-    const validImage = item.images.find(img => {
-      if (typeof img === 'string') return img;
-      if (img?.preview) return img.preview;
-      return null;
-    });
-    
-    if (typeof validImage === 'string') return validImage;
-    if (validImage?.preview) return validImage.preview;
-    return null;
-  };
-
-  return (
-    <SectionWrapper theme={theme}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 'clamp(1.5rem, 3vw, 2.5rem)',
-        padding: '0 clamp(0.5rem, 1vw, 1rem)'
-      }}>
-        {editable ? (
-          <input
-            type="text"
-            value={config?.title || ''}
-            onChange={(e) => onUpdate({ ...config, title: e.target.value })}
-            placeholder="Section title"
-            style={{
-              fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
-              fontWeight: '900',
-              background: 'transparent',
-              border: 'none',
-              color: theme?.colors?.text,
-              outline: 'none',
-              width: '100%'
-            }}
-          />
-        ) : (
-          <h2 style={{
-            fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
-            fontWeight: '900',
-            margin: 0,
-            color: theme?.colors?.text
-          }}>
-            {config?.title || 'Featured Items'}
-          </h2>
-        )}
-        
-        {editable && (
-          <select
-            value={config?.itemCount || 4}
-            onChange={(e) => onUpdate({ ...config, itemCount: parseInt(e.target.value) })}
-            style={{
-              padding: 'clamp(0.5rem, 1vw, 0.75rem)',
-              borderRadius: 'clamp(6px, 1vw, 8px)',
-              background: theme?.colors?.surface,
-              color: theme?.colors?.text,
-              border: `1px solid ${theme?.colors?.accent}40`,
-              fontSize: 'clamp(0.8rem, 1.3vw, 0.95rem)'
-            }}
-          >
-            <option value={2}>2 items</option>
-            <option value={4}>4 items</option>
-            <option value={6}>6 items</option>
-            <option value={8}>8 items</option>
-          </select>
-        )}
-      </div>
-      
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(160px, 22vw, 300px), 1fr))',
-        gap: 'clamp(1rem, 2vw, 2rem)',
-        padding: '0 clamp(0.5rem, 1vw, 1rem)'
-      }}>
-        {items.length > 0 ? (
-          items.map((item) => {
-            const itemImage = getItemImage(item);
-            
-            return (
-              <div key={item.id} style={{
-                background: `${theme?.colors?.surface}90`,
-                borderRadius: 'clamp(10px, 1.5vw, 16px)',
-                overflow: 'hidden',
-                border: `1px solid ${theme?.colors?.accent}30`,
-                transition: 'all 0.3s ease',
-                boxShadow: `0 4px 12px ${theme?.colors?.accent}10`
-              }}>
-                <div style={{
-                  height: 'clamp(140px, 28vw, 280px)',
-                  background: `${theme?.colors?.background}50`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  {itemImage ? (
-                    <img 
-                      src={itemImage} 
-                      alt={item?.name || 'Product'} 
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover'
-                      }} 
-                    />
-                  ) : (
-                    <div style={{
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 'clamp(0.5rem, 1vw, 1rem)'
-                    }}>
-                      <Package size={48} color={theme?.colors?.accent} style={{ opacity: 0.5 }} />
-                    </div>
-                  )}
-                  
-                  {item?.quantity !== undefined && (
-                    <div style={{
-                      position: 'absolute',
-                      top: 'clamp(0.5rem, 1vw, 0.75rem)',
-                      right: 'clamp(0.5rem, 1vw, 0.75rem)',
-                      background: parseInt(item.quantity) > 0 ? 
-                        'rgba(76, 175, 80, 0.9)' : 'rgba(244, 67, 54, 0.9)',
-                      color: 'white',
-                      padding: 'clamp(0.2rem, 0.5vw, 0.3rem) clamp(0.5rem, 1vw, 0.75rem)',
-                      borderRadius: 'clamp(10px, 1.5vw, 16px)',
-                      fontSize: 'clamp(0.7rem, 1.1vw, 0.8rem)',
-                      fontWeight: '700'
-                    }}>
-                      {parseInt(item.quantity) > 0 ? `${item.quantity} LEFT` : 'SOLD OUT'}
-                    </div>
-                  )}
-                </div>
-                <div style={{ padding: 'clamp(1rem, 2vw, 1.5rem)' }}>
-                  <h3 style={{
-                    fontSize: 'clamp(0.9rem, 1.6vw, 1.2rem)',
-                    fontWeight: '700',
-                    marginBottom: 'clamp(0.3rem, 0.6vw, 0.5rem)',
-                    color: theme?.colors?.text
-                  }}>
-                    {item?.name || 'Product Name'}
-                  </h3>
-                  <div style={{
-                    fontSize: 'clamp(1.1rem, 2.2vw, 1.6rem)',
-                    fontWeight: '900',
-                    color: theme?.colors?.accent
-                  }}>
-                    ${parseFloat(item?.price || 0).toFixed(2)}
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div style={{
-            gridColumn: '1 / -1',
-            textAlign: 'center',
-            padding: 'clamp(3rem, 5vw, 5rem)',
-            color: theme?.colors?.text,
-            opacity: 0.6
-          }}>
-            <Package size={64} color={theme?.colors?.accent} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-            <h3>No Items Yet</h3>
-          </div>
-        )}
-      </div>
-    </SectionWrapper>
-  );
-};
 
 // Text Block Section - Mobile Optimized
 export const TextBlockSection = ({ config, theme, editable, onUpdate }) => {
@@ -1390,6 +1138,343 @@ export const ContactSection = ({ config, theme, editable, onUpdate }) => {
 };
 
 // ==================== PHOTO GALLERY SECTION WITH CAROUSEL ====================
+  export const HeroBannerSection = ({ config, theme, editable, onUpdate }) => {
+    const [editingField, setEditingField] = useState(null);
+
+    const handleUpdate = (field, value) => {
+      if (editable && onUpdate) {
+        onUpdate({ ...config, [field]: value });
+      }
+    };
+
+    // Separate background styles to avoid conflict
+    const backgroundStyles = config?.backgroundImage ? {
+      backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${config.backgroundImage})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat'
+    } : {
+      backgroundImage: `linear-gradient(135deg, ${theme?.colors?.accent}15 0%, ${theme?.colors?.background}50 100%)`,
+      backgroundSize: 'auto',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat'
+    };
+
+    return (
+      <SectionWrapper theme={theme} noPadding>
+        <style>{fadeInUp + scaleIn}</style>
+        <div style={{
+          minHeight: config?.height || 'clamp(35vh, 45vh, 60vh)',
+          ...backgroundStyles, // Spread the separated background styles
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+          cursor: editable ? 'pointer' : 'default',
+          padding: 'clamp(1.5rem, 3vw, 3rem)',
+          animation: 'scaleIn 0.8s ease-out forwards'
+        }}
+        onClick={() => editable && document.getElementById(`hero-bg-upload-${config?.id}`)?.click()}
+        >
+          {editable && (
+            <>
+              <input
+                type="file"
+                id={`hero-bg-upload-${config?.id}`}
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => handleUpdate('backgroundImage', reader.result);
+                    reader.readAsDataURL(e.target.files[0]);
+                  }
+                }}
+              />
+              <div style={{
+                position: 'absolute',
+                top: 'clamp(0.5rem, 1vw, 0.75rem)',
+                left: 'clamp(0.5rem, 1vw, 0.75rem)',
+                background: 'rgba(0,0,0,0.7)',
+                color: 'white',
+                padding: 'clamp(0.4rem, 0.8vw, 0.5rem) clamp(0.8rem, 1.5vw, 1rem)',
+                borderRadius: '8px',
+                fontSize: 'clamp(0.75rem, 1.3vw, 0.85rem)',
+                zIndex: 10
+              }}>
+                Click to change background
+              </div>
+            </>
+          )}
+
+          <div style={{ 
+            textAlign: 'center', 
+            position: 'relative', 
+            zIndex: 1, 
+            padding: 'clamp(1rem, 2vw, 2rem)',
+            maxWidth: '900px',
+            width: '100%',
+            backgroundColor: 'rgba(0,0,0,0.3)', // Changed from 'background'
+            borderRadius: '16px',
+            backdropFilter: 'blur(10px)',
+            animation: 'fadeInUp 1s ease-out 0.3s forwards',
+            opacity: 0
+          }}>
+            {editable ? (
+              <>
+                <input
+                  type="text"
+                  value={config?.headline || ''}
+                  onChange={(e) => handleUpdate('headline', e.target.value)}
+                  placeholder="Enter headline"
+                  style={{
+                    fontSize: 'clamp(1.5rem, 5vw, 4rem)',
+                    fontWeight: '900',
+                    margin: '0 0 clamp(0.75rem, 1.5vw, 1rem) 0',
+                    backgroundColor: 'transparent', // Changed from 'background'
+                    border: 'none',
+                    color: theme?.colors?.text,
+                    textAlign: 'center',
+                    width: '100%',
+                    outline: 'none'
+                  }}
+                />
+                <textarea
+                  value={config?.subtitle || ''}
+                  onChange={(e) => handleUpdate('subtitle', e.target.value)}
+                  placeholder="Enter subtitle"
+                  style={{
+                    fontSize: 'clamp(1rem, 2vw, 1.5rem)',
+                    opacity: 0.9,
+                    backgroundColor: 'transparent', // Changed from 'background'
+                    border: 'none',
+                    color: theme?.colors?.text,
+                    textAlign: 'center',
+                    width: '100%',
+                    outline: 'none',
+                    resize: 'none',
+                    minHeight: 'clamp(50px, 10vw, 80px)'
+                  }}
+                />
+              </>
+            ) : (
+              <>
+                <h1 style={{
+                  fontSize: 'clamp(1.5rem, 5vw, 4rem)',
+                  fontWeight: '900',
+                  margin: '0 0 clamp(0.75rem, 1.5vw, 1rem) 0',
+                  lineHeight: 1.1,
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+                  color: theme?.colors?.text
+                }}>
+                  {config?.headline || 'Welcome'}
+                </h1>
+                <p style={{
+                  fontSize: 'clamp(1rem, 2vw, 1.5rem)',
+                  opacity: 0.9,
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+                  color: theme?.colors?.text
+                }}>
+                  {config?.subtitle || 'Discover amazing products'}
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      </SectionWrapper>
+    );
+  };
+
+  export const FeaturedItemsSection = ({ config, theme, shopItems, editable, onUpdate }) => {
+    const items = shopItems?.filter(item => !item.deleted).slice(0, config?.itemCount || 4) || [];
+
+    const getItemImage = (item) => {
+      if (!item?.images || item.images.length === 0) return null;
+
+      const validImage = item.images.find(img => {
+        if (typeof img === 'string') return img;
+        if (img?.preview) return img.preview;
+        return null;
+      });
+
+      if (typeof validImage === 'string') return validImage;
+      if (validImage?.preview) return validImage.preview;
+      return null;
+    };
+
+    return (
+      <SectionWrapper theme={theme}>
+        <style>{fadeInUp + slideInLeft}</style>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 'clamp(1.5rem, 3vw, 2.5rem)',
+          padding: '0 clamp(0.5rem, 1vw, 1rem)',
+          animation: 'slideInLeft 0.6s ease-out'
+        }}>
+          {editable ? (
+            <input
+              type="text"
+              value={config?.title || ''}
+              onChange={(e) => onUpdate({ ...config, title: e.target.value })}
+              placeholder="Section title"
+              style={{
+                fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
+                fontWeight: '900',
+                backgroundColor: 'transparent', // Changed from 'background'
+                border: 'none',
+                color: theme?.colors?.text,
+                outline: 'none',
+                width: '100%'
+              }}
+            />
+          ) : (
+            <h2 style={{
+              fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
+              fontWeight: '900',
+              margin: 0,
+              color: theme?.colors?.text
+            }}>
+              {config?.title || 'Featured Items'}
+            </h2>
+          )}
+
+          {editable && (
+            <select
+              value={config?.itemCount || 4}
+              onChange={(e) => onUpdate({ ...config, itemCount: parseInt(e.target.value) })}
+              style={{
+                padding: 'clamp(0.5rem, 1vw, 0.75rem)',
+                borderRadius: 'clamp(6px, 1vw, 8px)',
+                backgroundColor: theme?.colors?.surface, // Changed from 'background'
+                color: theme?.colors?.text,
+                border: `1px solid ${theme?.colors?.accent}40`,
+                fontSize: 'clamp(0.8rem, 1.3vw, 0.95rem)'
+              }}
+            >
+              <option value={2}>2 items</option>
+              <option value={4}>4 items</option>
+              <option value={6}>6 items</option>
+              <option value={8}>8 items</option>
+            </select>
+          )}
+        </div>
+        
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(160px, 22vw, 300px), 1fr))',
+          gap: 'clamp(1rem, 2vw, 2rem)',
+          padding: '0 clamp(0.5rem, 1vw, 1rem)'
+        }}>
+          {items.length > 0 ? (
+            items.map((item, index) => {
+              const itemImage = getItemImage(item);
+
+              return (
+                <div key={item.id} style={{
+                  backgroundColor: `${theme?.colors?.surface}90`, // Changed from 'background'
+                  borderRadius: 'clamp(10px, 1.5vw, 16px)',
+                  overflow: 'hidden',
+                  border: `1px solid ${theme?.colors?.accent}30`,
+                  transition: 'all 0.3s ease',
+                  boxShadow: `0 4px 12px ${theme?.colors?.accent}10`,
+                  animation: 'fadeInUp 0.6s ease-out forwards',
+                  animationDelay: `${index * 0.1}s`,
+                  opacity: 0
+                }}>
+                  <div style={{
+                    height: 'clamp(140px, 28vw, 280px)',
+                    backgroundColor: `${theme?.colors?.background}50`, // Changed from 'background'
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}>
+                    {itemImage ? (
+                      <img 
+                        src={itemImage} 
+                        alt={item?.name || 'Product'} 
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          transition: 'transform 0.3s ease'
+                        }}
+                        onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                        onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 'clamp(0.5rem, 1vw, 1rem)'
+                      }}>
+                        <Package size={48} color={theme?.colors?.accent} style={{ opacity: 0.5 }} />
+                      </div>
+                    )}
+
+                    {item?.quantity !== undefined && (
+                      <div style={{
+                        position: 'absolute',
+                        top: 'clamp(0.5rem, 1vw, 0.75rem)',
+                        right: 'clamp(0.5rem, 1vw, 0.75rem)',
+                        backgroundColor: parseInt(item.quantity) > 0 ?  // Changed from 'background'
+                          'rgba(76, 175, 80, 0.9)' : 'rgba(244, 67, 54, 0.9)',
+                        color: 'white',
+                        padding: 'clamp(0.2rem, 0.5vw, 0.3rem) clamp(0.5rem, 1vw, 0.75rem)',
+                        borderRadius: 'clamp(10px, 1.5vw, 16px)',
+                        fontSize: 'clamp(0.7rem, 1.1vw, 0.8rem)',
+                        fontWeight: '700',
+                        animation: 'pulse 2s ease-in-out infinite'
+                      }}>
+                        {parseInt(item.quantity) > 0 ? `${item.quantity} LEFT` : 'SOLD OUT'}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ padding: 'clamp(1rem, 2vw, 1.5rem)' }}>
+                    <h3 style={{
+                      fontSize: 'clamp(0.9rem, 1.6vw, 1.2rem)',
+                      fontWeight: '700',
+                      marginBottom: 'clamp(0.3rem, 0.6vw, 0.5rem)',
+                      color: theme?.colors?.text
+                    }}>
+                      {item?.name || 'Product Name'}
+                    </h3>
+                    <div style={{
+                      fontSize: 'clamp(1.1rem, 2.2vw, 1.6rem)',
+                      fontWeight: '900',
+                      color: theme?.colors?.accent
+                    }}>
+                      ${parseFloat(item?.price || 0).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div style={{
+              gridColumn: '1 / -1',
+              textAlign: 'center',
+              padding: 'clamp(3rem, 5vw, 5rem)',
+              color: theme?.colors?.text,
+              opacity: 0.6
+            }}>
+              <Package size={64} color={theme?.colors?.accent} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+              <h3>No Items Yet</h3>
+            </div>
+          )}
+        </div>
+      </SectionWrapper>
+    );
+  };
+
 export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const images = config?.images || [];
@@ -1776,7 +1861,12 @@ export const StreetwearTemplate = ({ shopData, theme, sections, editable, onUpda
       case 'hero-banner': SectionComponent = HeroBannerSection; break;
       case 'featured-items': SectionComponent = FeaturedItemsSection; break;
       case 'photo-gallery': SectionComponent = PhotoGallerySection; break;
+      case 'featured-video': SectionComponent = FeaturedVideoSection; break;
       case 'mission-statement': SectionComponent = MissionStatementSection; break;
+      case 'calendar-events': SectionComponent = CalendarEventsSection; break;
+      case 'services-grid': SectionComponent = ServicesGridSection; break;
+      case 'contact': SectionComponent = ContactSection; break;
+      case 'text-block': SectionComponent = TextBlockSection; break;
       default: return null;
     }
 
@@ -1795,6 +1885,9 @@ export const StreetwearTemplate = ({ shopData, theme, sections, editable, onUpda
   );
 };
 
+// REPEAT for OrganizationTemplate, TechTemplate, MinimalistTemplate, LocalMarketTemplate
+// (Copy the exact same renderSection logic for each)
+
 export const OrganizationTemplate = ({ shopData, theme, sections, editable, onUpdateSection }) => {
   const renderSection = (section) => {
     const sectionProps = {
@@ -1810,7 +1903,12 @@ export const OrganizationTemplate = ({ shopData, theme, sections, editable, onUp
       case 'hero-banner': SectionComponent = HeroBannerSection; break;
       case 'featured-items': SectionComponent = FeaturedItemsSection; break;
       case 'photo-gallery': SectionComponent = PhotoGallerySection; break;
+      case 'featured-video': SectionComponent = FeaturedVideoSection; break;
       case 'mission-statement': SectionComponent = MissionStatementSection; break;
+      case 'calendar-events': SectionComponent = CalendarEventsSection; break;
+      case 'services-grid': SectionComponent = ServicesGridSection; break;
+      case 'contact': SectionComponent = ContactSection; break;
+      case 'text-block': SectionComponent = TextBlockSection; break;
       default: return null;
     }
 
@@ -1844,7 +1942,12 @@ export const TechTemplate = ({ shopData, theme, sections, editable, onUpdateSect
       case 'hero-banner': SectionComponent = HeroBannerSection; break;
       case 'featured-items': SectionComponent = FeaturedItemsSection; break;
       case 'photo-gallery': SectionComponent = PhotoGallerySection; break;
+      case 'featured-video': SectionComponent = FeaturedVideoSection; break;
       case 'mission-statement': SectionComponent = MissionStatementSection; break;
+      case 'calendar-events': SectionComponent = CalendarEventsSection; break;
+      case 'services-grid': SectionComponent = ServicesGridSection; break;
+      case 'contact': SectionComponent = ContactSection; break;
+      case 'text-block': SectionComponent = TextBlockSection; break;
       default: return null;
     }
 
@@ -1878,7 +1981,12 @@ export const MinimalistTemplate = ({ shopData, theme, sections, editable, onUpda
       case 'hero-banner': SectionComponent = HeroBannerSection; break;
       case 'featured-items': SectionComponent = FeaturedItemsSection; break;
       case 'photo-gallery': SectionComponent = PhotoGallerySection; break;
+      case 'featured-video': SectionComponent = FeaturedVideoSection; break;
       case 'mission-statement': SectionComponent = MissionStatementSection; break;
+      case 'calendar-events': SectionComponent = CalendarEventsSection; break;
+      case 'services-grid': SectionComponent = ServicesGridSection; break;
+      case 'contact': SectionComponent = ContactSection; break;
+      case 'text-block': SectionComponent = TextBlockSection; break;
       default: return null;
     }
 
@@ -1912,7 +2020,12 @@ export const LocalMarketTemplate = ({ shopData, theme, sections, editable, onUpd
       case 'hero-banner': SectionComponent = HeroBannerSection; break;
       case 'featured-items': SectionComponent = FeaturedItemsSection; break;
       case 'photo-gallery': SectionComponent = PhotoGallerySection; break;
+      case 'featured-video': SectionComponent = FeaturedVideoSection; break;
       case 'mission-statement': SectionComponent = MissionStatementSection; break;
+      case 'calendar-events': SectionComponent = CalendarEventsSection; break;
+      case 'services-grid': SectionComponent = ServicesGridSection; break;
+      case 'contact': SectionComponent = ContactSection; break;
+      case 'text-block': SectionComponent = TextBlockSection; break;
       default: return null;
     }
 

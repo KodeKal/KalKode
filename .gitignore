@@ -26,3 +26,8 @@ yarn-error.log*
 *.json
 *.json
 .lh/src/pages/shop/LiveShopCreation.js.json
+.lh/src/pages/shop/HomePageTemplate.js.json
+.lh/src/pages/shop/HomePageTemplate.js.json
+.lh/src/pages/shop/LiveShopCreation.js.json
+.lh/src/pages/shop/shopPublicView.js.json
+*.json

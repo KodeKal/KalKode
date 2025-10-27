@@ -1263,7 +1263,10 @@ const ShopPublicView = () => {
 
   // REMOVE loading state entirely
   const [shopData, setShopData] = useState(null);
-  const [activeTab, setActiveTab] = useState('shop');
+  const [activeTab, setActiveTab] = useState(() => {
+  // Load saved tab from sessionStorage, default to 'shop'
+  return sessionStorage.getItem('publicShopActiveTab') || 'shop';
+});
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState('gallery');
@@ -1274,6 +1277,11 @@ const ShopPublicView = () => {
   const [selectedBuyItem, setSelectedBuyItem] = useState(null);
   const [buyDialogOpen, setBuyDialogOpen] = useState(false);
   const [shopContentType, setShopContentType] = useState('products');
+
+  useEffect(() => {
+    // Save active tab to sessionStorage whenever it changes
+    sessionStorage.setItem('publicShopActiveTab', activeTab);
+  }, [activeTab]);
 
   // OPTIMIZED: Fetch data immediately, use cache
   useEffect(() => {

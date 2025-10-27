@@ -2044,7 +2044,10 @@ const ShopPage = () => {
   const [shopData, setShopData] = useState(null);
   const [originalShopData, setOriginalShopData] = useState(null); // Track original data
   const [isReady, setIsReady] = useState(false);
-  const [activeTab, setActiveTab] = useState('shop');
+  const [activeTab, setActiveTab] = useState(() => {
+    // Load saved tab from sessionStorage, default to 'shop'
+    return sessionStorage.getItem('shopPageActiveTab') || 'shop';
+  });
   const [saving, setSaving] = useState(false);
   const [shopNameFontSize, setShopNameFontSize] = useState(2.5);
   const [uploading, setUploading] = useState({});
@@ -2066,8 +2069,12 @@ const ShopPage = () => {
   const [showSectionTypeModal, setShowSectionTypeModal] = useState(false); // ADD THIS LINE
 
 
-  // REPLACE renderHomeView (around line 1400)
-// REPLACE renderHomeView
+  useEffect(() => {
+    // Save active tab to sessionStorage whenever it changes
+    sessionStorage.setItem('shopPageActiveTab', activeTab);
+  }, [activeTab]);
+
+// Around line 1400 - REPLACE renderHomeView function
 const renderHomeView = () => {
   const renderSectionWithControls = (section, index) => {
     const sectionProps = {
@@ -2112,7 +2119,30 @@ const renderHomeView = () => {
     }
 
     return (
-      <SectionWrapper key={section.id} theme={shopData?.theme}>
+      <SectionWrapper 
+        key={section.id} 
+        theme={shopData?.theme}
+        style={{
+          opacity: 0,
+          animation: 'fadeInUp 0.5s ease-out forwards',
+          animationDelay: `${index * 0.1}s`
+        }}
+      >
+        <style>
+          {`
+            @keyframes fadeInUp {
+              from {
+                opacity: 0;
+                transform: translateY(20px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+          `}
+        </style>
+        
         <SectionControls className="section-controls">
           <SectionControlButton
             theme={shopData?.theme}
@@ -2149,9 +2179,6 @@ const renderHomeView = () => {
 
   return (
     <>
-      {/* Template Selector - Centered */}
-      <TemplateSelector />
-
       {/* Live Preview with Editable Sections */}
       <LivePreviewContainer theme={shopData?.theme}>
         <LivePreviewHeader theme={shopData?.theme}>
@@ -2163,8 +2190,17 @@ const renderHomeView = () => {
             textAlign: 'center',
             padding: '3rem 2rem',
             color: shopData?.theme?.colors?.text,
-            opacity: 0.6
+            opacity: 0.6,
+            animation: 'fadeIn 0.5s ease-out'
           }}>
+            <style>
+              {`
+                @keyframes fadeIn {
+                  from { opacity: 0; }
+                  to { opacity: 0.6; }
+                }
+              `}
+            </style>
             <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>
               No sections yet
             </p>
@@ -2178,10 +2214,15 @@ const renderHomeView = () => {
             .map((section, index) => renderSectionWithControls(section, index))
         )}
 
-        {/* Add Section Card */}
+        {/* Add Section Card with animation */}
         <AddSectionCard
           theme={shopData?.theme}
           onClick={() => setShowSectionTypeModal(true)}
+          style={{
+            opacity: 0,
+            animation: 'fadeInUp 0.5s ease-out forwards',
+            animationDelay: `${homeSections.length * 0.1}s`
+          }}
         >
           <div className="plus-icon">
             <Plus size={24} />
@@ -2196,7 +2237,28 @@ const renderHomeView = () => {
         onClick={() => setShowSectionTypeModal(false)}
       />
       {showSectionTypeModal && (
-        <SectionTypeModal theme={shopData?.theme}>
+        <SectionTypeModal 
+          theme={shopData?.theme}
+          style={{
+            opacity: 0,
+            animation: 'modalSlideIn 0.3s ease-out forwards'
+          }}
+        >
+          <style>
+            {`
+              @keyframes modalSlideIn {
+                from {
+                  opacity: 0;
+                  transform: translate(-50%, -45%);
+                }
+                to {
+                  opacity: 1;
+                  transform: translate(-50%, -50%);
+                }
+              }
+            `}
+          </style>
+          
           <h3 style={{
             margin: '0 0 1.5rem 0',
             color: shopData?.theme?.colors?.accent,
@@ -2207,13 +2269,18 @@ const renderHomeView = () => {
             Choose Section Type
           </h3>
           
-          {SECTION_TYPES.map(type => (
+          {SECTION_TYPES.map((type, index) => (
             <SectionTypeOption
               key={type.value}
               theme={shopData?.theme}
               onClick={() => {
                 handleAddSection(type.value);
                 setShowSectionTypeModal(false);
+              }}
+              style={{
+                opacity: 0,
+                animation: 'fadeInUp 0.3s ease-out forwards',
+                animationDelay: `${index * 0.05}s`
               }}
             >
               <span className="icon">{type.icon}</span>
@@ -2262,17 +2329,6 @@ const handleServiceDelete = (serviceId) => {
     ...prev,
     services: prev.services.filter(service => service.id !== serviceId)
   }));
-};
-
-const handleAddSection = (sectionType) => {
-  const newSection = {
-    id: `section-${Date.now()}`,
-    type: sectionType,
-    order: homeSections.length,
-    config: getDefaultSectionConfig(sectionType)
-  };
-  
-  setHomeSections([...homeSections, newSection]);
 };
 
 const getDefaultSectionConfig = (type) => {
@@ -2334,15 +2390,6 @@ const getDefaultSectionConfig = (type) => {
   }
 };
 
-const handleUpdateSection = (sectionId, newConfig) => {
-  setHomeSections(homeSections.map(section =>
-    section.id === sectionId ? { ...section, config: newConfig } : section
-  ));
-};
-
-const handleRemoveSection = (sectionId) => {
-  setHomeSections(homeSections.filter(section => section.id !== sectionId));
-};
 
 const handleReorderSections = (result) => {
   if (!result.destination) return;
@@ -2352,25 +2399,6 @@ const handleReorderSections = (result) => {
   items.splice(result.destination.index, 0, reorderedItem);
 
   // Update order property
-  const reorderedItems = items.map((item, index) => ({
-    ...item,
-    order: index
-  }));
-
-  setHomeSections(reorderedItems);
-};
-
-const handleMoveSection = (sectionId, direction) => {
-  const currentIndex = homeSections.findIndex(s => s.id === sectionId);
-  if (currentIndex === -1) return;
-
-  const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-  if (newIndex < 0 || newIndex >= homeSections.length) return;
-
-  const items = Array.from(homeSections);
-  const [movedItem] = items.splice(currentIndex, 1);
-  items.splice(newIndex, 0, movedItem);
-
   const reorderedItems = items.map((item, index) => ({
     ...item,
     order: index
@@ -2480,61 +2508,93 @@ const toggleItemExpansion = (itemId) => {
     return true;
   };
 
-  // Check for changes whenever shopData updates
   useEffect(() => {
     if (originalShopData && shopData) {
-      const hasChanges = !deepEqual(shopData, originalShopData);
+      // Check shop data changes
+      const shopChanged = !deepEqual(shopData, originalShopData);
+
+      // Check home sections changes
+      const originalSections = originalShopData.homeSections || [];
+      const currentSections = homeSections || [];
+      const sectionsChanged = !deepEqual(currentSections, originalSections);
+
+      // Check template selection changes
+      const templateChanged = selectedHomeTemplate !== (originalShopData.selectedHomeTemplate || 1);
+
+      const hasChanges = shopChanged || sectionsChanged || templateChanged;
       setHasUnsavedChanges(hasChanges);
     }
-  }, [shopData, originalShopData]);
+  }, [shopData, originalShopData, homeSections, selectedHomeTemplate]); 
 
-  // Save changes to Firestore
+  // UPDATE handleSave function (around line 1100)
   const handleSave = async () => {
-  if (!auth.currentUser || !hasUnsavedChanges) return;
+    if (!auth.currentUser || !hasUnsavedChanges) return;  
 
-  const shopValidation = validateShopData(shopData);
-  const itemsValidation = validateAllItems(shopData.items);
-  
-  if (!shopValidation.isValid || !itemsValidation.isValid) {
-    setValidationErrors({
-      shop: shopValidation.errors,
-      items: itemsValidation.itemErrors
-    });
-    
-    alert('Please fix validation errors before saving');
-    return;
-  }
+    const shopValidation = validateShopData(shopData);
+    const itemsValidation = validateAllItems(shopData.items);
 
-  try {
-    setSaving(true);
-    console.log('Saving shop data to Firestore...');
+    if (!shopValidation.isValid || !itemsValidation.isValid) {
+      setValidationErrors({
+        shop: shopValidation.errors,
+        items: itemsValidation.itemErrors
+      });
 
-    const shopRef = doc(db, 'shops', auth.currentUser.uid);
-    const updateData = cleanDataForFirestore({
-      ...shopData,
-      selectedHomeTemplate,
-      homeSections, // ADD THIS LINE
-      updatedAt: new Date().toISOString()
-    });
+      alert('Please fix validation errors before saving');
+      return;
+    } 
 
-    await updateDoc(shopRef, updateData);
-    
-    setOriginalShopData(JSON.parse(JSON.stringify(shopData)));
-    setHasUnsavedChanges(false);
-    setValidationErrors({});
-    
-    console.log('Shop data saved successfully');
-  } catch (error) {
-    console.error('Error saving shop data:', error);
-  } finally {
-    setSaving(false);
-  }
-};
+    try {
+      setSaving(true);
+      console.log('Saving shop data to Firestore...');  
 
-  // Reset changes to original state
+      const shopRef = doc(db, 'shops', auth.currentUser.uid);
+
+      // Include home page data in the update
+      const updateData = cleanDataForFirestore({
+        ...shopData,
+        selectedHomeTemplate,
+        homeSections, // Save home sections
+        updatedAt: new Date().toISOString()
+      }); 
+
+      await updateDoc(shopRef, updateData);
+
+      // Update original data to include home sections and template
+      const newOriginalData = JSON.parse(JSON.stringify({
+        ...shopData,
+        selectedHomeTemplate,
+        homeSections
+      }));
+
+      setOriginalShopData(newOriginalData);
+      setHasUnsavedChanges(false);
+      setValidationErrors({});
+
+      console.log('✅ Shop data and home page saved successfully');
+    } catch (error) {
+      console.error('Error saving shop data:', error);
+      alert('Failed to save changes. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };  
+
+  // UPDATE handleReset function (around line 1150)
   const handleReset = () => {
     if (originalShopData) {
+      // Reset shop data
       setShopData(JSON.parse(JSON.stringify(originalShopData)));
+
+      // Reset home sections
+      if (originalShopData.homeSections) {
+        setHomeSections(JSON.parse(JSON.stringify(originalShopData.homeSections)));
+      }
+
+      // Reset template selection
+      if (originalShopData.selectedHomeTemplate) {
+        setSelectedHomeTemplate(originalShopData.selectedHomeTemplate);
+      }
+
       setHasUnsavedChanges(false);
     }
   };
@@ -2618,8 +2678,6 @@ const toggleItemExpansion = (itemId) => {
     }
   }, [shopData]);
 
-  // Update the loadShopData function (around line 1100)
-// Update the loadShopData useEffect (around line 1100)
 useEffect(() => {
   const loadShopData = async (userId) => {
     try {
@@ -2632,17 +2690,16 @@ useEffect(() => {
           data.items = data.items.filter(item => !item.deleted);
         }
         
-        // ADD: Filter out deleted services
+        // Filter out deleted services
         if (data.services) {
           data.services = data.services.filter(service => !service.deleted);
         } else {
-          // Initialize services array if it doesn't exist
           data.services = [];
         }
         
         setShopData(data);
-        setOriginalShopData(JSON.parse(JSON.stringify(data)));
         
+        // Set template
         if (data.selectedHomeTemplate) {
           setSelectedHomeTemplate(data.selectedHomeTemplate);
         }
@@ -2654,6 +2711,7 @@ useEffect(() => {
           const defaultSections = getDefaultSectionsForTemplate(data.selectedHomeTemplate || 1);
           setHomeSections(defaultSections);
           
+          // Save default sections to Firestore
           const shopRef = doc(db, 'shops', userId);
           await updateDoc(shopRef, {
             homeSections: defaultSections,
@@ -2663,9 +2721,18 @@ useEffect(() => {
           console.log('✅ Initialized home sections');
         }
         
+        // Set original data INCLUDING home sections and template
+        const originalData = {
+          ...data,
+          homeSections: data.homeSections || getDefaultSectionsForTemplate(data.selectedHomeTemplate || 1),
+          selectedHomeTemplate: data.selectedHomeTemplate || 1
+        };
+        setOriginalShopData(JSON.parse(JSON.stringify(originalData)));
+        
         console.log('✅ Shop data loaded:', {
           items: data.items?.length || 0,
-          services: data.services?.length || 0
+          services: data.services?.length || 0,
+          homeSections: (data.homeSections || []).length
         });
       }
       setIsReady(true);
@@ -2685,6 +2752,123 @@ useEffect(() => {
 
   return () => unsubscribe();
 }, [navigate]);
+
+// UPDATE handleAddSection to mark as changed (around line 1400)
+const handleAddSection = (sectionType) => {
+  const newSection = {
+    id: `section-${Date.now()}`,
+    type: sectionType,
+    order: homeSections.length,
+    config: getDefaultSectionConfig(sectionType)
+  };
+  
+  setHomeSections([...homeSections, newSection]);
+  // Changes will be detected automatically by the useEffect
+};
+
+// UPDATE handleUpdateSection to mark as changed (around line 1450)
+const handleUpdateSection = (sectionId, newConfig) => {
+  setHomeSections(homeSections.map(section =>
+    section.id === sectionId ? { ...section, config: newConfig } : section
+  ));
+  // Changes will be detected automatically by the useEffect
+};
+
+// UPDATE handleRemoveSection to mark as changed (around line 1470)
+const handleRemoveSection = (sectionId) => {
+  setHomeSections(homeSections.filter(section => section.id !== sectionId));
+  // Changes will be detected automatically by the useEffect
+};
+
+// UPDATE handleMoveSection to mark as changed (around line 1490)
+const handleMoveSection = (sectionId, direction) => {
+  const currentIndex = homeSections.findIndex(s => s.id === sectionId);
+  if (currentIndex === -1) return;
+
+  const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+  if (newIndex < 0 || newIndex >= homeSections.length) return;
+
+  const items = Array.from(homeSections);
+  const [movedItem] = items.splice(currentIndex, 1);
+  items.splice(newIndex, 0, movedItem);
+
+  const reorderedItems = items.map((item, index) => ({
+    ...item,
+    order: index
+  }));
+
+  setHomeSections(reorderedItems);
+  // Changes will be detected automatically by the useEffect
+};
+
+// UPDATE TemplateSelector handleTemplateChange (around line 1600)
+const TemplateSelector = () => {
+  const templates = [
+    { id: 1, name: 'Streetwear', desc: 'Bold & Urban' },
+    { id: 2, name: 'Organization', desc: 'Events & Calendar' },
+    { id: 3, name: 'Tech', desc: 'Futuristic' },
+    { id: 4, name: 'Minimalist', desc: 'Clean & Elegant' },
+    { id: 5, name: 'Local Market', desc: 'Community' }
+  ];
+
+  const handleTemplateChange = (templateId) => {
+    setSelectedHomeTemplate(templateId);
+    const defaultSections = getDefaultSectionsForTemplate(templateId);
+    setHomeSections(defaultSections);
+    // Changes will be detected automatically by the useEffect
+  };
+
+  return (
+    <TemplateSelectorWrapper>
+      <TemplateSelectorContainer theme={shopData?.theme}>
+        <h3 style={{
+          fontSize: '1.2rem',
+          marginBottom: '1rem',
+          color: shopData?.theme?.colors?.accent,
+          fontWeight: '600',
+          textAlign: 'center'
+        }}>
+          Select Home Page Template
+        </h3>
+        <div style={{
+          display: 'flex',
+          gap: '0.75rem',
+          flexWrap: 'wrap',
+          justifyContent: 'center'
+        }}>
+          {templates.map(template => (
+            <button
+              key={template.id}
+              onClick={() => handleTemplateChange(template.id)}
+              style={{
+                background: selectedHomeTemplate === template.id ? 
+                  shopData?.theme?.colors?.accent : 'transparent',
+                color: selectedHomeTemplate === template.id ? 
+                  'white' : shopData?.theme?.colors?.text,
+                border: `2px solid ${shopData?.theme?.colors?.accent}`,
+                padding: '0.75rem 1.25rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                fontWeight: '600',
+                fontSize: '0.85rem'
+              }}
+            >
+              <div>{template.name}</div>
+              <div style={{
+                fontSize: '0.7rem',
+                opacity: 0.8,
+                marginTop: '0.25rem'
+              }}>
+                {template.desc}
+              </div>
+            </button>
+          ))}
+        </div>
+      </TemplateSelectorContainer>
+    </TemplateSelectorWrapper>
+  );
+};
 
   // Don't render anything until ready
   if (!isReady) {
@@ -2923,75 +3107,6 @@ const getDefaultSectionsForTemplate = (templateId) => {
     { id: 4, name: 'Minimalist', desc: 'Clean & Elegant', component: MinimalistTemplate },
     { id: 5, name: 'Local Market', desc: 'Community', component: LocalMarketTemplate }
   ];
-
-// Replace TemplateSelector component
-const TemplateSelector = () => {
-  const templates = [
-    { id: 1, name: 'Streetwear', desc: 'Bold & Urban' },
-    { id: 2, name: 'Organization', desc: 'Events & Calendar' },
-    { id: 3, name: 'Tech', desc: 'Futuristic' },
-    { id: 4, name: 'Minimalist', desc: 'Clean & Elegant' },
-    { id: 5, name: 'Local Market', desc: 'Community' }
-  ];
-
-  const handleTemplateChange = (templateId) => {
-    setSelectedHomeTemplate(templateId);
-    const defaultSections = getDefaultSectionsForTemplate(templateId);
-    setHomeSections(defaultSections);
-  };
-
-  return (
-    <TemplateSelectorWrapper>
-      <TemplateSelectorContainer theme={shopData?.theme}>
-        <h3 style={{
-          fontSize: '1.2rem',
-          marginBottom: '1rem',
-          color: shopData?.theme?.colors?.accent,
-          fontWeight: '600',
-          textAlign: 'center'
-        }}>
-          Select Home Page Template
-        </h3>
-        <div style={{
-          display: 'flex',
-          gap: '0.75rem',
-          flexWrap: 'wrap',
-          justifyContent: 'center'
-        }}>
-          {templates.map(template => (
-            <button
-              key={template.id}
-              onClick={() => handleTemplateChange(template.id)}
-              style={{
-                background: selectedHomeTemplate === template.id ? 
-                  shopData?.theme?.colors?.accent : 'transparent',
-                color: selectedHomeTemplate === template.id ? 
-                  'white' : shopData?.theme?.colors?.text,
-                border: `2px solid ${shopData?.theme?.colors?.accent}`,
-                padding: '0.75rem 1.25rem',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                fontWeight: '600',
-                fontSize: '0.85rem'
-              }}
-            >
-              <div>{template.name}</div>
-              <div style={{
-                fontSize: '0.7rem',
-                opacity: 0.8,
-                marginTop: '0.25rem'
-              }}>
-                {template.desc}
-              </div>
-            </button>
-          ))}
-        </div>
-      </TemplateSelectorContainer>
-    </TemplateSelectorWrapper>
-  );
-};
-
 
   const SelectedTemplate = templates[selectedHomeTemplate];
 

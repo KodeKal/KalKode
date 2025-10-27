@@ -46,6 +46,7 @@ import {
   LocalMarketTemplate
 } from './HomePageTemplate';
 
+
 const ITEM_CATEGORIES = [
   'Electronics & Tech',
   'Clothing & Accessories',
@@ -1445,6 +1446,33 @@ const DesktopItemCard = styled(ItemCard)`
   }
 `;
 
+// Add after existing styled components (around line 800)
+const TemplateSelectorWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  padding: 0 1rem;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 1.5rem;
+    padding: 0 0.5rem;
+  }
+`;
+
+const TemplateSelectorContainer = styled.div`
+  background: ${props => `${props.theme?.colors?.surface}50`};
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}40`};
+  max-width: 900px;
+  width: 100%;
+  
+  @media (max-width: 768px) {
+    padding: 1rem;
+    border-radius: 8px;
+  }
+`;
+
 // Main Component
 const LiveShopCreation = () => {
   const navigate = useNavigate();
@@ -2776,150 +2804,303 @@ const handleSave = async () => {
   </MainContent>
 );
 
-  // REPLACE the existing renderHomeView function (around line 1400-1450)
-  // REPLACE the existing renderHomeView function with this updated version:
-const renderHomeView = () => {
-  // Default sections for preview with background image
-  const previewSections = [
-    {
-      id: 'hero-preview',
-      type: 'hero-banner',
-      order: 0,
-      config: {
-        headline: shopData?.name || 'Your Brand Name',
-        subtitle: 'Discover quality products crafted with care',
-        backgroundImage: heroBackgroundImage, // Use state for background
-        height: '70vh'
-      }
-    },
-    {
-      id: 'featured-preview',
-      type: 'featured-items',
-      order: 1,
-      config: {
-        title: 'Featured Products',
-        itemCount: 4
-      }
-    },
-    {
-      id: 'mission-preview',
-      type: 'mission-statement',
-      order: 2,
-      config: {
-        title: 'Our Mission',
-        content: shopData?.mission || 'We are dedicated to providing exceptional products and services that exceed our customers\' expectations. Quality, innovation, and customer satisfaction are at the heart of everything we do.'
-      }
-    }
-  ];
+  const renderHomeView = () => {
+    const templates = [
+      { id: 1, name: 'Streetwear', desc: 'Bold & Urban', component: StreetwearTemplate },
+      { id: 2, name: 'Organization', desc: 'Events & Calendar', component: OrganizationTemplate },
+      { id: 3, name: 'Tech', desc: 'Futuristic', component: TechTemplate },
+      { id: 4, name: 'Minimalist', desc: 'Clean & Elegant', component: MinimalistTemplate },
+      { id: 5, name: 'Local Market', desc: 'Community', component: LocalMarketTemplate }
+    ];
 
-  const handleHeroBackgroundChange = (file) => {
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setHeroBackgroundImage(reader.result);
+    const SelectedTemplate = templates.find(t => t.id === shopData.selectedHomeTemplate)?.component || StreetwearTemplate;
+
+    // Generate animated background based on template
+    const getTemplateBackground = (templateId) => {
+      const backgrounds = {
+        1: 'linear-gradient(45deg, #1a1a1a 25%, transparent 25%), linear-gradient(-45deg, #1a1a1a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1a1a1a 75%), linear-gradient(-45deg, transparent 75%, #1a1a1a 75%)',
+        2: 'radial-gradient(circle at 20% 50%, rgba(128, 0, 0, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(128, 0, 0, 0.1) 0%, transparent 50%)',
+        3: 'linear-gradient(0deg, rgba(128, 0, 0, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(128, 0, 0, 0.05) 1px, transparent 1px)',
+        4: 'linear-gradient(180deg, rgba(128, 0, 0, 0.02) 0%, transparent 100%)',
+        5: 'repeating-radial-gradient(circle at 0 0, transparent 0, rgba(128, 0, 0, 0.05) 10px, transparent 20px)'
+      };
+      return backgrounds[templateId] || backgrounds[1];
     };
-    reader.readAsDataURL(file);
-  };
 
-  return (
-    <MainContent>
-      {/* Preview Notice + Hero Background Upload */}
-      <div style={{
-        background: `${selectedTheme?.colors?.surface}50`,
-        borderRadius: '12px',
-        padding: '1.5rem',
-        marginBottom: '2rem',
-        border: `1px solid ${selectedTheme?.colors?.accent}40`
-      }}>
+    const getTemplateAnimation = (templateId) => {
+      const animations = {
+        1: 'streetwearMove',
+        2: 'organizationPulse',
+        3: 'techGrid',
+        4: 'minimalistFade',
+        5: 'marketFloat'
+      };
+      return animations[templateId] || animations[1];
+    };
+
+    // Preview sections with animated backgrounds
+    const previewSections = [
+      {
+        id: 'hero-preview',
+        type: 'hero-banner',
+        order: 0,
+        config: {
+          headline: shopData?.name || 'Your Brand Name',
+          subtitle: 'Discover quality products crafted with care',
+          backgroundImage: null, // Will use animated background
+          height: '70vh'
+        }
+      },
+      {
+        id: 'featured-preview',
+        type: 'featured-items',
+        order: 1,
+        config: {
+          title: 'Featured Products',
+          itemCount: 4
+        }
+      }
+    ];
+
+    return (
+      <MainContent>
+        {/* Template Selector */}
+        <TemplateSelectorWrapper>
+          <TemplateSelectorContainer theme={selectedTheme}>
+            <h3 style={{
+              fontSize: '1.2rem',
+              marginBottom: '1rem',
+              color: selectedTheme?.colors?.accent,
+              fontWeight: '600',
+              textAlign: 'center'
+            }}>
+              Choose Your Home Page Style
+            </h3>
+            <div style={{
+              display: 'flex',
+              gap: '0.75rem',
+              flexWrap: 'wrap',
+              justifyContent: 'center'
+            }}>
+              {templates.map(template => (
+                <button
+                  key={template.id}
+                  onClick={() => setShopData(prev => ({ ...prev, selectedHomeTemplate: template.id }))}
+                  style={{
+                    background: shopData.selectedHomeTemplate === template.id ? 
+                      selectedTheme?.colors?.accent : 'transparent',
+                    color: shopData.selectedHomeTemplate === template.id ? 
+                      'white' : selectedTheme?.colors?.text,
+                    border: `2px solid ${selectedTheme?.colors?.accent}`,
+                    padding: '0.75rem 1.25rem',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    fontWeight: '600',
+                    fontSize: '0.85rem',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (shopData.selectedHomeTemplate !== template.id) {
+                      e.target.style.background = `${selectedTheme?.colors?.accent}20`;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (shopData.selectedHomeTemplate !== template.id) {
+                      e.target.style.background = 'transparent';
+                    }
+                  }}
+                >
+                  <div>{template.name}</div>
+                  <div style={{
+                    fontSize: '0.7rem',
+                    opacity: 0.8,
+                    marginTop: '0.25rem'
+                  }}>
+                    {template.desc}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </TemplateSelectorContainer>
+        </TemplateSelectorWrapper>
+
+        {/* Live Preview with Animated Background */}
         <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1rem'
+          background: `${selectedTheme?.colors?.surface}30`,
+          borderRadius: '16px',
+          padding: '2rem 1rem',
+          border: `1px solid ${selectedTheme?.colors?.accent}40`,
+          marginTop: '2rem'
         }}>
-          <p style={{
-            color: selectedTheme?.colors?.accent,
-            fontSize: '0.95rem',
-            fontWeight: '600',
-            margin: 0
-          }}>
-            📋 Home Page Preview - Fully editable after signup
-          </p>
-          
-          {/* Hero Background Image Upload */}
+          <style>
+            {`
+              @keyframes streetwearMove {
+                0% { background-position: 0 0, 0 0, 50px 50px, 50px 50px; }
+                100% { background-position: 50px 50px, 50px 50px, 100px 100px, 100px 100px; }
+              }
+              @keyframes organizationPulse {
+                0%, 100% { opacity: 0.3; }
+                50% { opacity: 0.6; }
+              }
+              @keyframes techGrid {
+                0% { transform: translateY(0); }
+                100% { transform: translateY(20px); }
+              }
+              @keyframes minimalistFade {
+                0%, 100% { opacity: 0.2; }
+                50% { opacity: 0.4; }
+              }
+              @keyframes marketFloat {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+                100% { transform: scale(1); }
+              }
+            `}
+          </style>
+
+          {/* Enhanced Hero Banner with Animated Background */}
           <div style={{
+            minHeight: '70vh',
+            background: getTemplateBackground(shopData.selectedHomeTemplate),
+            backgroundSize: shopData.selectedHomeTemplate === 1 ? '100px 100px' : 
+                           shopData.selectedHomeTemplate === 3 ? '20px 20px' : 'cover',
+            animation: `${getTemplateAnimation(shopData.selectedHomeTemplate)} 20s linear infinite`,
             display: 'flex',
             alignItems: 'center',
-            gap: '1rem'
+            justifyContent: 'center',
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: '12px',
+            padding: 'clamp(1.5rem, 3vw, 3rem)'
           }}>
-            <label style={{
-              background: selectedTheme?.colors?.accent,
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              transition: 'all 0.3s ease'
+            {/* Overlay gradient */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: `linear-gradient(135deg, ${selectedTheme?.colors?.accent}15 0%, ${selectedTheme?.colors?.background}50 100%)`,
+              zIndex: 1
+            }} />
+
+            {/* Content */}
+            <div style={{ 
+              textAlign: 'center', 
+              position: 'relative', 
+              zIndex: 2, 
+              padding: 'clamp(1rem, 2vw, 2rem)',
+              maxWidth: '900px',
+              width: '100%',
+              background: 'rgba(0,0,0,0.3)',
+              borderRadius: '16px',
+              backdropFilter: 'blur(10px)'
             }}>
-              <span>🖼️</span>
-              {heroBackgroundImage ? 'Change Hero Background' : 'Add Hero Background'}
-              <input
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    handleHeroBackgroundChange(e.target.files[0]);
-                  }
-                }}
-              />
-            </label>
-            
-            {heroBackgroundImage && (
-              <button
-                onClick={() => setHeroBackgroundImage(null)}
-                style={{
-                  background: 'transparent',
-                  border: `1px solid ${selectedTheme?.colors?.accent}`,
-                  color: selectedTheme?.colors?.accent,
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  fontWeight: '600'
-                }}
-              >
-                Remove
-              </button>
-            )}
+              <h1 style={{
+                fontSize: 'clamp(1.5rem, 5vw, 4rem)',
+                fontWeight: '900',
+                margin: '0 0 clamp(0.75rem, 1.5vw, 1rem) 0',
+                lineHeight: 1.1,
+                textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+                color: selectedTheme?.colors?.text
+              }}>
+                {shopData?.name || 'Your Brand Name'}
+              </h1>
+              <p style={{
+                fontSize: 'clamp(1rem, 2vw, 1.5rem)',
+                opacity: 0.9,
+                textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+                color: selectedTheme?.colors?.text
+              }}>
+                Discover quality products crafted with care
+              </p>
+            </div>
+          </div>
+
+          {/* Featured Items Preview */}
+          <div style={{ marginTop: '3rem' }}>
+            <h2 style={{
+              fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
+              fontWeight: '900',
+              margin: '0 0 2rem 0',
+              color: selectedTheme?.colors?.accent,
+              textAlign: 'center'
+            }}>
+              Featured Products
+            </h2>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(160px, 22vw, 300px), 1fr))',
+              gap: 'clamp(1rem, 2vw, 2rem)',
+              padding: '0 clamp(0.5rem, 1vw, 1rem)'
+            }}>
+              {shopData?.items?.filter(item => !item.deleted).slice(0, 4).map((item) => {
+                const itemImage = item.images?.find(img => {
+                  if (typeof img === 'string') return img;
+                  if (img?.preview) return img.preview;
+                  return null;
+                });
+
+                const imageUrl = typeof itemImage === 'string' ? itemImage : itemImage?.preview;
+
+                return (
+                  <div key={item.id} style={{
+                    background: `${selectedTheme?.colors?.surface}90`,
+                    borderRadius: 'clamp(10px, 1.5vw, 16px)',
+                    overflow: 'hidden',
+                    border: `1px solid ${selectedTheme?.colors?.accent}30`,
+                    transition: 'all 0.3s ease',
+                    boxShadow: `0 4px 12px ${selectedTheme?.colors?.accent}10`
+                  }}>
+                    <div style={{
+                      height: 'clamp(140px, 28vw, 280px)',
+                      background: `${selectedTheme?.colors?.background}50`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}>
+                      {imageUrl ? (
+                        <img 
+                          src={imageUrl} 
+                          alt={item?.name || 'Product'} 
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }} 
+                        />
+                      ) : (
+                        <Package size={48} color={selectedTheme?.colors?.accent} style={{ opacity: 0.5 }} />
+                      )}
+                    </div>
+                    <div style={{ padding: 'clamp(1rem, 2vw, 1.5rem)' }}>
+                      <h3 style={{
+                        fontSize: 'clamp(0.9rem, 1.6vw, 1.2rem)',
+                        fontWeight: '700',
+                        marginBottom: 'clamp(0.3rem, 0.6vw, 0.5rem)',
+                        color: selectedTheme?.colors?.text
+                      }}>
+                        {item?.name || 'Product Name'}
+                      </h3>
+                      <div style={{
+                        fontSize: 'clamp(1.1rem, 2.2vw, 1.6rem)',
+                        fontWeight: '900',
+                        color: selectedTheme?.colors?.accent
+                      }}>
+                        ${parseFloat(item?.price || 0).toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Template Preview */}
-      <div style={{
-        background: `${selectedTheme?.colors?.surface}30`,
-        borderRadius: '16px',
-        padding: '2rem 1rem',
-        border: `1px solid ${selectedTheme?.colors?.accent}40`
-      }}>
-        <StreetwearTemplate 
-          shopData={shopData} 
-          theme={selectedTheme}
-          sections={previewSections}
-          editable={false}
-          onUpdateSection={null}
-        />
-      </div>
-    </MainContent>
-  );
-};
+      </MainContent>
+    );
+  };
 
   const renderCommunityView = () => (
     <MainContent>
