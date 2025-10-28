@@ -1369,7 +1369,7 @@ export const HeroBannerSection = ({ config, theme, editable, onUpdate }) => {
   );
 };
 
-export const FeaturedItemsSection = ({ config, theme, shopItems, editable, onUpdate }) => {
+export const FeaturedItemsSection = ({ config, theme, shopItems, editable, onUpdate, onItemClick }) => {
   const items = shopItems?.filter(item => !item.deleted).slice(0, config?.itemCount || 4) || [];
 
   const getItemImage = (item) => {
@@ -1467,13 +1467,16 @@ export const FeaturedItemsSection = ({ config, theme, shopItems, editable, onUpd
           items.map((item, index) => {
             const itemImage = getItemImage(item);
             return (
-              <div key={item.id} style={{
+              <div key={item.id} 
+              onClick={() => onItemClick && onItemClick(item)}  
+              style={{
                 backgroundColor: `${theme?.colors?.surface}90`,
                 borderRadius: 'clamp(8px, 2vw, 16px)',
                 overflow: 'hidden',
                 border: `1px solid ${theme?.colors?.accent}30`,
                 transition: 'all 0.3s ease',
-                boxShadow: `0 4px 12px ${theme?.colors?.accent}10`
+                boxShadow: `0 4px 12px ${theme?.colors?.accent}10`,
+                cursor: onItemClick ? 'pointer' : 'default'
               }}>
                 <div style={{
                   height: 'clamp(120px, 35vw, 280px)',
@@ -1553,13 +1556,16 @@ export const FeaturedItemsSection = ({ config, theme, shopItems, editable, onUpd
         {items.map((item) => {
           const itemImage = getItemImage(item);
           return (
-            <div key={`mobile-${item.id}`} style={{
+            <div key={`mobile-${item.id}`} 
+            onClick={() => onItemClick && onItemClick(item)}
+            style={{
               backgroundColor: `${theme?.colors?.surface}90`,
               borderRadius: '12px',
               overflow: 'hidden',
               border: `1px solid ${theme?.colors?.accent}30`,
               minWidth: '280px',
-              maxWidth: '280px'
+              maxWidth: '280px',
+              cursor: onItemClick ? 'pointer' : 'default'
             }}>
               <div style={{
                 height: '200px',
@@ -2123,14 +2129,15 @@ export const MissionStatementSection = ({ config, theme, editable, onUpdate }) =
 };
 
 // ==================== TEMPLATE COMPONENTS ====================
-export const StreetwearTemplate = ({ shopData, theme, sections, editable, onUpdateSection }) => {
+export const StreetwearTemplate = ({ shopData, theme, sections, editable, onUpdateSection, onItemClick }) => {
   const renderSection = (section) => {
     const sectionProps = {
       config: section.config,
       theme,
       shopItems: shopData?.items,
       editable,
-      onUpdate: (newConfig) => onUpdateSection?.(section.id, newConfig)
+      onUpdate: (newConfig) => onUpdateSection?.(section.id, newConfig),
+      onItemClick  
     };
 
     let SectionComponent;
@@ -2162,17 +2169,16 @@ export const StreetwearTemplate = ({ shopData, theme, sections, editable, onUpda
   );
 };
 
-// REPEAT for OrganizationTemplate, TechTemplate, MinimalistTemplate, LocalMarketTemplate
-// (Copy the exact same renderSection logic for each)
 
-export const OrganizationTemplate = ({ shopData, theme, sections, editable, onUpdateSection }) => {
+export const OrganizationTemplate = ({ shopData, theme, sections, editable, onUpdateSection, onItemClick }) => {
   const renderSection = (section) => {
     const sectionProps = {
       config: section.config,
       theme,
       shopItems: shopData?.items,
       editable,
-      onUpdate: (newConfig) => onUpdateSection?.(section.id, newConfig)
+      onUpdate: (newConfig) => onUpdateSection?.(section.id, newConfig),
+      onItemClick  
     };
 
     let SectionComponent;
@@ -2204,14 +2210,15 @@ export const OrganizationTemplate = ({ shopData, theme, sections, editable, onUp
   );
 };
 
-export const TechTemplate = ({ shopData, theme, sections, editable, onUpdateSection }) => {
+export const TechTemplate = ({ shopData, theme, sections, editable, onUpdateSection, onItemClick }) => {
   const renderSection = (section) => {
     const sectionProps = {
       config: section.config,
       theme,
       shopItems: shopData?.items,
       editable,
-      onUpdate: (newConfig) => onUpdateSection?.(section.id, newConfig)
+      onUpdate: (newConfig) => onUpdateSection?.(section.id, newConfig),
+      onItemClick  
     };
 
     let SectionComponent;
@@ -2243,14 +2250,15 @@ export const TechTemplate = ({ shopData, theme, sections, editable, onUpdateSect
   );
 };
 
-export const MinimalistTemplate = ({ shopData, theme, sections, editable, onUpdateSection }) => {
+export const MinimalistTemplate = ({ shopData, theme, sections, editable, onUpdateSection, onItemClick }) => {
   const renderSection = (section) => {
     const sectionProps = {
       config: section.config,
       theme,
       shopItems: shopData?.items,
       editable,
-      onUpdate: (newConfig) => onUpdateSection?.(section.id, newConfig)
+      onUpdate: (newConfig) => onUpdateSection?.(section.id, newConfig),
+      onItemClick  
     };
 
     let SectionComponent;
@@ -2282,14 +2290,15 @@ export const MinimalistTemplate = ({ shopData, theme, sections, editable, onUpda
   );
 };
 
-export const LocalMarketTemplate = ({ shopData, theme, sections, editable, onUpdateSection }) => {
+export const LocalMarketTemplate = ({ shopData, theme, sections, editable, onUpdateSection, onItemClick }) => {
   const renderSection = (section) => {
     const sectionProps = {
       config: section.config,
       theme,
       shopItems: shopData?.items,
       editable,
-      onUpdate: (newConfig) => onUpdateSection?.(section.id, newConfig)
+      onUpdate: (newConfig) => onUpdateSection?.(section.id, newConfig),
+      onItemClick  
     };
 
     let SectionComponent;

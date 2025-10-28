@@ -1453,6 +1453,24 @@ const ShopPublicView = () => {
     sessionStorage.setItem('publicShopActiveTab', activeTab);
   }, [activeTab]);
 
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+    });
+  }, [activeTab]);
+
+  const handleHomeItemClick = (item) => {
+    // Switch to shop tab
+    setActiveTab('shop');
+
+    // Small delay to ensure tab switch completes before opening zoom
+    setTimeout(() => {
+      handleItemClick(item);
+    }, 100);
+  };
+
+
   // OPTIMIZED: Fetch data immediately, use cache
   useEffect(() => {
     let mounted = true;
@@ -1531,6 +1549,7 @@ const ShopPublicView = () => {
       (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
     )
   );
+
 
   // Add distance information if available
   const itemsWithDist = validItems.map(item => {
@@ -1638,12 +1657,18 @@ const ShopPublicView = () => {
   };
 
   const handleDirectOrder = () => {
-    if (!zoomedItem) return;
+    if (!zoomedItem) return;  
 
     // Close zoom view
-    handleCloseZoom();
+    handleCloseZoom();  
 
-    // Open buy dialog
+    // Check authentication - redirect to login if not authenticated
+    if (!isAuthenticated) {
+      navigate('/auth', { state: { from: `/shop/${shopId}` } });
+      return;
+    } 
+
+    // Open buy dialog if authenticated
     setSelectedBuyItem(zoomedItem);
     setBuyDialogOpen(true);
   };
@@ -1968,6 +1993,7 @@ const renderHomeView = () => {
           sections={shopData?.homeSections || []}
           editable={false}
           onUpdateSection={null}
+          onItemClick={handleHomeItemClick}
         />
       )}
     </div>
