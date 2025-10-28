@@ -39,6 +39,50 @@ const fadeInUp = `
   }
 `;
 
+// ADD after the animation keyframes
+const horizontalScrollStyle = `
+  .mobile-horizontal-scroll {
+    display: none;
+    
+    @media (max-width: 768px) {
+      display: flex;
+      overflow-x: auto;
+      overflow-y: hidden;
+      gap: 1rem;
+      padding: 0.75rem 0.5rem;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      
+      &::-webkit-scrollbar {
+        height: 4px;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: var(--accent-color);
+        border-radius: 10px;
+      }
+      
+      > * {
+        flex: 0 0 280px;
+        scroll-snap-align: start;
+      }
+    }
+  }
+  
+  .desktop-grid {
+    display: grid;
+    
+    @media (max-width: 768px) {
+      display: none;
+    }
+  }
+`;
+
 const slideInLeft = `
   @keyframes slideInLeft {
     from {
@@ -77,11 +121,11 @@ const pulse = `
 `;
 
 // UPDATE SectionWrapper with animation
-const SectionWrapper = ({ children, theme, noPadding = false, delay = 0 }) => {
+const SectionWrapper  = ({ children, theme, noPadding = false, delay = 0 }) => {
   return (
     <div style={{
       position: 'relative',
-      padding: noPadding ? '0' : 'clamp(2rem, 4vw, 4rem) clamp(1rem, 2vw, 2rem)',
+      padding: noPadding ? '0' : 'clamp(1rem, 2vw, 2rem) clamp(0.5rem, 1vw, 1rem)',  // Changed from clamp(2rem, 4vw, 4rem)
       background: 'transparent',
       animation: 'fadeInUp 0.6s ease-out forwards',
       animationDelay: `${delay}s`,
@@ -369,7 +413,7 @@ export const TextBlockSection = ({ config, theme, editable, onUpdate }) => {
   return (
     <div style={{
       padding: 'clamp(1rem, 2vw, 2rem) clamp(0.5rem, 1vw, 1rem)',
-      marginBottom: 'clamp(1.5rem, 3vw, 3rem)'
+      marginBottom: 'clamp(0.75rem, 1.5vw, 1.5rem)'
     }}>
       {editable ? (
         <>
@@ -458,344 +502,7 @@ export const TextBlockSection = ({ config, theme, editable, onUpdate }) => {
   );
 };
 
-// Featured Video Section - Mobile Optimized
-export const FeaturedVideoSection = ({ config, theme, editable, onUpdate }) => {
-  const getYouTubeId = (url) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url?.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-  };
 
-  const videoId = config?.youtubeUrl ? getYouTubeId(config.youtubeUrl) : config?.videoId;
-
-  return (
-    <div style={{ marginBottom: 'clamp(1.5rem, 3vw, 3rem)', padding: '0 clamp(0.5rem, 1vw, 1rem)' }}>
-      {editable ? (
-        <input
-          type="text"
-          value={config?.title || ''}
-          onChange={(e) => onUpdate({ ...config, title: e.target.value })}
-          placeholder="Video section title"
-          style={{
-            fontSize: 'clamp(1.3rem, 3.5vw, 2.5rem)',
-            fontWeight: '700',
-            marginBottom: 'clamp(0.75rem, 1.5vw, 1rem)',
-            textAlign: 'center',
-            background: 'transparent',
-            border: 'none',
-            color: theme?.colors?.text,
-            outline: 'none',
-            width: '100%'
-          }}
-        />
-      ) : (
-        <h2 style={{
-          fontSize: 'clamp(1.3rem, 3.5vw, 2.5rem)',
-          fontWeight: '700',
-          marginBottom: 'clamp(0.75rem, 1.5vw, 1rem)',
-          textAlign: 'center'
-        }}>
-          {config?.title || 'Featured Video'}
-        </h2>
-      )}
-
-      {editable && (
-        <input
-          type="text"
-          value={config?.youtubeUrl || ''}
-          onChange={(e) => onUpdate({ ...config, youtubeUrl: e.target.value, videoId: getYouTubeId(e.target.value) })}
-          placeholder="Paste YouTube URL here"
-          style={{
-            width: '100%',
-            padding: 'clamp(0.75rem, 1.5vw, 1rem)',
-            marginBottom: 'clamp(0.75rem, 1.5vw, 1rem)',
-            borderRadius: 'clamp(6px, 1vw, 8px)',
-            background: theme?.colors?.surface,
-            border: `1px solid ${theme?.colors?.accent}40`,
-            color: theme?.colors?.text,
-            textAlign: 'center',
-            fontSize: 'clamp(0.85rem, 1.2vw, 1rem)'
-          }}
-        />
-      )}
-      
-      <div style={{
-        maxWidth: '900px',
-        margin: '0 auto',
-        borderRadius: 'clamp(12px, 2vw, 16px)',
-        overflow: 'hidden',
-        background: `${theme?.colors?.surface}50`
-      }}>
-        {videoId ? (
-          <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
-            <iframe
-              src={`https://www.youtube.com/embed/${videoId}`}
-              title="YouTube video"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%'
-              }}
-            />
-          </div>
-        ) : (
-          <div style={{
-            height: 'clamp(200px, 35vw, 400px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'column',
-            gap: 'clamp(0.75rem, 1.5vw, 1rem)',
-            color: theme?.colors?.text,
-            opacity: 0.5
-          }}>
-            <Play size={window.innerWidth < 768 ? 48 : 64} />
-            <div style={{ fontSize: 'clamp(0.85rem, 1.5vw, 1rem)' }}>Add YouTube URL to display video</div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Calendar/Events Section - Mobile Optimized
-export const CalendarEventsSection = ({ config, theme, editable, onUpdate }) => {
-  const events = config?.events || [];
-
-  const handleAddEvent = () => {
-    const newEvent = {
-      id: Date.now().toString(),
-      title: 'New Event',
-      date: new Date().toISOString().split('T')[0],
-      time: '10:00 AM',
-      description: 'Event description'
-    };
-    onUpdate({ ...config, events: [...events, newEvent] });
-  };
-
-  const handleUpdateEvent = (eventId, field, value) => {
-    const newEvents = events.map(e => 
-      e.id === eventId ? { ...e, [field]: value } : e
-    );
-    onUpdate({ ...config, events: newEvents });
-  };
-
-  const handleRemoveEvent = (eventId) => {
-    onUpdate({ ...config, events: events.filter(e => e.id !== eventId) });
-  };
-
-  return (
-    <div style={{ marginBottom: 'clamp(1.5rem, 3vw, 3rem)', padding: '0 clamp(0.5rem, 1vw, 1rem)' }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 'clamp(1rem, 2vw, 2rem)',
-        flexWrap: 'wrap',
-        gap: 'clamp(0.5rem, 1vw, 1rem)'
-      }}>
-        {editable ? (
-          <input
-            type="text"
-            value={config?.title || ''}
-            onChange={(e) => onUpdate({ ...config, title: e.target.value })}
-            placeholder="Events section title"
-            style={{
-              fontSize: 'clamp(1.3rem, 3.5vw, 2.5rem)',
-              fontWeight: '700',
-              background: 'transparent',
-              border: 'none',
-              color: theme?.colors?.text,
-              outline: 'none',
-              flex: 1,
-              minWidth: '150px'
-            }}
-          />
-        ) : (
-          <h2 style={{
-            fontSize: 'clamp(1.3rem, 3.5vw, 2.5rem)',
-            fontWeight: '700',
-            margin: 0
-          }}>
-            {config?.title || 'Upcoming Events'}
-          </h2>
-        )}
-        
-        {editable && (
-          <button
-            onClick={handleAddEvent}
-            style={{
-              background: theme?.colors?.accent,
-              color: 'white',
-              border: 'none',
-              padding: 'clamp(0.6rem, 1.2vw, 0.75rem) clamp(1rem, 2vw, 1.5rem)',
-              borderRadius: 'clamp(6px, 1vw, 8px)',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: 'clamp(0.85rem, 1.2vw, 1rem)'
-            }}
-          >
-            + Add Event
-          </button>
-        )}
-      </div>
-
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(200px, 30vw, 300px), 1fr))',
-        gap: 'clamp(1rem, 2vw, 1.5rem)'
-      }}>
-        {events.map((event) => (
-          <div key={event.id} style={{
-            background: `${theme?.colors?.surface}90`,
-            borderRadius: 'clamp(8px, 1.5vw, 12px)',
-            padding: 'clamp(1rem, 2vw, 1.5rem)',
-            border: `1px solid ${theme?.colors?.accent}30`,
-            position: 'relative'
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'clamp(0.5rem, 1vw, 0.75rem)',
-              marginBottom: 'clamp(0.75rem, 1.5vw, 1rem)',
-              color: theme?.colors?.accent
-            }}>
-              <Calendar size={window.innerWidth < 768 ? 20 : 24} />
-              {editable ? (
-                <input
-                  type="date"
-                  value={event.date}
-                  onChange={(e) => handleUpdateEvent(event.id, 'date', e.target.value)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: theme?.colors?.accent,
-                    fontSize: 'clamp(0.85rem, 1.5vw, 1rem)',
-                    fontWeight: '600'
-                  }}
-                />
-              ) : (
-                <span style={{ fontSize: 'clamp(0.85rem, 1.5vw, 1rem)', fontWeight: '600' }}>
-                  {new Date(event.date).toLocaleDateString()}
-                </span>
-              )}
-            </div>
-
-            {editable ? (
-              <>
-                <input
-                  type="text"
-                  value={event.title}
-                  onChange={(e) => handleUpdateEvent(event.id, 'title', e.target.value)}
-                  style={{
-                    width: '100%',
-                    fontSize: 'clamp(1rem, 2vw, 1.2rem)',
-                    fontWeight: '700',
-                    marginBottom: 'clamp(0.25rem, 0.5vw, 0.5rem)',
-                    background: 'transparent',
-                    border: 'none',
-                    color: theme?.colors?.text,
-                    outline: 'none'
-                  }}
-                />
-                <input
-                  type="text"
-                  value={event.time}
-                  onChange={(e) => handleUpdateEvent(event.id, 'time', e.target.value)}
-                  placeholder="Time"
-                  style={{
-                    width: '100%',
-                    fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)',
-                    marginBottom: 'clamp(0.25rem, 0.5vw, 0.5rem)',
-                    background: 'transparent',
-                    border: 'none',
-                    color: theme?.colors?.text,
-                    opacity: 0.7,
-                    outline: 'none'
-                  }}
-                />
-                <textarea
-                  value={event.description}
-                  onChange={(e) => handleUpdateEvent(event.id, 'description', e.target.value)}
-                  style={{
-                    width: '100%',
-                    fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)',
-                    background: 'transparent',
-                    border: `1px solid ${theme?.colors?.accent}20`,
-                    borderRadius: '4px',
-                    color: theme?.colors?.text,
-                    opacity: 0.7,
-                    padding: 'clamp(0.4rem, 0.8vw, 0.5rem)',
-                    minHeight: '60px',
-                    resize: 'vertical'
-                  }}
-                />
-                <button
-                  onClick={() => handleRemoveEvent(event.id)}
-                  style={{
-                    position: 'absolute',
-                    top: 'clamp(0.5rem, 1vw, 0.5rem)',
-                    right: 'clamp(0.5rem, 1vw, 0.5rem)',
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#ff4444',
-                    cursor: 'pointer',
-                    fontSize: 'clamp(1.2rem, 2vw, 1.5rem)'
-                  }}
-                >
-                  ×
-                </button>
-              </>
-            ) : (
-              <>
-                <h3 style={{
-                  fontSize: 'clamp(1rem, 2vw, 1.2rem)',
-                  fontWeight: '700',
-                  marginBottom: 'clamp(0.25rem, 0.5vw, 0.5rem)'
-                }}>
-                  {event.title}
-                </h3>
-                <div style={{
-                  fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)',
-                  opacity: 0.7,
-                  marginBottom: 'clamp(0.25rem, 0.5vw, 0.5rem)'
-                }}>
-                  {event.time}
-                </div>
-                <p style={{
-                  fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)',
-                  opacity: 0.7,
-                  lineHeight: 1.5
-                }}>
-                  {event.description}
-                </p>
-              </>
-            )}
-          </div>
-        ))}
-        
-        {events.length === 0 && !editable && (
-          <div style={{
-            gridColumn: '1 / -1',
-            textAlign: 'center',
-            padding: 'clamp(2rem, 4vw, 3rem)',
-            opacity: 0.5,
-            fontSize: 'clamp(0.9rem, 1.5vw, 1rem)'
-          }}>
-            No upcoming events
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Services Grid Section - Mobile Optimized
 export const ServicesGridSection = ({ config, theme, editable, onUpdate }) => {
   const services = config?.services || [];
   const iconMap = {
@@ -834,9 +541,37 @@ export const ServicesGridSection = ({ config, theme, editable, onUpdate }) => {
     <div style={{
       background: `${theme?.colors?.surface}50`,
       padding: 'clamp(1.5rem, 3vw, 3rem) clamp(1rem, 2vw, 2rem)',
-      marginBottom: 'clamp(1.5rem, 3vw, 3rem)',
+      marginBottom: 'clamp(0.75rem, 1.5vw, 1.5rem)',
       borderRadius: 'clamp(12px, 2vw, 16px)'
     }}>
+      <style>{horizontalScrollStyle}</style>
+      <style>{`
+        :root {
+          --accent-color: ${theme?.colors?.accent || '#800000'};
+        }
+        
+        .services-desktop-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(clamp(150px, 25vw, 200px), 1fr));
+          gap: clamp(1rem, 2vw, 2rem);
+          margin-top: clamp(1rem, 2vw, 2rem);
+        }
+        
+        .services-mobile-scroll {
+          display: none;
+        }
+        
+        @media (max-width: 768px) {
+          .services-desktop-grid {
+            display: none !important;
+          }
+          
+          .services-mobile-scroll {
+            display: flex !important;
+          }
+        }
+      `}</style>
+
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -893,12 +628,8 @@ export const ServicesGridSection = ({ config, theme, editable, onUpdate }) => {
         )}
       </div>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(clamp(150px, 25vw, 200px), 1fr))',
-        gap: 'clamp(1rem, 2vw, 2rem)',
-        marginTop: 'clamp(1rem, 2vw, 2rem)'
-      }}>
+      {/* Desktop Grid */}
+      <div className="services-desktop-grid">
         {services.map((service) => {
           const IconComponent = iconMap[service.icon] || Star;
           
@@ -917,14 +648,14 @@ export const ServicesGridSection = ({ config, theme, editable, onUpdate }) => {
                     onChange={(e) => handleUpdateService(service.id, 'icon', e.target.value)}
                     style={{
                       position: 'absolute',
-                      top: 'clamp(0.4rem, 0.8vw, 0.5rem)',
-                      left: 'clamp(0.4rem, 0.8vw, 0.5rem)',
-                      padding: 'clamp(0.2rem, 0.4vw, 0.25rem)',
+                      top: '0.5rem',
+                      left: '0.5rem',
+                      padding: '0.25rem',
                       borderRadius: '4px',
                       background: theme?.colors?.surface,
                       color: theme?.colors?.text,
                       border: `1px solid ${theme?.colors?.accent}40`,
-                      fontSize: 'clamp(0.7rem, 1vw, 0.75rem)'
+                      fontSize: '0.75rem'
                     }}
                   >
                     {Object.keys(iconMap).map(iconName => (
@@ -935,13 +666,13 @@ export const ServicesGridSection = ({ config, theme, editable, onUpdate }) => {
                     onClick={() => handleRemoveService(service.id)}
                     style={{
                       position: 'absolute',
-                      top: 'clamp(0.4rem, 0.8vw, 0.5rem)',
-                      right: 'clamp(0.4rem, 0.8vw, 0.5rem)',
+                      top: '0.5rem',
+                      right: '0.5rem',
                       background: 'transparent',
                       border: 'none',
                       color: '#ff4444',
                       cursor: 'pointer',
-                      fontSize: 'clamp(1.2rem, 2vw, 1.5rem)'
+                      fontSize: '1.5rem'
                     }}
                   >
                     ×
@@ -950,9 +681,9 @@ export const ServicesGridSection = ({ config, theme, editable, onUpdate }) => {
               )}
 
               <IconComponent 
-                size={window.innerWidth < 768 ? 36 : 48}
+                size={48}
                 color={theme?.colors?.accent}
-                style={{ margin: '0 auto clamp(0.75rem, 1.5vw, 1rem)' }}
+                style={{ margin: '0 auto 1rem' }}
               />
 
               {editable ? (
@@ -963,9 +694,9 @@ export const ServicesGridSection = ({ config, theme, editable, onUpdate }) => {
                     onChange={(e) => handleUpdateService(service.id, 'title', e.target.value)}
                     style={{
                       width: '100%',
-                      fontSize: 'clamp(0.95rem, 1.8vw, 1.1rem)',
+                      fontSize: '1.1rem',
                       fontWeight: '600',
-                      marginBottom: 'clamp(0.4rem, 0.8vw, 0.5rem)',
+                      marginBottom: '0.5rem',
                       background: 'transparent',
                       border: 'none',
                       color: theme?.colors?.text,
@@ -978,13 +709,13 @@ export const ServicesGridSection = ({ config, theme, editable, onUpdate }) => {
                     onChange={(e) => handleUpdateService(service.id, 'description', e.target.value)}
                     style={{
                       width: '100%',
-                      fontSize: 'clamp(0.75rem, 1.3vw, 0.85rem)',
+                      fontSize: '0.85rem',
                       background: 'transparent',
                       border: `1px solid ${theme?.colors?.accent}20`,
                       borderRadius: '4px',
                       color: theme?.colors?.text,
                       opacity: 0.7,
-                      padding: 'clamp(0.4rem, 0.8vw, 0.5rem)',
+                      padding: '0.5rem',
                       textAlign: 'center',
                       minHeight: '50px',
                       resize: 'vertical'
@@ -994,14 +725,14 @@ export const ServicesGridSection = ({ config, theme, editable, onUpdate }) => {
               ) : (
                 <>
                   <h3 style={{
-                    fontSize: 'clamp(0.95rem, 1.8vw, 1.1rem)',
+                    fontSize: '1.1rem',
                     fontWeight: '600',
-                    marginBottom: 'clamp(0.4rem, 0.8vw, 0.5rem)'
+                    marginBottom: '0.5rem'
                   }}>
                     {service.title}
                   </h3>
                   <p style={{
-                    fontSize: 'clamp(0.75rem, 1.3vw, 0.85rem)',
+                    fontSize: '0.85rem',
                     opacity: 0.7,
                     lineHeight: 1.5
                   }}>
@@ -1013,6 +744,352 @@ export const ServicesGridSection = ({ config, theme, editable, onUpdate }) => {
           );
         })}
       </div>
+
+      {/* Mobile Horizontal Scroll */}
+      <div className="services-mobile-scroll mobile-horizontal-scroll">
+        {services.map((service) => {
+          const IconComponent = iconMap[service.icon] || Star;
+          
+          return (
+            <div key={`mobile-${service.id}`} style={{
+              textAlign: 'center',
+              padding: '1.25rem',
+              background: `${theme?.colors?.background}60`,
+              borderRadius: '12px',
+              minWidth: '200px',
+              maxWidth: '200px'
+            }}>
+              <IconComponent 
+                size={40}
+                color={theme?.colors?.accent}
+                style={{ margin: '0 auto 0.75rem' }}
+              />
+              <h3 style={{
+                fontSize: '1rem',
+                fontWeight: '600',
+                marginBottom: '0.5rem',
+                color: theme?.colors?.text
+              }}>
+                {service.title}
+              </h3>
+              <p style={{
+                fontSize: '0.8rem',
+                opacity: 0.7,
+                lineHeight: 1.4,
+                color: theme?.colors?.text
+              }}>
+                {service.description}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export const CalendarEventsSection = ({ config, theme, editable, onUpdate }) => {
+  const events = config?.events || [];
+
+  const handleAddEvent = () => {
+    const newEvent = {
+      id: Date.now().toString(),
+      title: 'New Event',
+      date: new Date().toISOString().split('T')[0],
+      time: '10:00 AM',
+      description: 'Event description'
+    };
+    onUpdate({ ...config, events: [...events, newEvent] });
+  };
+
+  const handleUpdateEvent = (eventId, field, value) => {
+    const newEvents = events.map(e => 
+      e.id === eventId ? { ...e, [field]: value } : e
+    );
+    onUpdate({ ...config, events: newEvents });
+  };
+
+  const handleRemoveEvent = (eventId) => {
+    onUpdate({ ...config, events: events.filter(e => e.id !== eventId) });
+  };
+
+  return (
+    <div style={{ marginBottom: 'clamp(0.75rem, 1.5vw, 1.5rem)', padding: '0 clamp(0.5rem, 1vw, 1rem)' }}>
+      <style>{horizontalScrollStyle}</style>
+      <style>{`
+        :root {
+          --accent-color: ${theme?.colors?.accent || '#800000'};
+        }
+        
+        .events-desktop-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(clamp(200px, 30vw, 300px), 1fr));
+          gap: clamp(1rem, 2vw, 1.5rem);
+        }
+        
+        .events-mobile-scroll {
+          display: none;
+        }
+        
+        @media (max-width: 768px) {
+          .events-desktop-grid {
+            display: none !important;
+          }
+          
+          .events-mobile-scroll {
+            display: flex !important;
+          }
+        }
+      `}</style>
+
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 'clamp(1rem, 2vw, 2rem)',
+        flexWrap: 'wrap',
+        gap: 'clamp(0.5rem, 1vw, 1rem)'
+      }}>
+        {editable ? (
+          <input
+            type="text"
+            value={config?.title || ''}
+            onChange={(e) => onUpdate({ ...config, title: e.target.value })}
+            placeholder="Events section title"
+            style={{
+              fontSize: 'clamp(1.3rem, 3.5vw, 2.5rem)',
+              fontWeight: '700',
+              background: 'transparent',
+              border: 'none',
+              color: theme?.colors?.text,
+              outline: 'none',
+              flex: 1,
+              minWidth: '150px'
+            }}
+          />
+        ) : (
+          <h2 style={{
+            fontSize: 'clamp(1.3rem, 3.5vw, 2.5rem)',
+            fontWeight: '700',
+            margin: 0
+          }}>
+            {config?.title || 'Upcoming Events'}
+          </h2>
+        )}
+        
+        {editable && (
+          <button
+            onClick={handleAddEvent}
+            style={{
+              background: theme?.colors?.accent,
+              color: 'white',
+              border: 'none',
+              padding: 'clamp(0.6rem, 1.2vw, 0.75rem) clamp(1rem, 2vw, 1.5rem)',
+              borderRadius: 'clamp(6px, 1vw, 8px)',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: 'clamp(0.85rem, 1.2vw, 1rem)'
+            }}
+          >
+            + Add Event
+          </button>
+        )}
+      </div>
+
+      {/* Desktop Grid */}
+      <div className="events-desktop-grid">
+        {events.map((event) => (
+          <div key={event.id} style={{
+            background: `${theme?.colors?.surface}90`,
+            borderRadius: 'clamp(8px, 1.5vw, 12px)',
+            padding: 'clamp(1rem, 2vw, 1.5rem)',
+            border: `1px solid ${theme?.colors?.accent}30`,
+            position: 'relative'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'clamp(0.5rem, 1vw, 0.75rem)',
+              marginBottom: 'clamp(0.75rem, 1.5vw, 1rem)',
+              color: theme?.colors?.accent
+            }}>
+              <Calendar size={24} />
+              {editable ? (
+                <input
+                  type="date"
+                  value={event.date}
+                  onChange={(e) => handleUpdateEvent(event.id, 'date', e.target.value)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: theme?.colors?.accent,
+                    fontSize: '1rem',
+                    fontWeight: '600'
+                  }}
+                />
+              ) : (
+                <span style={{ fontSize: '1rem', fontWeight: '600' }}>
+                  {new Date(event.date).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+
+            {editable ? (
+              <>
+                <input
+                  type="text"
+                  value={event.title}
+                  onChange={(e) => handleUpdateEvent(event.id, 'title', e.target.value)}
+                  style={{
+                    width: '100%',
+                    fontSize: '1.2rem',
+                    fontWeight: '700',
+                    marginBottom: '0.5rem',
+                    background: 'transparent',
+                    border: 'none',
+                    color: theme?.colors?.text,
+                    outline: 'none'
+                  }}
+                />
+                <input
+                  type="text"
+                  value={event.time}
+                  onChange={(e) => handleUpdateEvent(event.id, 'time', e.target.value)}
+                  placeholder="Time"
+                  style={{
+                    width: '100%',
+                    fontSize: '0.9rem',
+                    marginBottom: '0.5rem',
+                    background: 'transparent',
+                    border: 'none',
+                    color: theme?.colors?.text,
+                    opacity: 0.7,
+                    outline: 'none'
+                  }}
+                />
+                <textarea
+                  value={event.description}
+                  onChange={(e) => handleUpdateEvent(event.id, 'description', e.target.value)}
+                  style={{
+                    width: '100%',
+                    fontSize: '0.9rem',
+                    background: 'transparent',
+                    border: `1px solid ${theme?.colors?.accent}20`,
+                    borderRadius: '4px',
+                    color: theme?.colors?.text,
+                    opacity: 0.7,
+                    padding: '0.5rem',
+                    minHeight: '60px',
+                    resize: 'vertical'
+                  }}
+                />
+                <button
+                  onClick={() => handleRemoveEvent(event.id)}
+                  style={{
+                    position: 'absolute',
+                    top: '0.5rem',
+                    right: '0.5rem',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#ff4444',
+                    cursor: 'pointer',
+                    fontSize: '1.5rem'
+                  }}
+                >
+                  ×
+                </button>
+              </>
+            ) : (
+              <>
+                <h3 style={{
+                  fontSize: '1.2rem',
+                  fontWeight: '700',
+                  marginBottom: '0.5rem'
+                }}>
+                  {event.title}
+                </h3>
+                <div style={{
+                  fontSize: '0.9rem',
+                  opacity: 0.7,
+                  marginBottom: '0.5rem'
+                }}>
+                  {event.time}
+                </div>
+                <p style={{
+                  fontSize: '0.9rem',
+                  opacity: 0.7,
+                  lineHeight: 1.5
+                }}>
+                  {event.description}
+                </p>
+              </>
+            )}
+          </div>
+        ))}
+        
+        {events.length === 0 && !editable && (
+          <div style={{
+            gridColumn: '1 / -1',
+            textAlign: 'center',
+            padding: 'clamp(2rem, 4vw, 3rem)',
+            opacity: 0.5,
+            fontSize: 'clamp(0.9rem, 1.5vw, 1rem)'
+          }}>
+            No upcoming events
+          </div>
+        )}
+      </div>
+
+      {/* Mobile Horizontal Scroll */}
+      <div className="events-mobile-scroll mobile-horizontal-scroll">
+        {events.map((event) => (
+          <div key={`mobile-${event.id}`} style={{
+            background: `${theme?.colors?.surface}90`,
+            borderRadius: '12px',
+            padding: '1.25rem',
+            border: `1px solid ${theme?.colors?.accent}30`,
+            minWidth: '260px',
+            maxWidth: '260px'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginBottom: '0.75rem',
+              color: theme?.colors?.accent
+            }}>
+              <Calendar size={20} />
+              <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>
+                {new Date(event.date).toLocaleDateString()}
+              </span>
+            </div>
+            <h3 style={{
+              fontSize: '1.1rem',
+              fontWeight: '700',
+              marginBottom: '0.4rem',
+              color: theme?.colors?.text
+            }}>
+              {event.title}
+            </h3>
+            <div style={{
+              fontSize: '0.85rem',
+              opacity: 0.7,
+              marginBottom: '0.4rem',
+              color: theme?.colors?.text
+            }}>
+              {event.time}
+            </div>
+            <p style={{
+              fontSize: '0.85rem',
+              opacity: 0.7,
+              lineHeight: 1.4,
+              color: theme?.colors?.text
+            }}>
+              {event.description}
+            </p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -1023,7 +1100,7 @@ export const ContactSection = ({ config, theme, editable, onUpdate }) => {
     <div style={{
       background: `${theme?.colors?.surface}50`,
       padding: 'clamp(1.5rem, 3vw, 3rem) clamp(1rem, 2vw, 2rem)',
-      marginBottom: 'clamp(1.5rem, 3vw, 3rem)',
+      marginBottom: 'clamp(0.75rem, 1.5vw, 1.5rem)',
       borderRadius: 'clamp(12px, 2vw, 16px)'
     }}>
       {editable ? (
@@ -1220,7 +1297,6 @@ export const HeroBannerSection = ({ config, theme, editable, onUpdate }) => {
           width: '100%',
           backgroundColor: 'rgba(0,0,0,0.3)',
           borderRadius: 'clamp(12px, 2.5vw, 16px)',
-          backdropFilter: 'blur(10px)',
           animation: 'fadeInUp 1s ease-out 0.3s forwards',
           opacity: 0
         }}>
@@ -1293,98 +1369,103 @@ export const HeroBannerSection = ({ config, theme, editable, onUpdate }) => {
   );
 };
 
-// Featured Items Section - Enhanced Mobile Grid
 export const FeaturedItemsSection = ({ config, theme, shopItems, editable, onUpdate }) => {
   const items = shopItems?.filter(item => !item.deleted).slice(0, config?.itemCount || 4) || [];
 
   const getItemImage = (item) => {
     if (!item?.images || item.images.length === 0) return null;
-
     const validImage = item.images.find(img => {
       if (typeof img === 'string') return img;
       if (img?.preview) return img.preview;
       return null;
     });
-
     if (typeof validImage === 'string') return validImage;
     if (validImage?.preview) return validImage.preview;
     return null;
   };
 
   return (
-    <SectionWrapper theme={theme}>
-      <style>{fadeInUp + slideInLeft + pulseStyle}</style>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 'clamp(1rem, 3vw, 2.5rem)',
-        padding: '0 clamp(0.5rem, 2vw, 1rem)',
-        animation: 'slideInLeft 0.6s ease-out',
-        flexWrap: 'wrap',
-        gap: 'clamp(0.5rem, 2vw, 1rem)'
-      }}>
-        {editable ? (
-          <input
-            type="text"
-            value={config?.title || ''}
-            onChange={(e) => onUpdate({ ...config, title: e.target.value })}
-            placeholder="Section title"
-            style={{
-              fontSize: 'clamp(1.3rem, 5vw, 2.5rem)',
-              fontWeight: '900',
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: theme?.colors?.text,
-              outline: 'none',
-              flex: '1 1 auto',
-              minWidth: '150px'
-            }}
-          />
-        ) : (
-          <h2 style={{
-            fontSize: 'clamp(1.3rem, 5vw, 2.5rem)',
-            fontWeight: '900',
-            margin: 0,
-            color: theme?.colors?.text,
-            flex: '1 1 auto'
-          }}>
-            {config?.title || 'Featured Items'}
-          </h2>
-        )}
-
-        {editable && (
-          <select
-            value={config?.itemCount || 4}
-            onChange={(e) => onUpdate({ ...config, itemCount: parseInt(e.target.value) })}
-            style={{
-              padding: 'clamp(0.4rem, 1.5vw, 0.75rem)',
-              borderRadius: 'clamp(6px, 1.5vw, 8px)',
-              backgroundColor: theme?.colors?.surface,
-              color: theme?.colors?.text,
-              border: `1px solid ${theme?.colors?.accent}40`,
-              fontSize: 'clamp(0.75rem, 1.8vw, 0.95rem)',
-              flexShrink: 0
-            }}
-          >
-            <option value={2}>2 items</option>
-            <option value={4}>4 items</option>
-            <option value={6}>6 items</option>
-            <option value={8}>8 items</option>
-          </select>
-        )}
-      </div>
+    <div style={{ marginBottom: 'clamp(0.75rem, 1.5vw, 1.5rem)', padding: '0 clamp(0.5rem, 1vw, 1rem)' }}>
+      <style>{horizontalScrollStyle}</style>
+      <style>{`
+        :root {
+          --accent-color: ${theme?.colors?.accent || '#800000'};
+        }
+        
+        .featured-desktop-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(clamp(140px, 45vw, 280px), 1fr));
+          gap: clamp(0.75rem, 2.5vw, 2rem);
+        }
+        
+        .featured-mobile-scroll {
+          display: none;
+        }
+        
+        @media (max-width: 768px) {
+          .featured-desktop-grid {
+            display: none !important;
+          }
+          
+          .featured-mobile-scroll {
+            display: flex !important;
+          }
+        }
+      `}</style>
       
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(140px, 45vw, 280px), 1fr))',
-        gap: 'clamp(0.75rem, 2.5vw, 2rem)',
-        padding: '0 clamp(0.5rem, 2vw, 1rem)'
-      }}>
+      {editable ? (
+        <input
+          type="text"
+          value={config?.title || ''}
+          onChange={(e) => onUpdate({ ...config, title: e.target.value })}
+          placeholder="Section title"
+          style={{
+            fontSize: 'clamp(1.3rem, 3.5vw, 2.5rem)',
+            fontWeight: '700',
+            marginBottom: 'clamp(0.75rem, 1.5vw, 1rem)',
+            background: 'transparent',
+            border: 'none',
+            color: theme?.colors?.text,
+            outline: 'none',
+            width: '100%'
+          }}
+        />
+      ) : (
+        <h2 style={{
+          fontSize: 'clamp(1.3rem, 3.5vw, 2.5rem)',
+          fontWeight: '700',
+          marginBottom: 'clamp(0.75rem, 1.5vw, 1rem)'
+        }}>
+          {config?.title || 'Featured Items'}
+        </h2>
+      )}
+
+      {editable && (
+        <select
+          value={config?.itemCount || 4}
+          onChange={(e) => onUpdate({ ...config, itemCount: parseInt(e.target.value) })}
+          style={{
+            padding: 'clamp(0.4rem, 0.8vw, 0.5rem)',
+            marginBottom: 'clamp(0.75rem, 1.5vw, 1rem)',
+            borderRadius: 'clamp(6px, 1vw, 8px)',
+            background: theme?.colors?.surface,
+            color: theme?.colors?.text,
+            border: `1px solid ${theme?.colors?.accent}40`,
+            fontSize: 'clamp(0.75rem, 1.2vw, 0.85rem)'
+          }}
+        >
+          <option value={2}>2 items</option>
+          <option value={4}>4 items</option>
+          <option value={6}>6 items</option>
+          <option value={8}>8 items</option>
+        </select>
+      )}
+      
+      {/* Desktop Grid */}
+      <div className="featured-desktop-grid">
         {items.length > 0 ? (
           items.map((item, index) => {
             const itemImage = getItemImage(item);
-
             return (
               <div key={item.id} style={{
                 backgroundColor: `${theme?.colors?.surface}90`,
@@ -1392,10 +1473,7 @@ export const FeaturedItemsSection = ({ config, theme, shopItems, editable, onUpd
                 overflow: 'hidden',
                 border: `1px solid ${theme?.colors?.accent}30`,
                 transition: 'all 0.3s ease',
-                boxShadow: `0 4px 12px ${theme?.colors?.accent}10`,
-                animation: 'fadeInUp 0.6s ease-out forwards',
-                animationDelay: `${index * 0.1}s`,
-                opacity: 0
+                boxShadow: `0 4px 12px ${theme?.colors?.accent}10`
               }}>
                 <div style={{
                   height: 'clamp(120px, 35vw, 280px)',
@@ -1413,26 +1491,12 @@ export const FeaturedItemsSection = ({ config, theme, shopItems, editable, onUpd
                       style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover',
-                        transition: 'transform 0.3s ease'
+                        objectFit: 'cover'
                       }}
-                      onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
-                      onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
                     />
                   ) : (
-                    <div style={{
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 'clamp(0.5rem, 1.5vw, 1rem)'
-                    }}>
-                      <Package size={window.innerWidth < 768 ? 32 : 48} color={theme?.colors?.accent} style={{ opacity: 0.5 }} />
-                    </div>
+                    <Package size={48} color={theme?.colors?.accent} style={{ opacity: 0.5 }} />
                   )}
-
                   {item?.quantity !== undefined && (
                     <div style={{
                       position: 'absolute',
@@ -1444,8 +1508,7 @@ export const FeaturedItemsSection = ({ config, theme, shopItems, editable, onUpd
                       padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.4rem, 1.2vw, 0.75rem)',
                       borderRadius: 'clamp(8px, 2vw, 16px)',
                       fontSize: 'clamp(0.65rem, 1.5vw, 0.8rem)',
-                      fontWeight: '700',
-                      animation: 'pulse 2s ease-in-out infinite'
+                      fontWeight: '700'
                     }}>
                       {parseInt(item.quantity) > 0 ? `${item.quantity} LEFT` : 'SOLD OUT'}
                     </div>
@@ -1456,11 +1519,7 @@ export const FeaturedItemsSection = ({ config, theme, shopItems, editable, onUpd
                     fontSize: 'clamp(0.85rem, 2.2vw, 1.2rem)',
                     fontWeight: '700',
                     marginBottom: 'clamp(0.25rem, 1vw, 0.5rem)',
-                    color: theme?.colors?.text,
-                    lineHeight: 1.2,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
+                    color: theme?.colors?.text
                   }}>
                     {item?.name || 'Product Name'}
                   </h3>
@@ -1483,16 +1542,89 @@ export const FeaturedItemsSection = ({ config, theme, shopItems, editable, onUpd
             color: theme?.colors?.text,
             opacity: 0.6
           }}>
-            <Package size={window.innerWidth < 768 ? 48 : 64} color={theme?.colors?.accent} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+            <Package size={64} color={theme?.colors?.accent} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
             <h3 style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)', margin: 0 }}>No Items Yet</h3>
           </div>
         )}
       </div>
-    </SectionWrapper>
+
+      {/* Mobile Horizontal Scroll */}
+      <div className="featured-mobile-scroll mobile-horizontal-scroll">
+        {items.map((item) => {
+          const itemImage = getItemImage(item);
+          return (
+            <div key={`mobile-${item.id}`} style={{
+              backgroundColor: `${theme?.colors?.surface}90`,
+              borderRadius: '12px',
+              overflow: 'hidden',
+              border: `1px solid ${theme?.colors?.accent}30`,
+              minWidth: '280px',
+              maxWidth: '280px'
+            }}>
+              <div style={{
+                height: '200px',
+                backgroundColor: `${theme?.colors?.background}50`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                {itemImage ? (
+                  <img 
+                    src={itemImage} 
+                    alt={item?.name || 'Product'} 
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                ) : (
+                  <Package size={40} color={theme?.colors?.accent} style={{ opacity: 0.5 }} />
+                )}
+                {item?.quantity !== undefined && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '0.5rem',
+                    right: '0.5rem',
+                    backgroundColor: parseInt(item.quantity) > 0 ? 
+                      'rgba(76, 175, 80, 0.9)' : 'rgba(244, 67, 54, 0.9)',
+                    color: 'white',
+                    padding: '0.3rem 0.6rem',
+                    borderRadius: '12px',
+                    fontSize: '0.7rem',
+                    fontWeight: '700'
+                  }}>
+                    {parseInt(item.quantity) > 0 ? `${item.quantity} LEFT` : 'SOLD OUT'}
+                  </div>
+                )}
+              </div>
+              <div style={{ padding: '1rem' }}>
+                <h3 style={{
+                  fontSize: '1rem',
+                  fontWeight: '700',
+                  marginBottom: '0.5rem',
+                  color: theme?.colors?.text
+                }}>
+                  {item?.name || 'Product Name'}
+                </h3>
+                <div style={{
+                  fontSize: '1.3rem',
+                  fontWeight: '900',
+                  color: theme?.colors?.accent
+                }}>
+                  ${parseFloat(item?.price || 0).toFixed(2)}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 };
 
-// Photo Gallery Section - Enhanced Mobile Carousel
 export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const images = config?.images || [];
@@ -1523,7 +1655,13 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
   };
 
   return (
-    <SectionWrapper theme={theme}>
+    <div style={{
+      marginBottom: 'clamp(0.75rem, 1.5vw, 1.5rem)',
+      padding: 'clamp(1rem, 2vw, 2rem)',
+      background: `${theme?.colors?.surface}30`,
+      borderRadius: 'clamp(12px, 2vw, 16px)',
+      border: `1px solid ${theme?.colors?.accent}30`
+    }}>
       <div style={{
         marginBottom: 'clamp(1rem, 3vw, 2rem)'
       }}>
@@ -1563,8 +1701,10 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
           height: 'clamp(250px, 60vw, 600px)',
           borderRadius: 'clamp(10px, 2.5vw, 20px)',
           overflow: 'hidden',
-          background: `${theme?.colors?.surface}50`,
-          marginBottom: 'clamp(0.75rem, 2.5vw, 2rem)'
+          background: `${theme?.colors?.background}80`,
+          marginBottom: 'clamp(0.75rem, 2.5vw, 2rem)',
+          border: `2px solid ${theme?.colors?.accent}40`,
+          boxShadow: `0 8px 32px ${theme?.colors?.accent}20`
         }}>
           {images.length > 0 ? (
             <>
@@ -1584,7 +1724,7 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
                   }}
                 />
                 
-                {/* Navigation Arrows - Mobile Optimized */}
+                {/* Navigation Arrows */}
                 {images.length > 1 && (
                   <>
                     <button
@@ -1638,7 +1778,7 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
                   </>
                 )}
                 
-                {/* Slide Indicators - Mobile Responsive */}
+                {/* Slide Indicators */}
                 {images.length > 1 && (
                   <div style={{
                     position: 'absolute',
@@ -1672,7 +1812,7 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
                   </div>
                 )}
                 
-                {/* Edit Controls - Mobile Positioned */}
+                {/* Edit Controls */}
                 {editable && (
                   <button
                     onClick={() => handleRemoveImage(currentSlide)}
@@ -1715,8 +1855,8 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
           )}
         </div>
         
-        {/* Thumbnail Strip - Mobile Scrollable */}
-        {images.length > 1 && (
+        {/* Thumbnail Strip - ONLY SHOW IN EDIT MODE */}
+        {editable && images.length > 1 && (
           <div style={{
             display: 'flex',
             gap: 'clamp(0.4rem, 1.5vw, 1rem)',
@@ -1756,7 +1896,7 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
           </div>
         )}
         
-        {/* Add Image Button - Mobile Optimized */}
+        {/* Add Image Button */}
         {editable && (
           <label style={{
             display: 'block',
@@ -1786,7 +1926,119 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
           </label>
         )}
       </div>
-    </SectionWrapper>
+    </div>
+  );
+};
+
+export const FeaturedVideoSection = ({ config, theme, editable, onUpdate }) => {
+  const getYouTubeId = (url) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url?.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const videoId = config?.youtubeUrl ? getYouTubeId(config.youtubeUrl) : config?.videoId;
+
+  return (
+    <div style={{ 
+      marginBottom: 'clamp(0.75rem, 1.5vw, 1.5rem)', 
+      padding: 'clamp(1rem, 2vw, 2rem)',
+      background: `${theme?.colors?.surface}30`,
+      borderRadius: 'clamp(12px, 2vw, 16px)',
+      border: `1px solid ${theme?.colors?.accent}30`
+    }}>
+      {editable ? (
+        <input
+          type="text"
+          value={config?.title || ''}
+          onChange={(e) => onUpdate({ ...config, title: e.target.value })}
+          placeholder="Video section title"
+          style={{
+            fontSize: 'clamp(1.3rem, 3.5vw, 2.5rem)',
+            fontWeight: '700',
+            marginBottom: 'clamp(0.75rem, 1.5vw, 1rem)',
+            textAlign: 'center',
+            background: 'transparent',
+            border: 'none',
+            color: theme?.colors?.text,
+            outline: 'none',
+            width: '100%'
+          }}
+        />
+      ) : (
+        <h2 style={{
+          fontSize: 'clamp(1.3rem, 3.5vw, 2.5rem)',
+          fontWeight: '700',
+          marginBottom: 'clamp(0.75rem, 1.5vw, 1rem)',
+          textAlign: 'center'
+        }}>
+          {config?.title || 'Featured Video'}
+        </h2>
+      )}
+
+      {editable && (
+        <input
+          type="text"
+          value={config?.youtubeUrl || ''}
+          onChange={(e) => onUpdate({ ...config, youtubeUrl: e.target.value, videoId: getYouTubeId(e.target.value) })}
+          placeholder="Paste YouTube URL here"
+          style={{
+            width: '100%',
+            padding: 'clamp(0.75rem, 1.5vw, 1rem)',
+            marginBottom: 'clamp(0.75rem, 1.5vw, 1rem)',
+            borderRadius: 'clamp(6px, 1vw, 8px)',
+            background: theme?.colors?.surface,
+            border: `1px solid ${theme?.colors?.accent}40`,
+            color: theme?.colors?.text,
+            textAlign: 'center',
+            fontSize: 'clamp(0.85rem, 1.2vw, 1rem)'
+          }}
+        />
+      )}
+      
+      <div style={{
+        maxWidth: '900px',
+        margin: '0 auto',
+        borderRadius: 'clamp(12px, 2vw, 16px)',
+        overflow: 'hidden',
+        background: `${theme?.colors?.background}80`,
+        border: `2px solid ${theme?.colors?.accent}40`,
+        boxShadow: `0 8px 32px ${theme?.colors?.accent}20`
+      }}>
+        {videoId ? (
+          <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+            <iframe
+              src={`https://www.youtube.com/embed/${videoId}`}
+              title="YouTube video"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%'
+              }}
+            />
+          </div>
+        ) : (
+          <div style={{
+            height: 'clamp(200px, 35vw, 400px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'column',
+            gap: 'clamp(0.75rem, 1.5vw, 1rem)',
+            color: theme?.colors?.text,
+            opacity: 0.5
+          }}>
+            <Play size={window.innerWidth < 768 ? 48 : 64} />
+            <div style={{ fontSize: 'clamp(0.85rem, 1.5vw, 1rem)' }}>Add YouTube URL to display video</div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -1794,14 +2046,15 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
 export const MissionStatementSection = ({ config, theme, editable, onUpdate }) => {
   return (
     <SectionWrapper theme={theme}>
-      <div style={{
-        background: `${theme?.colors?.surface}40`,
-        borderRadius: 'clamp(10px, 2.5vw, 20px)',
-        padding: 'clamp(1.5rem, 5vw, 4rem) clamp(1rem, 4vw, 3rem)',
-        textAlign: 'center',
-        border: `1px solid ${theme?.colors?.accent}20`,
-        backdropFilter: 'blur(5px)'
-      }}>
+    <div style={{
+      background: `${theme?.colors?.surface}40`,
+      borderRadius: 'clamp(10px, 2.5vw, 20px)',
+      padding: 'clamp(1.5rem, 5vw, 4rem) clamp(1rem, 4vw, 3rem)',
+      textAlign: 'center',
+      border: `1px solid ${theme?.colors?.accent}20`,
+      backdropFilter: 'blur(5px)',
+      marginBottom: 'clamp(0.75rem, 1.5vw, 1.5rem)'  // ADD THIS LINE
+    }}>
         {editable ? (
           <>
             <input
