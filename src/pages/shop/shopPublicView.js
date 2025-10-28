@@ -26,6 +26,8 @@ import {
   X,
   RefreshCw,
   Pin,
+  Plus, 
+  Minus, 
   Grid,
   Columns,
   ArrowLeft,
@@ -43,6 +45,450 @@ import {
   MinimalistTemplate,
   LocalMarketTemplate
 } from './HomePageTemplate';
+
+import FeaturedItem from '../../components/shop/FeaturedItem';
+
+
+const CategoryHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding: 0 0.5rem;
+  
+  @media (min-width: 768px) {
+    margin-bottom: 1rem;
+    padding: 0;
+  }
+  
+  h2 {
+    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
+    font-size: 1.3rem;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    margin: 0;
+    
+    @media (min-width: 768px) {
+      font-size: 1.8rem;
+    }
+  }
+  
+  .view-all {
+    font-size: 0.8rem;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    opacity: 0.8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: all 0.3s ease;
+    
+    @media (min-width: 768px) {
+      font-size: 0.9rem;
+      gap: 0.5rem;
+    }
+    
+    &:active {
+      opacity: 1;
+      transform: translateX(3px);
+    }
+  }
+`;
+
+const CategoryGridWrapper = styled.div`
+  margin-bottom: 2rem;
+  
+  /* Desktop: Regular grid */
+  @media (min-width: 769px) {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+  }
+  
+  @media (max-width: 1200px) and (min-width: 769px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  @media (max-width: 900px) and (min-width: 769px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  /* Mobile: Scrollable rows */
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+`;
+
+const CategoryScrollableGrid = styled.div`
+  display: none;
+  
+  @media (max-width: 768px) {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: ${props => props.itemCount <= 5 ? '1fr' : 'repeat(2, 1fr)'};
+    grid-template-columns: ${props => {
+      const cols = Math.ceil(props.itemCount / (props.itemCount <= 5 ? 1 : 2));
+      return `repeat(${cols}, minmax(280px, 1fr))`;
+    }};
+    gap: 1rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.5rem;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    min-height: ${props => props.itemCount <= 5 ? '42.5vh' : '85vh'};
+    align-items: stretch;
+    
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
+      border-radius: 10px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: ${props => props.theme?.colors?.accent || '#800000'};
+      border-radius: 10px;
+    }
+    
+    > * {
+      scroll-snap-align: start;
+      min-width: 0;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    grid-template-columns: ${props => {
+      const cols = Math.ceil(props.itemCount / (props.itemCount <= 5 ? 1 : 2));
+      return `repeat(${cols}, minmax(240px, 1fr))`;
+    }};
+    gap: 0.75rem;
+  }
+`;
+
+// Zoomed Item Overlay (matching WelcomePage)
+const ZoomOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.95)'}F5`};
+  z-index: 10000;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  overflow: hidden;
+  
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem;
+  }
+`;
+
+const ZoomContainer = styled.div`
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  aspect-ratio: 2 / 5;
+  max-height: 85vh;
+  background: ${props => props.theme?.colors?.background || '#000000'};
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  
+  @media (max-width: 768px) {
+    max-width: 420px;
+    border-radius: 12px;
+  }
+  
+  @media (max-width: 480px) {
+    max-width: 95%;
+    border-radius: 10px;
+  }
+`;
+
+const ImageCarousel = styled.div`
+  position: relative;
+  width: 100%;
+  height: 70%;
+  background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
+  overflow: hidden;
+  flex-shrink: 0;
+  
+  .image-track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.3s ease;
+    transform: translateX(${props => props.currentIndex * -100}%);
+  }
+  
+  .image-slide {
+    min-width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: ${props => `${props.theme?.colors?.background || '#000000'}40`};
+    }
+    
+    .no-image {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+      opacity: 0.3;
+      
+      p {
+        margin: 0;
+        font-size: 0.85rem;
+      }
+    }
+  }
+  
+  .carousel-dots {
+    position: absolute;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.4rem;
+    z-index: 2;
+    padding: 0.4rem 0.75rem;
+    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.6)'}CC`};
+    border-radius: 20px;
+    backdrop-filter: blur(8px);
+  }
+  
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: ${props => props.theme?.colors?.text || '#FFFFFF'};
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      transform: scale(1.2);
+    }
+  }
+  
+  .carousel-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.7)'}DD`};
+    border: 1px solid ${props => `${props.theme?.colors?.accent}40` || 'rgba(255, 255, 255, 0.2)'};
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${props => props.theme?.colors?.text || 'white'};
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 2;
+    
+    &:hover {
+      opacity: 1 !important;
+      background: ${props => props.theme?.colors?.accent || '#800000'};
+      transform: translateY(-50%) scale(1.1);
+    }
+    
+    &.prev {
+      left: 1rem;
+    }
+    
+    &.next {
+      right: 1rem;
+    }
+    
+    &:disabled {
+      opacity: 0 !important;
+      cursor: not-allowed;
+    }
+    
+    @media (max-width: 480px) {
+      width: 32px;
+      height: 32px;
+      
+      &.prev {
+        left: 0.5rem;
+      }
+      
+      &.next {
+        right: 0.5rem;
+      }
+      
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+  
+  &:hover .carousel-button {
+    opacity: 0.7;
+  }
+  
+  .close-overlay-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.8)'}DD`};
+    border: 1px solid ${props => `${props.theme?.colors?.accent}60` || 'rgba(255, 255, 255, 0.3)'};
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(8px);
+    z-index: 3;
+    opacity: 0.8;
+    
+    &:hover {
+      opacity: 1;
+      background: ${props => props.theme?.colors?.accent || '#800000'};
+      border-color: ${props => props.theme?.colors?.accent || '#800000'};
+      transform: scale(1.1);
+    }
+    
+    &:active {
+      transform: scale(0.95);
+    }
+    
+    @media (max-width: 480px) {
+      width: 32px;
+      height: 32px;
+      top: 0.75rem;
+      right: 0.75rem;
+      
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+`;
+
+const ZoomContent = styled.div`
+  height: 30%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: ${props => props.theme?.colors?.background || '#000000'};
+  
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: ${props => `${props.theme?.colors?.accent || '#800000'}60`};
+    border-radius: 2px;
+    
+    &:hover {
+      background: ${props => props.theme?.colors?.accent || '#800000'};
+    }
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.875rem;
+    gap: 0.625rem;
+  }
+`;
+
+const QuantitySelector = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}20`};
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+
+  .quantity-label {
+    fontSize: '0.8rem';
+    fontWeight: '600';
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  }
+
+  .quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    
+    .quantity-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1.5px solid ${props => props.theme?.colors?.accent || '#800000'};
+      background: transparent;
+      color: ${props => props.theme?.colors?.accent || '#800000'};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      
+      &:active:not(:disabled) {
+        transform: scale(0.9);
+        background: ${props => props.theme?.colors?.accent || '#800000'};
+        color: white;
+      }
+      
+      &:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+      
+      svg {
+        width: 12px;
+        height: 12px;
+      }
+    }
+    
+    .quantity-display {
+      font-size: 1rem;
+      font-weight: bold;
+      color: ${props => props.theme?.colors?.text || 'white'};
+      min-width: 24px;
+      text-align: center;
+    }
+  }
+`;
+
 
 // Cache shop data in memory to avoid refetching
 const shopCache = new Map();
@@ -796,233 +1242,6 @@ const ItemCard = styled.div`
   `}
 `;
 
-const ItemImageContainer = styled.div`
-  position: relative;
-  height: ${props => props.viewMode === 'gallery' ? '150px' : '200px'};
-  overflow: hidden;
-  background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
-  
-  @media (min-width: 768px) {
-    height: ${props => props.viewMode === 'gallery' ? '250px' : '300px'};
-  }
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.5s ease;
-  }
-  
-  ${ItemCard}:hover & img {
-    transform: scale(1.05);
-  }
-  
-  .carousel-arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.5)'}90`};
-    border: 1px solid ${props => `${props.theme?.colors?.accent || 'rgba(255, 255, 255, 0.2)'}40`};
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: ${props => props.theme?.colors?.text || 'white'};
-    cursor: pointer;
-    opacity: 0.7;
-    transition: all 0.2s;
-    z-index: 2;
-
-    &:active {
-      opacity: 1;
-      transform: translateY(-50%) scale(0.9);
-    }
-
-    @media (hover: hover) {
-      &:hover {
-        opacity: 1;
-        background: ${props => `${props.theme?.colors?.accent || 'rgba(0, 0, 0, 0.8)'}40`};
-      }
-    }
-
-    &.left {
-      left: 0.5rem;
-    }
-
-    &.right {
-      right: 0.5rem;
-    }
-    
-    @media (min-width: 768px) {
-      width: 32px;
-      height: 32px;
-      left: ${props => props.className?.includes('left') ? '1rem' : 'auto'};
-      right: ${props => props.className?.includes('right') ? '1rem' : 'auto'};
-    }
-  }
-`;
-
-const ItemContent = styled.div`
-  padding: 1rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}90`};
-  
-  @media (min-width: 768px) {
-    padding: 1.5rem;
-  }
-
-  h3 {
-    font-size: 1rem;
-    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
-    margin: 0 0 0.5rem 0;
-    font-family: ${props => props.theme?.fonts?.heading || "'Space Grotesk', sans-serif"};
-    
-    @media (min-width: 768px) {
-      font-size: 1.2rem;
-    }
-  }
-
-  .price {
-    font-size: 1rem;
-    color: ${props => props.theme?.colors?.accent || '#800000'};
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-    
-    @media (min-width: 768px) {
-      font-size: 1.1rem;
-    }
-  }
-
-  .description {
-    color: ${props => `${props.theme?.colors?.text}CC` || 'rgba(255, 255, 255, 0.8)'};
-    font-size: 0.8rem;
-    line-height: 1.4;
-    margin-bottom: 1rem;
-    flex: 1;
-    font-family: ${props => props.theme?.fonts?.body || "'Inter', sans-serif"};
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    
-    @media (min-width: 768px) {
-      font-size: 0.9rem;
-      line-height: 1.5;
-      -webkit-line-clamp: 4;
-    }
-  }
-`;
-
-const CategoryBadge = styled.div`
-  display: inline-block;
-  background: ${props => `${props.theme?.colors?.accent || '#800000'}20`};
-  color: ${props => props.theme?.colors?.accent || '#800000'};
-  padding: 0.2rem 0.6rem;
-  border-radius: 10px;
-  font-size: 0.7rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  margin-bottom: 0.5rem;
-  
-  @media (min-width: 768px) {
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-  }
-`;
-
-const ItemLocation = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.7rem;
-  color: ${props => `${props.theme?.colors?.text}99` || 'rgba(255, 255, 255, 0.6)'};
-  margin-bottom: 0.75rem;
-  
-  @media (min-width: 768px) {
-    font-size: 0.8rem;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-`;
-
-const ActionButtons = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  margin-top: auto;
-`;
-
-const ActionButton = styled.button`
-  flex: 1;
-  padding: 0.6rem;
-  border-radius: ${props => props.theme?.styles?.borderRadius || '6px'};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-  z-index: 5;
-  font-size: 0.8rem;
-  
-  @media (min-width: 768px) {
-    padding: 0.75rem;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-  }
-  
-  &.primary {
-    background: ${props => props.theme?.colors?.accent || '#800000'};
-    color: white;
-    border: none;
-    
-    &:active {
-      background: ${props => props.theme?.colors?.primary || '#4A0404'};
-      transform: scale(0.98);
-    }
-    
-    @media (hover: hover) {
-      &:hover {
-        background: ${props => props.theme?.colors?.primary || '#4A0404'};
-      }
-    }
-  }
-  
-  &.secondary {
-    background: transparent;
-    border: 1px solid ${props => props.theme?.colors?.accent || '#800000'};
-    color: ${props => props.theme?.colors?.accent || '#800000'};
-    
-    &:active {
-      background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
-      transform: scale(0.98);
-    }
-    
-    @media (hover: hover) {
-      &:hover {
-        background: ${props => `${props.theme?.colors?.accent}10` || 'rgba(128, 0, 0, 0.1)'};
-      }
-    }
-  }
-  
-  svg {
-    width: 14px;
-    height: 14px;
-    
-    @media (min-width: 768px) {
-      width: 16px;
-      height: 16px;
-    }
-  }
-`;
-
 // Mobile-optimized search container
 const SearchContainer = styled.div`
   max-width: 100%;
@@ -1164,58 +1383,6 @@ const EmptyStateMessage = styled.div`
   }
 `;
 
-// Add these specific widget components
-const HeroBannerWidget = ({ config, theme }) => (
-  <div style={{
-    height: '400px',
-    background: `linear-gradient(135deg, ${theme?.colors?.accent}20 0%, ${theme?.colors?.background} 100%)`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '2rem',
-    fontWeight: 'bold'
-  }}>
-    {config.headline || "Welcome"}
-  </div>
-);
-
-const ProductCarouselWidget = ({ config, theme, items = [] }) => (
-  <div style={{ padding: '2rem 0' }}>
-    <h2 style={{ marginBottom: '1.5rem', color: theme?.colors?.accent }}>
-      Featured Products
-    </h2>
-    <div style={{ 
-      display: 'grid', 
-      gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-      gap: '1rem'
-    }}>
-      {items.slice(0, config.itemsToShow || 4).map((item, i) => (
-        <div key={i} style={{
-          background: `${theme?.colors?.surface}80`,
-          borderRadius: '8px',
-          padding: '1rem'
-        }}>
-          <h4>{item.name}</h4>
-          <p>${item.price}</p>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-const StatsWidget = ({ config, theme }) => (
-  <div style={{
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '2rem',
-    padding: '3rem'
-  }}>
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: '2rem', color: theme?.colors?.accent }}>100+</div>
-      <div>Products</div>
-    </div>
-  </div>
-);
 
 const AnnouncementBar = styled.div`
   background: ${props => props.theme?.colors?.accent || '#800000'};
@@ -1260,6 +1427,9 @@ const ShopPublicView = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { userLocation } = useLocation();
+  const [zoomedItem, setZoomedItem] = useState(null);
+  const [currentZoomImageIndex, setCurrentZoomImageIndex] = useState(0);
+  const [orderQuantity, setOrderQuantity] = useState(1);
 
   // REMOVE loading state entirely
   const [shopData, setShopData] = useState(null);
@@ -1334,6 +1504,81 @@ const ShopPublicView = () => {
     };
   }, [shopId]);
 
+  const categorizedShopItems = useMemo(() => {
+  const categorizedItems = {
+    'Electronics & Tech': [],
+    'Clothing & Accessories': [],
+    'Home & Garden': [],
+    'Sports & Outdoors': [],
+    'Books & Media': [],
+    'Toys & Games': [],
+    'Health & Beauty': [],
+    'Automotive': [],
+    'Collectibles & Art': [],
+    'Food & Beverages': [],
+    'Other': []
+  };
+
+  const items = shopContentType === 'products' ? 
+    (shopData?.items || []) : 
+    (shopData?.services || []);
+
+  // Filter out deleted items and apply search
+  const validItems = items.filter(item => 
+    !item.deleted && 
+    (searchTerm === '' || 
+      (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
+  );
+
+  // Add distance information if available
+  const itemsWithDist = validItems.map(item => {
+    if (userLocation && item.coordinates?.lat && item.coordinates?.lng) {
+      try {
+        const distanceInMeters = getDistance(
+          { latitude: userLocation.latitude, longitude: userLocation.longitude },
+          { latitude: item.coordinates.lat, longitude: item.coordinates.lng }
+        );
+        const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
+        
+        return {
+          ...item,
+          distance: distanceInMeters,
+          distanceInMiles,
+          formattedDistance: `${distanceInMiles} mi`
+        };
+      } catch (e) {
+        console.warn('Error calculating distance:', e);
+        return item;
+      }
+    }
+    return item;
+  });
+
+  // Featured items (first 5)
+  const featuredItems = itemsWithDist.slice(0, 5);
+  const remainingItems = itemsWithDist.slice(5);
+
+  // Categorize remaining items
+  remainingItems.forEach(item => {
+    const category = item.category || 'Other';
+    if (categorizedItems[category]) {
+      categorizedItems[category].push(item);
+    } else {
+      categorizedItems['Other'].push(item);
+    }
+  });
+
+  // Limit each category to 15 items
+  Object.keys(categorizedItems).forEach(category => {
+    categorizedItems[category] = categorizedItems[category].slice(0, 15);
+  });
+
+  return { featuredItems, categorizedItems };
+}, [shopData?.items, shopData?.services, searchTerm, shopContentType, userLocation]);
+
+
   // Helper function
   const initializeImageIndices = (shop) => {
     if (shop.items && Array.isArray(shop.items)) {
@@ -1345,48 +1590,64 @@ const ShopPublicView = () => {
     }
   };
 
-  // OPTIMIZED: Calculate distances only when needed, memoized
-  const itemsWithDistance = useMemo(() => {
-    const items = shopContentType === 'products' ? 
-      (shopData?.items || []) : 
-      (shopData?.services || []);
+  const handleItemClick = (item) => {
+    setZoomedItem(item);
+    setOrderQuantity(1);
+    setCurrentZoomImageIndex(0);
     
-    if (!items || !userLocation) return items;
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    window.lastScrollPosition = scrollY;
+    
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+  };
 
-    return items.map(item => {
-      if (item.coordinates?.lat && item.coordinates?.lng) {
-        try {
-          const distanceInMeters = getDistance(
-            { latitude: userLocation.latitude, longitude: userLocation.longitude },
-            { latitude: item.coordinates.lat, longitude: item.coordinates.lng }
-          );
-          const distanceInMiles = (distanceInMeters / 1609.34).toFixed(1);
-          
-          return {
-            ...item,
-            distance: distanceInMeters,
-            distanceInMiles,
-            formattedDistance: `${distanceInMiles} mi`
-          };
-        } catch (e) {
-          console.warn('Error calculating distance:', e);
-          return item;
-        }
-      }
-      return item;
+  const handleCloseZoom = () => {
+    setZoomedItem(null);
+    setCurrentZoomImageIndex(0);
+
+    const scrollY = window.lastScrollPosition || 0;
+
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+
+    window.scrollTo({
+      top: scrollY,
+      left: 0,
+      behavior: 'instant'
     });
-  }, [shopData?.items, shopData?.services, userLocation, shopContentType]);
 
-  // OPTIMIZED: Memoize filtered items
-  const filteredItems = useMemo(() => {
-    return itemsWithDistance.filter(item => 
-      !item.deleted && 
-      (searchTerm === '' || 
-        (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
-      )
-    );
-  }, [itemsWithDistance, searchTerm]);
+    delete window.lastScrollPosition;
+  };
+
+  const adjustQuantity = (delta) => {
+    const maxQuantity = parseInt(
+      zoomedItem.isService ? 
+        zoomedItem.slots : 
+        zoomedItem.quantity
+    ) || 1;
+
+    const newQuantity = Math.max(1, Math.min(maxQuantity, orderQuantity + delta));
+    setOrderQuantity(newQuantity);
+  };
+
+  const handleDirectOrder = () => {
+    if (!zoomedItem) return;
+
+    // Close zoom view
+    handleCloseZoom();
+
+    // Open buy dialog
+    setSelectedBuyItem(zoomedItem);
+    setBuyDialogOpen(true);
+  };
+
 
   useEffect(() => {
     const pinnedStyleId = localStorage.getItem('pinnedStyleId');
@@ -1450,36 +1711,6 @@ const handleGoHome = () => {
   window.location.href = 'https://kalkode.com';
 };
 
-  // OPTIMIZED: Memoize callbacks
-  const handleNextImage = useCallback((e, itemId) => {
-    e.stopPropagation();
-    setCurrentImageIndices(prev => {
-      const item = shopData.items.find(i => i.id === itemId);
-      if (item?.images) {
-        const validImages = item.images.filter(Boolean);
-        return {
-          ...prev,
-          [itemId]: (prev[itemId] + 1) % validImages.length
-        };
-      }
-      return prev;
-    });
-  }, [shopData?.items]);
-
-  const handlePrevImage = useCallback((e, itemId) => {
-    e.stopPropagation();
-    setCurrentImageIndices(prev => {
-      const item = shopData.items.find(i => i.id === itemId);
-      if (item?.images) {
-        const validImages = item.images.filter(Boolean);
-        return {
-          ...prev,
-          [itemId]: (prev[itemId] - 1 + validImages.length) % validImages.length
-        };
-      }
-      return prev;
-    });
-  }, [shopData?.items]);
 
 if (error) {
     return (
@@ -1505,240 +1736,201 @@ if (error) {
   }
 
   
-  const renderShopView = () => (
+  const renderShopView = () => {
+  if (!shopData) {
+    return (
+      <CategoryGridWrapper>
+        {[1, 2, 3, 4, 5].map(i => (
+          <SkeletonCard key={i} theme={shopData?.theme} />
+        ))}
+      </CategoryGridWrapper>
+    );
+  }
+
+  return (
     <>
-      {!shopData ? (
-        <ItemGrid viewMode={viewMode}>
-          {[1, 2, 3, 4].map(i => (
-            <SkeletonCard key={i} theme={DEFAULT_THEME} />
-          ))}
-        </ItemGrid>
-      ) : (
-        <>
-          <ShopProfileSection fontSize={shopData?.layout?.nameSize || '2rem'}>
-            <div className="profile-image">
-              {shopData?.profile ? (
-                <img src={shopData.profile} alt={shopData.name || 'Shop'} />
-              ) : (
-                <div style={{ 
-                  width: '100%', 
-                  height: '100%', 
-                  background: shopData?.theme?.colors?.accent || '#800000',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  fontSize: '2rem'
-                }}>
-                  {shopData?.name?.charAt(0) || 'S'}
-                </div>
-              )}
-            </div>
-            <h1 className="shop-name">{shopData?.name || 'Shop Name'}</h1>
-            <p className="shop-description">{shopData?.description}</p>
-          </ShopProfileSection>
-
-          {/* ADD: Products/Services Tabs */}
-          <ShopTabContainer>
-            <ShopTab
-              active={shopContentType === 'products'}
-              onClick={() => setShopContentType('products')}
-              theme={shopData?.theme}
-            >
-              <Package size={18} />
-              Products
-            </ShopTab>
-            <ShopTab
-              active={shopContentType === 'services'}
-              onClick={() => setShopContentType('services')}
-              theme={shopData?.theme}
-            >
-              <Briefcase size={18} />
-              Services
-            </ShopTab>
-          </ShopTabContainer>
-          
-          <SearchContainer>
-            <SearchInput 
-              placeholder={`Search ${shopContentType}...`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            {searchTerm ? (
-              <ClearButton onClick={() => setSearchTerm('')}>
-                <X size={18} />
-              </ClearButton>
-            ) : (
-              <SearchIcon>
-                <Search size={18} />
-              </SearchIcon>
-            )}
-          </SearchContainer>
-          
-          {filteredItems.length > 0 ? (
-            <ItemGrid viewMode={viewMode}>
-              {filteredItems.map((item) => {
-                const validImages = item.images?.filter(Boolean) || [];
-                const imageIndex = currentImageIndices[item.id] || 0;
-                
-                return (
-                  <ItemCard key={item.id} viewMode={viewMode}>
-                    <ItemImageContainer viewMode={viewMode}>
-                      {validImages.length > 0 ? (
-                        <img 
-                          src={validImages[imageIndex % validImages.length]} 
-                          alt={item.name} 
-                        />
-                      ) : (
-                        <div style={{
-                          width: '100%',
-                          height: '100%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: shopData?.theme?.colors?.text || '#fff',
-                          opacity: 0.5,
-                          fontSize: '0.8rem'
-                        }}>
-                          No Image Available
-                        </div>
-                      )}
-                      
-                      {validImages.length > 1 && (
-                        <>
-                          <button 
-                            className="carousel-arrow left"
-                            onClick={(e) => handlePrevImage(e, item.id)}
-                          >
-                            <ChevronLeft size={14} />
-                          </button>
-                          <button 
-                            className="carousel-arrow right"
-                            onClick={(e) => handleNextImage(e, item.id)}
-                          >
-                            <ChevronRight size={14} />
-                          </button>
-                        </>
-                      )}
-                    </ItemImageContainer>
-                    
-                    <ItemContent>
-                      {item.category && item.category !== 'Other' && (
-                        <CategoryBadge theme={shopData?.theme}>
-                          {item.category}
-                        </CategoryBadge>
-                      )}
-
-                      <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-start',
-                        marginBottom: '0.5rem'
-                      }}>
-                        <h3 style={{ margin: 0, flex: 1 }}>{item.name}</h3>
-
-                        {/* Show quantity for products, slots for services */}
-                        {shopContentType === 'products' && item.quantity !== undefined && (
-                          <span style={{
-                            background: parseInt(item.quantity) > 0 ? 
-                              `${shopData?.theme?.colors?.accent || '#800000'}30` : '#FF525230',
-                            color: parseInt(item.quantity) > 0 ? 
-                              shopData?.theme?.colors?.accent || '#800000' : '#FF5252',
-                            padding: '2px 6px',
-                            borderRadius: '8px',
-                            fontSize: '0.7rem',
-                            fontWeight: '500',
-                            marginLeft: '0.5rem',
-                            flexShrink: 0
-                          }}>
-                            {parseInt(item.quantity) > 0 ? `x${item.quantity}` : 'Sold Out'}
-                          </span>
-                        )}
-                        
-                        {shopContentType === 'services' && item.slots !== undefined && (
-                          <span style={{
-                            background: parseInt(item.slots) > 0 ? 
-                              `${shopData?.theme?.colors?.accent || '#800000'}30` : '#FF525230',
-                            color: parseInt(item.slots) > 0 ? 
-                              shopData?.theme?.colors?.accent || '#800000' : '#FF5252',
-                            padding: '2px 6px',
-                            borderRadius: '8px',
-                            fontSize: '0.7rem',
-                            fontWeight: '500',
-                            marginLeft: '0.5rem',
-                            flexShrink: 0
-                          }}>
-                            {parseInt(item.slots) > 0 ? `${item.slots} slots` : 'Fully Booked'}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Only show price for products */}
-                      {shopContentType === 'products' && (
-                        <div className="price">
-                          ${parseFloat(item.price || 0).toFixed(2)}
-                        </div>
-                      )}
-                      
-                      <div className="description">
-                        {item.description}
-                      </div>
-                      
-                      {item.formattedDistance && (
-                        <ItemLocation>
-                          <Navigation size={12} />
-                          {item.formattedDistance} from you
-                        </ItemLocation>
-                      )}
-                      
-                      <ActionButtons>
-                        {shopContentType === 'products' ? (
-                          <ActionButton 
-                            className="primary"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setSelectedBuyItem(item);
-                              setBuyDialogOpen(true);
-                            }}
-                          >
-                            <ShoppingCart size={14} />
-                            Order
-                          </ActionButton>
-                        ) : (
-                          <ActionButton 
-                            className="primary"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              // TODO: Open service booking dialog
-                              alert('Service booking coming soon!');
-                            }}
-                          >
-                            <MessageCircle size={14} />
-                            Book Service
-                          </ActionButton>
-                        )}
-                      </ActionButtons>
-                    </ItemContent>
-                  </ItemCard>
-                );
-              })}
-            </ItemGrid>
+      <ShopProfileSection fontSize={shopData?.layout?.nameSize || '2rem'}>
+        <div className="profile-image">
+          {shopData?.profile ? (
+            <img src={shopData.profile} alt={shopData.name || 'Shop'} />
           ) : (
-            <EmptyStateMessage>
-              <h3>No {shopContentType === 'products' ? 'Products' : 'Services'} Found</h3>
-              <p>
-                {searchTerm 
-                  ? `No ${shopContentType} match your search for "${searchTerm}"`
-                  : `This shop doesn't have any ${shopContentType} yet.`}
-              </p>
-            </EmptyStateMessage>
+            <div style={{ 
+              width: '100%', 
+              height: '100%', 
+              background: shopData?.theme?.colors?.accent || '#800000',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontSize: '2rem'
+            }}>
+              {shopData?.name?.charAt(0) || 'S'}
+            </div>
           )}
-        </>
+        </div>
+        <h1 className="shop-name">{shopData?.name || 'Shop Name'}</h1>
+        <p className="shop-description">{shopData?.description}</p>
+      </ShopProfileSection>
+
+      <ShopTabContainer>
+        <ShopTab
+          active={shopContentType === 'products'}
+          onClick={() => setShopContentType('products')}
+          theme={shopData?.theme}
+        >
+          <Package size={18} />
+          Products
+        </ShopTab>
+        <ShopTab
+          active={shopContentType === 'services'}
+          onClick={() => setShopContentType('services')}
+          theme={shopData?.theme}
+        >
+          <Briefcase size={18} />
+          Services
+        </ShopTab>
+      </ShopTabContainer>
+      
+      <SearchContainer>
+        <SearchInput 
+          placeholder={`Search ${shopContentType}...`}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        {searchTerm ? (
+          <ClearButton onClick={() => setSearchTerm('')}>
+            <X size={18} />
+          </ClearButton>
+        ) : (
+          <SearchIcon>
+            <Search size={18} />
+          </SearchIcon>
+        )}
+      </SearchContainer>
+
+      {/* Featured Items */}
+      {categorizedShopItems.featuredItems.length > 0 && (
+        <div>
+          <CategoryHeader theme={shopData?.theme}>
+            <h2>Featured {shopContentType === 'products' ? 'Products' : 'Services'}</h2>
+            <span className="view-all">{categorizedShopItems.featuredItems.length} items</span>
+          </CategoryHeader>
+    
+          <CategoryGridWrapper>
+            <div className="desktop-grid" style={{ display: 'contents' }}>
+              {categorizedShopItems.featuredItems.map(item => (
+                <div key={`featured-${item.id}`} className="desktop-only" 
+                     style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
+                  <FeaturedItem
+                    item={{
+                      ...item,
+                      shopId: shopId,
+                      shopName: shopData.name,
+                      isService: shopContentType === 'services'
+                    }}
+                    theme={shopData?.theme}
+                    onItemClick={handleItemClick}
+                    showDistance={true}
+                  />
+                </div>
+              ))}
+            </div>
+            
+            <CategoryScrollableGrid 
+              theme={shopData?.theme} 
+              className="mobile-only"
+              itemCount={categorizedShopItems.featuredItems.length}
+            >
+              {categorizedShopItems.featuredItems.map(item => (
+                <FeaturedItem
+                  key={`featured-mobile-${item.id}`}
+                  item={{
+                    ...item,
+                    shopId: shopId,
+                    shopName: shopData.name,
+                    isService: shopContentType === 'services'
+                  }}
+                  theme={shopData?.theme}
+                  onItemClick={handleItemClick}
+                  showDistance={true}
+                />
+              ))}
+            </CategoryScrollableGrid>
+          </CategoryGridWrapper>
+        </div>
+      )}
+
+      {/* Category Sections */}
+      {Object.entries(categorizedShopItems.categorizedItems).map(([categoryName, items]) => {
+        if (items.length === 0) return null;
+      
+        return (
+          <div key={categoryName} style={{ marginTop: '3rem' }}>
+            <CategoryHeader theme={shopData?.theme}>
+              <h2>{categoryName}</h2>
+              <span className="view-all">{items.length} items</span>
+            </CategoryHeader>
+        
+            <CategoryGridWrapper>
+              <div className="desktop-grid" style={{ display: 'contents' }}>
+                {items.map(item => (
+                  <div key={`${categoryName}-${item.id}`} className="desktop-only"
+                       style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
+                    <FeaturedItem
+                      item={{
+                        ...item,
+                        shopId: shopId,
+                        shopName: shopData.name,
+                        isService: shopContentType === 'services'
+                      }}
+                      theme={shopData?.theme}
+                      onItemClick={handleItemClick}
+                      showDistance={true}
+                    />
+                  </div>
+                ))}
+              </div>
+              
+              <CategoryScrollableGrid 
+                theme={shopData?.theme} 
+                className="mobile-only" 
+                itemCount={items.length}
+              >
+                {items.map(item => (
+                  <FeaturedItem
+                    key={`${categoryName}-mobile-${item.id}`}
+                    item={{
+                      ...item,
+                      shopId: shopId,
+                      shopName: shopData.name,
+                      isService: shopContentType === 'services'
+                    }}
+                    theme={shopData?.theme}
+                    onItemClick={handleItemClick}
+                    showDistance={true}
+                  />
+                ))}
+              </CategoryScrollableGrid>
+            </CategoryGridWrapper>
+          </div>
+        );
+      })}
+
+      {/* Empty State */}
+      {categorizedShopItems.featuredItems.length === 0 && 
+       Object.values(categorizedShopItems.categorizedItems).every(items => items.length === 0) && (
+        <EmptyStateMessage theme={shopData?.theme}>
+          <h3>No {shopContentType === 'products' ? 'Products' : 'Services'} Found</h3>
+          <p>
+            {searchTerm 
+              ? `No ${shopContentType} match your search for "${searchTerm}"`
+              : `This shop doesn't have any ${shopContentType} yet.`}
+          </p>
+        </EmptyStateMessage>
       )}
     </>
   );
+};
 
 
   // In shopPublicView.js - REPLACE renderHomeView
@@ -1889,6 +2081,252 @@ const renderHomeView = () => {
             />
           )}
         </React.Suspense>
+
+        {zoomedItem && (
+  <ZoomOverlay onClick={handleCloseZoom} theme={shopData?.theme}>
+    <ZoomContainer 
+      theme={shopData?.theme}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <ImageCarousel 
+        theme={shopData?.theme} 
+        currentIndex={currentZoomImageIndex}
+      >
+        <button 
+          className="close-overlay-button"
+          onClick={handleCloseZoom}
+          aria-label="Close"
+        >
+          <X size={20} />
+        </button>
+      
+        <div className="image-track">
+          {zoomedItem.images && zoomedItem.images.filter(Boolean).length > 0 ? (
+            zoomedItem.images.filter(Boolean).map((image, index) => (
+              <div key={index} className="image-slide">
+                <img src={image} alt={`${zoomedItem.name} ${index + 1}`} />
+              </div>
+            ))
+          ) : (
+            <div className="image-slide">
+              <div className="no-image">
+                <Package size={40} />
+                <p>No image</p>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {zoomedItem.images && zoomedItem.images.filter(Boolean).length > 1 && (
+          <>
+            <button 
+              className="carousel-button prev"
+              onClick={() => setCurrentZoomImageIndex(prev => 
+                prev === 0 ? zoomedItem.images.filter(Boolean).length - 1 : prev - 1
+              )}
+              aria-label="Previous"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button 
+              className="carousel-button next"
+              onClick={() => setCurrentZoomImageIndex(prev => 
+                prev === zoomedItem.images.filter(Boolean).length - 1 ? 0 : prev + 1
+              )}
+              aria-label="Next"
+            >
+              <ChevronRight size={20} />
+            </button>
+            
+            <div className="carousel-dots">
+              {zoomedItem.images.filter(Boolean).map((_, index) => (
+                <button
+                  key={index}
+                  className="dot"
+                  style={{ opacity: index === currentZoomImageIndex ? 1 : 0.3 }}
+                  onClick={() => setCurrentZoomImageIndex(index)}
+                  aria-label={`Image ${index + 1}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </ImageCarousel>
+      
+      <ZoomContent theme={shopData?.theme}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'baseline',
+          gap: '0.75rem'
+        }}>
+          <h3 style={{
+            fontSize: '1.1rem',
+            margin: 0,
+            fontWeight: '600',
+            color: shopData?.theme?.colors?.text || '#FFFFFF',
+            flex: 1,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
+            {zoomedItem.name}
+          </h3>
+          
+          <div style={{
+            fontSize: '1.2rem',
+            fontWeight: 'bold',
+            color: shopData?.theme?.colors?.accent || '#800000',
+            whiteSpace: 'nowrap'
+          }}>
+            ${parseFloat(zoomedItem.price || 0).toFixed(2)}
+          </div>
+        </div>
+        
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          fontSize: '0.75rem',
+          flexWrap: 'wrap',
+          color: shopData?.theme?.colors?.text || '#FFFFFF',
+          opacity: 0.8
+        }}>
+          {zoomedItem.formattedDistance && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <Navigation size={11} />
+                <span>{zoomedItem.formattedDistance}</span>
+              </div>
+              <span>•</span>
+            </>
+          )}
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <Store size={11} />
+            <span>{shopData?.name}</span>
+          </div>
+          <span>•</span>
+          
+          {zoomedItem.isService ? (
+            parseInt(zoomedItem.slots) !== undefined && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <div style={{
+                  width: '5px',
+                  height: '5px',
+                  borderRadius: '50%',
+                  background: parseInt(zoomedItem.slots) > 0 ? '#4CAF50' : '#FF5252'
+                }} />
+                <span style={{
+                  color: parseInt(zoomedItem.slots) > 0 ? '#4CAF50' : '#FF5252',
+                  fontWeight: '500'
+                }}>
+                  {parseInt(zoomedItem.slots) > 0 ? 
+                    `${zoomedItem.slots} ${parseInt(zoomedItem.slots) === 1 ? 'slot' : 'slots'} available` : 
+                    'No slots available'
+                  }
+                </span>
+              </div>
+            )
+          ) : (
+            zoomedItem.quantity !== undefined && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <div style={{
+                  width: '5px',
+                  height: '5px',
+                  borderRadius: '50%',
+                  background: parseInt(zoomedItem.quantity) > 0 ? '#4CAF50' : '#FF5252'
+                }} />
+                <span style={{
+                  color: parseInt(zoomedItem.quantity) > 0 ? '#4CAF50' : '#FF5252',
+                  fontWeight: '500'
+                }}>
+                  {parseInt(zoomedItem.quantity) > 0 ? 
+                    `${zoomedItem.quantity} in stock` : 
+                    'Out of stock'
+                  }
+                </span>
+              </div>
+            )
+          )}
+        </div>
+        
+        <QuantitySelector theme={shopData?.theme}>
+          <span className="quantity-label">
+            {zoomedItem.isService ? 'Slots' : 'Qty'}
+          </span>
+
+          <div className="quantity-controls">
+            <button 
+              className="quantity-btn"
+              onClick={() => adjustQuantity(-1)}
+              disabled={orderQuantity <= 1}
+            >
+              <Minus size={12} />
+            </button>
+            
+            <div className="quantity-display">
+              {orderQuantity}
+            </div>
+          
+            <button 
+              className="quantity-btn"
+              onClick={() => adjustQuantity(1)}
+              disabled={orderQuantity >= parseInt(zoomedItem.isService ? zoomedItem.slots : zoomedItem.quantity || 1)}
+            >
+              <Plus size={12} />
+            </button>
+          </div>
+        </QuantitySelector>
+            
+        <button 
+          onClick={handleDirectOrder}
+          disabled={
+            zoomedItem.isService ? 
+              (parseInt(zoomedItem.slots || 0) < 1 || orderQuantity > parseInt(zoomedItem.slots || 0)) :
+              (parseInt(zoomedItem.quantity || 0) < 1 || orderQuantity > parseInt(zoomedItem.quantity || 0))
+          }
+          style={{
+            width: '100%',
+            padding: '0.75rem',
+            borderRadius: '8px',
+            border: 'none',
+            background: (zoomedItem.isService ? 
+              parseInt(zoomedItem.slots || 0) : 
+              parseInt(zoomedItem.quantity || 0)) < 1 ? 
+                `${shopData?.theme?.colors?.accent || '#800000'}40` : 
+                shopData?.theme?.colors?.accent || '#800000',
+            color: 'white',
+            fontSize: '0.9rem',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+            cursor: (zoomedItem.isService ? 
+              parseInt(zoomedItem.slots || 0) : 
+              parseInt(zoomedItem.quantity || 0)) < 1 ? 'not-allowed' : 'pointer',
+            transition: 'all 0.3s'
+          }}
+        >
+          {(zoomedItem.isService ? 
+            parseInt(zoomedItem.slots || 0) : 
+            parseInt(zoomedItem.quantity || 0)) < 1 ? (
+            <>
+              <X size={16} />
+              {zoomedItem.isService ? 'No Slots Available' : 'Out of Stock'}
+            </>
+          ) : (
+            <>
+              <ShoppingCart size={16} />
+              {zoomedItem.isService ? 'Book' : 'Order'} {orderQuantity > 1 && `${orderQuantity} `}· ${(parseFloat(zoomedItem.price || 0) * orderQuantity).toFixed(2)}
+            </>
+          )}
+        </button>
+      </ZoomContent>
+    </ZoomContainer>
+  </ZoomOverlay>
+)}
       </PageContainer>
     </ThemeProvider>
   );

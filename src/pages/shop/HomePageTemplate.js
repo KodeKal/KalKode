@@ -1137,344 +1137,362 @@ export const ContactSection = ({ config, theme, editable, onUpdate }) => {
   );
 };
 
-// ==================== PHOTO GALLERY SECTION WITH CAROUSEL ====================
-  export const HeroBannerSection = ({ config, theme, editable, onUpdate }) => {
-    const [editingField, setEditingField] = useState(null);
+// src/pages/shop/HomePageTemplate.js - UPDATE ALL SECTIONS WITH MOBILE RESPONSIVENESS
 
-    const handleUpdate = (field, value) => {
-      if (editable && onUpdate) {
-        onUpdate({ ...config, [field]: value });
-      }
-    };
+// ==================== IMPROVED MOBILE RESPONSIVE SECTIONS ====================
 
-    // Separate background styles to avoid conflict
-    const backgroundStyles = config?.backgroundImage ? {
-      backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${config.backgroundImage})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat'
-    } : {
-      backgroundImage: `linear-gradient(135deg, ${theme?.colors?.accent}15 0%, ${theme?.colors?.background}50 100%)`,
-      backgroundSize: 'auto',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat'
-    };
+// Hero Banner Section - Enhanced Mobile
+export const HeroBannerSection = ({ config, theme, editable, onUpdate }) => {
+  const [editingField, setEditingField] = useState(null);
 
-    return (
-      <SectionWrapper theme={theme} noPadding>
-        <style>{fadeInUp + scaleIn}</style>
-        <div style={{
-          minHeight: config?.height || 'clamp(35vh, 45vh, 60vh)',
-          ...backgroundStyles, // Spread the separated background styles
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-          overflow: 'hidden',
-          cursor: editable ? 'pointer' : 'default',
-          padding: 'clamp(1.5rem, 3vw, 3rem)',
-          animation: 'scaleIn 0.8s ease-out forwards'
-        }}
-        onClick={() => editable && document.getElementById(`hero-bg-upload-${config?.id}`)?.click()}
-        >
-          {editable && (
-            <>
-              <input
-                type="file"
-                id={`hero-bg-upload-${config?.id}`}
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => handleUpdate('backgroundImage', reader.result);
-                    reader.readAsDataURL(e.target.files[0]);
-                  }
-                }}
-              />
-              <div style={{
-                position: 'absolute',
-                top: 'clamp(0.5rem, 1vw, 0.75rem)',
-                left: 'clamp(0.5rem, 1vw, 0.75rem)',
-                background: 'rgba(0,0,0,0.7)',
-                color: 'white',
-                padding: 'clamp(0.4rem, 0.8vw, 0.5rem) clamp(0.8rem, 1.5vw, 1rem)',
-                borderRadius: '8px',
-                fontSize: 'clamp(0.75rem, 1.3vw, 0.85rem)',
-                zIndex: 10
-              }}>
-                Click to change background
-              </div>
-            </>
-          )}
-
-          <div style={{ 
-            textAlign: 'center', 
-            position: 'relative', 
-            zIndex: 1, 
-            padding: 'clamp(1rem, 2vw, 2rem)',
-            maxWidth: '900px',
-            width: '100%',
-            backgroundColor: 'rgba(0,0,0,0.3)', // Changed from 'background'
-            borderRadius: '16px',
-            backdropFilter: 'blur(10px)',
-            animation: 'fadeInUp 1s ease-out 0.3s forwards',
-            opacity: 0
-          }}>
-            {editable ? (
-              <>
-                <input
-                  type="text"
-                  value={config?.headline || ''}
-                  onChange={(e) => handleUpdate('headline', e.target.value)}
-                  placeholder="Enter headline"
-                  style={{
-                    fontSize: 'clamp(1.5rem, 5vw, 4rem)',
-                    fontWeight: '900',
-                    margin: '0 0 clamp(0.75rem, 1.5vw, 1rem) 0',
-                    backgroundColor: 'transparent', // Changed from 'background'
-                    border: 'none',
-                    color: theme?.colors?.text,
-                    textAlign: 'center',
-                    width: '100%',
-                    outline: 'none'
-                  }}
-                />
-                <textarea
-                  value={config?.subtitle || ''}
-                  onChange={(e) => handleUpdate('subtitle', e.target.value)}
-                  placeholder="Enter subtitle"
-                  style={{
-                    fontSize: 'clamp(1rem, 2vw, 1.5rem)',
-                    opacity: 0.9,
-                    backgroundColor: 'transparent', // Changed from 'background'
-                    border: 'none',
-                    color: theme?.colors?.text,
-                    textAlign: 'center',
-                    width: '100%',
-                    outline: 'none',
-                    resize: 'none',
-                    minHeight: 'clamp(50px, 10vw, 80px)'
-                  }}
-                />
-              </>
-            ) : (
-              <>
-                <h1 style={{
-                  fontSize: 'clamp(1.5rem, 5vw, 4rem)',
-                  fontWeight: '900',
-                  margin: '0 0 clamp(0.75rem, 1.5vw, 1rem) 0',
-                  lineHeight: 1.1,
-                  textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-                  color: theme?.colors?.text
-                }}>
-                  {config?.headline || 'Welcome'}
-                </h1>
-                <p style={{
-                  fontSize: 'clamp(1rem, 2vw, 1.5rem)',
-                  opacity: 0.9,
-                  textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
-                  color: theme?.colors?.text
-                }}>
-                  {config?.subtitle || 'Discover amazing products'}
-                </p>
-              </>
-            )}
-          </div>
-        </div>
-      </SectionWrapper>
-    );
+  const handleUpdate = (field, value) => {
+    if (editable && onUpdate) {
+      onUpdate({ ...config, [field]: value });
+    }
   };
 
-  export const FeaturedItemsSection = ({ config, theme, shopItems, editable, onUpdate }) => {
-    const items = shopItems?.filter(item => !item.deleted).slice(0, config?.itemCount || 4) || [];
+  const backgroundStyles = config?.backgroundImage ? {
+    backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${config.backgroundImage})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat'
+  } : {
+    backgroundImage: `linear-gradient(135deg, ${theme?.colors?.accent}15 0%, ${theme?.colors?.background}50 100%)`,
+    backgroundSize: 'auto',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat'
+  };
 
-    const getItemImage = (item) => {
-      if (!item?.images || item.images.length === 0) return null;
-
-      const validImage = item.images.find(img => {
-        if (typeof img === 'string') return img;
-        if (img?.preview) return img.preview;
-        return null;
-      });
-
-      if (typeof validImage === 'string') return validImage;
-      if (validImage?.preview) return validImage.preview;
-      return null;
-    };
-
-    return (
-      <SectionWrapper theme={theme}>
-        <style>{fadeInUp + slideInLeft}</style>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 'clamp(1.5rem, 3vw, 2.5rem)',
-          padding: '0 clamp(0.5rem, 1vw, 1rem)',
-          animation: 'slideInLeft 0.6s ease-out'
-        }}>
-          {editable ? (
+  return (
+    <SectionWrapper theme={theme} noPadding>
+      <style>{fadeInUp + scaleIn}</style>
+      <div style={{
+        minHeight: 'clamp(300px, 50vh, 600px)', // Better mobile height
+        ...backgroundStyles,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+        cursor: editable ? 'pointer' : 'default',
+        padding: 'clamp(1rem, 3vw, 3rem)',
+        animation: 'scaleIn 0.8s ease-out forwards'
+      }}
+      onClick={() => editable && document.getElementById(`hero-bg-upload-${config?.id}`)?.click()}
+      >
+        {editable && (
+          <>
             <input
-              type="text"
-              value={config?.title || ''}
-              onChange={(e) => onUpdate({ ...config, title: e.target.value })}
-              placeholder="Section title"
-              style={{
-                fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
-                fontWeight: '900',
-                backgroundColor: 'transparent', // Changed from 'background'
-                border: 'none',
-                color: theme?.colors?.text,
-                outline: 'none',
-                width: '100%'
+              type="file"
+              id={`hero-bg-upload-${config?.id}`}
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                if (e.target.files?.[0]) {
+                  const reader = new FileReader();
+                  reader.onloadend = () => handleUpdate('backgroundImage', reader.result);
+                  reader.readAsDataURL(e.target.files[0]);
+                }
               }}
             />
-          ) : (
-            <h2 style={{
-              fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
-              fontWeight: '900',
-              margin: 0,
-              color: theme?.colors?.text
-            }}>
-              {config?.title || 'Featured Items'}
-            </h2>
-          )}
-
-          {editable && (
-            <select
-              value={config?.itemCount || 4}
-              onChange={(e) => onUpdate({ ...config, itemCount: parseInt(e.target.value) })}
-              style={{
-                padding: 'clamp(0.5rem, 1vw, 0.75rem)',
-                borderRadius: 'clamp(6px, 1vw, 8px)',
-                backgroundColor: theme?.colors?.surface, // Changed from 'background'
-                color: theme?.colors?.text,
-                border: `1px solid ${theme?.colors?.accent}40`,
-                fontSize: 'clamp(0.8rem, 1.3vw, 0.95rem)'
-              }}
-            >
-              <option value={2}>2 items</option>
-              <option value={4}>4 items</option>
-              <option value={6}>6 items</option>
-              <option value={8}>8 items</option>
-            </select>
-          )}
-        </div>
-        
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(160px, 22vw, 300px), 1fr))',
-          gap: 'clamp(1rem, 2vw, 2rem)',
-          padding: '0 clamp(0.5rem, 1vw, 1rem)'
-        }}>
-          {items.length > 0 ? (
-            items.map((item, index) => {
-              const itemImage = getItemImage(item);
-
-              return (
-                <div key={item.id} style={{
-                  backgroundColor: `${theme?.colors?.surface}90`, // Changed from 'background'
-                  borderRadius: 'clamp(10px, 1.5vw, 16px)',
-                  overflow: 'hidden',
-                  border: `1px solid ${theme?.colors?.accent}30`,
-                  transition: 'all 0.3s ease',
-                  boxShadow: `0 4px 12px ${theme?.colors?.accent}10`,
-                  animation: 'fadeInUp 0.6s ease-out forwards',
-                  animationDelay: `${index * 0.1}s`,
-                  opacity: 0
-                }}>
-                  <div style={{
-                    height: 'clamp(140px, 28vw, 280px)',
-                    backgroundColor: `${theme?.colors?.background}50`, // Changed from 'background'
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}>
-                    {itemImage ? (
-                      <img 
-                        src={itemImage} 
-                        alt={item?.name || 'Product'} 
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          transition: 'transform 0.3s ease'
-                        }}
-                        onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
-                        onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
-                      />
-                    ) : (
-                      <div style={{
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 'clamp(0.5rem, 1vw, 1rem)'
-                      }}>
-                        <Package size={48} color={theme?.colors?.accent} style={{ opacity: 0.5 }} />
-                      </div>
-                    )}
-
-                    {item?.quantity !== undefined && (
-                      <div style={{
-                        position: 'absolute',
-                        top: 'clamp(0.5rem, 1vw, 0.75rem)',
-                        right: 'clamp(0.5rem, 1vw, 0.75rem)',
-                        backgroundColor: parseInt(item.quantity) > 0 ?  // Changed from 'background'
-                          'rgba(76, 175, 80, 0.9)' : 'rgba(244, 67, 54, 0.9)',
-                        color: 'white',
-                        padding: 'clamp(0.2rem, 0.5vw, 0.3rem) clamp(0.5rem, 1vw, 0.75rem)',
-                        borderRadius: 'clamp(10px, 1.5vw, 16px)',
-                        fontSize: 'clamp(0.7rem, 1.1vw, 0.8rem)',
-                        fontWeight: '700',
-                        animation: 'pulse 2s ease-in-out infinite'
-                      }}>
-                        {parseInt(item.quantity) > 0 ? `${item.quantity} LEFT` : 'SOLD OUT'}
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ padding: 'clamp(1rem, 2vw, 1.5rem)' }}>
-                    <h3 style={{
-                      fontSize: 'clamp(0.9rem, 1.6vw, 1.2rem)',
-                      fontWeight: '700',
-                      marginBottom: 'clamp(0.3rem, 0.6vw, 0.5rem)',
-                      color: theme?.colors?.text
-                    }}>
-                      {item?.name || 'Product Name'}
-                    </h3>
-                    <div style={{
-                      fontSize: 'clamp(1.1rem, 2.2vw, 1.6rem)',
-                      fontWeight: '900',
-                      color: theme?.colors?.accent
-                    }}>
-                      ${parseFloat(item?.price || 0).toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
             <div style={{
-              gridColumn: '1 / -1',
-              textAlign: 'center',
-              padding: 'clamp(3rem, 5vw, 5rem)',
-              color: theme?.colors?.text,
-              opacity: 0.6
+              position: 'absolute',
+              top: 'clamp(0.5rem, 2vw, 1rem)',
+              left: 'clamp(0.5rem, 2vw, 1rem)',
+              background: 'rgba(0,0,0,0.7)',
+              color: 'white',
+              padding: 'clamp(0.4rem, 1.5vw, 0.75rem) clamp(0.6rem, 2vw, 1rem)',
+              borderRadius: '8px',
+              fontSize: 'clamp(0.7rem, 1.8vw, 0.9rem)',
+              zIndex: 10
             }}>
-              <Package size={64} color={theme?.colors?.accent} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-              <h3>No Items Yet</h3>
+              Click to change background
             </div>
+          </>
+        )}
+
+        <div style={{ 
+          textAlign: 'center', 
+          position: 'relative', 
+          zIndex: 1, 
+          padding: 'clamp(1rem, 3vw, 2rem)',
+          maxWidth: '900px',
+          width: '100%',
+          backgroundColor: 'rgba(0,0,0,0.3)',
+          borderRadius: 'clamp(12px, 2.5vw, 16px)',
+          backdropFilter: 'blur(10px)',
+          animation: 'fadeInUp 1s ease-out 0.3s forwards',
+          opacity: 0
+        }}>
+          {editable ? (
+            <>
+              <input
+                type="text"
+                value={config?.headline || ''}
+                onChange={(e) => handleUpdate('headline', e.target.value)}
+                placeholder="Enter headline"
+                style={{
+                  fontSize: 'clamp(1.5rem, 6vw, 4rem)',
+                  fontWeight: '900',
+                  margin: '0 0 clamp(0.5rem, 2vw, 1rem) 0',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: theme?.colors?.text,
+                  textAlign: 'center',
+                  width: '100%',
+                  outline: 'none',
+                  lineHeight: 1.1
+                }}
+              />
+              <textarea
+                value={config?.subtitle || ''}
+                onChange={(e) => handleUpdate('subtitle', e.target.value)}
+                placeholder="Enter subtitle"
+                style={{
+                  fontSize: 'clamp(0.9rem, 2.5vw, 1.5rem)',
+                  opacity: 0.9,
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: theme?.colors?.text,
+                  textAlign: 'center',
+                  width: '100%',
+                  outline: 'none',
+                  resize: 'none',
+                  minHeight: 'clamp(40px, 12vw, 80px)',
+                  lineHeight: 1.4
+                }}
+              />
+            </>
+          ) : (
+            <>
+              <h1 style={{
+                fontSize: 'clamp(1.5rem, 6vw, 4rem)',
+                fontWeight: '900',
+                margin: '0 0 clamp(0.5rem, 2vw, 1rem) 0',
+                lineHeight: 1.1,
+                textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+                color: theme?.colors?.text
+              }}>
+                {config?.headline || 'Welcome'}
+              </h1>
+              <p style={{
+                fontSize: 'clamp(0.9rem, 2.5vw, 1.5rem)',
+                opacity: 0.9,
+                textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+                color: theme?.colors?.text,
+                lineHeight: 1.4,
+                margin: 0
+              }}>
+                {config?.subtitle || 'Discover amazing products'}
+              </p>
+            </>
           )}
         </div>
-      </SectionWrapper>
-    );
+      </div>
+    </SectionWrapper>
+  );
+};
+
+// Featured Items Section - Enhanced Mobile Grid
+export const FeaturedItemsSection = ({ config, theme, shopItems, editable, onUpdate }) => {
+  const items = shopItems?.filter(item => !item.deleted).slice(0, config?.itemCount || 4) || [];
+
+  const getItemImage = (item) => {
+    if (!item?.images || item.images.length === 0) return null;
+
+    const validImage = item.images.find(img => {
+      if (typeof img === 'string') return img;
+      if (img?.preview) return img.preview;
+      return null;
+    });
+
+    if (typeof validImage === 'string') return validImage;
+    if (validImage?.preview) return validImage.preview;
+    return null;
   };
 
+  return (
+    <SectionWrapper theme={theme}>
+      <style>{fadeInUp + slideInLeft + pulseStyle}</style>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 'clamp(1rem, 3vw, 2.5rem)',
+        padding: '0 clamp(0.5rem, 2vw, 1rem)',
+        animation: 'slideInLeft 0.6s ease-out',
+        flexWrap: 'wrap',
+        gap: 'clamp(0.5rem, 2vw, 1rem)'
+      }}>
+        {editable ? (
+          <input
+            type="text"
+            value={config?.title || ''}
+            onChange={(e) => onUpdate({ ...config, title: e.target.value })}
+            placeholder="Section title"
+            style={{
+              fontSize: 'clamp(1.3rem, 5vw, 2.5rem)',
+              fontWeight: '900',
+              backgroundColor: 'transparent',
+              border: 'none',
+              color: theme?.colors?.text,
+              outline: 'none',
+              flex: '1 1 auto',
+              minWidth: '150px'
+            }}
+          />
+        ) : (
+          <h2 style={{
+            fontSize: 'clamp(1.3rem, 5vw, 2.5rem)',
+            fontWeight: '900',
+            margin: 0,
+            color: theme?.colors?.text,
+            flex: '1 1 auto'
+          }}>
+            {config?.title || 'Featured Items'}
+          </h2>
+        )}
+
+        {editable && (
+          <select
+            value={config?.itemCount || 4}
+            onChange={(e) => onUpdate({ ...config, itemCount: parseInt(e.target.value) })}
+            style={{
+              padding: 'clamp(0.4rem, 1.5vw, 0.75rem)',
+              borderRadius: 'clamp(6px, 1.5vw, 8px)',
+              backgroundColor: theme?.colors?.surface,
+              color: theme?.colors?.text,
+              border: `1px solid ${theme?.colors?.accent}40`,
+              fontSize: 'clamp(0.75rem, 1.8vw, 0.95rem)',
+              flexShrink: 0
+            }}
+          >
+            <option value={2}>2 items</option>
+            <option value={4}>4 items</option>
+            <option value={6}>6 items</option>
+            <option value={8}>8 items</option>
+          </select>
+        )}
+      </div>
+      
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(140px, 45vw, 280px), 1fr))',
+        gap: 'clamp(0.75rem, 2.5vw, 2rem)',
+        padding: '0 clamp(0.5rem, 2vw, 1rem)'
+      }}>
+        {items.length > 0 ? (
+          items.map((item, index) => {
+            const itemImage = getItemImage(item);
+
+            return (
+              <div key={item.id} style={{
+                backgroundColor: `${theme?.colors?.surface}90`,
+                borderRadius: 'clamp(8px, 2vw, 16px)',
+                overflow: 'hidden',
+                border: `1px solid ${theme?.colors?.accent}30`,
+                transition: 'all 0.3s ease',
+                boxShadow: `0 4px 12px ${theme?.colors?.accent}10`,
+                animation: 'fadeInUp 0.6s ease-out forwards',
+                animationDelay: `${index * 0.1}s`,
+                opacity: 0
+              }}>
+                <div style={{
+                  height: 'clamp(120px, 35vw, 280px)',
+                  backgroundColor: `${theme?.colors?.background}50`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  {itemImage ? (
+                    <img 
+                      src={itemImage} 
+                      alt={item?.name || 'Product'} 
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        transition: 'transform 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                      onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 'clamp(0.5rem, 1.5vw, 1rem)'
+                    }}>
+                      <Package size={window.innerWidth < 768 ? 32 : 48} color={theme?.colors?.accent} style={{ opacity: 0.5 }} />
+                    </div>
+                  )}
+
+                  {item?.quantity !== undefined && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 'clamp(0.4rem, 1.5vw, 0.75rem)',
+                      right: 'clamp(0.4rem, 1.5vw, 0.75rem)',
+                      backgroundColor: parseInt(item.quantity) > 0 ? 
+                        'rgba(76, 175, 80, 0.9)' : 'rgba(244, 67, 54, 0.9)',
+                      color: 'white',
+                      padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.4rem, 1.2vw, 0.75rem)',
+                      borderRadius: 'clamp(8px, 2vw, 16px)',
+                      fontSize: 'clamp(0.65rem, 1.5vw, 0.8rem)',
+                      fontWeight: '700',
+                      animation: 'pulse 2s ease-in-out infinite'
+                    }}>
+                      {parseInt(item.quantity) > 0 ? `${item.quantity} LEFT` : 'SOLD OUT'}
+                    </div>
+                  )}
+                </div>
+                <div style={{ padding: 'clamp(0.75rem, 2.5vw, 1.5rem)' }}>
+                  <h3 style={{
+                    fontSize: 'clamp(0.85rem, 2.2vw, 1.2rem)',
+                    fontWeight: '700',
+                    marginBottom: 'clamp(0.25rem, 1vw, 0.5rem)',
+                    color: theme?.colors?.text,
+                    lineHeight: 1.2,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {item?.name || 'Product Name'}
+                  </h3>
+                  <div style={{
+                    fontSize: 'clamp(1rem, 3vw, 1.6rem)',
+                    fontWeight: '900',
+                    color: theme?.colors?.accent
+                  }}>
+                    ${parseFloat(item?.price || 0).toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div style={{
+            gridColumn: '1 / -1',
+            textAlign: 'center',
+            padding: 'clamp(2rem, 8vw, 5rem)',
+            color: theme?.colors?.text,
+            opacity: 0.6
+          }}>
+            <Package size={window.innerWidth < 768 ? 48 : 64} color={theme?.colors?.accent} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+            <h3 style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)', margin: 0 }}>No Items Yet</h3>
+          </div>
+        )}
+      </div>
+    </SectionWrapper>
+  );
+};
+
+// Photo Gallery Section - Enhanced Mobile Carousel
 export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const images = config?.images || [];
@@ -1507,7 +1525,7 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
   return (
     <SectionWrapper theme={theme}>
       <div style={{
-        marginBottom: 'clamp(1.5rem, 3vw, 2rem)'
+        marginBottom: 'clamp(1rem, 3vw, 2rem)'
       }}>
         {editable ? (
           <input
@@ -1516,9 +1534,9 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
             onChange={(e) => onUpdate({ ...config, title: e.target.value })}
             placeholder="Gallery title"
             style={{
-              fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
+              fontSize: 'clamp(1.3rem, 5vw, 2.5rem)',
               fontWeight: '700',
-              marginBottom: 'clamp(1rem, 2vw, 2rem)',
+              marginBottom: 'clamp(0.75rem, 2.5vw, 2rem)',
               textAlign: 'center',
               background: 'transparent',
               border: 'none',
@@ -1529,9 +1547,9 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
           />
         ) : (
           <h2 style={{
-            fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
+            fontSize: 'clamp(1.3rem, 5vw, 2.5rem)',
             fontWeight: '700',
-            marginBottom: 'clamp(1rem, 2vw, 2rem)',
+            marginBottom: 'clamp(0.75rem, 2.5vw, 2rem)',
             textAlign: 'center',
             color: theme?.colors?.text
           }}>
@@ -1539,18 +1557,17 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
           </h2>
         )}
         
-        {/* Carousel View */}
+        {/* Main Carousel */}
         <div style={{
           position: 'relative',
-          height: 'clamp(300px, 50vw, 600px)',
-          borderRadius: 'clamp(12px, 2vw, 20px)',
+          height: 'clamp(250px, 60vw, 600px)',
+          borderRadius: 'clamp(10px, 2.5vw, 20px)',
           overflow: 'hidden',
           background: `${theme?.colors?.surface}50`,
-          marginBottom: 'clamp(1rem, 2vw, 2rem)'
+          marginBottom: 'clamp(0.75rem, 2.5vw, 2rem)'
         }}>
           {images.length > 0 ? (
             <>
-              {/* Main carousel image */}
               <div style={{
                 position: 'relative',
                 width: '100%',
@@ -1567,67 +1584,69 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
                   }}
                 />
                 
-                {/* Navigation arrows */}
+                {/* Navigation Arrows - Mobile Optimized */}
                 {images.length > 1 && (
                   <>
                     <button
                       onClick={prevSlide}
                       style={{
                         position: 'absolute',
-                        left: 'clamp(0.5rem, 1vw, 1rem)',
+                        left: 'clamp(0.4rem, 2vw, 1rem)',
                         top: '50%',
                         transform: 'translateY(-50%)',
                         background: 'rgba(0,0,0,0.6)',
                         border: `1px solid ${theme?.colors?.accent}60`,
                         borderRadius: '50%',
-                        width: 'clamp(36px, 6vw, 48px)',
-                        height: 'clamp(36px, 6vw, 48px)',
+                        width: 'clamp(32px, 10vw, 48px)',
+                        height: 'clamp(32px, 10vw, 48px)',
                         color: 'white',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         transition: 'all 0.3s ease',
-                        zIndex: 2
+                        zIndex: 2,
+                        backdropFilter: 'blur(4px)'
                       }}
                     >
-                      <ChevronLeft size={24} />
+                      <ChevronLeft size={window.innerWidth < 768 ? 20 : 24} />
                     </button>
                     <button
                       onClick={nextSlide}
                       style={{
                         position: 'absolute',
-                        right: 'clamp(0.5rem, 1vw, 1rem)',
+                        right: 'clamp(0.4rem, 2vw, 1rem)',
                         top: '50%',
                         transform: 'translateY(-50%)',
                         background: 'rgba(0,0,0,0.6)',
                         border: `1px solid ${theme?.colors?.accent}60`,
                         borderRadius: '50%',
-                        width: 'clamp(36px, 6vw, 48px)',
-                        height: 'clamp(36px, 6vw, 48px)',
+                        width: 'clamp(32px, 10vw, 48px)',
+                        height: 'clamp(32px, 10vw, 48px)',
                         color: 'white',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         transition: 'all 0.3s ease',
-                        zIndex: 2
+                        zIndex: 2,
+                        backdropFilter: 'blur(4px)'
                       }}
                     >
-                      <ChevronRight size={24} />
+                      <ChevronRight size={window.innerWidth < 768 ? 20 : 24} />
                     </button>
                   </>
                 )}
                 
-                {/* Slide indicators */}
+                {/* Slide Indicators - Mobile Responsive */}
                 {images.length > 1 && (
                   <div style={{
                     position: 'absolute',
-                    bottom: 'clamp(1rem, 2vw, 1.5rem)',
+                    bottom: 'clamp(0.75rem, 2.5vw, 1.5rem)',
                     left: '50%',
                     transform: 'translateX(-50%)',
                     display: 'flex',
-                    gap: 'clamp(0.4rem, 0.8vw, 0.5rem)',
+                    gap: 'clamp(0.3rem, 1.2vw, 0.5rem)',
                     zIndex: 2
                   }}>
                     {images.map((_, index) => (
@@ -1635,8 +1654,8 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
                         key={index}
                         onClick={() => setCurrentSlide(index)}
                         style={{
-                          width: 'clamp(8px, 1.5vw, 12px)',
-                          height: 'clamp(8px, 1.5vw, 12px)',
+                          width: 'clamp(6px, 2vw, 12px)',
+                          height: 'clamp(6px, 2vw, 12px)',
                           borderRadius: '50%',
                           border: 'none',
                           background: currentSlide === index ? 
@@ -1653,26 +1672,27 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
                   </div>
                 )}
                 
-                {/* Edit controls */}
+                {/* Edit Controls - Mobile Positioned */}
                 {editable && (
                   <button
                     onClick={() => handleRemoveImage(currentSlide)}
                     style={{
                       position: 'absolute',
-                      top: 'clamp(0.5rem, 1vw, 1rem)',
-                      right: 'clamp(0.5rem, 1vw, 1rem)',
+                      top: 'clamp(0.4rem, 2vw, 1rem)',
+                      right: 'clamp(0.4rem, 2vw, 1rem)',
                       background: 'rgba(255, 0, 0, 0.7)',
                       color: 'white',
                       border: 'none',
                       borderRadius: '50%',
-                      width: 'clamp(32px, 5vw, 40px)',
-                      height: 'clamp(32px, 5vw, 40px)',
+                      width: 'clamp(28px, 8vw, 40px)',
+                      height: 'clamp(28px, 8vw, 40px)',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       zIndex: 3,
-                      fontSize: 'clamp(1.2rem, 2vw, 1.5rem)'
+                      fontSize: 'clamp(1.2rem, 3vw, 1.5rem)',
+                      backdropFilter: 'blur(4px)'
                     }}
                   >
                     ×
@@ -1688,30 +1708,31 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
               height: '100%',
               color: theme?.colors?.text,
               opacity: 0.5,
-              fontSize: 'clamp(0.9rem, 1.6vw, 1.1rem)'
+              fontSize: 'clamp(0.85rem, 2.2vw, 1.1rem)'
             }}>
               No images yet
             </div>
           )}
         </div>
         
-        {/* Thumbnail strip */}
+        {/* Thumbnail Strip - Mobile Scrollable */}
         {images.length > 1 && (
           <div style={{
             display: 'flex',
-            gap: 'clamp(0.5rem, 1vw, 1rem)',
+            gap: 'clamp(0.4rem, 1.5vw, 1rem)',
             overflowX: 'auto',
-            padding: 'clamp(0.5rem, 1vw, 1rem)',
-            WebkitOverflowScrolling: 'touch'
+            padding: 'clamp(0.4rem, 1.5vw, 1rem)',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'thin'
           }}>
             {images.map((img, index) => (
               <div
                 key={index}
                 onClick={() => setCurrentSlide(index)}
                 style={{
-                  minWidth: 'clamp(60px, 12vw, 100px)',
-                  height: 'clamp(60px, 12vw, 100px)',
-                  borderRadius: 'clamp(6px, 1vw, 8px)',
+                  minWidth: 'clamp(50px, 15vw, 100px)',
+                  height: 'clamp(50px, 15vw, 100px)',
+                  borderRadius: 'clamp(6px, 1.5vw, 8px)',
                   overflow: 'hidden',
                   cursor: 'pointer',
                   border: currentSlide === index ? 
@@ -1735,17 +1756,17 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
           </div>
         )}
         
-        {/* Add image button for editing */}
+        {/* Add Image Button - Mobile Optimized */}
         {editable && (
           <label style={{
             display: 'block',
             textAlign: 'center',
-            padding: 'clamp(1rem, 2vw, 1.5rem)',
+            padding: 'clamp(0.75rem, 3vw, 1.5rem)',
             border: `2px dashed ${theme?.colors?.accent}40`,
-            borderRadius: 'clamp(8px, 1.5vw, 12px)',
+            borderRadius: 'clamp(8px, 2vw, 12px)',
             cursor: 'pointer',
             background: `${theme?.colors?.surface}30`,
-            marginTop: 'clamp(1rem, 2vw, 1.5rem)',
+            marginTop: 'clamp(0.75rem, 2.5vw, 1.5rem)',
             transition: 'all 0.3s ease'
           }}>
             <input
@@ -1757,8 +1778,11 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
                 Array.from(e.target.files).forEach(file => handleAddImage(file));
               }}
             />
-            <div style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', marginBottom: '0.5rem' }}>+</div>
-            <div style={{ fontSize: 'clamp(0.85rem, 1.5vw, 1rem)' }}>Add Images</div>
+            <div style={{ 
+              fontSize: 'clamp(1.5rem, 5vw, 2rem)', 
+              marginBottom: 'clamp(0.25rem, 1vw, 0.5rem)' 
+            }}>+</div>
+            <div style={{ fontSize: 'clamp(0.8rem, 2vw, 1rem)' }}>Add Images</div>
           </label>
         )}
       </div>
@@ -1766,14 +1790,14 @@ export const PhotoGallerySection = ({ config, theme, editable, onUpdate }) => {
   );
 };
 
-// ==================== MISSION STATEMENT (keeping existing) ====================
+// Mission Statement Section - Mobile Optimized
 export const MissionStatementSection = ({ config, theme, editable, onUpdate }) => {
   return (
     <SectionWrapper theme={theme}>
       <div style={{
         background: `${theme?.colors?.surface}40`,
-        borderRadius: 'clamp(12px, 2vw, 20px)',
-        padding: 'clamp(2rem, 4vw, 4rem) clamp(1.5rem, 3vw, 3rem)',
+        borderRadius: 'clamp(10px, 2.5vw, 20px)',
+        padding: 'clamp(1.5rem, 5vw, 4rem) clamp(1rem, 4vw, 3rem)',
         textAlign: 'center',
         border: `1px solid ${theme?.colors?.accent}20`,
         backdropFilter: 'blur(5px)'
@@ -1786,9 +1810,9 @@ export const MissionStatementSection = ({ config, theme, editable, onUpdate }) =
               onChange={(e) => onUpdate({ ...config, title: e.target.value })}
               placeholder="Mission title"
               style={{
-                fontSize: 'clamp(1.5rem, 3.5vw, 2.5rem)',
+                fontSize: 'clamp(1.3rem, 5vw, 2.5rem)',
                 fontWeight: '700',
-                marginBottom: 'clamp(1.5rem, 3vw, 2rem)',
+                marginBottom: 'clamp(1rem, 3vw, 2rem)',
                 background: 'transparent',
                 border: 'none',
                 color: theme?.colors?.accent,
@@ -1802,18 +1826,18 @@ export const MissionStatementSection = ({ config, theme, editable, onUpdate }) =
               onChange={(e) => onUpdate({ ...config, content: e.target.value })}
               placeholder="Mission statement content"
               style={{
-                fontSize: 'clamp(1rem, 2vw, 1.3rem)',
+                fontSize: 'clamp(0.9rem, 2.5vw, 1.3rem)',
                 lineHeight: 1.6,
                 maxWidth: '800px',
                 margin: '0 auto',
                 background: 'transparent',
                 border: `1px solid ${theme?.colors?.accent}40`,
-                borderRadius: 'clamp(8px, 1.5vw, 12px)',
+                borderRadius: 'clamp(8px, 2vw, 12px)',
                 color: theme?.colors?.text,
                 outline: 'none',
-                padding: 'clamp(1rem, 2vw, 1.5rem)',
+                padding: 'clamp(0.75rem, 2.5vw, 1.5rem)',
                 width: '100%',
-                minHeight: 'clamp(120px, 22vw, 180px)',
+                minHeight: 'clamp(100px, 25vw, 180px)',
                 resize: 'vertical'
               }}
             />
@@ -1821,15 +1845,15 @@ export const MissionStatementSection = ({ config, theme, editable, onUpdate }) =
         ) : (
           <>
             <h2 style={{
-              fontSize: 'clamp(1.5rem, 3.5vw, 2.5rem)',
+              fontSize: 'clamp(1.3rem, 5vw, 2.5rem)',
               color: theme?.colors?.accent,
-              marginBottom: 'clamp(1.5rem, 3vw, 2rem)',
+              marginBottom: 'clamp(1rem, 3vw, 2rem)',
               fontWeight: '700'
             }}>
               {config?.title || 'Our Mission'}
             </h2>
             <p style={{
-              fontSize: 'clamp(1rem, 2vw, 1.3rem)',
+              fontSize: 'clamp(0.9rem, 2.5vw, 1.3rem)',
               lineHeight: 1.6,
               maxWidth: '800px',
               margin: '0 auto',
