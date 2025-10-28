@@ -1822,6 +1822,7 @@ if (error) {
                 <div key={`featured-${item.id}`} className="desktop-only" 
                      style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
                   <FeaturedItem
+                    key={`featured-${item.id}`}
                     item={{
                       ...item,
                       shopId: shopId,
@@ -1830,7 +1831,9 @@ if (error) {
                     }}
                     theme={shopData?.theme}
                     onItemClick={handleItemClick}
+                    onOrderClick={handleItemClick}  // Opens zoom view
                     showDistance={true}
+                    showTopBar={false}  // ADD THIS - hides top bar on public shop page
                   />
                 </div>
               ))}
@@ -1852,7 +1855,9 @@ if (error) {
                   }}
                   theme={shopData?.theme}
                   onItemClick={handleItemClick}
+                  onOrderClick={handleItemClick}  // Opens zoom view
                   showDistance={true}
+                  showTopBar={false}  // ADD THIS - hides top bar on public shop page
                 />
               ))}
             </CategoryScrollableGrid>
@@ -1877,6 +1882,7 @@ if (error) {
                   <div key={`${categoryName}-${item.id}`} className="desktop-only"
                        style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
                     <FeaturedItem
+                      key={`${categoryName}-${item.id}`}
                       item={{
                         ...item,
                         shopId: shopId,
@@ -1885,7 +1891,9 @@ if (error) {
                       }}
                       theme={shopData?.theme}
                       onItemClick={handleItemClick}
+                      onOrderClick={handleItemClick}
                       showDistance={true}
+                      showTopBar={false}  // ADD THIS
                     />
                   </div>
                 ))}
@@ -1907,7 +1915,9 @@ if (error) {
                     }}
                     theme={shopData?.theme}
                     onItemClick={handleItemClick}
+                    onOrderClick={handleItemClick}
                     showDistance={true}
+                    showTopBar={false}  // ADD THIS
                   />
                 ))}
               </CategoryScrollableGrid>

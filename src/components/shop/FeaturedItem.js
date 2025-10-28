@@ -200,66 +200,6 @@ const TopBar = styled.div`
   }
 `;
 
-const ItemInfo = styled.div`
-  padding: 0.5rem 0.75rem;
-  height: 44px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}`};
-  gap: 0.75rem;
-  border-top: 1px solid ${props => `${props.theme?.colors?.accent}15` || 'rgba(255, 255, 255, 0.05)'};
-
-  .item-name {
-    font-size: 0.95rem;
-    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
-    margin: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
-    font-weight: 600;
-    flex: 1;
-    line-height: 1.2;
-  }
-
-  .price {
-    font-size: 0.95rem;
-    color: ${props => props.theme?.colors?.accent || '#800000'};
-    font-weight: bold;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-  
-  @media (max-width: 768px) {
-    padding: 0.45rem 0.65rem;
-    height: 42px;
-    
-    .item-name {
-      font-size: 0.9rem;
-    }
-    
-    .price {
-      font-size: 0.9rem;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    padding: 0.4rem 0.6rem;
-    height: 40px;
-    gap: 0.5rem;
-    
-    .item-name {
-      font-size: 0.85rem;
-    }
-    
-    .price {
-      font-size: 0.85rem;
-    }
-  }
-`;
 
 const ShopNameOverlay = styled.div`
   position: absolute;
@@ -691,8 +631,166 @@ const Overlay = styled.div`
   backdrop-filter: blur(2px);
 `;
 
-// Keep the rest of your FeaturedItem component logic exactly the same
-const FeaturedItem = ({ item, showDistance, theme, onItemClick }) => {
+// KEEP the TopBar component but make it conditional
+// UPDATE TopBar to be conditionally rendered (keep the existing styled component as is)
+
+// UPDATE ItemInfo to have two rows
+const ItemInfo = styled.div`
+  padding: 0.75rem;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}`};
+  border-top: 1px solid ${props => `${props.theme?.colors?.accent}15` || 'rgba(255, 255, 255, 0.05)'};
+
+  .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .item-name {
+    font-size: 0.95rem;
+    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
+    font-weight: 600;
+    flex: 1;
+    line-height: 1.2;
+  }
+
+  .price {
+    font-size: 0.95rem;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    font-weight: bold;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .bottom-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.65rem;
+    
+    .item-name {
+      font-size: 0.9rem;
+    }
+    
+    .price {
+      font-size: 0.9rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.6rem;
+    gap: 0.5rem;
+    
+    .item-name {
+      font-size: 0.85rem;
+    }
+    
+    .price {
+      font-size: 0.85rem;
+    }
+  }
+`;
+
+// ADD OrderButton styled component
+const OrderButton = styled.button`
+  background: ${props => props.theme?.colors?.accent || '#800000'};
+  color: white;
+  border: none;
+  padding: 0.5rem 4rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  
+  &:active {
+    transform: scale(0.95);
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      background: ${props => props.theme?.colors?.primary || '#4A0404'};
+      box-shadow: 0 4px 12px ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
+    }
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.8rem;
+    
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+`;
+
+// ADD DistanceTag styled component
+const DistanceTag = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: ${props => props.theme?.colors?.text || '#FFFFFF'};
+  opacity: 0.7;
+  white-space: nowrap;
+  flex: 1;
+  
+  svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.7rem;
+    gap: 0.25rem;
+    
+    svg {
+      width: 11px;
+      height: 11px;
+    }
+  }
+`;
+
+// UPDATE the FeaturedItem component with new props
+const FeaturedItem = ({ 
+  item, 
+  showDistance, 
+  theme, 
+  onItemClick, 
+  onOrderClick,  // ADD this prop
+  showTopBar = true  // ADD this prop - defaults to true for welcome page
+}) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const navigate = useNavigate();
   const itemTheme = theme || item.shopTheme || {};
@@ -734,38 +832,53 @@ const FeaturedItem = ({ item, showDistance, theme, onItemClick }) => {
     if (onItemClick) onItemClick(item);
   };
 
+  const handleOrderClick = (e) => {
+    e.stopPropagation();
+    if (onOrderClick) {
+      onOrderClick(item);
+    } else if (onItemClick) {
+      onItemClick(item);
+    }
+  };
+
+  const isOutOfStock = item.isService ? 
+    parseInt(item.slots || 0) < 1 : 
+    parseInt(item.quantity || 0) < 1;
+
   return (
     <ItemCard 
       onClick={handleClick}
       theme={itemTheme}
       className={`item-card-${item.id}`}
     >
-      {/* ✅ NEW: Skinny Top Bar */}
-      <TopBar theme={itemTheme}>
-        <div 
-          className="shop-name"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (item.shopUsername) {
-              window.location.href = getSubdomainUrl(item.shopUsername);
-            } else {
-              navigate(`/shop/${item.shopId}/view`);
-            }
-          }}
-        >
-          <Store size={12} />
-          <span>{item.shopName}</span>
-        </div>
-        
-        {item.formattedDistance && (
-          <div className="distance">
-            <Navigation size={11} />
-            <span>{item.formattedDistance}</span>
+      {/* Conditional TopBar - only show on welcome page */}
+      {showTopBar && (
+        <TopBar theme={itemTheme}>
+          <div 
+            className="shop-name"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (item.shopUsername) {
+                window.location.href = getSubdomainUrl(item.shopUsername);
+              } else {
+                navigate(`/shop/${item.shopId}/view`);
+              }
+            }}
+          >
+            <Store size={12} />
+            <span>{item.shopName}</span>
           </div>
-        )}
-      </TopBar> 
+          
+          {item.formattedDistance && (
+            <div className="distance">
+              <Navigation size={11} />
+              <span>{item.formattedDistance}</span>
+            </div>
+          )}
+        </TopBar>
+      )}
 
-      {/* ✅ Image takes remaining space */}
+      {/* Image Section */}
       <ImageSection theme={itemTheme}>
         <img src={getDisplayImage()} alt={item.name} />
 
@@ -781,14 +894,37 @@ const FeaturedItem = ({ item, showDistance, theme, onItemClick }) => {
         )}
       </ImageSection> 
 
-      {/* ✅ Skinny Bottom Bar */}
+      {/* Updated Bottom Info with Two Rows */}
       <ItemInfo theme={itemTheme}>
-        <h3 className="item-name">{item.name}</h3>
-        <div className="price">${formatPrice(item.price)}</div>
+        {/* Top Row: Name and Price */}
+        <div className="top-row">
+          <h3 className="item-name">{item.name}</h3>
+          <div className="price">${formatPrice(item.price)}</div>
+        </div>
+
+        {/* Bottom Row: Order Button and Distance (only show on public shop page) */}
+        {!showTopBar && (
+          <div className="bottom-row">
+            <OrderButton
+              theme={itemTheme}
+              onClick={handleOrderClick}
+              disabled={isOutOfStock}
+            >
+              <ShoppingCart size={16} />
+              {isOutOfStock ? 'Unavailable' : item.isService ? 'Book' : 'Order'}
+            </OrderButton>
+            
+            {showDistance && item.formattedDistance && (
+              <DistanceTag theme={itemTheme}>
+                <Navigation size={12} />
+                {item.formattedDistance}
+              </DistanceTag>
+            )}
+          </div>
+        )}
       </ItemInfo>
     </ItemCard>
   );
-         
 };
 
 export default FeaturedItem;
