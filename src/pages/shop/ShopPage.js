@@ -2623,24 +2623,6 @@ const renderHomeView = () => {
   );
 };
 
-const handleAddService = () => {
-  const newService = {
-    id: Date.now().toString(),
-    name: 'Service Name',
-    price: '',
-    description: '',
-    category: 'Other',
-    images: [null, null, null],
-    currentImageIndex: 0,
-    address: '',
-    coordinates: null,
-    slots: 1
-  };
-
-  const updatedServices = [...(shopData.services || []), newService];
-  setShopData(prev => ({ ...prev, services: updatedServices }));
-};
-
 const handleServiceUpdate = (serviceId, updates) => {
   const updatedServices = shopData.services.map(service =>
     service.id === serviceId ? { ...service, ...updates } : service
@@ -3360,25 +3342,50 @@ const getDefaultSectionsForTemplate = (templateId) => {
   }
 };
   
-  // UPDATE handleAddItem function in ShopPage.js (around line 1400)
   const handleAddItem = () => {
     const newItem = {
       id: Date.now().toString(),
-      name: 'Item Name', // ADD DEFAULT ITEM NAME
+      name: 'Item Name',
       price: '',
       description: '',
       category: 'Other',
-      zipCode: '',
       images: [null, null, null],
       currentImageIndex: 0,
-      quantity: 1
+      quantity: 1,
+      address: '',
+      coordinates: null
     };
 
-    const updatedItems = [...(shopData.items || []), newItem];
+    // ADD to beginning instead of end
+    const updatedItems = [newItem, ...(shopData.items || [])];
     setShopData(prev => ({ ...prev, items: updatedItems }));
+
+    // Auto-expand the new item
+    setExpandedItems(new Set([newItem.id]));
   };
 
-  // Handle image uploads (these still need to upload to storage)
+  const handleAddService = () => {
+    const newService = {
+      id: Date.now().toString(),
+      name: 'Service Name',
+      price: '',
+      description: '',
+      category: 'Other',
+      images: [null, null, null],
+      currentImageIndex: 0,
+      address: '',
+      coordinates: null,
+      slots: 1
+    };
+
+    // ADD to beginning instead of end
+    const updatedServices = [newService, ...(shopData.services || [])];
+    setShopData(prev => ({ ...prev, services: updatedServices }));
+
+    // Auto-expand the new service
+    setExpandedItems(new Set([newService.id]));
+  };
+
   // REPLACE the entire handleImageUpload function
   const handleImageUpload = async (itemId, imageIndex, file) => {
     try {
@@ -3880,7 +3887,7 @@ const initializeHomeSections = (data) => {
                           <X size={16} />
                         </DeleteButton>
                     
-                        <ItemImageContainer>
+                        <ItemImageContainer theme={shopData?.theme}>
                           {uploading[item.id] && (
                             <UploadingOverlay>
                               <LoadingSpinner />
@@ -3888,11 +3895,13 @@ const initializeHomeSections = (data) => {
                           )}
                           <div 
                             className="image-container"
-                            onClick={() => {
-                              if (!item.images[item.currentImageIndex]) {
+                            onClick={(e) => {
+                              // Prevent triggering when clicking carousel arrows
+                              if (!e.target.closest('.carousel-arrow')) {
                                 document.getElementById(`image-upload-${item.id}-${item.currentImageIndex}`).click();
                               }
                             }}
+                            style={{ cursor: 'pointer' }}
                           >
                             {item.images[item.currentImageIndex] ? (
                               <img 
@@ -3912,7 +3921,8 @@ const initializeHomeSections = (data) => {
                             <>
                               <button 
                                 className="carousel-arrow left"
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation(); // ADD: Prevent event bubbling
                                   const newIndex = ((item.currentImageIndex - 1) + 3) % 3;
                                   handleItemUpdate(item.id, { currentImageIndex: newIndex });
                                 }}
@@ -3921,7 +3931,8 @@ const initializeHomeSections = (data) => {
                               </button>
                               <button 
                                 className="carousel-arrow right"
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation(); // ADD: Prevent event bubbling
                                   const newIndex = (item.currentImageIndex + 1) % 3;
                                   handleItemUpdate(item.id, { currentImageIndex: newIndex });
                                 }}
@@ -3931,10 +3942,12 @@ const initializeHomeSections = (data) => {
                             </>
                           )}
 
+                          {/* REPLACE the "add-image" button with delete image button */}
                           {item.images[item.currentImageIndex] && (
                             <button 
                               className="add-image"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 const newImages = [...item.images];
                                 newImages[item.currentImageIndex] = null;
                                 handleItemUpdate(item.id, { images: newImages });
@@ -4048,179 +4061,7 @@ const initializeHomeSections = (data) => {
                   })}
                 </ItemGrid>
               
-              {/* Add Edit Modal */}
-              {editingItem && (
-                <EditModal onClick={() => setEditingItem(null)}>
-                  <EditModalContent
-                    theme={shopData?.theme}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <ImageActionButtons theme={shopData?.theme}>
-                      <ImageActionButton
-                        className="check"
-                        onClick={async () => {
-                          if (editingItem.isService) {
-                            handleServiceUpdate(editingItem.id, editingItem);
-                          } else {
-                            handleItemUpdate(editingItem.id, editingItem);
-                          }
-                          setEditingItem(null);
-                        }}
-                        title="Save changes"
-                      >
-                        <Check size={20} />
-                      </ImageActionButton>
-                      <ImageActionButton
-                        className="close"
-                        onClick={() => setEditingItem(null)}
-                        title="Discard changes"
-                      >
-                        <X size={20} />
-                      </ImageActionButton>
-                    </ImageActionButtons>
-                      
-                    <EditModalScrollContent theme={shopData?.theme}>
-                      <EditModalImageSection theme={shopData?.theme}>
-                        <ItemImageContainer theme={shopData?.theme} style={{ height: '100%', minHeight: '300px' }}>
-                          {uploading[editingItem.id] && (
-                            <UploadingOverlay>
-                              <LoadingSpinner />
-                            </UploadingOverlay>
-                          )}
-                          <div
-                            className="image-container"
-                            onClick={() => {
-                              if (!editingItem.images[editingItem.currentImageIndex]) {
-                                document.getElementById(`modal-image-upload-${editingItem.id}-${editingItem.currentImageIndex}`).click();
-                              }
-                            }}
-                          >
-                            {editingItem.images[editingItem.currentImageIndex] ? (
-                              <img
-                                src={editingItem.images[editingItem.currentImageIndex]}
-                                alt={editingItem.name}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                              />
-                            ) : (
-                              <div className="placeholder">
-                                <Plus size={24} />
-                                <span>Upload Image</span>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {editingItem.images.filter(Boolean).length > 1 && (
-                            <>
-                              <button
-                                className="carousel-arrow left"
-                                onClick={() => {
-                                  const newIndex = ((editingItem.currentImageIndex - 1) + 3) % 3;
-                                  setEditingItem({ ...editingItem, currentImageIndex: newIndex });
-                                }}
-                              >
-                                <ChevronLeft size={16} />
-                              </button>
-                              <button
-                                className="carousel-arrow right"
-                                onClick={() => {
-                                  const newIndex = (editingItem.currentImageIndex + 1) % 3;
-                                  setEditingItem({ ...editingItem, currentImageIndex: newIndex });
-                                }}
-                              >
-                                <ChevronRight size={16} />
-                              </button>
-                            </>
-                          )}
-          
-                          <input
-                            type="file"
-                            id={`modal-image-upload-${editingItem.id}-${editingItem.currentImageIndex}`}
-                            accept="image/*"
-                            style={{ display: 'none' }}
-                            onChange={(e) => {
-                              if (e.target.files?.[0]) {
-                                handleImageUpload(editingItem.id, editingItem.currentImageIndex, e.target.files[0]);
-                              }
-                            }}
-                          />
-                        </ItemImageContainer>
-                      </EditModalImageSection>
-                          
-                      <EditModalBody>
-                        <ValidatedEditableText
-                          value={editingItem.name}
-                          onChange={(value) => setEditingItem({ ...editingItem, name: value })}
-                          placeholder={editingItem.isService ? "Service Name" : "Item Name"}
-                          theme={shopData?.theme}
-                        />
-          
-                        <ValidatedEditableText
-                          value={editingItem.price}
-                          onChange={(value) => setEditingItem({ ...editingItem, price: value })}
-                          placeholder="Price"
-                          theme={shopData?.theme}
-                        />
-          
-                        <ValidatedEditableText
-                          value={editingItem.description}
-                          onChange={(value) => setEditingItem({ ...editingItem, description: value })}
-                          placeholder={editingItem.isService ? "Service Description" : "Item Description"}
-                          multiline
-                          theme={shopData?.theme}
-                        />
-          
-                        <CategorySelect
-                          value={editingItem.category || 'Other'}
-                          onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
-                          theme={shopData?.theme}
-                        >
-                          {(editingItem.isService ? SERVICE_CATEGORIES : ITEM_CATEGORIES).map(category => (
-                            <option key={category} value={category}>
-                              {category}
-                            </option>
-                          ))}
-                        </CategorySelect>
-                        
-                        <div style={{ marginBottom: '1rem' }}>
-                          <QuantitySelector
-                            value={parseInt(editingItem.isService ? editingItem.slots : editingItem.quantity) || 1}
-                            onChange={(value) => setEditingItem({
-                              ...editingItem,
-                              [editingItem.isService ? 'slots' : 'quantity']: value
-                            })}
-                            theme={shopData?.theme}
-                            min={0}
-                            max={9999}
-                          />
-                        </div>
-                          
-                        <AddressInput
-                          address={editingItem.address || ''}
-                          onAddressChange={(value) => setEditingItem({
-                            ...editingItem,
-                            address: value
-                          })}
-                          onLocationSelect={(location) => {
-                            if (location?.coordinates) {
-                              setEditingItem({
-                                ...editingItem,
-                                address: location.address,
-                                coordinates: location.coordinates
-                              });
-                            } else if (!location?.address) {
-                              setEditingItem({
-                                ...editingItem,
-                                address: '',
-                                coordinates: null
-                              });
-                            }
-                          }}
-                        />
-                      </EditModalBody>
-                    </EditModalScrollContent>
-                  </EditModalContent>
-                </EditModal>
-              )}
+              
             </>
           ) : (
               <>
@@ -4492,7 +4333,229 @@ const initializeHomeSections = (data) => {
                   );
                 })}
               </ItemGrid>
+
+              
               </>
+            )}
+
+            {editingItem && (
+              <EditModal onClick={() => setEditingItem(null)}>
+                <EditModalContent
+                  theme={shopData?.theme}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ImageActionButtons theme={shopData?.theme}>
+                    <ImageActionButton
+                      className="check"
+                      onClick={async () => {
+                        // Process images before saving
+                        const processedImages = await Promise.all(
+                          editingItem.images.map(async (img, index) => {
+                            if (!img) return null;
+                            if (typeof img === 'string') return img;
+
+                            // If it's a File or has a file property, upload it
+                            if (img instanceof File || img?.file instanceof File) {
+                              const file = img instanceof File ? img : img.file;
+                              await handleImageUpload(editingItem.id, index, file);
+                              // Return null temporarily - the upload will update the item
+                              return null;
+                            } else if (img?.preview) {
+                              return img.preview;
+                            }
+                            return img;
+                          })
+                        );
+                      
+                        const updatedItem = {
+                          ...editingItem,
+                          images: processedImages
+                        };
+                      
+                        if (editingItem.isService) {
+                          handleServiceUpdate(editingItem.id, updatedItem);
+                        } else {
+                          handleItemUpdate(editingItem.id, updatedItem);
+                        }
+                        setEditingItem(null);
+                      }}
+                      title="Save changes"
+                    >
+                      <Check size={20} />
+                    </ImageActionButton>
+                    <ImageActionButton
+                      className="close"
+                      onClick={() => setEditingItem(null)}
+                      title="Discard changes"
+                    >
+                      <X size={20} />
+                    </ImageActionButton>
+                  </ImageActionButtons>
+                    
+                  <EditModalScrollContent theme={shopData?.theme}>
+                    <EditModalImageSection theme={shopData?.theme}>
+                      <ItemImageContainer theme={shopData?.theme} style={{ height: '100%', minHeight: '300px' }}>
+                        {uploading[editingItem.id] && (
+                          <UploadingOverlay>
+                            <LoadingSpinner />
+                          </UploadingOverlay>
+                        )}
+                        <div
+                          className="image-container"
+                          onClick={(e) => {
+                            if (!e.target.closest('.carousel-arrow')) {
+                              document.getElementById(`modal-image-upload-${editingItem.id}-${editingItem.currentImageIndex}`).click();
+                            }
+                          }}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {editingItem.images[editingItem.currentImageIndex] ? (
+                            typeof editingItem.images[editingItem.currentImageIndex] === 'string' ? (
+                              <img
+                                src={editingItem.images[editingItem.currentImageIndex]}
+                                alt={editingItem.name}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            ) : editingItem.images[editingItem.currentImageIndex]?.preview ? (
+                              <img
+                                src={editingItem.images[editingItem.currentImageIndex].preview}
+                                alt={editingItem.name}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            ) : null
+                          ) : (
+                            <div className="placeholder">
+                              <Plus size={24} />
+                              <span>Upload Image</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {editingItem.images.filter(img => img).length > 0 && (
+                          <>
+                            <button
+                              className="carousel-arrow left"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newIndex = ((editingItem.currentImageIndex - 1) + 3) % 3;
+                                setEditingItem({ ...editingItem, currentImageIndex: newIndex });
+                              }}
+                            >
+                              <ChevronLeft size={16} />
+                            </button>
+                            <button
+                              className="carousel-arrow right"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newIndex = (editingItem.currentImageIndex + 1) % 3;
+                                setEditingItem({ ...editingItem, currentImageIndex: newIndex });
+                              }}
+                            >
+                              <ChevronRight size={16} />
+                            </button>
+                          </>
+                        )}
+
+                        <input
+                          type="file"
+                          id={`modal-image-upload-${editingItem.id}-${editingItem.currentImageIndex}`}
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={async (e) => {
+                            if (e.target.files?.[0]) {
+                              const file = e.target.files[0];
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                const newImages = [...editingItem.images];
+                                newImages[editingItem.currentImageIndex] = {
+                                  file: file,
+                                  preview: reader.result,
+                                  type: file.type,
+                                  name: file.name
+                                };
+                                setEditingItem({ ...editingItem, images: newImages });
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </ItemImageContainer>
+                    </EditModalImageSection>
+                        
+                    <EditModalBody>
+                      <ValidatedEditableText
+                        value={editingItem.name}
+                        onChange={(value) => setEditingItem({ ...editingItem, name: value })}
+                        placeholder={editingItem.isService ? "Service Name" : "Item Name"}
+                        theme={shopData?.theme}
+                      />
+
+                      <ValidatedEditableText
+                        value={editingItem.price}
+                        onChange={(value) => setEditingItem({ ...editingItem, price: value })}
+                        placeholder="Price"
+                        theme={shopData?.theme}
+                      />
+
+                      <ValidatedEditableText
+                        value={editingItem.description}
+                        onChange={(value) => setEditingItem({ ...editingItem, description: value })}
+                        placeholder={editingItem.isService ? "Service Description" : "Item Description"}
+                        multiline
+                        theme={shopData?.theme}
+                      />
+
+                      <CategorySelect
+                        value={editingItem.category || 'Other'}
+                        onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+                        theme={shopData?.theme}
+                      >
+                        {(editingItem.isService ? SERVICE_CATEGORIES : ITEM_CATEGORIES).map(category => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </CategorySelect>
+                      
+                      <div style={{ marginBottom: '1rem' }}>
+                        <QuantitySelector
+                          value={parseInt(editingItem.isService ? editingItem.slots : editingItem.quantity) || 1}
+                          onChange={(value) => setEditingItem({
+                            ...editingItem,
+                            [editingItem.isService ? 'slots' : 'quantity']: value
+                          })}
+                          theme={shopData?.theme}
+                          min={0}
+                          max={9999}
+                        />
+                      </div>
+                        
+                      <AddressInput
+                        address={editingItem.address || ''}
+                        onAddressChange={(value) => setEditingItem({
+                          ...editingItem,
+                          address: value
+                        })}
+                        onLocationSelect={(location) => {
+                          if (location?.coordinates) {
+                            setEditingItem({
+                              ...editingItem,
+                              address: location.address,
+                              coordinates: location.coordinates
+                            });
+                          } else if (!location?.address) {
+                            setEditingItem({
+                              ...editingItem,
+                              address: '',
+                              coordinates: null
+                            });
+                          }
+                        }}
+                      />
+                    </EditModalBody>
+                  </EditModalScrollContent>
+                </EditModalContent>
+              </EditModal>
             )}
           </>
         )}
