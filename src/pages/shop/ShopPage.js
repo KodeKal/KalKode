@@ -397,12 +397,7 @@ const ItemGrid = styled.div`
   }
 `;
 
-// Hide desktop card on mobile
-const DesktopItemCard = styled(ItemCard)`
-  @media (max-width: 767px) {
-    display: none;
-  }
-`;
+
 
 
 const SectionTypeModal = styled.div`
@@ -1680,6 +1675,13 @@ const ItemCard = styled.div`
     .delete-button {
       opacity: 1;
     }
+  }
+`;
+
+// Hide desktop card on mobile
+const DesktopItemCard = styled(ItemCard)`
+  @media (max-width: 767px) {
+    display: none;
   }
 `;
 
