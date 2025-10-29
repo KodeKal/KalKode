@@ -47,6 +47,7 @@ import {
 } from './HomePageTemplate';
 
 
+
 const ITEM_CATEGORIES = [
   'Electronics & Tech',
   'Clothing & Accessories',
@@ -74,6 +75,8 @@ const SERVICE_CATEGORIES = [
   'Consulting',
   'Other'
 ];
+
+
 
 // Mobile-first styled components
 const PageContainer = styled.div.attrs({ className: 'page-container' })`
@@ -114,6 +117,132 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+`;
+
+
+const EditModal = styled.div`
+  display: none;
+
+  @media (max-width: 767px) {
+    display: flex;
+    position: fixed;
+    top: 95px;
+    left: 0;
+    right: 0;
+    bottom: 30px;
+    background: rgba(0, 0, 0, 0.9);
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    padding: 1rem;
+    overflow: hidden;
+  }
+`;
+
+const EditModalContent = styled.div`
+  background: ${props => props.theme?.colors?.background || '#000000'};
+  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  margin: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+`;
+
+const ImageActionButtons = styled.div`
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 0.75rem;
+  z-index: 10;
+  background: ${props => `${props.theme?.colors?.background || '#000000'}F5`};
+  backdrop-filter: blur(10px);
+  padding: 0.75rem;
+  justify-content: center;
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
+`;
+
+const ImageActionButton = styled.button`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  
+  &.check {
+    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.8)'}E5`};
+    color: #4CAF50;
+    
+    &:active {
+      background: #4CAF50;
+      color: white;
+      transform: scale(0.95);
+    }
+  }
+  
+  &.close {
+    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.8)'}E5`};
+    color: #ff4444;
+    
+    &:active {
+      background: #ff4444;
+      color: white;
+      transform: scale(0.95);
+    }
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+`;
+
+// NEW: Single scrollable container for both image and details
+const EditModalScrollContent = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${props => props.theme?.colors?.accent || '#800000'};
+    border-radius: 2px;
+  }
+`;
+
+const EditModalImageSection = styled.div`
+  width: 100%;
+  min-height: 300px;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
+`;
+
+const EditModalBody = styled.div`
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
 `;
 
 // Compact Floating Controls - positioned below header on right
@@ -314,123 +443,6 @@ const HeaderTabButton = styled.button`
     @media (min-width: 768px) {
       font-size: 0.7rem;
     }
-  }
-`;
-
-const EditModal = styled.div`
-  display: none;
-
-  @media (max-width: 767px) {
-    display: flex;
-    position: fixed;
-    top: 95px; /* Start 1 inch below tab buttons (assuming tabs are around 60px + header 80px) */
-    left: 0;
-    right: 0;
-    bottom: 30px; /* 1 inch from bottom (96px = 1 inch) */
-    background: rgba(0, 0, 0, 0.9);
-    align-items: center;
-    justify-content: center;
-    z-index: 999; /* Changed from 1000 to be below save button */
-    padding: 1rem;
-    overflow: hidden;
-  }
-`;
-
-const EditModalContent = styled.div`
-  background: ${props => props.theme?.colors?.background || '#000000'};
-  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
-  border-radius: 12px;
-  width: 100%;
-  max-width: 400px;
-  height: 100%; /* Take full available height */
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  margin: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-`;
-
-// Add new action buttons for the image overlay
-const ImageActionButtons = styled.div`
-  position: absolute;
-  top: 0.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 0.75rem;
-  z-index: 10;
-`;
-
-const ImageActionButton = styled.button`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-  
-  &.check {
-    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.8)'}E5`};
-    color: #4CAF50;
-    
-    &:active {
-      background: #4CAF50;
-      color: white;
-      transform: scale(0.95);
-    }
-  }
-  
-  &.close {
-    background: ${props => `${props.theme?.colors?.background || 'rgba(0, 0, 0, 0.8)'}E5`};
-    color: #ff4444;
-    
-    &:active {
-      background: #ff4444;
-      color: white;
-      transform: scale(0.95);
-    }
-  }
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-`;
-
-const EditModalImageSection = styled.div`
-  height: 50%;
-  position: relative;
-  flex-shrink: 0;
-  overflow: hidden;
-  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
-`;
-
-const EditModalBody = styled.div`
-  height: 50%;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: ${props => props.theme?.colors?.accent || '#800000'};
-    border-radius: 2px;
   }
 `;
 
@@ -2645,159 +2657,160 @@ const handleSave = async () => {
           theme={selectedTheme}
           onClick={(e) => e.stopPropagation()}
         >
-          <EditModalImageSection>
-            <ImageActionButtons>
-              <ImageActionButton 
-                className="check"
-                onClick={async () => {
-                  const processedImages = editingItem.images.map((img) => {
-                    if (typeof img === 'string') return img;
-                    if (!img) return null;
-                    if (img?.preview) return img.preview;
-                    if (img instanceof File) return URL.createObjectURL(img);
-                    return img;
-                  });
-                  
-                  const updatedItem = {
-                    ...editingItem,
-                    images: processedImages
-                  };
-                  
-                  // Update based on type
-                  if (editingItem.isService) {
-                    handleServiceUpdate(editingItem.id, updatedItem);
-                  } else {
-                    handleItemUpdate(editingItem.id, updatedItem);
-                  }
-                  setEditingItem(null);
-                }}
-                title="Save changes"
-              >
-                <Check size={20} />
-              </ImageActionButton>
-              <ImageActionButton 
-                className="close"
-                onClick={() => setEditingItem(null)}
-                title="Discard changes"
-              >
-                <X size={20} />
-              </ImageActionButton>
-            </ImageActionButtons>
+          <ImageActionButtons theme={selectedTheme}>
+            <ImageActionButton 
+              className="check"
+              onClick={async () => {
+                const processedImages = editingItem.images.map((img) => {
+                  if (typeof img === 'string') return img;
+                  if (!img) return null;
+                  if (img?.preview) return img.preview;
+                  if (img instanceof File) return URL.createObjectURL(img);
+                  return img;
+                });
+
+                const updatedItem = {
+                  ...editingItem,
+                  images: processedImages
+                };
+
+                if (editingItem.isService) {
+                  handleServiceUpdate(editingItem.id, updatedItem);
+                } else {
+                  handleItemUpdate(editingItem.id, updatedItem);
+                }
+                setEditingItem(null);
+              }}
+              title="Save changes"
+            >
+              <Check size={20} />
+            </ImageActionButton>
+            <ImageActionButton 
+              className="close"
+              onClick={() => setEditingItem(null)}
+              title="Discard changes"
+            >
+              <X size={20} />
+            </ImageActionButton>
+          </ImageActionButtons>
             
-            <ItemImageContainer theme={selectedTheme} style={{ height: '100%' }}>
-              <div className="image-container">
-                <EditableImage
-                  value={editingItem.images[editingItem.currentImageIndex]}
-                  onChange={(value) => {
-                    const newImages = [...editingItem.images];
-                    newImages[editingItem.currentImageIndex] = value;
-                    setEditingItem({ ...editingItem, images: newImages });
-                  }}
+          <EditModalScrollContent theme={selectedTheme}>
+            <EditModalImageSection theme={selectedTheme}>
+              <ItemImageContainer theme={selectedTheme} style={{ height: '100%', minHeight: '300px' }}>
+                <div className="image-container">
+                  <EditableImage
+                    value={editingItem.images[editingItem.currentImageIndex]}
+                    onChange={(value) => {
+                      const newImages = [...editingItem.images];
+                      newImages[editingItem.currentImageIndex] = value;
+                      setEditingItem({ ...editingItem, images: newImages });
+                    }}
+                    theme={selectedTheme}
+                    height="100%"
+                    width="100%"
+                  />
+                </div>
+                  
+                {editingItem.images.filter(Boolean).length > 1 && (
+                  <>
+                    <button 
+                      className="carousel-arrow left"
+                      onClick={() => {
+                        const newIndex = ((editingItem.currentImageIndex - 1) + 3) % 3;
+                        setEditingItem({ ...editingItem, currentImageIndex: newIndex });
+                      }}
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <button 
+                      className="carousel-arrow right"
+                      onClick={() => {
+                        const newIndex = (editingItem.currentImageIndex + 1) % 3;
+                        setEditingItem({ ...editingItem, currentImageIndex: newIndex });
+                      }}
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </>
+                )}
+              </ItemImageContainer>
+            </EditModalImageSection>
+              
+            <EditModalBody>
+              <ValidatedEditableText
+                value={editingItem.name}
+                onChange={(value) => setEditingItem({ ...editingItem, name: value })}
+                placeholder={editingItem.isService ? "Service Name" : "Item Name"}
+                validationRules={VALIDATION_RULES.item.name}
+                theme={selectedTheme}
+              />
+
+              <ValidatedEditableText
+                value={editingItem.price}
+                onChange={(value) => setEditingItem({ ...editingItem, price: value })}
+                placeholder="Cost"
+                validationRules={VALIDATION_RULES.item.price}
+                theme={selectedTheme}
+              />
+
+              <ValidatedEditableText
+                value={editingItem.description}
+                onChange={(value) => setEditingItem({ ...editingItem, description: value })}
+                placeholder={editingItem.isService ? "Service Description" : "Item Description"}
+                validationRules={VALIDATION_RULES.item.description}
+                multiline
+                theme={selectedTheme}
+              />
+
+              <CategorySelect
+                value={editingItem.category || 'Other'}
+                onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+                theme={selectedTheme}
+              >
+                {(editingItem.isService ? SERVICE_CATEGORIES : ITEM_CATEGORIES).map(category => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </CategorySelect>
+              
+              <div style={{ marginBottom: '1rem' }}>
+                <QuantitySelector 
+                  value={parseInt(editingItem.isService ? editingItem.slots : editingItem.quantity) || 1}
+                  onChange={(value) => setEditingItem({ 
+                    ...editingItem, 
+                    [editingItem.isService ? 'slots' : 'quantity']: value 
+                  })}
                   theme={selectedTheme}
-                  height="100%"
-                  width="100%"
+                  min={0}
+                  max={9999}
                 />
               </div>
-
-              {editingItem.images.filter(Boolean).length > 1 && (
-                <>
-                  <button 
-                    className="carousel-arrow left"
-                    onClick={() => {
-                      const newIndex = ((editingItem.currentImageIndex - 1) + 3) % 3;
-                      setEditingItem({ ...editingItem, currentImageIndex: newIndex });
-                    }}
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  <button 
-                    className="carousel-arrow right"
-                    onClick={() => {
-                      const newIndex = (editingItem.currentImageIndex + 1) % 3;
-                      setEditingItem({ ...editingItem, currentImageIndex: newIndex });
-                    }}
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </>
-              )}
-            </ItemImageContainer>
-          </EditModalImageSection>
-          
-          <EditModalBody>
-            <ValidatedEditableText
-              value={editingItem.name}
-              onChange={(value) => setEditingItem({ ...editingItem, name: value })}
-              placeholder={editingItem.isService ? "Service Name" : "Item Name"}
-              validationRules={VALIDATION_RULES.item.name}
-              theme={selectedTheme}
-            />
-
-            <ValidatedEditableText
-              value={editingItem.price}
-              onChange={(value) => setEditingItem({ ...editingItem, price: value })}
-              placeholder="Cost"
-              validationRules={VALIDATION_RULES.item.price}
-              theme={selectedTheme}
-            />
-
-            <ValidatedEditableText
-              value={editingItem.description}
-              onChange={(value) => setEditingItem({ ...editingItem, description: value })}
-              placeholder={editingItem.isService ? "Service Description" : "Item Description"}
-              validationRules={VALIDATION_RULES.item.description}
-              multiline
-              theme={selectedTheme}
-            />
-
-            <CategorySelect
-              value={editingItem.category || 'Other'}
-              onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
-              theme={selectedTheme}
-            >
-              {(editingItem.isService ? SERVICE_CATEGORIES : ITEM_CATEGORIES).map(category => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </CategorySelect>
-            
-            <div style={{ marginBottom: '1rem' }}>
-              <QuantitySelector 
-                value={parseInt(editingItem.isService ? editingItem.slots : editingItem.quantity) || 1}
-                onChange={(value) => setEditingItem({ 
+                
+              <AddressInput
+                address={editingItem.address || ''}
+                onAddressChange={(value) => setEditingItem({ 
                   ...editingItem, 
-                  [editingItem.isService ? 'slots' : 'quantity']: value 
+                  address: value
                 })}
-                theme={selectedTheme}
-                min={0}
-                max={9999}
+                onLocationSelect={(location) => {
+                  if (location?.coordinates) {
+                    setEditingItem({
+                      ...editingItem,
+                      address: location.address,
+                      coordinates: location.coordinates
+                    });
+                  } else if (!location?.address) {
+                    setEditingItem({
+                      ...editingItem,
+                      address: '',
+                      coordinates: null
+                    });
+                  }
+                }}
               />
-            </div>
-
-            <AddressInput
-              address={editingItem.address || ''}
-              onAddressChange={(value) => setEditingItem({ 
-                ...editingItem, 
-                address: value
-              })}
-              onLocationSelect={(location) => {
-                if (location?.coordinates) {
-                  setEditingItem({
-                    ...editingItem,
-                    address: location.address,
-                    coordinates: location.coordinates
-                  });
-                } else if (!location?.address) {
-                  setEditingItem({
-                    ...editingItem,
-                    address: '',
-                    coordinates: null
-                  });
-                }
-              }}
-            />
-          </EditModalBody>
+            </EditModalBody>
+          </EditModalScrollContent>
         </EditModalContent>
       </EditModal>
     )}

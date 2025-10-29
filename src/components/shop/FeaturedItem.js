@@ -109,18 +109,26 @@ const ItemCard = styled.div`
   }
 `;
 
-// ✅ ADD: Skinny top bar for shop name and distance
 const TopBar = styled.div`
   padding: 0.4rem 0.75rem;
-  background: ${props => `${props.theme?.colors?.surface || 'rgba(0, 0, 0, 0.6)'}CC`};
-  backdrop-filter: blur(4px);
+  background: transparent;  /* ✅ CHANGED: Made transparent */
+  /* ❌ REMOVED: backdrop-filter */
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
-  height: 32px;
+  min-height: 32px;  /* ✅ CHANGED: from height to min-height */
   flex-shrink: 0;
-  border-bottom: 1px solid ${props => `${props.theme?.colors?.accent}15` || 'rgba(255, 255, 255, 0.05)'};
+  /* ❌ REMOVED: border-bottom */
+  
+  .shop-pfp {  /* ✅ NEW: Profile picture styling */
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid ${props => `${props.theme?.colors?.accent}40` || 'rgba(255, 255, 255, 0.25)'};
+  }
   
   .shop-name {
     display: flex;
@@ -135,10 +143,12 @@ const TopBar = styled.div`
     text-overflow: ellipsis;
     white-space: nowrap;
     flex: 1;
+    text-decoration: underline;  /* ✅ NEW: Underlined text */
+    text-underline-offset: 2px;  /* ✅ NEW: Better underline spacing */
     
     &:hover {
       opacity: 0.8;
-      transform: translateX(2px);
+      /* ❌ REMOVED: transform: translateX(2px) */
     }
     
     svg {
@@ -865,6 +875,14 @@ const FeaturedItem = ({
               }
             }}
           >
+            {/* ✅ NEW: Add profile picture if available */}
+            {item.shopProfilePicture && (
+              <img 
+                src={item.shopProfilePicture} 
+                alt={item.shopName} 
+                className="shop-pfp" 
+              />
+            )}
             <Store size={12} />
             <span>{item.shopName}</span>
           </div>
