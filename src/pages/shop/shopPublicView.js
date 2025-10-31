@@ -1664,7 +1664,13 @@ const ShopPublicView = () => {
 
     // Check authentication - redirect to login if not authenticated
     if (!isAuthenticated) {
-      navigate('/auth', { state: { from: `/shop/${shopId}` } });
+      navigate('/auth', { 
+                    state: { 
+                      mode: 'login',
+                      from: window.location.pathname,
+                      message: 'Please log in to place an order' // Optional
+                    }
+                  });
       return;
     } 
 

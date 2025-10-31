@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
 import { getFeaturedItems, getFeaturedServices } from '../firebase/firebaseService';
 import FeaturedItem from '../components/shop/FeaturedItem';
-import { Search, Package, Navigation, Film, Filter, Store, Plus, Minus, Pin, ChevronLeft, ChevronRight, X, MessageCircle, ShoppingCart, RefreshCw, LogOut } from 'lucide-react';
+import { Search, Package, Navigation, Film, Filter, Store, Plus, Minus, Pin, ChevronLeft, CogIcon, ChevronRight, X, MessageCircle, ShoppingCart, RefreshCw, LogOut } from 'lucide-react';
 import { getDistance } from 'geolib';
 import OrderChat from '../components/Chat/OrderChat';
 import { collection, getDocs } from 'firebase/firestore';
@@ -15,6 +15,7 @@ import { getShopData } from '../firebase/firebaseService';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import LocationDialog from '../components/LocationDialog';
+import { debounce } from 'lodash';
 import ThemeDecorations from '../components/ThemeDecorations';
 import { TransactionService } from '../services/TransactionService';
 import { signOut } from 'firebase/auth';
@@ -24,6 +25,10 @@ const LOCATION_STORAGE_KEY = 'kalkode_user_location';
 const LOCATION_TIMESTAMP_KEY = 'kalkode_location_timestamp';
 const LOCATION_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
+const TREASURE_BACKGROUNDS = [
+  'https://images.unsplash.com/photo-1710552524607-a34efe984194?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fHRyZWFzdXJlfGVufDB8fDB8fHww&auto=format&fit=crop&q=60&w=900',
+  'https://images.unsplash.com/photo-1608924066819-930edc42986a?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fHRyZWFzdXJlJTIwY2hlc3R8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&q=60&w=900'
+];
 
 
 // Mobile-first styled components
@@ -321,6 +326,139 @@ const HeaderButton = styled.button`
   }
 `;
 
+const BorderFrame = styled.div`
+  position: relative;
+  border: 3px solid ${props => props.theme?.colors?.accent || '#800000'};
+  border-radius: 20px;
+  margin: 2rem;
+  padding: 0;
+  background: ${props => props.theme?.colors?.background || '#000000'};
+  box-shadow: 
+    0 0 40px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'},
+    inset 0 0 40px ${props => `${props.theme?.colors?.accent}20` || 'rgba(128, 0, 0, 0.1)'};
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.2)'};
+    border-radius: 12px;
+    pointer-events: none;
+  }
+`;
+
+// Canvas Backdrop for Welcome Section
+const CanvasBackdrop = styled.div`
+  position: relative;
+  width: 100%;
+  min-height: 400px;
+  background-image: url(${props => props.bgImage});
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      135deg,
+      ${props => `${props.theme?.colors?.background}E6` || 'rgba(0, 0, 0, 0.9)'} 0%,
+      ${props => `${props.theme?.colors?.background}80` || 'rgba(0, 0, 0, 0.5)'} 50%,
+      ${props => `${props.theme?.colors?.background}E6` || 'rgba(0, 0, 0, 0.9)'} 100%
+    );
+    z-index: 1;
+  }
+`;
+
+// Content Overlay for Welcome Section
+const ContentOverlay = styled.div`
+  position: relative;
+  z-index: 2;
+  padding: 3rem 2rem;
+  text-align: center;
+`;
+
+// Update the SectionSeparator styled component
+const SectionSeparator = styled.div`
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    ${props => props.theme?.colors?.accent || '#800000'} 20%,
+    transparent 100%
+  );
+  margin: 0;
+  position: relative;
+  
+  &::before, &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+    border-radius: 50%;
+    background: ${props => props.theme?.colors?.background || '#000000'};
+  }
+  
+  &::before {
+    left: 20%;
+  }
+  
+  &::after {
+    right: 20%;
+  }
+`;
+
+// Bottom Content Area
+const BottomContent = styled.div`
+  padding: 2rem;
+  background: ${props => `${props.theme?.colors?.background}CC` || 'rgba(0, 0, 0, 0.8)'};
+  border-radius: 0 0 16px 16px;
+`;
+
+// Update the WelcomeSection to remove its own styling and use the new structure
+const WelcomeSection = styled.section`
+  // Remove existing background and border styles
+  text-align: center;
+  margin: 0;
+  position: relative;
+  
+  // Keep only the text styling
+  h1 {
+    font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
+    font-size: 4.5rem;
+    margin-bottom: 1rem;
+    background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 30px ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
+    letter-spacing: 2px;
+    transform: ${props => props.theme?.id === 10 ? 'none' : 'skew(-5deg)'};
+  }
+
+  p {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    max-width: 800px;
+    margin: 0 auto;
+    color: ${props => `${props.theme?.colors?.text}CC` || 'rgba(255, 255, 255, 0.8)'};
+    font-weight: 300;
+    font-family: ${props => props.theme?.fonts?.body || 'sans-serif'};
+  }
+`;
+
 // Improved mobile main content with better spacing
 const MainContent = styled.main`
   max-width: 1200px;
@@ -331,49 +469,6 @@ const MainContent = styled.main`
   
   @media (min-width: 768px) {
     padding: 6rem 2rem 2rem 2rem;
-  }
-`;
-
-const WelcomeSection = styled.section`
-  text-align: center;
-  margin: 2rem 0 1rem;
-  position: relative;
-
-  h1 {
-    font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
-    background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: 1px;
-    line-height: 1.2;
-    
-    @media (min-width: 768px) {
-      font-size: 4.5rem;
-      letter-spacing: 2px;
-      margin-bottom: 1rem;
-    }
-  }
-
-  p {
-    font-size: 1rem;
-    line-height: 1.5;
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 0 1rem;
-    background: linear-gradient(135deg, #C0C0C0 0%, #E8E8E8 50%, #A8A8A8 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-weight: 500;
-    letter-spacing: 0.5px;
-    
-    @media (min-width: 768px) {
-      font-size: 1.2rem;
-      line-height: 1.6;
-      max-width: 800px;
-      letter-spacing: 0.8px;
-    }
   }
 `;
 
@@ -797,7 +892,6 @@ const ActionButton = styled.button`
   }
 `;
 
-// Mobile-optimized tab container with horizontal scroll
 const TabContainer = styled.div`
   display: flex;
   gap: 0.5rem;
@@ -811,12 +905,13 @@ const TabContainer = styled.div`
   }
   
   &::-webkit-scrollbar-track {
-    background: transparent;
+    background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
+    border-radius: 10px;
   }
   
   &::-webkit-scrollbar-thumb {
     background: ${props => props.theme?.colors?.accent || '#800000'};
-    border-radius: 2px;
+    border-radius: 10px;
   }
   
   @media (min-width: 768px) {
@@ -827,13 +922,12 @@ const TabContainer = styled.div`
 `;
 
 const Tab = styled.button`
-  background: ${props => props.active ? 
-    props.theme?.colors?.tabActiveBg || 'rgba(128, 0, 0, 0.2)' : 'transparent'};
+  background: transparent;
   border: 1px solid ${props => props.active ? 
-    props.theme?.colors?.tabBorder || '#800000' : 
-    `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
+    props.theme?.colors?.accent || '#800000' : 
+    `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
   color: ${props => props.active ? 
-    props.theme?.colors?.text || '#FFFFFF' : 
+    props.theme?.colors?.accent || '#800000' : 
     `${props.theme?.colors?.text}99` || 'rgba(255, 255, 255, 0.6)'};
   padding: 0.6rem 1rem;
   border-radius: 20px;
@@ -841,13 +935,16 @@ const Tab = styled.button`
   transition: all 0.3s;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-weight: 500;
+  font-weight: ${props => props.active ? '600' : '500'};
   font-size: 0.8rem;
   white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 0.3rem;
   flex-shrink: 0;
+  box-shadow: ${props => props.active ? 
+    `0 0 15px ${props.theme?.colors?.accent}40` || '0 0 15px rgba(128, 0, 0, 0.4)' : 
+    'none'};
   
   @media (min-width: 768px) {
     padding: 0.8rem 1.5rem;
@@ -860,9 +957,19 @@ const Tab = styled.button`
     transform: scale(0.98);
   }
 
+  @media (hover: hover) {
+    &:hover {
+      box-shadow: 0 0 10px ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+      transform: translateY(-1px);
+    }
+  }
+
   svg {
     width: 14px;
     height: 14px;
+    color: ${props => props.active ? 
+      props.theme?.colors?.accent || '#800000' : 
+      `${props.theme?.colors?.text}99` || 'rgba(255, 255, 255, 0.6)'};
     
     @media (min-width: 768px) {
       width: 16px;
@@ -1207,6 +1314,29 @@ const ActionButtons = styled.div`
   }
 `;
 
+const SortContainer = styled.div`
+  position: relative;
+  display: inline-block;
+`;
+
+const SortDropdown = styled.div`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: ${props => props.theme?.colors?.background || '#000000'};
+  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
+  border-radius: 12px;
+  padding: 0.75rem;
+  min-width: 280px; // Increased width for better text display
+  z-index: 1000;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+  opacity: ${props => props.isOpen ? 1 : 0};
+  visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
+  transform: ${props => props.isOpen ? 'translateY(5px)' : 'translateY(-10px)'};
+  transition: all 0.3s ease;
+  margin-top: 5px;
+`;
+
 // Mobile-friendly floating controls - removed since they're now in header
 const StyleIndicator = styled.div`
   position: fixed;
@@ -1547,30 +1677,6 @@ const ChatOverlay = styled.div`
   transition: opacity 0.3s ease;
 `;
 
-// Add these styled components after StyleIndicator
-
-const SortContainer = styled.div`
-  position: relative;
-  display: inline-block;
-`;
-
-const SortDropdown = styled.div`
-  position: absolute;
-  top: calc(100% + 0.5rem);
-  right: 0;
-  background: ${props => props.theme?.colors?.background || '#000000'};
-  border: 2px solid ${props => props.theme?.colors?.accent || '#800000'};
-  border-radius: 12px;
-  padding: 0.75rem;
-  min-width: 220px;
-  z-index: 1000;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-  opacity: ${props => props.isOpen ? 1 : 0};
-  visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
-  transform: ${props => props.isOpen ? 'translateY(0)' : 'translateY(-10px)'};
-  transition: all 0.3s ease;
-`;
-
 const SortOption = styled.button`
   width: 100%;
   padding: 0.75rem 1rem;
@@ -1675,6 +1781,7 @@ const WelcomePage = () => {
   const [orderQuantity, setOrderQuantity] = useState(1);
   const [sortBy, setSortBy] = useState('recent'); // 'recent', 'proximity', 'price-low', 'price-high'
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState(null);
 
   
   const [productSearchTerm, setProductSearchTerm] = useState('');
@@ -1726,23 +1833,21 @@ const [cityRegion, setCityRegion] = useState('');
 const [isCityPinned, setIsCityPinned] = useState(false);
 const [isConvertingToCity, setIsConvertingToCity] = useState(false);
 const [cityInputValue, setCityInputValue] = useState('');
+const [currentBgImage, setCurrentBgImage] = useState(TREASURE_BACKGROUNDS[0]);
 
 useEffect(() => {
   const initializeLocation = async () => {
     console.log('🔍 Initializing location...');
-    console.log('userLocation from context:', userLocation);
     
     // Priority 1: Check if user has GPS location from context
-    if (userLocation) {
+    if (userLocation && userLocation.latitude && userLocation.longitude) {
       console.log('✅ Using GPS location from context:', userLocation);
       setEffectiveLocation(userLocation);
       setIsIPLocation(false);
       saveLocationToStorage({ ...userLocation, isIPBased: false });
       
       // Convert to city for display
-      if (userLocation.latitude && userLocation.longitude) {
-        await convertCoordsToCity(userLocation.latitude, userLocation.longitude);
-      }
+      await convertCoordsToCity(userLocation.latitude, userLocation.longitude);
       return;
     }
     
@@ -1753,18 +1858,16 @@ useEffect(() => {
       setEffectiveLocation(storedLocation);
       setIsIPLocation(storedLocation.isIPBased || false);
       
-      // If it's a GPS location, convert to city for display
       if (!storedLocation.isIPBased && storedLocation.latitude && storedLocation.longitude) {
         await convertCoordsToCity(storedLocation.latitude, storedLocation.longitude);
       } else if (storedLocation.city) {
-        // If it's IP-based, use the stored city
         setCityRegion(storedLocation.city);
         setCityInputValue(storedLocation.city);
       }
       return;
     }
     
-    // Priority 3: Fetch IP-based location
+    // Priority 3: Fetch IP-based location as fallback
     console.log('🌐 Fetching IP-based location...');
     const ipLocation = await getIPBasedLocation();
     
@@ -1773,20 +1876,24 @@ useEffect(() => {
       setEffectiveLocation(ipLocation);
       setIsIPLocation(true);
       saveLocationToStorage(ipLocation);
-      
-      // Display IP-based city
-      if (ipLocation.city) {
-        const displayText = `${ipLocation.city}, ${ipLocation.region || ipLocation.country}`;
-        setCityRegion(displayText);
-        setCityInputValue(displayText);
-      }
-    } else {
-      console.error('❌ Failed to get any location');
     }
   };
   
   initializeLocation();
-}, [userLocation]); // Only depend on userLocation from context
+}, [userLocation]);
+
+useEffect(() => {
+  const rotateBackground = () => {
+    setCurrentBgImage(prevBg => {
+      const currentIndex = TREASURE_BACKGROUNDS.indexOf(prevBg);
+      const nextIndex = (currentIndex + 1) % TREASURE_BACKGROUNDS.length;
+      return TREASURE_BACKGROUNDS[nextIndex];
+    });
+  };
+
+  const interval = setInterval(rotateBackground, 8000); // Change every 8 seconds
+  return () => clearInterval(interval);
+}, []);
 
 useEffect(() => {
   console.log('🔄 effectiveLocation changed:', effectiveLocation);
@@ -1804,6 +1911,8 @@ useEffect(() => {
     loadCategorizedItems();
   }
 }, [effectiveLocation]);
+
+
 
 const saveLocationToStorage = (location) => {
   try {
@@ -3283,7 +3392,7 @@ const hasActiveSearchResults = () => {
 
   if (!currentStyle) return null;
 
-  return (
+    return (
     <PageContainer className="page-container" theme={currentStyle}>
       <ThemeDecorations theme={currentStyle} />
       <Header theme={currentStyle}>
@@ -3322,158 +3431,212 @@ const hasActiveSearchResults = () => {
       </Header>
 
       <MainContent isAuthenticated={isAuthenticated}>
+        {/* NEW: Border Frame Container */}
+          <CanvasBackdrop 
+            theme={currentStyle} 
+            bgImage={currentBgImage}
+          >
+            {/* NEW: Content Overlay */}
+            <ContentOverlay theme={currentStyle}>
+              <WelcomeSection theme={currentStyle}>
+                {isAuthenticated && shopData ? (
+                  <>
+                    <ProfileSection>
+                      <ProfileImage theme={currentStyle}>
+                        {shopData.profile ? (
+                          <img src={shopData.profile} alt={shopData.name || 'Shop Profile'} />
+                        ) : (
+                          <div style={{ 
+                            width: '100%', 
+                            height: '100%', 
+                            background: currentStyle?.colors?.accent || '#800000',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#fff',
+                            fontSize: '2rem'
+                          }}>
+                            {(shopData.name?.charAt(0) || user.email?.charAt(0) || 'S').toUpperCase()}
+                          </div>
+                        )}
+                      </ProfileImage>
+                      <ShopName theme={currentStyle}>{shopData.name || 'My Shop'}</ShopName>
+                      <LocationIndicator2 theme={currentStyle}>
+                        <button 
+                          className="location-icon-btn"
+                          onClick={handleLocationToCity}
+                          disabled={isConvertingToCity}
+                          title="Get region from current location"
+                        >
+                          {isConvertingToCity ? (
+                            <div className="updating-spinner" />
+                          ) : (
+                            <Navigation size={16} />
+                          )}
+                        </button>
+                        
+                        <input
+                          type="text"
+                          className="location-input"
+                          value={
+                            cityInputValue ? 
+                              cityInputValue :
+                              (effectiveLocation && isIPLocation ? 
+                                `${effectiveLocation.city}, ${effectiveLocation.region}` : 
+                                'Loading Location')
+                          }
+                          onChange={(e) => setCityInputValue(e.target.value)}
+                          placeholder="Loading Location"
+                          readOnly
+                        />
 
-        <WelcomeSection theme={currentStyle}>
-        {isAuthenticated && shopData ? (
-          <>
-            
-            
-            <ProfileSection>
-              <ProfileImage theme={currentStyle}>
-                {shopData.profile ? (
-                  <img src={shopData.profile} alt={shopData.name || 'Shop Profile'} />
+                        {cityInputValue && (
+                          <span className="location-type">
+                            {isIPLocation ? '(IP-based)' : '(Precise)'}
+                          </span>
+                        )}
+                        
+                        {cityInputValue && cityInputValue !== 'Loading Location' && (
+                          <button
+                            className="location-icon-btn"
+                            onClick={() => {
+                              clearLocationFromStorage();
+                              setCityRegion('');
+                              setCityInputValue('');
+                              setEffectiveLocation(null);
+                              setIsIPLocation(false);
+                              getIPBasedLocation();
+                            }}
+                            title="Clear saved location"
+                            style={{ opacity: 0.6 }}
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </LocationIndicator2>
+                    </ProfileSection>
+                    
+                    {motivationalMessage && (
+                      <MotivationalMessage theme={currentStyle}>
+                        {motivationalMessage}
+                      </MotivationalMessage>
+                    )}
+                  </>
                 ) : (
-                  <div style={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    background: currentStyle?.colors?.accent || '#800000',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#fff',
-                    fontSize: '2rem'
-                  }}>
-                    {(shopData.name?.charAt(0) || user.email?.charAt(0) || 'S').toUpperCase()}
-                  </div>
+                  <>
+                    <h1>KALKODE</h1>
+                    <p>Local Treasure Map</p>
+
+                    <ActionButtonContainer>
+                      <ActionButton theme={currentStyle} onClick={handleOpenShop}>
+                        Open Up Shop
+                      </ActionButton>
+                      <ActionButton 
+                        theme={currentStyle}
+                        onClick={handleLogin}
+                        variant="outline"
+                      >
+                        Sign In
+                      </ActionButton>
+                    </ActionButtonContainer>
+
+                    <LocationIndicator2 theme={currentStyle}>
+                      <button 
+                        className="location-icon-btn"
+                        onClick={handleLocationToCity}
+                        disabled={isConvertingToCity}
+                        title="Get region from current location"
+                      >
+                        {isConvertingToCity ? (
+                          <div className="updating-spinner" />
+                        ) : (
+                          <Navigation size={16} />
+                        )}
+                      </button>
+                      
+                      <input
+                        type="text"
+                        className="location-input"
+                        value={
+                          cityInputValue ? 
+                            cityInputValue :
+                            (effectiveLocation && isIPLocation ? 
+                              `${effectiveLocation.city}, ${effectiveLocation.region}` : 
+                              'Loading Location')
+                        }
+                        onChange={(e) => setCityInputValue(e.target.value)}
+                        placeholder="Loading Location"
+                        readOnly
+                      />
+                      
+                      {cityInputValue && (
+                        <span className="location-type">
+                          {isIPLocation ? '(IP-based)' : '(Precise)'}
+                        </span>
+                      )}
+                      
+                      {cityInputValue && cityInputValue !== 'Loading Location' && (
+                        <button
+                          className="location-icon-btn"
+                          onClick={() => {
+                            clearLocationFromStorage();
+                            setCityRegion('');
+                            setCityInputValue('');
+                            setEffectiveLocation(null);
+                            setIsIPLocation(false);
+                            getIPBasedLocation();
+                          }}
+                          title="Clear saved location"
+                          style={{ opacity: 0.6 }}
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </LocationIndicator2>
+                  </>
                 )}
-              </ProfileImage>
-              <ShopName theme={currentStyle}>{shopData.name || 'My Shop'}</ShopName>
-              <LocationIndicator2 theme={currentStyle}>
-              <button 
-                className="location-icon-btn"
-                onClick={handleLocationToCity}
-                disabled={isConvertingToCity}
-                title="Get region from current location"
-              >
-                {isConvertingToCity ? (
-                  <div className="updating-spinner" />
-                ) : (
-                  <Navigation size={16} />
-                )}
-              </button>
-              
-              <input
-                type="text"
-                className="location-input"
-                value={
-                  cityInputValue ? 
-                    cityInputValue :
-                    (effectiveLocation && isIPLocation ? 
-                      `${effectiveLocation.city}, ${effectiveLocation.region}` : 
-                      'Loading Location')
-                }
-                onChange={(e) => setCityInputValue(e.target.value)}
-                placeholder="Loading Location"
-                readOnly
-              />
+              </WelcomeSection>
+              </ContentOverlay>
+          </CanvasBackdrop>
 
-              {cityInputValue && (
-                <span className="location-type">
-                  {isIPLocation ? '(IP-based)' : '(Precise)'}
-                </span>
-              )}
-            </LocationIndicator2>
-            </ProfileSection>         
-              
-          </>
-        ) : (
-          <>
-
-            <h1>KALKODE</h1>
-            <p>Neigborhood Marketplace.</p>
-
+          
             
-        
-            <ActionButtonContainer>
-              <ActionButton theme={currentStyle} onClick={handleOpenShop}>
-                Open Up Shop
-              </ActionButton>
-              <ActionButton 
+
+          {/* NEW: Bottom Content Area */}
+            {/* Tab Buttons inside the border frame */}
+            <TabContainer>
+              <Tab 
                 theme={currentStyle}
-                onClick={handleLogin}
-                variant="outline"
+                active={activeTab === 'featured'} 
+                onClick={() => setActiveTab('featured')}
               >
-                Sign In
-              </ActionButton>
-            </ActionButtonContainer>
-
-            <LocationIndicator2 theme={currentStyle}>
-              <button 
-                className="location-icon-btn"
-                onClick={handleLocationToCity}
-                disabled={isConvertingToCity}
-                title="Get region from current location"
+                <Package size={16} />
+                Products
+              </Tab>
+              <Tab
+                theme={currentStyle} 
+                active={activeTab === 'services'} 
+                onClick={() => setActiveTab('services')}
               >
-                {isConvertingToCity ? (
-                  <div className="updating-spinner" />
-                ) : (
-                  <Navigation size={16} />
-                )}
-              </button>
-              
-              <input
-                type="text"
-                className="location-input"
-                value={
-                  cityInputValue ? 
-                    cityInputValue :
-                    (effectiveLocation && isIPLocation ? 
-                      `${effectiveLocation.city}, ${effectiveLocation.region}` : 
-                      'Loading Location')
-                }
-                onChange={(e) => setCityInputValue(e.target.value)}
-                placeholder="Loading Location"
-                readOnly
-              />
-              
-              {cityInputValue && (
-                <span className="location-type">
-                  {isIPLocation ? '(IP-based)' : '(Precise)'}
-                </span>
-              )}
-            </LocationIndicator2>
-          </>
-        )}
-      </WelcomeSection>
+                <CogIcon  size={16} />
+                Services
+              </Tab>
+              <Tab
+                theme={currentStyle} 
+                active={activeTab === 'media'} 
+                onClick={() => setActiveTab('media')}
+              >
+                <Film size={16} />
+                Media
+              </Tab>
+            </TabContainer>
+            {/* NEW: Section Separator */}
+          <SectionSeparator theme={currentStyle} />
 
-        <TabContainer>
-          <Tab 
-            theme={currentStyle}
-            active={activeTab === 'featured'} 
-            onClick={() => setActiveTab('featured')}
-          >
-            <Package size={16} />
-            Products
-          </Tab>
-          <Tab
-            theme={currentStyle} 
-            active={activeTab === 'services'} 
-            onClick={() => setActiveTab('services')}
-          >
-            <Navigation size={16} />
-            Services
-          </Tab>
-          <Tab
-            theme={currentStyle} 
-            active={activeTab === 'media'} 
-            onClick={() => setActiveTab('media')}
-          >
-            <Film size={16} />
-            Media
-          </Tab>
-        </TabContainer>
+          <BottomContent theme={currentStyle}>
+            
 
-        {/* Search container with Filter */}
+            {/* Search container with Filter */}
             <SearchContainer>
               <SearchInputWrapper>
                 <SearchInput
@@ -3503,264 +3666,219 @@ const hasActiveSearchResults = () => {
                   </SearchButton>
 
                   {(activeTab === 'featured' || activeTab === 'services') && (
-                    <SearchButton 
-                      onClick={() => setSortMenuOpen(!sortMenuOpen)}
-                      active={sortBy !== 'recent'}
-                      title="Filter & Sort"
-                    >
-                      <Filter size={18} />
-                    </SearchButton>
+                    <div className="sort-container" style={{ position: 'relative', display: 'inline-block' }}>
+                      <SearchButton 
+                        onClick={() => setSortMenuOpen(!sortMenuOpen)}
+                        active={sortBy !== 'recent'}
+                        title="Filter & Sort"
+                      >
+                        <Filter size={18} />
+                      </SearchButton>
+                      
+                      <SortDropdown theme={currentStyle} isOpen={sortMenuOpen}>
+                        <div style={{
+                          padding: '0.5rem 1rem 0.75rem',
+                          fontSize: '0.75rem',
+                          fontWeight: '700',
+                          textTransform: 'uppercase',
+                          letterSpacing: '1px',
+                          color: currentStyle?.colors?.accent || '#800000',
+                          borderBottom: `2px solid ${currentStyle?.colors?.accent || '#800000'}`,
+                          marginBottom: '0.75rem',
+                          fontFamily: currentStyle?.fonts?.heading || 'inherit'
+                        }}>
+                          Sort By
+                        </div>
+                      
+                        <SortOption 
+                          theme={currentStyle}
+                          active={sortBy === 'recent'}
+                          onClick={() => {
+                            if (!userLocation) {
+                              requestLocation();
+                              return;
+                            }
+                            setSortBy('recent');
+                            setSortMenuOpen(false);
+                            loadCategorizedItems();
+                          }}
+                        >
+                          <Package size={16} />
+                          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                            <span>Most Recent</span>
+                            <span style={{ 
+                              fontSize: '0.7rem', 
+                              opacity: 0.7,
+                              fontWeight: '400'
+                            }}>
+                              All items, newest first
+                            </span>
+                          </div>
+                          {!userLocation && (
+                            <span style={{ 
+                              fontSize: '0.65rem', 
+                              opacity: 0.6,
+                              marginLeft: 'auto',
+                              fontStyle: 'italic'
+                            }}>
+                              (needs location)
+                            </span>
+                          )}
+                        </SortOption>
+                        
+                        <SortOption 
+                          theme={currentStyle}
+                          active={sortBy === 'proximity'}
+                          onClick={() => {
+                            if (!userLocation) {
+                              requestLocation();
+                            }
+                            setSortBy('proximity');
+                            setSortMenuOpen(false);
+                            loadCategorizedItems();
+                          }}
+                        >
+                          <Navigation size={16} />
+                          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                            <span>Closest First</span>
+                            <span style={{ 
+                              fontSize: '0.7rem', 
+                              opacity: 0.7,
+                              fontWeight: '400'
+                            }}>
+                              All items by distance
+                            </span>
+                          </div>
+                          {!userLocation && (
+                            <span style={{ 
+                              fontSize: '0.65rem', 
+                              opacity: 0.6,
+                              marginLeft: 'auto',
+                              fontStyle: 'italic'
+                            }}>
+                              (needs location)
+                            </span>
+                          )}
+                        </SortOption>
+                        
+                        <SortOption 
+                          theme={currentStyle}
+                          active={sortBy === 'price-low'}
+                          onClick={() => {
+                            if (!userLocation) {
+                              requestLocation();
+                              return;
+                            }
+                            setSortBy('price-low');
+                            setSortMenuOpen(false);
+                            loadCategorizedItems();
+                          }}
+                        >
+                          <span style={{ fontSize: '1rem', fontWeight: '600' }}>$</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                            <span>Price: Low to High</span>
+                            <span style={{ 
+                              fontSize: '0.7rem', 
+                              opacity: 0.7,
+                              fontWeight: '400'
+                            }}>
+                              All items by price
+                            </span>
+                          </div>
+                          {!userLocation && (
+                            <span style={{ 
+                              fontSize: '0.65rem', 
+                              opacity: 0.6,
+                              marginLeft: 'auto',
+                              fontStyle: 'italic'
+                            }}>
+                              (needs location)
+                            </span>
+                          )}
+                        </SortOption>
+                        
+                        <SortOption 
+                          theme={currentStyle}
+                          active={sortBy === 'price-high'}
+                          onClick={() => {
+                            if (!userLocation) {
+                              requestLocation();
+                              return;
+                            }
+                            setSortBy('price-high');
+                            setSortMenuOpen(false);
+                            loadCategorizedItems();
+                          }}
+                        >
+                          <span style={{ fontSize: '1rem', fontWeight: '600' }}>$$$</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                            <span>Price: High to Low</span>
+                            <span style={{ 
+                              fontSize: '0.7rem', 
+                              opacity: 0.7,
+                              fontWeight: '400'
+                            }}>
+                              All items by price
+                            </span>
+                          </div>
+                          {!userLocation && (
+                            <span style={{ 
+                              fontSize: '0.65rem', 
+                              opacity: 0.6,
+                              marginLeft: 'auto',
+                              fontStyle: 'italic'
+                            }}>
+                              (needs location)
+                            </span>
+                          )}
+                        </SortOption>
+                      </SortDropdown>
+                    </div>
                   )}
                 </SearchButtonGroup>
               </SearchInputWrapper>
-                
-              {/* Keep SortDropdown positioned relative to SearchContainer */}
-              <SortContainer className="sort-container" style={{ position: 'static' }}>
-                <SortDropdown theme={currentStyle} isOpen={sortMenuOpen}>
-                                <div style={{
-                                  padding: '0.5rem 1rem 0.75rem',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '700',
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '1px',
-                                  color: currentStyle?.colors?.accent || '#800000',
-                                  borderBottom: `2px solid ${currentStyle?.colors?.accent || '#800000'}`,
-                                  marginBottom: '0.75rem',
-                                  fontFamily: currentStyle?.fonts?.heading || 'inherit'
-                                }}>
-                                  Sort By
-                                </div>
-                              
-                                <SortOption 
-                                  theme={currentStyle}
-                                  active={sortBy === 'recent'}
-                                  onClick={() => {
-                                    if (!userLocation) {
-                                      requestLocation();
-                                      return;
-                                    }
-                                    setSortBy('recent');
-                                    setSortMenuOpen(false);
-                                    loadCategorizedItems();
-                                  }}
-                                >
-                                  <Package size={16} />
-                                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                    <span>Most Recent</span>
-                                    <span style={{ 
-                                      fontSize: '0.7rem', 
-                                      opacity: 0.7,
-                                      fontWeight: '400'
-                                    }}>
-                                      All items, newest first
-                                    </span>
-                                  </div>
-                                  {!userLocation && (
-                                    <span style={{ 
-                                      fontSize: '0.65rem', 
-                                      opacity: 0.6,
-                                      marginLeft: 'auto',
-                                      fontStyle: 'italic'
-                                    }}>
-                                      (needs location)
-                                    </span>
-                                  )}
-                                </SortOption>
-                                
-                                <SortOption 
-                                  theme={currentStyle}
-                                  active={sortBy === 'proximity'}
-                                  onClick={() => {
-                                    if (!userLocation) {
-                                      requestLocation();
-                                    }
-                                    setSortBy('proximity');
-                                    setSortMenuOpen(false);
-                                    loadCategorizedItems();
-                                  }}
-                                >
-                                  <Navigation size={16} />
-                                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                    <span>Closest First</span>
-                                    <span style={{ 
-                                      fontSize: '0.7rem', 
-                                      opacity: 0.7,
-                                      fontWeight: '400'
-                                    }}>
-                                      All items by distance
-                                    </span>
-                                  </div>
-                                  {!userLocation && (
-                                    <span style={{ 
-                                      fontSize: '0.65rem', 
-                                      opacity: 0.6,
-                                      marginLeft: 'auto',
-                                      fontStyle: 'italic'
-                                    }}>
-                                      (needs location)
-                                    </span>
-                                  )}
-                                </SortOption>
-                                
-                                <SortOption 
-                                  theme={currentStyle}
-                                  active={sortBy === 'price-low'}
-                                  onClick={() => {
-                                    if (!userLocation) {
-                                      requestLocation();
-                                      return;
-                                    }
-                                    setSortBy('price-low');
-                                    setSortMenuOpen(false);
-                                    loadCategorizedItems();
-                                  }}
-                                >
-                                  <span style={{ fontSize: '1rem', fontWeight: '600' }}>$</span>
-                                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                    <span>Price: Low to High</span>
-                                    <span style={{ 
-                                      fontSize: '0.7rem', 
-                                      opacity: 0.7,
-                                      fontWeight: '400'
-                                    }}>
-                                      All items by price
-                                    </span>
-                                  </div>
-                                  {!userLocation && (
-                                    <span style={{ 
-                                      fontSize: '0.65rem', 
-                                      opacity: 0.6,
-                                      marginLeft: 'auto',
-                                      fontStyle: 'italic'
-                                    }}>
-                                      (needs location)
-                                    </span>
-                                  )}
-                                </SortOption>
-                                
-                                <SortOption 
-                                  theme={currentStyle}
-                                  active={sortBy === 'price-high'}
-                                  onClick={() => {
-                                    if (!userLocation) {
-                                      requestLocation();
-                                      return;
-                                    }
-                                    setSortBy('price-high');
-                                    setSortMenuOpen(false);
-                                    loadCategorizedItems();
-                                  }}
-                                >
-                                  <span style={{ fontSize: '1rem', fontWeight: '600' }}>$$$</span>
-                                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                    <span>Price: High to Low</span>
-                                    <span style={{ 
-                                      fontSize: '0.7rem', 
-                                      opacity: 0.7,
-                                      fontWeight: '400'
-                                    }}>
-                                      All items by price
-                                    </span>
-                                  </div>
-                                  {!userLocation && (
-                                    <span style={{ 
-                                      fontSize: '0.65rem', 
-                                      opacity: 0.6,
-                                      marginLeft: 'auto',
-                                      fontStyle: 'italic'
-                                    }}>
-                                      (needs location)
-                                    </span>
-                                  )}
-                                </SortOption>
-                              </SortDropdown>
-              </SortContainer>
             </SearchContainer>
 
-
-        {activeTab === 'featured' && (
-        <>
-          {hasProductSearchResults ? (
-            <div>
-              <CategoryHeader theme={currentStyle}>
-                <h2>Search Results ({productSearchResults.length})</h2>
-              </CategoryHeader>
-          
-              {productSearchResults.length === 0 ? (
-                <EmptyGridMessage>
-                  <h3>No Items Found</h3>
-                  <p>No items match your search criteria.</p>
-                </EmptyGridMessage>
-              ) : (
-                <GridContainer>
-                  {productSearchResults.map(item => (
-                    <FeaturedItem 
-                      key={`search-${item.shopId}-${item.id}`}
-                      item={item}
-                      theme={currentStyle}
-                      onItemClick={handleItemClick}
-                      showDistance={true}
-                    />
-                  ))}
-                </GridContainer>
-              )}
-            </div>
-          ) : (
-              <div>
-                {/* Featured Items */}
-                <CategoryHeader theme={currentStyle}>
-                  <h2>Featured Items</h2>
-                  <span className="view-all">{featuredItems.length} items</span>
-                </CategoryHeader>
-          
-                <CategoryGridWrapper>
-                  <div className="desktop-grid" style={{ display: 'contents' }}>
-                    {featuredItems.map(item => (
-                      <div key={`featured-${item.shopId}-${item.id}`} className="desktop-only" 
-                           style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
-                        <FeaturedItem
-                          item={item}
-                          theme={currentStyle}
-                          onItemClick={handleItemClick}
-                          showDistance={true}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {/* ✅ CRITICAL: Pass itemCount prop */}
-                  <CategoryScrollableGrid 
-                    theme={currentStyle} 
-                    className="mobile-only"
-                    itemCount={featuredItems.length}
-                  >
-                    {featuredItems.map(item => (
-                      <FeaturedItem
-                        key={`featured-mobile-${item.shopId}-${item.id}`}
-                        item={item}
-                        theme={currentStyle}
-                        onItemClick={handleItemClick}
-                        showDistance={true}
-                      />
-                    ))}
-                  </CategoryScrollableGrid>
-                </CategoryGridWrapper>
-                  
-                {/* Category Sections - ✅ ALSO FIX HERE */}
-                {Object.entries(categories).map(([categoryName, items]) => {
-                  if (items.length === 0) return null;
+            {/* Tab Content */}
+            {activeTab === 'featured' && (
+              <>
+                {hasProductSearchResults ? (
+                  <div>
+                    <CategoryHeader theme={currentStyle}>
+                      <h2>Search Results ({productSearchResults.length})</h2>
+                    </CategoryHeader>
                 
-                  return (
-                    <div key={categoryName} style={{ marginTop: '3rem' }}>
+                    {productSearchResults.length === 0 ? (
+                      <EmptyGridMessage>
+                        <h3>No Items Found</h3>
+                        <p>No items match your search criteria.</p>
+                      </EmptyGridMessage>
+                    ) : (
+                      <GridContainer>
+                        {productSearchResults.map(item => (
+                          <FeaturedItem 
+                            key={`search-${item.shopId}-${item.id}`}
+                            item={item}
+                            theme={currentStyle}
+                            onItemClick={handleItemClick}
+                            showDistance={true}
+                          />
+                        ))}
+                      </GridContainer>
+                    )}
+                  </div>
+                ) : (
+                    <div>
+                      {/* Featured Items */}
                       <CategoryHeader theme={currentStyle}>
-                        <h2>{categoryName}</h2>
-                        <span className="view-all">{items.length} items</span>
+                        <h2>Featured Items</h2>
+                        <span className="view-all">{featuredItems.length} items</span>
                       </CategoryHeader>
-                  
+                
                       <CategoryGridWrapper>
                         <div className="desktop-grid" style={{ display: 'contents' }}>
-                          {items.map(item => (
-                            <div key={`${categoryName}-${item.shopId}-${item.id}`} className="desktop-only"
+                          {featuredItems.map(item => (
+                            <div key={`featured-${item.shopId}-${item.id}`} className="desktop-only" 
                                  style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
                               <FeaturedItem
                                 item={item}
@@ -3772,15 +3890,14 @@ const hasActiveSearchResults = () => {
                           ))}
                         </div>
                         
-                        {/* ✅ CRITICAL: Pass itemCount={items.length} */}
                         <CategoryScrollableGrid 
                           theme={currentStyle} 
-                          className="mobile-only" 
-                          itemCount={items.length}
+                          className="mobile-only"
+                          itemCount={featuredItems.length}
                         >
-                          {items.map(item => (
+                          {featuredItems.map(item => (
                             <FeaturedItem
-                              key={`${categoryName}-mobile-${item.shopId}-${item.id}`}
+                              key={`featured-mobile-${item.shopId}-${item.id}`}
                               item={item}
                               theme={currentStyle}
                               onItemClick={handleItemClick}
@@ -3789,97 +3906,96 @@ const hasActiveSearchResults = () => {
                           ))}
                         </CategoryScrollableGrid>
                       </CategoryGridWrapper>
+                        
+                      {/* Category Sections */}
+                      {Object.entries(categories).map(([categoryName, items]) => {
+                        if (items.length === 0) return null;
+                      
+                        return (
+                          <div key={categoryName} style={{ marginTop: '3rem' }}>
+                            <CategoryHeader theme={currentStyle}>
+                              <h2>{categoryName}</h2>
+                              <span className="view-all">{items.length} items</span>
+                            </CategoryHeader>
+                        
+                            <CategoryGridWrapper>
+                              <div className="desktop-grid" style={{ display: 'contents' }}>
+                                {items.map(item => (
+                                  <div key={`${categoryName}-${item.shopId}-${item.id}`} className="desktop-only"
+                                       style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
+                                    <FeaturedItem
+                                      item={item}
+                                      theme={currentStyle}
+                                      onItemClick={handleItemClick}
+                                      showDistance={true}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                              
+                              <CategoryScrollableGrid 
+                                theme={currentStyle} 
+                                className="mobile-only" 
+                                itemCount={items.length}
+                              >
+                                {items.map(item => (
+                                  <FeaturedItem
+                                    key={`${categoryName}-mobile-${item.shopId}-${item.id}`}
+                                    item={item}
+                                    theme={currentStyle}
+                                    onItemClick={handleItemClick}
+                                    showDistance={true}
+                                  />
+                                ))}
+                              </CategoryScrollableGrid>
+                            </CategoryGridWrapper>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
+                  )}
+              </>
             )}
-        </>
-      )}
-      
-      {/* ✅ SAME FIX FOR SERVICES TAB */}
-      {activeTab === 'services' && (
-        <>
-          {hasServiceSearchResults ? (
-            <div>
-              <CategoryHeader theme={currentStyle}>
-                <h2>Search Results ({serviceSearchResults.length})</h2>
-              </CategoryHeader>
-          
-              {serviceSearchResults.length === 0 ? (
-                <EmptyGridMessage>
-                  <h3>No Services Found</h3>
-                  <p>No services match your search criteria.</p>
-                </EmptyGridMessage>
-              ) : (
-                <GridContainer>
-                  {serviceSearchResults.map(service => (
-                    <FeaturedItem 
-                      key={`search-${service.shopId}-${service.id}`}
-                      item={service}
-                      theme={currentStyle}
-                      onItemClick={handleItemClick}
-                      showDistance={true}
-                    />
-                  ))}
-                </GridContainer>
-              )}
-            </div>
-          ) : (
-              <div>
-                <CategoryHeader theme={currentStyle}>
-                  <h2>Featured Services</h2>
-                  <span className="view-all">{featuredServices.length} services</span>
-                </CategoryHeader>
             
-                <CategoryGridWrapper>
-                  <div className="desktop-grid" style={{ display: 'contents' }}>
-                    {featuredServices.map(service => (
-                      <div key={`featured-${service.shopId}-${service.id}`} className="desktop-only" 
-                           style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
-                        <FeaturedItem
-                          item={{ ...service, price: `${service.price}`, isService: true }}
-                          theme={currentStyle}
-                          onItemClick={handleItemClick}
-                          showDistance={true}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {/* ✅ Pass itemCount */}
-                  <CategoryScrollableGrid 
-                    theme={currentStyle} 
-                    className="mobile-only"
-                    itemCount={featuredServices.length}
-                  >
-                    {featuredServices.map(service => (
-                      <FeaturedItem
-                        key={`featured-mobile-${service.shopId}-${service.id}`}
-                        item={{ ...service, price: `${service.price}`, isService: true }}
-                        theme={currentStyle}
-                        onItemClick={handleItemClick}
-                        showDistance={true}
-                      />
-                    ))}
-                  </CategoryScrollableGrid>
-                </CategoryGridWrapper>
-                  
-                {/* Service Categories */}
-                {Object.entries(serviceCategories).map(([categoryName, services]) => {
-                  if (services.length === 0) return null;
+            {/* Services Tab */}
+            {activeTab === 'services' && (
+              <>
+                {hasServiceSearchResults ? (
+                  <div>
+                    <CategoryHeader theme={currentStyle}>
+                      <h2>Search Results ({serviceSearchResults.length})</h2>
+                    </CategoryHeader>
                 
-                  return (
-                    <div key={categoryName} style={{ marginTop: '3rem' }}>
+                    {serviceSearchResults.length === 0 ? (
+                      <EmptyGridMessage>
+                        <h3>No Services Found</h3>
+                        <p>No services match your search criteria.</p>
+                      </EmptyGridMessage>
+                    ) : (
+                      <GridContainer>
+                        {serviceSearchResults.map(service => (
+                          <FeaturedItem 
+                            key={`search-${service.shopId}-${service.id}`}
+                            item={service}
+                            theme={currentStyle}
+                            onItemClick={handleItemClick}
+                            showDistance={true}
+                          />
+                        ))}
+                      </GridContainer>
+                    )}
+                  </div>
+                ) : (
+                    <div>
                       <CategoryHeader theme={currentStyle}>
-                        <h2>{categoryName}</h2>
-                        <span className="view-all">{services.length} services</span>
+                        <h2>Featured Services</h2>
+                        <span className="view-all">{featuredServices.length} services</span>
                       </CategoryHeader>
                   
                       <CategoryGridWrapper>
                         <div className="desktop-grid" style={{ display: 'contents' }}>
-                          {services.map(service => (
-                            <div key={`${categoryName}-${service.shopId}-${service.id}`} className="desktop-only"
+                          {featuredServices.map(service => (
+                            <div key={`featured-${service.shopId}-${service.id}`} className="desktop-only" 
                                  style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
                               <FeaturedItem
                                 item={{ ...service, price: `${service.price}`, isService: true }}
@@ -3891,15 +4007,14 @@ const hasActiveSearchResults = () => {
                           ))}
                         </div>
                         
-                        {/* ✅ Pass itemCount */}
                         <CategoryScrollableGrid 
                           theme={currentStyle} 
-                          className="mobile-only" 
-                          itemCount={services.length}
+                          className="mobile-only"
+                          itemCount={featuredServices.length}
                         >
-                          {services.map(service => (
+                          {featuredServices.map(service => (
                             <FeaturedItem
-                              key={`${categoryName}-mobile-${service.shopId}-${service.id}`}
+                              key={`featured-mobile-${service.shopId}-${service.id}`}
                               item={{ ...service, price: `${service.price}`, isService: true }}
                               theme={currentStyle}
                               onItemClick={handleItemClick}
@@ -3908,21 +4023,65 @@ const hasActiveSearchResults = () => {
                           ))}
                         </CategoryScrollableGrid>
                       </CategoryGridWrapper>
+                        
+                      {/* Service Categories */}
+                      {Object.entries(serviceCategories).map(([categoryName, services]) => {
+                        if (services.length === 0) return null;
+                      
+                        return (
+                          <div key={categoryName} style={{ marginTop: '3rem' }}>
+                            <CategoryHeader theme={currentStyle}>
+                              <h2>{categoryName}</h2>
+                              <span className="view-all">{services.length} services</span>
+                            </CategoryHeader>
+                        
+                            <CategoryGridWrapper>
+                              <div className="desktop-grid" style={{ display: 'contents' }}>
+                                {services.map(service => (
+                                  <div key={`${categoryName}-${service.shopId}-${service.id}`} className="desktop-only"
+                                       style={{ display: window.innerWidth > 768 ? 'block' : 'none' }}>
+                                    <FeaturedItem
+                                      item={{ ...service, price: `${service.price}`, isService: true }}
+                                      theme={currentStyle}
+                                      onItemClick={handleItemClick}
+                                      showDistance={true}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                              
+                              <CategoryScrollableGrid 
+                                theme={currentStyle} 
+                                className="mobile-only" 
+                                itemCount={services.length}
+                              >
+                                {services.map(service => (
+                                  <FeaturedItem
+                                    key={`${categoryName}-mobile-${service.shopId}-${service.id}`}
+                                    item={{ ...service, price: `${service.price}`, isService: true }}
+                                    theme={currentStyle}
+                                    onItemClick={handleItemClick}
+                                    showDistance={true}
+                                  />
+                                ))}
+                              </CategoryScrollableGrid>
+                            </CategoryGridWrapper>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
+                  )}
+              </>
             )}
-        </>
-      )}
 
-        {/* Media Tab */}
-        {activeTab === 'media' && (
-          <EmptyGridMessage>
-            <h3>Featured Media</h3>
-            <p>Coming soon! Discover videos and content from local creators.</p>
-          </EmptyGridMessage>
-        )}
+            {/* Media Tab */}
+            {activeTab === 'media' && (
+              <EmptyGridMessage>
+                <h3>Featured Media</h3>
+                <p>Coming soon! Discover videos and content from local creators.</p>
+              </EmptyGridMessage>
+            )}
+          </BottomContent>
       </MainContent>
 
       {/* Style Indicator Only */}
@@ -3931,8 +4090,6 @@ const hasActiveSearchResults = () => {
         <span>{currentStyle.name}</span>
       </StyleIndicator>
 
-      {/* Zoomed Item View - Updated to match ShopPublicView */}
-      {/* Zoomed Item View - 75/25 Split */}
       {/* Zoomed Item View - 70/30 Split with 2:5 Card */}
       {zoomedItem && (
         <ZoomOverlay onClick={handleCloseZoom} theme={currentStyle}>
@@ -4082,7 +4239,7 @@ const hasActiveSearchResults = () => {
                   </>
                 )}
                 
-                {/* UPDATE: Stock/Slots Status in zoomed view */}
+                {/* Stock/Slots Status in zoomed view */}
                 {zoomedItem.isService ? (
                   // For services, show slots availability
                   parseInt(zoomedItem.slots) !== undefined && (

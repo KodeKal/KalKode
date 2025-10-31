@@ -102,7 +102,7 @@ export const WELCOME_STYLES = {
     colors: {
       background: "#121212",
       text: "#F5F3FF",
-      accent: "#8B5CF6",
+      accent: "#c3bfccff",
       accentGradient: "linear-gradient(45deg, #8B5CF6, #6D28D9)",
       surface: "rgba(139, 92, 246, 0.2)"
     },
@@ -261,8 +261,8 @@ export const WELCOME_STYLES = {
       background: "#1A1F3A",
       text: "#FFFFFF",
       accent: "#FF4757",
-      accentGradient: "linear-gradient(135deg, #FF4757, #2F3542, #F1F2F6)",
-      surface: "rgba(255, 71, 87, 0.18)",
+      accentGradient: "linear-gradient(135deg, #f1d0d3ff, #072462ff, #9dace8ff)",
+      surface: "rgba(130, 10, 20, 0.68)",
       headerBg: "rgba(26, 31, 58, 0.95)",
       tabActiveBg: "rgba(255, 71, 87, 0.25)",
       tabBorder: "#FF4757"
@@ -334,7 +334,7 @@ export const WELCOME_STYLES = {
     colors: {
       background: "#0D0D0D",
       text: "#FFFFFF",
-      accent: "#5d0185ff",
+      accent: "#d0c5d4ff",
       accentGradient: "linear-gradient(45deg, #46049cff, #FFA500, #FF6347)",
       surface: "rgba(255, 215, 0, 0.3)"
     },
@@ -398,8 +398,8 @@ export const WELCOME_STYLES = {
     colors: {
       background: "#0b1322ff",
       text: "#F0F8FF",
-      accent: "#FF3366",
-      accentGradient: "linear-gradient(135deg, #FF3366, #FF6B35, #FFEB3B)",
+      accent: "#decfd3ff",
+      accentGradient: "linear-gradient(135deg, #1a1819ff, #FF6B35, #FFEB3B)",
       surface: "rgba(255, 51, 102, 0.2)",
       headerBg: "rgba(13, 20, 33, 0.95)",
       tabActiveBg: "rgba(255, 51, 102, 0.25)",
@@ -456,7 +456,7 @@ export const WELCOME_STYLES = {
     colors: {
       background: "#0F0F23",
       text: "#00FFFF",
-      accent: "#6e6e14ff",
+      accent: "#cece0fff",
       accentGradient: "linear-gradient(45deg, #fcfc04ff, #FF00FF)",
       surface: "rgba(255, 255, 0, 0.2)"
     },
@@ -506,7 +506,7 @@ export const WELCOME_STYLES = {
       text: "#F0F8FF",
       accent: "#8A2BE2",
       accentGradient: "linear-gradient(45deg, #8A2BE2, #DA70D6, #FF1493)",
-      surface: "rgba(138, 43, 226, 0.3)"
+      surface: "rgba(204, 172, 235, 0.3)"
     },
     fonts: {
       heading: "'Exo 2', sans-serif",
