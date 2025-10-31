@@ -3289,12 +3289,7 @@ const hasActiveSearchResults = () => {
     }
   }, [user, isAuthenticated]);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      const randomIndex = Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length);
-      setMotivationalMessage(MOTIVATIONAL_MESSAGES[randomIndex]);
-    }
-  }, [isAuthenticated]);
+  
 
   useEffect(() => {
     const pinnedStyleId = localStorage.getItem('pinnedStyleId');
