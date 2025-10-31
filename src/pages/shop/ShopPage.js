@@ -2402,15 +2402,17 @@ const ShopPage = () => {
     sessionStorage.setItem('shopPageActiveTab', activeTab);
   }, [activeTab]);
 
-// Around line 1400 - REPLACE renderHomeView function
 const renderHomeView = () => {
+  // Use the saved homeSections from shopData
+  const homeSections = shopData?.homeSections || [];
+  
   const renderSectionWithControls = (section, index) => {
     const sectionProps = {
-      config: section.config,
+      config: section.config,  // Use the config object from template structure
       theme: shopData?.theme,
       shopItems: shopData?.items,
       editable: true,
-      onUpdate: (newConfig) => handleUpdateSection(section.id, newConfig)
+      onUpdate: (newConfig) => handleUpdateSection(section.id, newConfig),
     };
 
     let SectionComponent;
@@ -2500,7 +2502,7 @@ const renderHomeView = () => {
           </SectionControlButton>
         </SectionControls>
 
-        <SectionComponent {...sectionProps} />
+        {SectionComponent && <SectionComponent {...sectionProps} />}
       </SectionWrapper>
     );
   };
@@ -2521,14 +2523,6 @@ const renderHomeView = () => {
             opacity: 0.6,
             animation: 'fadeIn 0.5s ease-out'
           }}>
-            <style>
-              {`
-                @keyframes fadeIn {
-                  from { opacity: 0; }
-                  to { opacity: 0.6; }
-                }
-              `}
-            </style>
             <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>
               No sections yet
             </p>
@@ -2542,7 +2536,7 @@ const renderHomeView = () => {
             .map((section, index) => renderSectionWithControls(section, index))
         )}
 
-        {/* Add Section Card with animation */}
+        {/* Add Section Card */}
         <AddSectionCard
           theme={shopData?.theme}
           onClick={() => setShowSectionTypeModal(true)}
@@ -2572,21 +2566,6 @@ const renderHomeView = () => {
             animation: 'modalSlideIn 0.3s ease-out forwards'
           }}
         >
-          <style>
-            {`
-              @keyframes modalSlideIn {
-                from {
-                  opacity: 0;
-                  transform: translate(-50%, -45%);
-                }
-                to {
-                  opacity: 1;
-                  transform: translate(-50%, -50%);
-                }
-              }
-            `}
-          </style>
-          
           <h3 style={{
             margin: '0 0 1.5rem 0',
             color: shopData?.theme?.colors?.accent,
@@ -3064,24 +3043,78 @@ useEffect(() => {
 }, [navigate]);
 
 // UPDATE handleAddSection to mark as changed (around line 1400)
+// Update handleAddSection to match template structure
 const handleAddSection = (sectionType) => {
   const newSection = {
     id: `section-${Date.now()}`,
     type: sectionType,
     order: homeSections.length,
-    config: getDefaultSectionConfig(sectionType)
+    config: getDefaultConfigForSection(sectionType)
   };
   
-  setHomeSections([...homeSections, newSection]);
-  // Changes will be detected automatically by the useEffect
+  const updatedSections = [...homeSections, newSection];
+  setHomeSections(updatedSections);
+  // Update shopData or save to backend
 };
 
-// UPDATE handleUpdateSection to mark as changed (around line 1450)
+// Helper function for default configs
+const getDefaultConfigForSection = (sectionType) => {
+  const defaults = {
+    'hero-banner': {
+      headline: 'Welcome to Your Shop',
+      subtitle: 'Discover amazing products',
+      backgroundImage: null,
+      height: '70vh'
+    },
+    'mission-statement': {
+      title: 'Our Mission',
+      content: 'We are dedicated to providing exceptional products and outstanding customer service.'
+    },
+    'featured-items': {
+      title: 'Featured Products',
+      itemCount: 4
+    },
+    'photo-gallery': {
+      title: 'Shop Gallery',
+      images: []
+    },
+    'text-block': {
+      title: '',
+      content: '',
+      alignment: 'left'
+    },
+    'services-grid': {
+      title: 'Our Services',
+      services: []
+    },
+    'calendar-events': {
+      title: 'Upcoming Events',
+      events: []
+    },
+    'contact': {
+      title: 'Get In Touch',
+      email: 'contact@example.com',
+      phone: '(555) 123-4567',
+      address: '123 Main St, City, State'
+    },
+    'featured-video': {
+      title: 'Featured Video',
+      youtubeUrl: ''
+    }
+  };
+  
+  return defaults[sectionType] || {};
+};
+
+// Update section update handler
 const handleUpdateSection = (sectionId, newConfig) => {
-  setHomeSections(homeSections.map(section =>
-    section.id === sectionId ? { ...section, config: newConfig } : section
-  ));
-  // Changes will be detected automatically by the useEffect
+  const updatedSections = homeSections.map(section =>
+    section.id === sectionId
+      ? { ...section, config: { ...section.config, ...newConfig } }
+      : section
+  );
+  setHomeSections(updatedSections);
+  // Update shopData or save to backend
 };
 
 // UPDATE handleRemoveSection to mark as changed (around line 1470)

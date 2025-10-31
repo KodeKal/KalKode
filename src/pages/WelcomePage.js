@@ -26,10 +26,41 @@ const LOCATION_TIMESTAMP_KEY = 'kalkode_location_timestamp';
 const LOCATION_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
 const TREASURE_BACKGROUNDS = [
-  'https://images.unsplash.com/photo-1710552524607-a34efe984194?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fHRyZWFzdXJlfGVufDB8fDB8fHww&auto=format&fit=crop&q=60&w=900',
-  'https://images.unsplash.com/photo-1608924066819-930edc42986a?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fHRyZWFzdXJlJTIwY2hlc3R8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&q=60&w=900'
 ];
 
+// Canvas Backdrop for Welcome Section - Hidden on mobile
+const CanvasBackdrop = styled.div`
+  position: relative;
+  width: 100%;
+  min-height: 400px;
+  background-image: url(${props => props.bgImage});
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  
+  /* Hide on mobile, show only on desktop */
+  @media (max-width: 768px) {
+    display: none;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      135deg,
+      ${props => `${props.theme?.colors?.background}E6` || 'rgba(0, 0, 0, 0.9)'} 0%,
+      ${props => `${props.theme?.colors?.background}80` || 'rgba(0, 0, 0, 0.5)'} 50%,
+      ${props => `${props.theme?.colors?.background}E6` || 'rgba(0, 0, 0, 0.9)'} 100%
+    );
+    z-index: 1;
+  }
+`;
 
 // Mobile-first styled components
 const PageContainer = styled.div.attrs({ className: 'page-container' })`
@@ -47,7 +78,6 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
     height: 100%;
     background: ${props => props.theme?.colors?.backgroundGradient || 'radial-gradient(circle at 20% 30%, rgba(128, 0, 0, 0.2) 0%, transparent 50%)'};
     opacity: 0.8;
-    animation: ${props => props.theme?.animations?.backgroundAnimation || 'galaxySwirl 30s linear infinite'};
   }
 
   /* Simplified stars for mobile performance */
@@ -82,10 +112,6 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
     }
   }
 
-  @keyframes galaxySwirl {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
 `;
 
 // Simplified header with just logo and right-side controls
@@ -351,54 +377,194 @@ const BorderFrame = styled.div`
   }
 `;
 
-// Canvas Backdrop for Welcome Section
-const CanvasBackdrop = styled.div`
-  position: relative;
-  width: 100%;
-  min-height: 400px;
-  background-image: url(${props => props.bgImage});
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  border-radius: 16px 16px 0 0;
-  overflow: hidden;
-  
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-      135deg,
-      ${props => `${props.theme?.colors?.background}E6` || 'rgba(0, 0, 0, 0.9)'} 0%,
-      ${props => `${props.theme?.colors?.background}80` || 'rgba(0, 0, 0, 0.5)'} 50%,
-      ${props => `${props.theme?.colors?.background}E6` || 'rgba(0, 0, 0, 0.9)'} 100%
-    );
-    z-index: 1;
-  }
-`;
-
 // Content Overlay for Welcome Section
 const ContentOverlay = styled.div`
   position: relative;
   z-index: 2;
   padding: 3rem 2rem;
   text-align: center;
+  
+  /* Mobile styling */
+  @media (max-width: 768px) {
+    padding: 2rem 1rem;
+    background: transparent;
+  }
 `;
 
-// Update the SectionSeparator styled component
+const WelcomeSection = styled.section`
+  text-align: center;
+  margin: 0;
+  position: relative;
+  
+  /* Mobile: Remove any special styling */
+  @media (max-width: 768px) {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    /* ADD: Half inch space above KALKODE */
+    padding-top: 0.5in;
+  }
+  
+  // Keep only the text styling
+  h1 {
+    font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
+    font-size: 4.5rem;
+    margin-bottom: 1rem;
+    background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 30px ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
+    letter-spacing: 2px;
+    transform: ${props => props.theme?.id === 10 ? 'none' : 'skew(-5deg)'};
+    
+    /* Mobile font size */
+    @media (max-width: 768px) {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  p {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    max-width: 800px;
+    margin: 0 auto;
+    color: ${props => `${props.theme?.colors?.text}CC` || 'rgba(255, 255, 255, 0.8)'};
+    font-weight: 300;
+    font-family: ${props => props.theme?.fonts?.body || 'sans-serif'};
+    
+    /* Mobile styling */
+    @media (max-width: 768px) {
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+    }
+  }
+`;
+
+const SearchContainer = styled.div`
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 0.5rem;
+  box-sizing: border-box;
+  
+  /* Mobile: Adjust spacing */
+  @media (max-width: 768px) {
+    margin: 0.5rem auto;
+    padding: 0 0.75rem; /* Reduced padding */
+    width: 100%;
+  }
+  
+  @media (min-width: 600px) {
+    padding: 0;
+  }
+`;
+
+const GridContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding: 0 0.25rem;
+  
+  /* Mobile: Adjust for edge-to-edge */
+  @media (max-width: 768px) {
+    padding: 0 1rem; /* Add side padding for grid items */
+    gap: 0.5rem;
+  }
+  
+  /* ✅ ADD: Force consistent row heights */
+  grid-auto-rows: 1fr;
+  align-items: stretch;
+  
+  @media (min-width: 480px) {
+    gap: 1rem;
+    padding: 0;
+  }
+  
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 2rem;
+  }
+`;
+
+const Tab = styled.button`
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid ${props => props.active ? 
+    props.theme?.colors?.accent || '#800000' : 
+    'transparent'};
+  color: ${props => props.active ? 
+    props.theme?.colors?.accent || '#800000' : 
+    `${props.theme?.colors?.text}99` || 'rgba(255, 255, 255, 0.6)'};
+  padding: 0.6rem 1rem;
+  border-radius: 0;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: ${props => props.active ? '600' : '500'};
+  font-size: 0.8rem;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  
+  @media (min-width: 768px) {
+    padding: 0.8rem 1.5rem;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    gap: 0.5rem;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      color: ${props => props.theme?.colors?.accent || '#800000'};
+      border-bottom-color: ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.6)'};
+      transform: translateY(-1px);
+    }
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+    color: ${props => props.active ? 
+      props.theme?.colors?.accent || '#800000' : 
+      `${props.theme?.colors?.text}99` || 'rgba(255, 255, 255, 0.6)'};
+    
+    @media (min-width: 768px) {
+      width: 16px;
+      height: 16px;
+    }
+  }
+`;
+
 const SectionSeparator = styled.div`
   height: 3px;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    ${props => props.theme?.colors?.accent || '#800000'} 20%,
+    ${props => props.theme?.colors?.accent || '#800000'} 50%,
     transparent 100%
   );
   margin: 0;
   position: relative;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+  
   
   &::before, &::after {
     content: '';
@@ -421,54 +587,20 @@ const SectionSeparator = styled.div`
   }
 `;
 
-// Bottom Content Area
-const BottomContent = styled.div`
-  padding: 2rem;
-  background: ${props => `${props.theme?.colors?.background}CC` || 'rgba(0, 0, 0, 0.8)'};
-  border-radius: 0 0 16px 16px;
-`;
-
-// Update the WelcomeSection to remove its own styling and use the new structure
-const WelcomeSection = styled.section`
-  // Remove existing background and border styles
-  text-align: center;
-  margin: 0;
-  position: relative;
-  
-  // Keep only the text styling
-  h1 {
-    font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
-    font-size: 4.5rem;
-    margin-bottom: 1rem;
-    background: ${props => props.theme?.colors?.accentGradient || 'linear-gradient(45deg, #800000, #4A0404)'};
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0 0 30px ${props => `${props.theme?.colors?.accent}4D` || 'rgba(128, 0, 0, 0.3)'};
-    letter-spacing: 2px;
-    transform: ${props => props.theme?.id === 10 ? 'none' : 'skew(-5deg)'};
-  }
-
-  p {
-    font-size: 1.2rem;
-    line-height: 1.6;
-    max-width: 800px;
-    margin: 0 auto;
-    color: ${props => `${props.theme?.colors?.text}CC` || 'rgba(255, 255, 255, 0.8)'};
-    font-weight: 300;
-    font-family: ${props => props.theme?.fonts?.body || 'sans-serif'};
-  }
-`;
-
-// Improved mobile main content with better spacing
 const MainContent = styled.main`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 80px 1rem 100px 1rem;
+  padding: 80px 1rem 100px 1rem; /* ← Reduce this padding */
   position: relative;
   z-index: 1;
   
   @media (min-width: 768px) {
-    padding: 6rem 2rem 2rem 2rem;
+    padding: 6rem 2rem 2rem 2rem; /* ← Reduce this too */
+  }
+  
+  /* Mobile: Remove extra padding */
+  @media (max-width: 768px) {
+    padding: 60px 0.5rem 80px 0.5rem; /* ← And this */
   }
 `;
 
@@ -743,12 +875,38 @@ const ZoomHeader = styled.div`
   display: none; // Hide the header completely
 `;
 
-// Mobile-optimized profile section
 const ProfileSection = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   margin-bottom: 1.5rem;
+  
+  /* Mobile: Adjust spacing */
+  @media (max-width: 768px) {
+    margin-bottom: 1rem;
+  }
+`;
+
+// Mobile-friendly action buttons
+const ActionButtonContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 300px;
+  margin: 2rem auto;
+  
+  /* Mobile: Adjust spacing */
+  @media (max-width: 768px) {
+    margin: 1.5rem auto;
+    gap: 0.75rem;
+  }
+  
+  @media (min-width: 480px) {
+    flex-direction: row;
+    justify-content: center;
+    max-width: none;
+  }
 `;
 
 const ProfileImage = styled.div`
@@ -841,21 +999,6 @@ const ShopName = styled.h2`
   }
 `;
 
-// Mobile-friendly action buttons
-const ActionButtonContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 100%;
-  max-width: 300px;
-  margin: 2rem auto;
-  
-  @media (min-width: 480px) {
-    flex-direction: row;
-    justify-content: center;
-    max-width: none;
-  }
-`;
 
 const ActionButton = styled.button`
   background: ${props => props.variant === 'outline' ? 'transparent' : 
@@ -892,132 +1035,85 @@ const ActionButton = styled.button`
   }
 `;
 
-const TabContainer = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  margin: 2rem 0;
-  overflow-x: auto;
-  padding: 0.5rem 0;
-  -webkit-overflow-scrolling: touch;
-  
-  &::-webkit-scrollbar {
-    height: 4px;
-  }
-  
-  &::-webkit-scrollbar-track {
-    background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
-    border-radius: 10px;
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background: ${props => props.theme?.colors?.accent || '#800000'};
-    border-radius: 10px;
-  }
-  
-  @media (min-width: 768px) {
-    justify-content: center;
-    gap: 1rem;
-    overflow-x: visible;
-  }
-`;
 
-const Tab = styled.button`
-  background: transparent;
-  border: 1px solid ${props => props.active ? 
-    props.theme?.colors?.accent || '#800000' : 
-    `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
-  color: ${props => props.active ? 
-    props.theme?.colors?.accent || '#800000' : 
-    `${props.theme?.colors?.text}99` || 'rgba(255, 255, 255, 0.6)'};
-  padding: 0.6rem 1rem;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.3s;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: ${props => props.active ? '600' : '500'};
-  font-size: 0.8rem;
-  white-space: nowrap;
+const CategoryHeader = styled.div`
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.3rem;
-  flex-shrink: 0;
-  box-shadow: ${props => props.active ? 
-    `0 0 15px ${props.theme?.colors?.accent}40` || '0 0 15px rgba(128, 0, 0, 0.4)' : 
-    'none'};
-  
-  @media (min-width: 768px) {
-    padding: 0.8rem 1.5rem;
-    font-size: 0.9rem;
-    letter-spacing: 1px;
-    gap: 0.5rem;
-  }
-
-  &:active {
-    transform: scale(0.98);
-  }
-
-  @media (hover: hover) {
-    &:hover {
-      box-shadow: 0 0 10px ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
-      transform: translateY(-1px);
-    }
-  }
-
-  svg {
-    width: 14px;
-    height: 14px;
-    color: ${props => props.active ? 
-      props.theme?.colors?.accent || '#800000' : 
-      `${props.theme?.colors?.text}99` || 'rgba(255, 255, 255, 0.6)'};
-    
-    @media (min-width: 768px) {
-      width: 16px;
-      height: 16px;
-    }
-  }
-`;
-
-const GridContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-  padding: 0 0.25rem;
-  
-  /* ✅ ADD: Force consistent row heights */
-  grid-auto-rows: 1fr;
-  align-items: stretch;
-  
-  @media (min-width: 480px) {
-    gap: 1rem;
-    padding: 0;
-  }
-  
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 1.5rem;
-  }
-  
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 2rem;
-  }
-`;
-
-// Mobile search with better UX
-const SearchContainer = styled.div`
-  position: relative;
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
+  margin-bottom: 0.75rem;
   padding: 0 0.5rem;
   
-  @media (min-width: 600px) {
+  /* Mobile: Adjust for edge-to-edge */
+  @media (max-width: 768px) {
+    padding: 0 1rem; /* Add side padding for headers */
+    margin-bottom: 0.5rem;
+  }
+  
+  @media (min-width: 768px) {
+    margin-bottom: 1rem;
     padding: 0;
+  }
+  
+  h2 {
+    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
+    font-size: 1.3rem;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    margin: 0;
+    
+    @media (min-width: 768px) {
+      font-size: 1.8rem;
+    }
+  }
+  
+  .view-all {
+    font-size: 0.8rem;
+    color: ${props => props.theme?.colors?.accent || '#800000'};
+    opacity: 0.8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: all 0.3s ease;
+    
+    @media (min-width: 768px) {
+      font-size: 0.9rem;
+      gap: 0.5rem;
+    }
+    
+    &:active {
+      opacity: 1;
+      transform: translateX(3px);
+    }
   }
 `;
 
+const CategoryGridWrapper = styled.div`
+  margin-bottom: 2rem;
+  
+  /* Desktop: Regular grid */
+  @media (min-width: 769px) {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+  }
+  
+  @media (max-width: 1200px) and (min-width: 769px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  @media (max-width: 900px) and (min-width: 769px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  /* Mobile: Scrollable rows with edge-to-edge */
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0; /* Remove any padding */
+    margin: 0; /* Remove any margin */
+  }
+`;
 
 const SearchInputWrapper = styled.div`
   position: relative;
@@ -1524,33 +1620,55 @@ const MotivationalMessage = styled.p`
   }
 `;
 
-// 1. Replace the CategoryGrid styled component with these two new components:
-
-const CategoryGridWrapper = styled.div`
-  margin-bottom: 2rem;
+const BottomContent = styled.div`
+  padding: 1rem;
+  background: ${props => `${props.theme?.colors?.background}CC` || 'rgba(0, 0, 0, 0.8)'};
+  border-radius: 0 0 16px 16px;
   
-  /* Desktop: Regular grid */
-  @media (min-width: 769px) {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1rem;
-  }
-  
-  @media (max-width: 1200px) and (min-width: 769px) {
-    grid-template-columns: repeat(4, 1fr);
-  }
-  
-  @media (max-width: 900px) and (min-width: 769px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
-  /* Mobile: Scrollable rows */
+  /* Mobile: Remove side padding to go edge-to-edge */
   @media (max-width: 768px) {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+    padding: 0.5rem 0 1rem 0;
+    border-radius: 0;
+    background: transparent;
+    width: 100%;
+    margin: 0;
   }
 `;
+
+const TabContainer = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin: 2rem 0 1rem 0;
+  overflow-x: auto;
+  padding: 0.5rem 0;
+  -webkit-overflow-scrolling: touch;
+  
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: ${props => `${props.theme?.colors?.background || '#000000'}80`};
+    border-radius: 10px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+     display: none;
+  }
+  
+  /* Mobile: Adjust spacing */
+  @media (max-width: 768px) {
+    margin: 0 1rem 0.5rem 1rem; /* Reduced bottom margin */
+    padding: 0.5rem 0;
+  }
+  
+  @media (min-width: 768px) {
+    justify-content: center;
+    gap: 1rem;
+    overflow-x: visible;
+  }
+`;
+
 
 const CategoryScrollableGrid = styled.div`
   display: none;
@@ -1619,50 +1737,6 @@ const GlobalStyle = styled.div`
   }
 `;
 
-const CategoryHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-  padding: 0 0.5rem;
-  
-  @media (min-width: 768px) {
-    margin-bottom: 1rem;
-    padding: 0;
-  }
-  
-  h2 {
-    font-family: ${props => props.theme?.fonts?.heading || 'inherit'};
-    font-size: 1.3rem;
-    color: ${props => props.theme?.colors?.accent || '#800000'};
-    margin: 0;
-    
-    @media (min-width: 768px) {
-      font-size: 1.8rem;
-    }
-  }
-  
-  .view-all {
-    font-size: 0.8rem;
-    color: ${props => props.theme?.colors?.accent || '#800000'};
-    opacity: 0.8;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    transition: all 0.3s ease;
-    
-    @media (min-width: 768px) {
-      font-size: 0.9rem;
-      gap: 0.5rem;
-    }
-    
-    &:active {
-      opacity: 1;
-      transform: translateX(3px);
-    }
-  }
-`;
 
 const ChatOverlay = styled.div`
   position: fixed;
@@ -1779,7 +1853,6 @@ const WelcomePage = () => {
   const [isPinned, setIsPinned] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [orderQuantity, setOrderQuantity] = useState(1);
-  const [sortBy, setSortBy] = useState('recent'); // 'recent', 'proximity', 'price-low', 'price-high'
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState(null);
 
@@ -2025,7 +2098,6 @@ const [serviceCategories, setServiceCategories] = useState({
   'Other': []
 });
 
-// UPDATE the filtering logic in loadCategorizedServices
 const loadCategorizedServices = async () => {
   try {
     setLoading(true);
@@ -2037,14 +2109,13 @@ const loadCategorizedServices = async () => {
     const filteredServices = allServices.filter(service => {
       const isNotCurrentUser = service.shopId !== currentUserId;
       const hasImages = service.images && service.images.length > 0 && service.images.some(img => img);
-      // CHANGE: Check slots instead of quantity
       const hasValidSlots = service.slots && !isNaN(parseInt(service.slots)) && parseInt(service.slots) > 0;
       const isActive = !service.deleted;
       
       return isNotCurrentUser && hasImages && hasValidSlots && isActive;
     });
 
-    // Calculate distances
+    // Calculate distances and auto-sort by proximity
     let servicesWithDistance = filteredServices;
     if (effectiveLocation) {
       servicesWithDistance = filteredServices.map(service => {
@@ -2071,10 +2142,16 @@ const loadCategorizedServices = async () => {
         }
         return service;
       });
+
+      // AUTO SORT BY PROXIMITY (nearest first)
+      servicesWithDistance.sort((a, b) => {
+        const distA = a.distance || Infinity;
+        const distB = b.distance || Infinity;
+        return distA - distB;
+      });
     }
 
-    const sortedServices = applySorting(servicesWithDistance, sortBy);
-    const featuredServicesList = sortedServices.slice(0, 10);
+    const featuredServicesList = servicesWithDistance.slice(0, 10);
     const featuredServiceIds = new Set(featuredServicesList.map(service => `${service.shopId}-${service.id}`));
 
     const categorizedServices = {
@@ -2091,7 +2168,7 @@ const loadCategorizedServices = async () => {
       'Other': []
     };
 
-    sortedServices.forEach(service => {
+    servicesWithDistance.forEach(service => {
       const serviceKey = `${service.shopId}-${service.id}`;
       if (featuredServiceIds.has(serviceKey)) return;
       
@@ -2138,7 +2215,7 @@ const loadCategorizedItems = async () => {
       return isNotCurrentUser && hasImages && hasValidPrice && hasStock;
     });
 
-    // Calculate distances
+    // Calculate distances and sort by proximity
     let itemsWithDistance = filteredItems;
     if (effectiveLocation) {
       itemsWithDistance = filteredItems.map(item => {
@@ -2175,16 +2252,19 @@ const loadCategorizedItems = async () => {
         }
         return item;
       });
+
+      // AUTO SORT BY PROXIMITY (nearest first)
+      itemsWithDistance.sort((a, b) => {
+        const distA = a.distance || Infinity;
+        const distB = b.distance || Infinity;
+        return distA - distB;
+      });
     }
 
-    // Apply sorting
-    const sortedItems = applySorting(itemsWithDistance, sortBy);
-
-    // ⭐ NEW: Get featured items FIRST (top 10)
-    const featuredItemsList = sortedItems.slice(0, 10);
+    // Rest of the function remains the same...
+    const featuredItemsList = itemsWithDistance.slice(0, 10);
     const featuredItemIds = new Set(featuredItemsList.map(item => `${item.shopId}-${item.id}`));
 
-    // Categorize items - EXCLUDE featured items
     const categorizedItems = {
       'Electronics & Tech': [],
       'Clothing & Accessories': [],
@@ -2199,14 +2279,9 @@ const loadCategorizedItems = async () => {
       'Other': []
     };
 
-    // Only add items to categories if they're NOT in featured
-    sortedItems.forEach(item => {
+    itemsWithDistance.forEach(item => {
       const itemKey = `${item.shopId}-${item.id}`;
-      
-      // ⭐ Skip if item is in featured
-      if (featuredItemIds.has(itemKey)) {
-        return;
-      }
+      if (featuredItemIds.has(itemKey)) return;
       
       const category = item.category || 'Other';
       if (categorizedItems[category]) {
@@ -2216,13 +2291,12 @@ const loadCategorizedItems = async () => {
       }
     });
 
-    // Limit each category to 10 items
     Object.keys(categorizedItems).forEach(category => {
       categorizedItems[category] = categorizedItems[category].slice(0, 10);
     });
 
     setCategories(categorizedItems);
-    setFeaturedItems(featuredItemsList); // Use the pre-selected featured items
+    setFeaturedItems(featuredItemsList);
     setTotalItems(filteredItems.length);
     setLoading(false);
     
@@ -3390,6 +3464,170 @@ const hasActiveSearchResults = () => {
     };
   }, []);
 
+  // Add this function before the return statement
+const renderWelcomeContent = () => {
+  return (
+    <>
+      {isAuthenticated && shopData ? (
+        <>
+          <ProfileSection>
+            <ProfileImage theme={currentStyle}>
+              {shopData.profile ? (
+                <img src={shopData.profile} alt={shopData.name || 'Shop Profile'} />
+              ) : (
+                <div style={{ 
+                  width: '100%', 
+                  height: '100%', 
+                  background: currentStyle?.colors?.accent || '#800000',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  fontSize: '2rem'
+                }}>
+                  {(shopData.name?.charAt(0) || user.email?.charAt(0) || 'S').toUpperCase()}
+                </div>
+              )}
+            </ProfileImage>
+            <ShopName theme={currentStyle}>{shopData.name || 'My Shop'}</ShopName>
+            <LocationIndicator2 theme={currentStyle}>
+              <button 
+                className="location-icon-btn"
+                onClick={handleLocationToCity}
+                disabled={isConvertingToCity}
+                title="Get region from current location"
+              >
+                {isConvertingToCity ? (
+                  <div className="updating-spinner" />
+                ) : (
+                  <Navigation size={16} />
+                )}
+              </button>
+              
+              <input
+                type="text"
+                className="location-input"
+                value={
+                  cityInputValue ? 
+                    cityInputValue :
+                    (effectiveLocation && isIPLocation ? 
+                      `${effectiveLocation.city}, ${effectiveLocation.region}` : 
+                      'Loading Location')
+                }
+                onChange={(e) => setCityInputValue(e.target.value)}
+                placeholder="Loading Location"
+                readOnly
+              />
+
+              {cityInputValue && (
+                <span className="location-type">
+                  {isIPLocation ? '(IP-based)' : '(Precise)'}
+                </span>
+              )}
+              
+              {cityInputValue && cityInputValue !== 'Loading Location' && (
+                <button
+                  className="location-icon-btn"
+                  onClick={() => {
+                    clearLocationFromStorage();
+                    setCityRegion('');
+                    setCityInputValue('');
+                    setEffectiveLocation(null);
+                    setIsIPLocation(false);
+                    getIPBasedLocation();
+                  }}
+                  title="Clear saved location"
+                  style={{ opacity: 0.6 }}
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </LocationIndicator2>
+          </ProfileSection>
+          
+          {motivationalMessage && (
+            <MotivationalMessage theme={currentStyle}>
+              {motivationalMessage}
+            </MotivationalMessage>
+          )}
+        </>
+      ) : (
+        <>
+          <h1>KALKODE</h1>
+          <p>Local Treasure Map</p>
+
+          <ActionButtonContainer>
+            <ActionButton theme={currentStyle} onClick={handleOpenShop}>
+              Open Up Shop
+            </ActionButton>
+            <ActionButton 
+              theme={currentStyle}
+              onClick={handleLogin}
+              variant="outline"
+            >
+              Sign In
+            </ActionButton>
+          </ActionButtonContainer>
+
+          <LocationIndicator2 theme={currentStyle}>
+            <button 
+              className="location-icon-btn"
+              onClick={handleLocationToCity}
+              disabled={isConvertingToCity}
+              title="Get region from current location"
+            >
+              {isConvertingToCity ? (
+                <div className="updating-spinner" />
+              ) : (
+                <Navigation size={16} />
+              )}
+            </button>
+            
+            <input
+              type="text"
+              className="location-input"
+              value={
+                cityInputValue ? 
+                  cityInputValue :
+                  (effectiveLocation && isIPLocation ? 
+                    `${effectiveLocation.city}, ${effectiveLocation.region}` : 
+                    'Loading Location')
+              }
+              onChange={(e) => setCityInputValue(e.target.value)}
+              placeholder="Loading Location"
+              readOnly
+            />
+            
+            {cityInputValue && (
+              <span className="location-type">
+                {isIPLocation ? '(IP-based)' : '(Precise)'}
+              </span>
+            )}
+            
+            {cityInputValue && cityInputValue !== 'Loading Location' && (
+              <button
+                className="location-icon-btn"
+                onClick={() => {
+                  clearLocationFromStorage();
+                  setCityRegion('');
+                  setCityInputValue('');
+                  setEffectiveLocation(null);
+                  setIsIPLocation(false);
+                  getIPBasedLocation();
+                }}
+                title="Clear saved location"
+                style={{ opacity: 0.6 }}
+              >
+                <X size={16} />
+              </button>
+            )}
+          </LocationIndicator2>
+        </>
+      )}
+    </>
+  );
+};
+
   if (!currentStyle) return null;
 
     return (
@@ -3431,413 +3669,108 @@ const hasActiveSearchResults = () => {
       </Header>
 
       <MainContent isAuthenticated={isAuthenticated}>
-        {/* NEW: Border Frame Container */}
-          <CanvasBackdrop 
-            theme={currentStyle} 
-            bgImage={currentBgImage}
-          >
-            {/* NEW: Content Overlay */}
-            <ContentOverlay theme={currentStyle}>
-              <WelcomeSection theme={currentStyle}>
-                {isAuthenticated && shopData ? (
-                  <>
-                    <ProfileSection>
-                      <ProfileImage theme={currentStyle}>
-                        {shopData.profile ? (
-                          <img src={shopData.profile} alt={shopData.name || 'Shop Profile'} />
-                        ) : (
-                          <div style={{ 
-                            width: '100%', 
-                            height: '100%', 
-                            background: currentStyle?.colors?.accent || '#800000',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#fff',
-                            fontSize: '2rem'
-                          }}>
-                            {(shopData.name?.charAt(0) || user.email?.charAt(0) || 'S').toUpperCase()}
-                          </div>
-                        )}
-                      </ProfileImage>
-                      <ShopName theme={currentStyle}>{shopData.name || 'My Shop'}</ShopName>
-                      <LocationIndicator2 theme={currentStyle}>
-                        <button 
-                          className="location-icon-btn"
-                          onClick={handleLocationToCity}
-                          disabled={isConvertingToCity}
-                          title="Get region from current location"
-                        >
-                          {isConvertingToCity ? (
-                            <div className="updating-spinner" />
-                          ) : (
-                            <Navigation size={16} />
-                          )}
-                        </button>
-                        
-                        <input
-                          type="text"
-                          className="location-input"
-                          value={
-                            cityInputValue ? 
-                              cityInputValue :
-                              (effectiveLocation && isIPLocation ? 
-                                `${effectiveLocation.city}, ${effectiveLocation.region}` : 
-                                'Loading Location')
-                          }
-                          onChange={(e) => setCityInputValue(e.target.value)}
-                          placeholder="Loading Location"
-                          readOnly
-                        />
-
-                        {cityInputValue && (
-                          <span className="location-type">
-                            {isIPLocation ? '(IP-based)' : '(Precise)'}
-                          </span>
-                        )}
-                        
-                        {cityInputValue && cityInputValue !== 'Loading Location' && (
-                          <button
-                            className="location-icon-btn"
-                            onClick={() => {
-                              clearLocationFromStorage();
-                              setCityRegion('');
-                              setCityInputValue('');
-                              setEffectiveLocation(null);
-                              setIsIPLocation(false);
-                              getIPBasedLocation();
-                            }}
-                            title="Clear saved location"
-                            style={{ opacity: 0.6 }}
-                          >
-                            <X size={16} />
-                          </button>
-                        )}
-                      </LocationIndicator2>
-                    </ProfileSection>
-                    
-                    {motivationalMessage && (
-                      <MotivationalMessage theme={currentStyle}>
-                        {motivationalMessage}
-                      </MotivationalMessage>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <h1>KALKODE</h1>
-                    <p>Local Treasure Map</p>
-
-                    <ActionButtonContainer>
-                      <ActionButton theme={currentStyle} onClick={handleOpenShop}>
-                        Open Up Shop
-                      </ActionButton>
-                      <ActionButton 
-                        theme={currentStyle}
-                        onClick={handleLogin}
-                        variant="outline"
-                      >
-                        Sign In
-                      </ActionButton>
-                    </ActionButtonContainer>
-
-                    <LocationIndicator2 theme={currentStyle}>
-                      <button 
-                        className="location-icon-btn"
-                        onClick={handleLocationToCity}
-                        disabled={isConvertingToCity}
-                        title="Get region from current location"
-                      >
-                        {isConvertingToCity ? (
-                          <div className="updating-spinner" />
-                        ) : (
-                          <Navigation size={16} />
-                        )}
-                      </button>
-                      
-                      <input
-                        type="text"
-                        className="location-input"
-                        value={
-                          cityInputValue ? 
-                            cityInputValue :
-                            (effectiveLocation && isIPLocation ? 
-                              `${effectiveLocation.city}, ${effectiveLocation.region}` : 
-                              'Loading Location')
-                        }
-                        onChange={(e) => setCityInputValue(e.target.value)}
-                        placeholder="Loading Location"
-                        readOnly
-                      />
-                      
-                      {cityInputValue && (
-                        <span className="location-type">
-                          {isIPLocation ? '(IP-based)' : '(Precise)'}
-                        </span>
-                      )}
-                      
-                      {cityInputValue && cityInputValue !== 'Loading Location' && (
-                        <button
-                          className="location-icon-btn"
-                          onClick={() => {
-                            clearLocationFromStorage();
-                            setCityRegion('');
-                            setCityInputValue('');
-                            setEffectiveLocation(null);
-                            setIsIPLocation(false);
-                            getIPBasedLocation();
-                          }}
-                          title="Clear saved location"
-                          style={{ opacity: 0.6 }}
-                        >
-                          <X size={16} />
-                        </button>
-                      )}
-                    </LocationIndicator2>
-                  </>
-                )}
-              </WelcomeSection>
+        {/* Welcome Section with conditional canvas */}
+        <WelcomeSection theme={currentStyle}>
+          {window.innerWidth > 768 ? (
+            /* Desktop: Canvas Backdrop */
+            <CanvasBackdrop 
+              theme={currentStyle} 
+              bgImage={currentBgImage}
+            >
+              <ContentOverlay theme={currentStyle}>
+                {renderWelcomeContent()}
               </ContentOverlay>
-          </CanvasBackdrop>
+            </CanvasBackdrop>
+          ) : (
+            /* Mobile: Simple content without canvas */
+            <div>
+              {renderWelcomeContent()}
+            </div>
+          )}
+        </WelcomeSection>
+        {/* Spacing between canvas and tabs */}
+        <div style={{ 
+          height: window.innerWidth > 768 ? '0.0rem' : '0.0rem' 
+        }} />
 
-          
-            
+        {/* Bottom Content Area */}
+        <BottomContent theme={currentStyle}>
+      {/* Mobile Divider between location and tabs */}
+      <div className="mobile-only" style={{ 
+        height: '1px', 
+        background: `linear-gradient(90deg, transparent 0%, ${currentStyle?.colors?.accent || '#800000'} 50%, transparent 100%)`,
+        margin: '0.5rem 0 1rem 0'
+      }} />
 
-          {/* NEW: Bottom Content Area */}
-            {/* Tab Buttons inside the border frame */}
-            <TabContainer>
-              <Tab 
-                theme={currentStyle}
-                active={activeTab === 'featured'} 
-                onClick={() => setActiveTab('featured')}
-              >
-                <Package size={16} />
-                Products
-              </Tab>
-              <Tab
-                theme={currentStyle} 
-                active={activeTab === 'services'} 
-                onClick={() => setActiveTab('services')}
-              >
-                <CogIcon  size={16} />
-                Services
-              </Tab>
-              <Tab
-                theme={currentStyle} 
-                active={activeTab === 'media'} 
-                onClick={() => setActiveTab('media')}
-              >
-                <Film size={16} />
-                Media
-              </Tab>
-            </TabContainer>
-            {/* NEW: Section Separator */}
-          <SectionSeparator theme={currentStyle} />
+      {/* Tab Buttons */}
+      <TabContainer>
+        <Tab 
+          theme={currentStyle}
+          active={activeTab === 'featured'} 
+          onClick={() => setActiveTab('featured')}
+        >
+          <Package size={16} />
+          Products
+        </Tab>
+        <Tab
+          theme={currentStyle} 
+          active={activeTab === 'services'} 
+          onClick={() => setActiveTab('services')}
+        >
+          <Navigation size={16} />
+          Services
+        </Tab>
+        <Tab
+          theme={currentStyle} 
+          active={activeTab === 'media'} 
+          onClick={() => setActiveTab('media')}
+        >
+          <Film size={16} />
+          Media
+        </Tab>
+      </TabContainer>
 
-          <BottomContent theme={currentStyle}>
-            
+      
 
-            {/* Search container with Filter */}
-            <SearchContainer>
-              <SearchInputWrapper>
-                <SearchInput
-                  type="text"
-                  placeholder={`Search for ${activeTab === 'featured' ? 'products' : activeTab === 'services' ? 'services' : 'media'}...`}
-                  value={getActiveSearchTerm()}
-                  onChange={(e) => setActiveSearchTerm(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                />
+          {/* Search container */}
+          <SearchContainer>
+            <SearchInputWrapper>
+              <SearchInput
+                type="text"
+                placeholder={`Search for ${activeTab === 'featured' ? 'products' : activeTab === 'services' ? 'services' : 'media'}...`}
+                value={getActiveSearchTerm()}
+                onChange={(e) => setActiveSearchTerm(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              />
 
-                <SearchButtonGroup>
-                  {hasActiveSearchResults() && (
-                    <SearchButton 
-                      onClick={handleClearSearch}
-                      title="Clear search"
-                    >
-                      <X size={18} />
-                    </SearchButton>
-                  )}
-
+              <SearchButtonGroup>
+                {hasActiveSearchResults() && (
                   <SearchButton 
-                    onClick={handleSearch}
-                    disabled={isSearching || !getActiveSearchTerm().trim()}
-                    title="Search"
+                    onClick={handleClearSearch}
+                    title="Clear search"
                   >
-                    <Search size={18} />
+                    <X size={18} />
                   </SearchButton>
+                )}
 
-                  {(activeTab === 'featured' || activeTab === 'services') && (
-                    <div className="sort-container" style={{ position: 'relative', display: 'inline-block' }}>
-                      <SearchButton 
-                        onClick={() => setSortMenuOpen(!sortMenuOpen)}
-                        active={sortBy !== 'recent'}
-                        title="Filter & Sort"
-                      >
-                        <Filter size={18} />
-                      </SearchButton>
-                      
-                      <SortDropdown theme={currentStyle} isOpen={sortMenuOpen}>
-                        <div style={{
-                          padding: '0.5rem 1rem 0.75rem',
-                          fontSize: '0.75rem',
-                          fontWeight: '700',
-                          textTransform: 'uppercase',
-                          letterSpacing: '1px',
-                          color: currentStyle?.colors?.accent || '#800000',
-                          borderBottom: `2px solid ${currentStyle?.colors?.accent || '#800000'}`,
-                          marginBottom: '0.75rem',
-                          fontFamily: currentStyle?.fonts?.heading || 'inherit'
-                        }}>
-                          Sort By
-                        </div>
-                      
-                        <SortOption 
-                          theme={currentStyle}
-                          active={sortBy === 'recent'}
-                          onClick={() => {
-                            if (!userLocation) {
-                              requestLocation();
-                              return;
-                            }
-                            setSortBy('recent');
-                            setSortMenuOpen(false);
-                            loadCategorizedItems();
-                          }}
-                        >
-                          <Package size={16} />
-                          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                            <span>Most Recent</span>
-                            <span style={{ 
-                              fontSize: '0.7rem', 
-                              opacity: 0.7,
-                              fontWeight: '400'
-                            }}>
-                              All items, newest first
-                            </span>
-                          </div>
-                          {!userLocation && (
-                            <span style={{ 
-                              fontSize: '0.65rem', 
-                              opacity: 0.6,
-                              marginLeft: 'auto',
-                              fontStyle: 'italic'
-                            }}>
-                              (needs location)
-                            </span>
-                          )}
-                        </SortOption>
-                        
-                        <SortOption 
-                          theme={currentStyle}
-                          active={sortBy === 'proximity'}
-                          onClick={() => {
-                            if (!userLocation) {
-                              requestLocation();
-                            }
-                            setSortBy('proximity');
-                            setSortMenuOpen(false);
-                            loadCategorizedItems();
-                          }}
-                        >
-                          <Navigation size={16} />
-                          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                            <span>Closest First</span>
-                            <span style={{ 
-                              fontSize: '0.7rem', 
-                              opacity: 0.7,
-                              fontWeight: '400'
-                            }}>
-                              All items by distance
-                            </span>
-                          </div>
-                          {!userLocation && (
-                            <span style={{ 
-                              fontSize: '0.65rem', 
-                              opacity: 0.6,
-                              marginLeft: 'auto',
-                              fontStyle: 'italic'
-                            }}>
-                              (needs location)
-                            </span>
-                          )}
-                        </SortOption>
-                        
-                        <SortOption 
-                          theme={currentStyle}
-                          active={sortBy === 'price-low'}
-                          onClick={() => {
-                            if (!userLocation) {
-                              requestLocation();
-                              return;
-                            }
-                            setSortBy('price-low');
-                            setSortMenuOpen(false);
-                            loadCategorizedItems();
-                          }}
-                        >
-                          <span style={{ fontSize: '1rem', fontWeight: '600' }}>$</span>
-                          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                            <span>Price: Low to High</span>
-                            <span style={{ 
-                              fontSize: '0.7rem', 
-                              opacity: 0.7,
-                              fontWeight: '400'
-                            }}>
-                              All items by price
-                            </span>
-                          </div>
-                          {!userLocation && (
-                            <span style={{ 
-                              fontSize: '0.65rem', 
-                              opacity: 0.6,
-                              marginLeft: 'auto',
-                              fontStyle: 'italic'
-                            }}>
-                              (needs location)
-                            </span>
-                          )}
-                        </SortOption>
-                        
-                        <SortOption 
-                          theme={currentStyle}
-                          active={sortBy === 'price-high'}
-                          onClick={() => {
-                            if (!userLocation) {
-                              requestLocation();
-                              return;
-                            }
-                            setSortBy('price-high');
-                            setSortMenuOpen(false);
-                            loadCategorizedItems();
-                          }}
-                        >
-                          <span style={{ fontSize: '1rem', fontWeight: '600' }}>$$$</span>
-                          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                            <span>Price: High to Low</span>
-                            <span style={{ 
-                              fontSize: '0.7rem', 
-                              opacity: 0.7,
-                              fontWeight: '400'
-                            }}>
-                              All items by price
-                            </span>
-                          </div>
-                          {!userLocation && (
-                            <span style={{ 
-                              fontSize: '0.65rem', 
-                              opacity: 0.6,
-                              marginLeft: 'auto',
-                              fontStyle: 'italic'
-                            }}>
-                              (needs location)
-                            </span>
-                          )}
-                        </SortOption>
-                      </SortDropdown>
-                    </div>
-                  )}
-                </SearchButtonGroup>
-              </SearchInputWrapper>
-            </SearchContainer>
+                <SearchButton 
+                  onClick={handleSearch}
+                  disabled={isSearching || !getActiveSearchTerm().trim()}
+                  title="Search"
+                >
+                  <Search size={18} />
+                </SearchButton>
+              </SearchButtonGroup>
+            </SearchInputWrapper>
+          </SearchContainer>
+              
+              
+
+          {/* Add spacing between search and content for mobile */}
+          <div className="mobile-spacing" style={{ 
+            display: window.innerWidth <= 768 ? 'block' : 'none', 
+            height: '0.5rem' 
+          }} />
 
             {/* Tab Content */}
             {activeTab === 'featured' && (

@@ -23,7 +23,13 @@ import {
   Home,
   LogOut,
   Check,
-  Package
+  Package,
+  Instagram,
+  Twitter, 
+  Facebook,
+  Mail,
+  Phone, 
+  MapPin
 } from 'lucide-react';
 import { useTempStore } from '../../contexts/TempStoreContext';
 import EditableText from './components/EditableComponents/EditableText';
@@ -46,6 +52,12 @@ import {
   LocalMarketTemplate
 } from './HomePageTemplate';
 
+
+const templateImages = [
+    'https://images.unsplash.com/photo-1662894312415-4ea3e988f63f?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8aGFiZXNoYSUyMGZhc2hpb258ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&q=60&w=900',
+    'https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8c3VwZXJtYXJrZXR8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&q=60&w=900', 
+    'https://images.unsplash.com/photo-1756137842382-8870b42f49ee?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OHx8aGFiZXNoYSUyMGRyZXNzfGVufDB8fDB8fHww&auto=format&fit=crop&q=60&w=900'
+  ];
 
 
 const ITEM_CATEGORIES = [
@@ -94,7 +106,6 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
     height: 100%;
     background: ${props => props.theme?.colors?.backgroundGradient || 'radial-gradient(circle at 20% 30%, rgba(128, 0, 0, 0.2) 0%, transparent 50%)'};
     opacity: 0.8;
-    animation: ${props => props.theme?.animations?.backgroundAnimation || 'galaxySwirl 30s linear infinite'};
   }
 
   /* Simplified stars for mobile performance */
@@ -117,6 +128,205 @@ const PageContainer = styled.div.attrs({ className: 'page-container' })`
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+`;
+
+const ShopProfileSection = styled.section`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 800px;
+  margin: 1.5rem auto 3rem;
+  padding: 1.5rem;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}30`};
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+  position: relative;
+  z-index: 2;
+
+  @media (min-width: 768px) {
+    padding: 2rem;
+  }
+
+  .profile-image {
+    margin-bottom: 1.5rem;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.1);
+    border: 3px solid ${props => props.theme?.colors?.accent || '#800000'};
+    box-shadow: 0 0 20px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
+    position: relative;
+    z-index: 3;
+    
+    @media (min-width: 768px) {
+      width: 150px;
+      height: 150px;
+    }
+    
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .shop-name-container {
+    width: 100%;
+    margin: 0.5rem 0;
+    position: relative;
+    z-index: 3;
+
+    input {
+      width: 100%;
+      text-align: center;
+      background: transparent;
+      border: none;
+      font-size: ${props => Math.min(props.fontSize || 2.5, 2)}rem;
+      font-family: ${props => props.theme?.fonts?.heading};
+      color: ${props => props.theme?.colors?.accent || '#800000'};
+      outline: none;
+      padding: 0.5rem;
+      
+      @media (min-width: 768px) {
+        font-size: ${props => props.fontSize || '2.5rem'};
+      }
+
+      &:focus {
+        color: ${props => props.theme?.colors?.accent || '#800000'};
+      }
+
+      &::placeholder {
+        color: ${props => `${props.theme?.colors?.accent}80` || 'rgba(128, 0, 0, 0.5)'};
+      }
+    }
+  }
+
+  .shop-description-container {
+    width: 100%;
+    margin-top: 0.25rem;
+    position: relative;
+    z-index: 3;
+
+    textarea {
+      width: 100%;
+      text-align: center;
+      background: transparent;
+      border: none;
+      font-size: 1rem;
+      font-family: ${props => props.theme?.fonts?.body};
+      color: ${props => props.theme?.colors?.text};
+      opacity: 0.8;
+      outline: none;
+      padding: 0.5rem;
+      resize: none;
+      min-height: 60px;
+
+      @media (min-width: 768px) {
+        font-size: 1.1rem;
+      }
+
+      &:focus {
+        opacity: 1;
+      }
+
+      &::placeholder {
+        color: ${props => props.theme?.colors?.text};
+        opacity: 0.5;
+      }
+    }
+  }
+`;
+
+// UPDATE the ItemsContainer styled component
+const ItemsContainer = styled.div`
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}30`};
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+  position: relative;
+  z-index: 2;
+
+  @media (min-width: 768px) {
+    padding: 2rem;
+  }
+`;
+
+// UPDATE the ShopTabContainer styled component
+const ShopTabContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem 0 1.5rem;
+  padding: 1rem;
+  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}30`};
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
+  position: relative;
+  z-index: 2;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+
+  @media (min-width: 768px) {
+    padding: 1.5rem;
+  }
+`;
+
+// UPDATE the AddItemButton styled component
+const AddItemButton = styled.button`
+  background: ${props => props.theme?.colors?.accent || '#800000'};
+  color: white;
+  border: none;
+  border-radius: ${props => props.theme?.styles?.borderRadius || '8px'};
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+  font-family: ${props => props.theme?.fonts?.heading || "'Space Grotesk', sans-serif"};
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  margin: 1rem auto 2rem;
+  transition: all 0.3s ease;
+  justify-content: center;
+  width: 100%;
+  max-width: 300px;
+  backdrop-filter: blur(10px);
+  position: relative;
+  z-index: 3;
+
+  @media (min-width: 768px) {
+    width: auto;
+    max-width: none;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+`;
+
+// ADD a new SectionDivider component
+const SectionDivider = styled.div`
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.3)'} 50%,
+    transparent 100%
+  );
+  margin: 2rem 0;
+  position: relative;
+  z-index: 2;
 `;
 
 
@@ -382,7 +592,6 @@ const HeaderRight = styled.div`
   gap: 0.75rem;
 `;
 
-// REPLACE the entire HeaderTabButton component with:
 const HeaderTabButton = styled.button`
   background: transparent;
   border: none;
@@ -399,7 +608,6 @@ const HeaderTabButton = styled.button`
   transition: all 0.3s ease;
   position: relative;
   min-width: 5px;
-  
   
   /* Remove the old underline */
   &::after {
@@ -646,17 +854,6 @@ const HeaderButton = styled.button`
   }
 `;
 
-const MainContent = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 64px 1rem 100px 1rem; /* Reduced from 80px by 20% */
-  position: relative;
-  z-index: 1;
-  
-  @media (min-width: 768px) {
-    padding: 80px 2rem 2rem 2rem; /* Reduced from 6rem (96px) to 80px - approximately 20% less */
-  }
-`;
 
 const ShopNameInput = styled.input`
   width: 100%;
@@ -687,104 +884,6 @@ const ShopNameInput = styled.input`
 
   &:focus {
     animation: blink 1s step-end infinite;
-  }
-`;
-
-const ShopProfileSection = styled.section`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  max-width: 800px;
-  margin: 1.5rem auto 3rem; /* Reduced from 2rem and 4rem */
-  padding: 0.8rem; /* Reduced from 1rem */
-
-  @media (min-width: 768px) {
-    padding: 1.5rem; /* Reduced from 2rem */
-  }
-
-  .profile-image {
-    margin-bottom: 1rem;
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    overflow: hidden;
-    background: rgba(0, 0, 0, 0.1);
-    border: 3px solid ${props => props.theme?.colors?.accent || '#800000'};
-    box-shadow: 0 0 20px ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.25)'};
-    
-    @media (min-width: 768px) {
-      width: 150px;
-      height: 150px;
-    }
-    
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-  }
-
-  .shop-name-container {
-    width: 100%;
-    margin: 0.5rem 0;
-
-    input {
-      width: 100%;
-      text-align: center;
-      background: transparent;
-      border: none;
-      font-size: ${props => Math.min(props.fontSize || 2.5, 2)}rem;
-      font-family: ${props => props.theme?.fonts?.heading};
-      color: ${props => props.theme?.colors?.accent || '#800000'};
-      outline: none;
-      padding: 0.5rem;
-      
-      @media (min-width: 768px) {
-        font-size: ${props => props.fontSize || '2.5rem'};
-      }
-
-      &:focus {
-        color: ${props => props.theme?.colors?.accent || '#800000'};
-      }
-
-      &::placeholder {
-        color: ${props => `${props.theme?.colors?.accent}80` || 'rgba(128, 0, 0, 0.5)'};
-      }
-    }
-  }
-
-  .shop-description-container {
-    width: 100%;
-    margin-top: 0.25rem;
-
-    textarea {
-      width: 100%;
-      text-align: center;
-      background: transparent;
-      border: none;
-      font-size: 1rem;
-      font-family: ${props => props.theme?.fonts?.body};
-      color: ${props => props.theme?.colors?.text};
-      opacity: 0.8;
-      outline: none;
-      padding: 0.5rem;
-      resize: none;
-      min-height: 60px;
-
-      @media (min-width: 768px) {
-        font-size: 1.1rem;
-      }
-
-      &:focus {
-        opacity: 1;
-      }
-
-      &::placeholder {
-        color: ${props => props.theme?.colors?.text};
-        opacity: 0.5;
-      }
-    }
   }
 `;
 
@@ -825,10 +924,7 @@ const ViewToggleButton = styled.button`
   }
 `;
 
-// Mobile-friendly grid container
-const ItemsContainer = styled.div`
-  margin-top: 2rem;
-`;
+
 
 // CHANGE 3: Update ItemCard styled component (around line 346)
 // REPLACE the entire ItemCard component with:
@@ -845,6 +941,25 @@ const ItemCard = styled.div`
   &:hover {
     transform: translateY(-5px);
     border-color: ${props => props.theme?.colors?.accent};
+  }
+`;
+
+// UPDATE the tab structure to use separate containers with independent scrolling
+const TabContentContainer = styled.div`
+  display: ${props => props.active ? 'block' : 'none'};
+  position: relative;
+`;
+
+// UPDATE the MainContent to remove the ref and handle scrolling differently
+const MainContent = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 64px 1rem 100px 1rem;
+  position: relative;
+  z-index: 1;
+  
+  @media (min-width: 768px) {
+    padding: 80px 2rem 2rem 2rem;
   }
 `;
 
@@ -973,6 +1088,78 @@ const ItemImageContainer = styled.div`
   }
 `;
 
+// REPLACE the ItemsGrid with this version that uses auto-fill instead of auto-fit
+const ItemsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+  
+  @media (min-width: 480px) {
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  }
+  
+  @media (min-width: 768px) {
+    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  }
+  
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  }
+
+  /* Mobile template card grid - 2 items per row */
+  @media (max-width: 767px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    padding: 0 0.5rem;
+  }
+`;
+
+// UPDATE the DesktopItemCard to constrain the width
+const DesktopItemCard = styled(ItemCard)`
+  @media (max-width: 767px) {
+    display: none;
+  }
+  
+  /* Constrain the width so items don't stretch too much */
+  max-width: 400px;
+  justify-self: center;
+  
+  /* Ensure each card maintains its own height */
+  height: fit-content;
+  min-height: 400px;
+  transition: all 0.3s ease;
+  
+  /* When expanded, allow natural height but maintain grid behavior */
+  ${props => props.expanded && `
+    min-height: 600px;
+    height: auto;
+  `}
+  
+  /* Make the card take full width of its grid cell on mobile */
+  @media (max-width: 767px) {
+    max-width: none;
+    justify-self: stretch;
+  }
+`;
+
+// UPDATE the ItemDetails to use max-height instead of height for smoother transitions
+const ItemDetails = styled.div`
+  max-height: ${props => props.expanded ? '500px' : '0'};
+  opacity: ${props => props.expanded ? '1' : '0'};
+  overflow: hidden;
+  transition: all 0.3s ease;
+  
+  .details-content {
+    padding-top: ${props => props.expanded ? '1rem' : '0'};
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    transition: all 0.3s ease;
+  }
+`;
+
 const ItemContent = styled.div`
   padding: 1rem;
   display: flex;
@@ -1058,23 +1245,10 @@ const HomePreviewSection = styled.div`
   }
 `;
 
-const ItemDetails = styled.div`
-  max-height: ${props => props.expanded ? '500px' : '0'};
-  overflow: hidden;
-  transition: max-height 0.3s ease;
-  
-  .details-content {
-    padding-top: ${props => props.expanded ? '1rem' : '0'};
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-`;
-
 const DeleteButton = styled.button`
   position: absolute;
   top: 10px;
-  right: 10px;
+  left: 10px;
   background: rgba(0, 0, 0, 0.5);
   border: none;
   border-radius: 50%;
@@ -1094,38 +1268,6 @@ const DeleteButton = styled.button`
   }
 `;
 
-const AddItemButton = styled.button`
-  background: ${props => props.theme?.colors?.accent || '#800000'};
-  color: white;
-  border: none;
-  border-radius: ${props => props.theme?.styles?.borderRadius || '8px'};
-  padding: 1rem 1.5rem;
-  font-weight: 600;
-  font-family: ${props => props.theme?.fonts?.heading || "'Space Grotesk', sans-serif"};
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  margin: 1rem auto 2rem;
-  transition: all 0.3s ease;
-  justify-content: center;
-  width: 100%;
-  max-width: 300px;
-
-  @media (min-width: 768px) {
-    width: auto;
-    max-width: none;
-  }
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px ${props => `${props.theme?.colors?.accent}60` || 'rgba(128, 0, 0, 0.4)'};
-  }
-
-  &:active {
-    transform: translateY(1px);
-  }
-`;
 
 const CategorySelect = styled.select`
   width: 100%;
@@ -1242,32 +1384,34 @@ const GlobalStyles = createGlobalStyle`
   }
 `;
 
-const ItemsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1rem;
-  
-  @media (min-width: 480px) {
-    gap: 1.5rem;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  }
-  
-  @media (min-width: 768px) {
-    gap: 2rem;
-    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  }
-  
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  }
 
-  /* Mobile template card grid - 2 items per row */
-  @media (max-width: 767px) {
-    grid-template-columns: repeat(2, 1fr); /* Changed from repeat(3, 1fr) */
-    gap: 0.75rem;
-    padding: 0 0.5rem;
-  }
-`;
+// ADD this near the top of the LiveShopCreation component if not already present
+const SectionWrapper = ({ children, theme, noPadding = false, delay = 0 }) => {
+  return (
+    <div style={{
+      position: 'relative',
+      padding: noPadding ? '0' : 'clamp(1rem, 2vw, 2rem) clamp(0.5rem, 1vw, 1rem)',
+      background: 'transparent',
+      animation: 'fadeInUp 0.6s ease-out forwards',
+      animationDelay: `${delay}s`,
+      opacity: 0
+    }}>
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+      {children}
+    </div>
+  );
+};
 
 const MobileTemplateImageContainer = styled.div`
   position: relative;
@@ -1451,13 +1595,6 @@ const MobileDeleteButton = styled.button`
 `;
 
 
-// Desktop card - hide on mobile
-const DesktopItemCard = styled(ItemCard)`
-  @media (max-width: 767px) {
-    display: none;
-  }
-`;
-
 // Add after existing styled components (around line 800)
 const TemplateSelectorWrapper = styled.div`
   display: flex;
@@ -1507,14 +1644,43 @@ const LiveShopCreation = () => {
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [heroBackgroundImage, setHeroBackgroundImage] = useState(null);
   const [shopContentType, setShopContentType] = useState('products');
+  const [currentGalleryImage, setCurrentGalleryImage] = useState(0);
+
+  useEffect(() => {
+    // Use requestAnimationFrame for reliable scroll reset
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    };
+
+    // Multiple attempts to ensure scroll reset
+    scrollToTop();
+    const timeout1 = setTimeout(scrollToTop, 10);
+    const timeout2 = setTimeout(scrollToTop, 50);
+    const timeout3 = setTimeout(scrollToTop, 100);
+
+    return () => {
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
+      clearTimeout(timeout3);
+    };
+  }, [activeTab]);
+
+  // Auto-rotate gallery images
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentGalleryImage((prev) => (prev + 1) % templateImages.length);
+    }, 4000); // Change image every 4 seconds
+
+    return () => clearInterval(interval);
+  }, [templateImages.length]);
 
   const ShopTabContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin: 2rem 0 1.5rem;
-  padding: 0 1rem;
-`;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0 1.5rem;
+    padding: 0 1rem;
+  `;
 
 const ShopTab = styled.button`
   background: ${props => props.active ? 
@@ -1776,31 +1942,42 @@ useEffect(() => {
   };
 
   const handleItemAdd = () => {
-    const newItem = {
-      id: Date.now().toString(),
-      name: 'Item Name',
-      price: '',
-      description: '',
-      category: 'Other',
-      images: [null, null, null],
-      currentImageIndex: 0,
-      address: '',
-      coordinates: null,
-      tags: [],
-      quantity: 1
-    };
-
-    // Add to beginning instead of end
-    setShopData(prev => ({
-      ...prev,
-      items: [newItem, ...prev.items]
-    }));
-
-    // Auto-expand on desktop
-    if (window.innerWidth >= 768) {
-      setExpandedItems(new Set([newItem.id]));
-    }
+  const newItem = {
+    id: Date.now().toString(),
+    name: 'Item Name',
+    price: '',
+    description: '',
+    category: 'Other',
+    images: [null, null, null],
+    currentImageIndex: 0,
+    address: '',
+    coordinates: null,
+    tags: [],
+    quantity: 1
   };
+
+  // Add to beginning instead of end
+  setShopData(prev => ({
+    ...prev,
+    items: [newItem, ...prev.items]
+  }));
+
+  // REMOVE the auto-expand logic for desktop
+  // New items will start collapsed by default
+};
+
+// UPDATE the toggleItemExpansion function to only affect the clicked item
+const toggleItemExpansion = (itemId) => {
+  setExpandedItems(prev => {
+    const newSet = new Set(prev);
+    if (newSet.has(itemId)) {
+      newSet.delete(itemId);
+    } else {
+      newSet.add(itemId);
+    }
+    return newSet;
+  });
+};
 
   // Add after handleAddItem function (around line 1400)
   const handleAddService = () => {
@@ -1823,10 +2000,6 @@ useEffect(() => {
       services: [newService, ...(prev.services || [])]
     }));
 
-    // Auto-expand on desktop
-    if (window.innerWidth >= 768) {
-      setExpandedItems(new Set([newService.id]));
-    }
   };
 
   const handleItemUpdate = (itemId, updates) => {
@@ -1859,18 +2032,6 @@ useEffect(() => {
       ...prev,
       services: prev.services.filter(service => service.id !== serviceId)
     }));
-  };
-
-  const toggleItemExpansion = (itemId) => {
-    setExpandedItems(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
-      } else {
-        newSet.add(itemId);
-      }
-      return newSet;
-    });
   };
 
 
@@ -1908,35 +2069,50 @@ const handleSave = async () => {
     return;
   }
 
-  // Default sections for new shops
-  const defaultSections = [
+  
+
+  // Template home sections that will be saved
+  const homeSections = [
     {
       id: 'hero-1',
       type: 'hero-banner',
       order: 0,
       config: {
         headline: finalShopName,
-        subtitle: 'Discover quality products crafted with care',
-        backgroundImage: heroBackgroundImage,
+        subtitle: 'Welcome to ' + finalShopName,
+        backgroundImage: null,
         height: '70vh'
+      }
+    },
+    {
+      id: 'mission-1',
+      type: 'mission-statement',
+      order: 1,
+      config: {
+        title: 'Our Mission',
+        content: 'We are dedicated to providing exceptional products and outstanding customer service. Every item in our collection is carefully selected to ensure the highest quality and value for our customers.'
       }
     },
     {
       id: 'featured-1',
       type: 'featured-items',
-      order: 1,
+      order: 2,
       config: {
         title: 'Featured Products',
         itemCount: 4
       }
     },
     {
-      id: 'mission-1',
-      type: 'mission-statement',
-      order: 2,
+      id: 'gallery-1',
+      type: 'photo-gallery',
+      order: 3,
       config: {
-        title: 'Our Mission',
-        content: 'We are dedicated to providing exceptional products and services.'
+        title: 'Shop Gallery',
+        images: [
+          'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800',
+          'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800',
+          'https://images.unsplash.com/photo-1556742044-3c52d6e88c62?w=800'
+        ]
       }
     }
   ];
@@ -1946,14 +2122,14 @@ const handleSave = async () => {
     name: finalShopName,
     theme: selectedTheme,
     selectedHomeTemplate: 1,
-    homeSections: defaultSections,
+    homeSections: homeSections, // This will be used in the actual shop
     layout: {
       namePosition: shopData.layout.namePosition,
       tabPosition: 'top',
       nameSize: shopNameFontSize
     },
-    items: shopData.items || [], // Ensure items array exists
-    services: shopData.services || [], // ADD: Ensure services array exists
+    items: shopData.items || [],
+    services: shopData.services || [],
     createdAt: new Date().toISOString()
   };
 
@@ -2000,6 +2176,7 @@ const handleSave = async () => {
 
   const renderShopView = () => (
   <MainContent>
+    {/* Profile Section with Backdrop */}
     <ShopProfileSection fontSize={shopNameFontSize}>
       <div className="profile-image">
         <EditableImage
@@ -2052,7 +2229,10 @@ const handleSave = async () => {
       </div>
     </ShopProfileSection>
 
-    {/* Shop Content Type Tabs */}
+    {/* Section Divider */}
+    <SectionDivider theme={selectedTheme} />
+
+    {/* Shop Content Type Tabs with Backdrop */}
     <ShopTabContainer>
       <ShopTab
         active={shopContentType === 'products'}
@@ -2072,6 +2252,9 @@ const handleSave = async () => {
       </ShopTab>
     </ShopTabContainer>
 
+    {/* Section Divider */}
+    <SectionDivider theme={selectedTheme} />
+
     {/* Conditional Rendering based on shopContentType */}
     {shopContentType === 'products' ? (
       <>
@@ -2088,7 +2271,7 @@ const handleSave = async () => {
               const validImages = currentItem.images.filter(Boolean);
               const currentImageIndex = currentItem.currentImageIndex || 0;
               const currentImage = validImages[currentImageIndex] || null;
-              
+
               return (
                 <React.Fragment key={item.id}>
                   {/* Mobile Template Card */}
@@ -2280,86 +2463,87 @@ const handleSave = async () => {
                     </ItemImageContainer>
 
                     <ItemContent>
-                      <ItemHeader onClick={() => toggleItemExpansion(item.id)}>
-                        <h4>
-                          {item.name && item.name !== 'Item Name' ? 
-                            item.name : 
-                            <span style={{ opacity: 0.5 }}>Item Name</span>
-                          }
-                        </h4>
-                        <ExpandButton>
-                          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                        </ExpandButton>
-                      </ItemHeader>
-
-                      <ItemDetails expanded={isExpanded}>
-                        <div className="details-content">
-                          <ValidatedEditableText
-                            value={item.name}
-                            onChange={(value) => handleItemUpdate(item.id, { name: value })}
-                            placeholder="Item Name"
-                            validationRules={VALIDATION_RULES.item.name}
-                            theme={selectedTheme}
-                          />
-                          <ValidatedEditableText
-                            value={item.price}
-                            onChange={(value) => handleItemUpdate(item.id, { price: value })}
-                            placeholder="Price"
-                            validationRules={VALIDATION_RULES.item.price}
-                            theme={selectedTheme}
-                          />
-                          <ValidatedEditableText
-                            value={item.description}
-                            onChange={(value) => handleItemUpdate(item.id, { description: value })}
-                            placeholder="Item Description"
-                            validationRules={VALIDATION_RULES.item.description}
-                            multiline
-                            theme={selectedTheme}
-                          />
-                          <CategorySelect
-                            value={item.category || 'Other'}
-                            onChange={(e) => handleItemUpdate(item.id, { category: e.target.value })}
-                            theme={selectedTheme}
-                          >
-                            {ITEM_CATEGORIES.map(category => (
-                              <option key={category} value={category}>
-                                {category}
-                              </option>
-                            ))}
-                          </CategorySelect>
-                          <QuantitySelector 
-                            value={parseInt(item.quantity) || 1}
-                            onChange={(value) => handleItemUpdate(item.id, { quantity: value })}
-                            theme={selectedTheme}
-                            min={0}
-                            max={9999}
-                          />
-                          <AddressInput
-                            address={item.address || ''}
-                            onAddressChange={(value) => handleItemUpdate(item.id, { 
-                              address: value
-                            })}
-                            onLocationSelect={(location) => {
-                              if (location?.coordinates) {
-                                handleItemUpdate(item.id, {
-                                  address: location.address,
-                                  coordinates: location.coordinates
-                                });
-                              } else if (!location?.address) {
-                                handleItemUpdate(item.id, {
-                                  address: '',
-                                  coordinates: null
-                                });
-                              }
-                            }}
-                          />
-                        </div>
-                      </ItemDetails>
-                    </ItemContent>
-                  </DesktopItemCard>
-                </React.Fragment>
-              );
-            })}
+                    <ItemHeader onClick={() => toggleItemExpansion(item.id)}>
+                      <h4>
+                        {item.name && item.name !== 'Item Name' ? 
+                          item.name : 
+                          <span style={{ opacity: 0.5 }}>Item Name</span>
+                        }
+                      </h4>
+                      <ExpandButton>
+                        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                      </ExpandButton>
+                    </ItemHeader>
+                      
+                    {/* UPDATED: Smooth height transition */}
+                    <ItemDetails expanded={isExpanded}>
+                      <div className="details-content">
+                        <ValidatedEditableText
+                          value={item.name}
+                          onChange={(value) => handleItemUpdate(item.id, { name: value })}
+                          placeholder="Item Name"
+                          validationRules={VALIDATION_RULES.item.name}
+                          theme={selectedTheme}
+                        />
+                        <ValidatedEditableText
+                          value={item.price}
+                          onChange={(value) => handleItemUpdate(item.id, { price: value })}
+                          placeholder="Price"
+                          validationRules={VALIDATION_RULES.item.price}
+                          theme={selectedTheme}
+                        />
+                        <ValidatedEditableText
+                          value={item.description}
+                          onChange={(value) => handleItemUpdate(item.id, { description: value })}
+                          placeholder="Item Description"
+                          validationRules={VALIDATION_RULES.item.description}
+                          multiline
+                          theme={selectedTheme}
+                        />
+                        <CategorySelect
+                          value={item.category || 'Other'}
+                          onChange={(e) => handleItemUpdate(item.id, { category: e.target.value })}
+                          theme={selectedTheme}
+                        >
+                          {ITEM_CATEGORIES.map(category => (
+                            <option key={category} value={category}>
+                              {category}
+                            </option>
+                          ))}
+                        </CategorySelect>
+                        <QuantitySelector 
+                          value={parseInt(item.quantity) || 1}
+                          onChange={(value) => handleItemUpdate(item.id, { quantity: value })}
+                          theme={selectedTheme}
+                          min={0}
+                          max={9999}
+                        />
+                        <AddressInput
+                          address={item.address || ''}
+                          onAddressChange={(value) => handleItemUpdate(item.id, { 
+                            address: value
+                          })}
+                          onLocationSelect={(location) => {
+                            if (location?.coordinates) {
+                              handleItemUpdate(item.id, {
+                                address: location.address,
+                                coordinates: location.coordinates
+                              });
+                            } else if (!location?.address) {
+                              handleItemUpdate(item.id, {
+                                address: '',
+                                coordinates: null
+                              });
+                            }
+                          }}
+                        />
+                      </div>
+                    </ItemDetails>
+                  </ItemContent>
+                </DesktopItemCard>
+              </React.Fragment>
+            );
+          })}
           </ItemsGrid>
         </ItemsContainer>
       </>
@@ -2571,11 +2755,11 @@ const handleSave = async () => {
                           }
                         </h4>
                         <ExpandButton>
-                          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                          {expandedItems.has(service.id) ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                         </ExpandButton>
                       </ItemHeader>
                       
-                      <ItemDetails expanded={isExpanded}>
+                      <ItemDetails expanded={expandedItems.has(service.id)}>
                         <div className="details-content">
                           <ValidatedEditableText
                             value={service.name}
@@ -2817,288 +3001,206 @@ const handleSave = async () => {
   </MainContent>
 );
 
-  const renderHomeView = () => {
-    const templates = [
-      { id: 1, name: 'Streetwear', desc: 'Bold & Urban', component: StreetwearTemplate },
-      { id: 2, name: 'Organization', desc: 'Events & Calendar', component: OrganizationTemplate },
-      { id: 3, name: 'Tech', desc: 'Futuristic', component: TechTemplate },
-      { id: 4, name: 'Minimalist', desc: 'Clean & Elegant', component: MinimalistTemplate },
-      { id: 5, name: 'Local Market', desc: 'Community', component: LocalMarketTemplate }
-    ];
+  // UPDATE the renderHomeView function in LiveShopCreation.js
 
-    const SelectedTemplate = templates.find(t => t.id === shopData.selectedHomeTemplate)?.component || StreetwearTemplate;
+const renderHomeView = () => {
+  
+  // Get filtered items for featured section (exclude empty/default items)
+  const featuredItems = shopData?.items?.filter(item => 
+    item && 
+    item.name && 
+    item.name !== 'Item Name' && 
+    !item.deleted
+  ).slice(0, 4) || [];
 
-    // Generate animated background based on template
-    const getTemplateBackground = (templateId) => {
-      const backgrounds = {
-        1: 'linear-gradient(45deg, #1a1a1a 25%, transparent 25%), linear-gradient(-45deg, #1a1a1a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1a1a1a 75%), linear-gradient(-45deg, transparent 75%, #1a1a1a 75%)',
-        2: 'radial-gradient(circle at 20% 50%, rgba(128, 0, 0, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(128, 0, 0, 0.1) 0%, transparent 50%)',
-        3: 'linear-gradient(0deg, rgba(128, 0, 0, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(128, 0, 0, 0.05) 1px, transparent 1px)',
-        4: 'linear-gradient(180deg, rgba(128, 0, 0, 0.02) 0%, transparent 100%)',
-        5: 'repeating-radial-gradient(circle at 0 0, transparent 0, rgba(128, 0, 0, 0.05) 10px, transparent 20px)'
-      };
-      return backgrounds[templateId] || backgrounds[1];
-    };
+  // Get item image URL
+  const getItemImage = (item) => {
+    if (!item?.images || item.images.length === 0) return null;
+    const validImage = item.images.find(img => {
+      if (typeof img === 'string') return img;
+      if (img?.preview) return img.preview;
+      return null;
+    });
+    if (typeof validImage === 'string') return validImage;
+    if (validImage?.preview) return validImage.preview;
+    return null;
+  };
 
-    const getTemplateAnimation = (templateId) => {
-      const animations = {
-        1: 'streetwearMove',
-        2: 'organizationPulse',
-        3: 'techGrid',
-        4: 'minimalistFade',
-        5: 'marketFloat'
-      };
-      return animations[templateId] || animations[1];
-    };
-
-    // Preview sections with animated backgrounds
-    const previewSections = [
-      {
-        id: 'hero-preview',
-        type: 'hero-banner',
-        order: 0,
-        config: {
-          headline: shopData?.name || 'Your Brand Name',
-          subtitle: 'Discover quality products crafted with care',
-          backgroundImage: null, // Will use animated background
-          height: '70vh'
-        }
-      },
-      {
-        id: 'featured-preview',
-        type: 'featured-items',
-        order: 1,
-        config: {
-          title: 'Featured Products',
-          itemCount: 4
-        }
-      }
-    ];
-
-    return (
-      <MainContent>
-        {/* Template Selector */}
-        <TemplateSelectorWrapper>
-          <TemplateSelectorContainer theme={selectedTheme}>
-            <h3 style={{
-              fontSize: '1.2rem',
-              marginBottom: '1rem',
-              color: selectedTheme?.colors?.accent,
-              fontWeight: '600',
-              textAlign: 'center'
-            }}>
-              Choose Your Home Page Style
-            </h3>
-            <div style={{
-              display: 'flex',
-              gap: '0.75rem',
-              flexWrap: 'wrap',
-              justifyContent: 'center'
-            }}>
-              {templates.map(template => (
-                <button
-                  key={template.id}
-                  onClick={() => setShopData(prev => ({ ...prev, selectedHomeTemplate: template.id }))}
-                  style={{
-                    background: shopData.selectedHomeTemplate === template.id ? 
-                      selectedTheme?.colors?.accent : 'transparent',
-                    color: shopData.selectedHomeTemplate === template.id ? 
-                      'white' : selectedTheme?.colors?.text,
-                    border: `2px solid ${selectedTheme?.colors?.accent}`,
-                    padding: '0.75rem 1.25rem',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    fontWeight: '600',
-                    fontSize: '0.85rem',
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (shopData.selectedHomeTemplate !== template.id) {
-                      e.target.style.background = `${selectedTheme?.colors?.accent}20`;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (shopData.selectedHomeTemplate !== template.id) {
-                      e.target.style.background = 'transparent';
-                    }
-                  }}
-                >
-                  <div>{template.name}</div>
-                  <div style={{
-                    fontSize: '0.7rem',
-                    opacity: 0.8,
-                    marginTop: '0.25rem'
-                  }}>
-                    {template.desc}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </TemplateSelectorContainer>
-        </TemplateSelectorWrapper>
-
-        {/* Live Preview with Animated Background */}
+  return (
+    <MainContent>
+      {/* Hero Banner Section */}
+      <SectionWrapper theme={selectedTheme} noPadding delay={0}>
         <div style={{
-          background: `${selectedTheme?.colors?.surface}30`,
-          borderRadius: '16px',
-          padding: '2rem 1rem',
-          border: `1px solid ${selectedTheme?.colors?.accent}40`,
-          marginTop: '2rem'
+          minHeight: '70vh',
+          background: `linear-gradient(135deg, ${selectedTheme?.colors?.accent}15 0%, ${selectedTheme?.colors?.background}50 100%)`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+          padding: 'clamp(1rem, 3vw, 3rem)',
+          textAlign: 'center'
         }}>
-          <style>
-            {`
-              @keyframes streetwearMove {
-                0% { background-position: 0 0, 0 0, 50px 50px, 50px 50px; }
-                100% { background-position: 50px 50px, 50px 50px, 100px 100px, 100px 100px; }
-              }
-              @keyframes organizationPulse {
-                0%, 100% { opacity: 0.3; }
-                50% { opacity: 0.6; }
-              }
-              @keyframes techGrid {
-                0% { transform: translateY(0); }
-                100% { transform: translateY(20px); }
-              }
-              @keyframes minimalistFade {
-                0%, 100% { opacity: 0.2; }
-                50% { opacity: 0.4; }
-              }
-              @keyframes marketFloat {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.05); }
-                100% { transform: scale(1); }
-              }
-            `}
-          </style>
-
-          {/* Enhanced Hero Banner with Animated Background */}
-          <div style={{
-            minHeight: '70vh',
-            background: getTemplateBackground(shopData.selectedHomeTemplate),
-            backgroundSize: shopData.selectedHomeTemplate === 1 ? '100px 100px' : 
-                           shopData.selectedHomeTemplate === 3 ? '20px 20px' : 'cover',
-            animation: `${getTemplateAnimation(shopData.selectedHomeTemplate)} 20s linear infinite`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-            borderRadius: '12px',
-            padding: 'clamp(1.5rem, 3vw, 3rem)'
+          <div style={{ 
+            position: 'relative', 
+            zIndex: 1, 
+            padding: 'clamp(1rem, 3vw, 2rem)',
+            maxWidth: '900px',
+            width: '100%',
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            borderRadius: 'clamp(12px, 2.5vw, 16px)',
+            backdropFilter: 'blur(10px)'
           }}>
-            {/* Overlay gradient */}
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              background: `linear-gradient(135deg, ${selectedTheme?.colors?.accent}15 0%, ${selectedTheme?.colors?.background}50 100%)`,
-              zIndex: 1
-            }} />
-
-            {/* Content */}
-            <div style={{ 
-              textAlign: 'center', 
-              position: 'relative', 
-              zIndex: 2, 
-              padding: 'clamp(1rem, 2vw, 2rem)',
-              maxWidth: '900px',
-              width: '100%',
-              background: 'rgba(0,0,0,0.3)',
-              borderRadius: '16px',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <h1 style={{
-                fontSize: 'clamp(1.5rem, 5vw, 4rem)',
-                fontWeight: '900',
-                margin: '0 0 clamp(0.75rem, 1.5vw, 1rem) 0',
-                lineHeight: 1.1,
-                textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-                color: selectedTheme?.colors?.text
-              }}>
-                {shopData?.name || 'Your Brand Name'}
-              </h1>
-              <p style={{
-                fontSize: 'clamp(1rem, 2vw, 1.5rem)',
-                opacity: 0.9,
-                textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
-                color: selectedTheme?.colors?.text
-              }}>
-                Discover quality products crafted with care
-              </p>
-            </div>
-          </div>
-
-          {/* Featured Items Preview */}
-          <div style={{ marginTop: '3rem' }}>
-            <h2 style={{
-              fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
+            <h1 style={{
+              fontSize: 'clamp(1.5rem, 6vw, 4rem)',
               fontWeight: '900',
-              margin: '0 0 2rem 0',
-              color: selectedTheme?.colors?.accent,
-              textAlign: 'center'
+              margin: '0 0 clamp(0.5rem, 2vw, 1rem) 0',
+              lineHeight: 1.1,
+              textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+              color: selectedTheme?.colors?.text
             }}>
-              Featured Products
-            </h2>
+              {shopData?.name || 'Your Brand Name'}
+            </h1>
+            <p style={{
+              fontSize: 'clamp(0.9rem, 2.5vw, 1.5rem)',
+              opacity: 0.9,
+              textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+              color: selectedTheme?.colors?.text,
+              lineHeight: 1.4,
+              margin: 0
+            }}>
+              Welcome to Your Website
+            </p>
+          </div>
+        </div>
+      </SectionWrapper>
 
+      {/* Mission Statement Section */}
+      <SectionWrapper theme={selectedTheme} delay={0.2}>
+        <div style={{
+          background: `${selectedTheme?.colors?.surface}40`,
+          borderRadius: 'clamp(10px, 2.5vw, 20px)',
+          padding: 'clamp(1.5rem, 5vw, 4rem) clamp(1rem, 4vw, 3rem)',
+          textAlign: 'center',
+          border: `1px solid ${selectedTheme?.colors?.accent}20`,
+          backdropFilter: 'blur(5px)'
+        }}>
+          <h2 style={{
+            fontSize: 'clamp(1.3rem, 5vw, 2.5rem)',
+            color: selectedTheme?.colors?.accent,
+            marginBottom: 'clamp(1rem, 3vw, 2rem)',
+            fontWeight: '700'
+          }}>
+            Our Mission
+          </h2>
+          <p style={{
+            fontSize: 'clamp(0.9rem, 2.5vw, 1.3rem)',
+            lineHeight: 1.6,
+            maxWidth: '800px',
+            margin: '0 auto',
+            opacity: 0.9,
+            color: selectedTheme?.colors?.text
+          }}>
+            We are dedicated to providing exceptional products and outstanding customer service. 
+            Every item in our collection is carefully selected to ensure the highest quality and value for our customers.
+          </p>
+        </div>
+      </SectionWrapper>
+
+      {/* Featured Items Section - Live from Shop Tab */}
+      <SectionWrapper theme={selectedTheme} delay={0.4}>
+        <div style={{ padding: '0 clamp(0.5rem, 1vw, 1rem)' }}>
+          <h2 style={{
+            fontSize: 'clamp(1.3rem, 3.5vw, 2.5rem)',
+            fontWeight: '700',
+            marginBottom: 'clamp(1rem, 2vw, 2rem)',
+            textAlign: 'center',
+            color: selectedTheme?.colors?.text
+          }}>
+            Featured Products
+          </h2>
+
+          {featuredItems.length > 0 ? (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(160px, 22vw, 300px), 1fr))',
-              gap: 'clamp(1rem, 2vw, 2rem)',
-              padding: '0 clamp(0.5rem, 1vw, 1rem)'
+              gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(140px, 45vw, 280px), 1fr))',
+              gap: 'clamp(0.75rem, 2.5vw, 2rem)',
+              maxWidth: '1200px',
+              margin: '0 auto'
             }}>
-              {shopData?.items?.filter(item => !item.deleted).slice(0, 4).map((item) => {
-                const itemImage = item.images?.find(img => {
-                  if (typeof img === 'string') return img;
-                  if (img?.preview) return img.preview;
-                  return null;
-                });
-
-                const imageUrl = typeof itemImage === 'string' ? itemImage : itemImage?.preview;
+              {featuredItems.map((item) => {
+                const itemImage = getItemImage(item);
 
                 return (
                   <div key={item.id} style={{
-                    background: `${selectedTheme?.colors?.surface}90`,
-                    borderRadius: 'clamp(10px, 1.5vw, 16px)',
+                    backgroundColor: `${selectedTheme?.colors?.surface}90`,
+                    borderRadius: 'clamp(8px, 2vw, 16px)',
                     overflow: 'hidden',
                     border: `1px solid ${selectedTheme?.colors?.accent}30`,
                     transition: 'all 0.3s ease',
-                    boxShadow: `0 4px 12px ${selectedTheme?.colors?.accent}10`
+                    boxShadow: `0 4px 12px ${selectedTheme?.colors?.accent}10`,
+                    cursor: 'pointer'
                   }}>
                     <div style={{
-                      height: 'clamp(140px, 28vw, 280px)',
-                      background: `${selectedTheme?.colors?.background}50`,
+                      height: 'clamp(120px, 35vw, 280px)',
+                      backgroundColor: `${selectedTheme?.colors?.background}50`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       position: 'relative',
                       overflow: 'hidden'
                     }}>
-                      {imageUrl ? (
+                      {itemImage ? (
                         <img 
-                          src={imageUrl} 
+                          src={itemImage} 
                           alt={item?.name || 'Product'} 
                           style={{
                             width: '100%',
                             height: '100%',
                             objectFit: 'cover'
-                          }} 
+                          }}
                         />
                       ) : (
                         <Package size={48} color={selectedTheme?.colors?.accent} style={{ opacity: 0.5 }} />
                       )}
+                      {/* Quantity Badge */}
+                      {item?.quantity !== undefined && (
+                        <div style={{
+                          position: 'absolute',
+                          top: 'clamp(0.4rem, 1.5vw, 0.75rem)',
+                          right: 'clamp(0.4rem, 1.5vw, 0.75rem)',
+                          backgroundColor: parseInt(item.quantity) > 0 ? 
+                            'rgba(76, 175, 80, 0.9)' : 'rgba(244, 67, 54, 0.9)',
+                          color: 'white',
+                          padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.4rem, 1.2vw, 0.75rem)',
+                          borderRadius: 'clamp(8px, 2vw, 16px)',
+                          fontSize: 'clamp(0.65rem, 1.5vw, 0.8rem)',
+                          fontWeight: '700'
+                        }}>
+                          {parseInt(item.quantity) > 0 ? `${item.quantity} LEFT` : 'SOLD OUT'}
+                        </div>
+                      )}
                     </div>
-                    <div style={{ padding: 'clamp(1rem, 2vw, 1.5rem)' }}>
+                    <div style={{ padding: 'clamp(0.75rem, 2.5vw, 1.5rem)' }}>
                       <h3 style={{
-                        fontSize: 'clamp(0.9rem, 1.6vw, 1.2rem)',
+                        fontSize: 'clamp(0.85rem, 2.2vw, 1.2rem)',
                         fontWeight: '700',
-                        marginBottom: 'clamp(0.3rem, 0.6vw, 0.5rem)',
+                        marginBottom: 'clamp(0.25rem, 1vw, 0.5rem)',
                         color: selectedTheme?.colors?.text
                       }}>
                         {item?.name || 'Product Name'}
                       </h3>
+                      <p style={{
+                        fontSize: 'clamp(0.75rem, 1.5vw, 0.9rem)',
+                        opacity: 0.7,
+                        marginBottom: 'clamp(0.5rem, 1.5vw, 1rem)',
+                        lineHeight: 1.4,
+                        color: selectedTheme?.colors?.text
+                      }}>
+                        {item?.description || 'Product description'}
+                      </p>
                       <div style={{
-                        fontSize: 'clamp(1.1rem, 2.2vw, 1.6rem)',
+                        fontSize: 'clamp(1rem, 3vw, 1.6rem)',
                         fontWeight: '900',
                         color: selectedTheme?.colors?.accent
                       }}>
@@ -3109,11 +3211,382 @@ const handleSave = async () => {
                 );
               })}
             </div>
+          ) : (
+            <div style={{
+              textAlign: 'center',
+              padding: 'clamp(2rem, 8vw, 5rem)',
+              color: selectedTheme?.colors?.text,
+              opacity: 0.6
+            }}>
+              <Package size={64} color={selectedTheme?.colors?.accent} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+              <h3 style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)', margin: '0 0 0.5rem 0' }}>No Products Yet</h3>
+              <p style={{ fontSize: 'clamp(0.85rem, 2vw, 1rem)', margin: 0 }}>
+                Add products in the Shop tab to see them featured here
+              </p>
+            </div>
+          )}
+        </div>
+      </SectionWrapper>
+
+      {/* Animated Gallery Section */}
+      <SectionWrapper theme={selectedTheme} delay={0.6}>
+        <div style={{
+          padding: 'clamp(1rem, 2vw, 2rem)',
+          background: `${selectedTheme?.colors?.surface}30`,
+          borderRadius: 'clamp(12px, 2vw, 16px)',
+          border: `1px solid ${selectedTheme?.colors?.accent}30`
+        }}>
+          <h2 style={{
+            fontSize: 'clamp(1.3rem, 3.5vw, 2.5rem)',
+            fontWeight: '700',
+            marginBottom: 'clamp(1rem, 2vw, 2rem)',
+            textAlign: 'center',
+            color: selectedTheme?.colors?.text
+          }}>
+            Shop Gallery
+          </h2>
+
+          <div style={{
+            position: 'relative',
+            height: 'clamp(250px, 50vw, 500px)',
+            borderRadius: 'clamp(10px, 2.5vw, 20px)',
+            overflow: 'hidden',
+            background: `${selectedTheme?.colors?.background}80`,
+            border: `2px solid ${selectedTheme?.colors?.accent}40`,
+            marginBottom: 'clamp(1rem, 2vw, 2rem)'
+          }}>
+            {/* Fading Images */}
+            {templateImages.map((image, index) => (
+              <div
+                key={index}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  opacity: currentGalleryImage === index ? 1 : 0,
+                  transition: 'opacity 1s ease-in-out',
+                  backgroundImage: `url(${image})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat'
+                }}
+              />
+            ))}
+            
+            {/* Overlay Text */}
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+              padding: 'clamp(1rem, 2vw, 2rem)',
+              color: 'white',
+              textAlign: 'center',
+              zIndex: 2
+            }}>
+              
+            </div>
+
+            {/* Navigation Dots */}
+            <div style={{
+              position: 'absolute',
+              bottom: 'clamp(0.75rem, 2vw, 1.5rem)',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              gap: 'clamp(0.3rem, 1.2vw, 0.5rem)',
+              zIndex: 3
+            }}>
+              {templateImages.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentGalleryImage(index)}
+                  style={{
+                    width: 'clamp(8px, 2vw, 12px)',
+                    height: 'clamp(8px, 2vw, 12px)',
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: currentGalleryImage === index ? 
+                      selectedTheme?.colors?.accent : 
+                      'rgba(255,255,255,0.5)',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: currentGalleryImage === index ? 
+                      `0 0 10px ${selectedTheme?.colors?.accent}` : 
+                      'none'
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </SectionWrapper>
+
+{/* Footer Contacts Section */}
+<SectionWrapper theme={selectedTheme} delay={0.8}>
+  <div style={{
+    background: `${selectedTheme?.colors?.surface}80`,
+    borderRadius: 'clamp(12px, 2vw, 16px)',
+    padding: 'clamp(2rem, 4vw, 3rem)',
+    border: `1px solid ${selectedTheme?.colors?.accent}30`,
+    marginTop: 'clamp(2rem, 4vw, 4rem)'
+  }}>
+    {/* Footer Content */}
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+      gap: 'clamp(2rem, 4vw, 3rem)',
+      maxWidth: '1200px',
+      margin: '0 auto'
+    }}>
+      
+      {/* Brand Column */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
+        <h3 style={{
+          fontSize: 'clamp(1.2rem, 2.5vw, 1.5rem)',
+          fontWeight: '700',
+          color: selectedTheme?.colors?.accent,
+          marginBottom: '0.5rem'
+        }}>
+          {shopData?.name || 'Your Brand'}
+        </h3>
+        
+        <div style={{
+          display: 'flex',
+          gap: '1rem',
+          marginTop: '0.5rem'
+        }}>
+          {/* Social Media Links */}
+          <div style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            background: `${selectedTheme?.colors?.accent}20`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            border: `1px solid ${selectedTheme?.colors?.accent}30`
+          }}>
+            <Instagram size={18} color={selectedTheme?.colors?.accent} />
+          </div>
+          <div style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            background: `${selectedTheme?.colors?.accent}20`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            border: `1px solid ${selectedTheme?.colors?.accent}30`
+          }}>
+            <Twitter size={18} color={selectedTheme?.colors?.accent} />
+          </div>
+          <div style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            background: `${selectedTheme?.colors?.accent}20`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            border: `1px solid ${selectedTheme?.colors?.accent}30`
+          }}>
+            <Facebook size={18} color={selectedTheme?.colors?.accent} />
           </div>
         </div>
-      </MainContent>
-    );
-  };
+      </div>
+
+      {/* Contact Info Column */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
+        <h4 style={{
+          fontSize: 'clamp(1rem, 2vw, 1.2rem)',
+          fontWeight: '600',
+          color: selectedTheme?.colors?.text,
+          marginBottom: '0.5rem'
+        }}>
+          Contact Info
+        </h4>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.75rem'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            color: selectedTheme?.colors?.text,
+            opacity: 0.8
+          }}>
+            <Mail size={18} color={selectedTheme?.colors?.accent} />
+            <span style={{ fontSize: 'clamp(0.85rem, 1.5vw, 0.95rem)' }}>
+              contact@yourbrand.com
+            </span>
+          </div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            color: selectedTheme?.colors?.text,
+            opacity: 0.8
+          }}>
+            <Phone size={18} color={selectedTheme?.colors?.accent} />
+            <span style={{ fontSize: 'clamp(0.85rem, 1.5vw, 0.95rem)' }}>
+              (555) 123-4567
+            </span>
+          </div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.75rem',
+            color: selectedTheme?.colors?.text,
+            opacity: 0.8
+          }}>
+            <MapPin size={18} color={selectedTheme?.colors?.accent} style={{ marginTop: '2px' }} />
+            <span style={{ fontSize: 'clamp(0.85rem, 1.5vw, 0.95rem)', lineHeight: 1.4 }}>
+              123 Commerce Street<br />
+              City, State 12345
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Business Hours Column */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
+        <h4 style={{
+          fontSize: 'clamp(1rem, 2vw, 1.2rem)',
+          fontWeight: '600',
+          color: selectedTheme?.colors?.text,
+          marginBottom: '0.5rem'
+        }}>
+          Business Hours
+        </h4>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.5rem'
+        }}>
+          {[
+            { day: 'Monday - Friday', hours: '9:00 AM - 6:00 PM' },
+            { day: 'Saturday', hours: '10:00 AM - 4:00 PM' },
+            { day: 'Sunday', hours: 'Closed' }
+          ].map((schedule, index) => (
+            <div key={index} style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '0.25rem 0'
+            }}>
+              <span style={{
+                fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)',
+                color: selectedTheme?.colors?.text,
+                opacity: 0.8
+              }}>
+                {schedule.day}
+              </span>
+              <span style={{
+                fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)',
+                color: selectedTheme?.colors?.accent,
+                fontWeight: '500'
+              }}>
+                {schedule.hours}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+    </div>
+
+    {/* Footer Bottom */}
+    <div style={{
+      borderTop: `1px solid ${selectedTheme?.colors?.accent}20`,
+      marginTop: 'clamp(2rem, 4vw, 3rem)',
+      paddingTop: 'clamp(1rem, 2vw, 1.5rem)',
+      textAlign: 'center'
+    }}>
+      <p style={{
+        fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)',
+        color: selectedTheme?.colors?.text,
+        opacity: 0.6,
+        margin: 0
+      }}>
+        © {new Date().getFullYear()} {shopData?.name || 'Your Brand'}. All rights reserved.
+      </p>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        gap: 'clamp(1rem, 2vw, 2rem)',
+        marginTop: '0.75rem',
+        flexWrap: 'wrap'
+      }}>
+        <span style={{
+          fontSize: 'clamp(0.75rem, 1.3vw, 0.85rem)',
+          color: selectedTheme?.colors?.text,
+          opacity: 0.6,
+          cursor: 'pointer',
+          transition: 'opacity 0.3s ease'
+        }}>
+          Privacy Policy
+        </span>
+        <span style={{
+          fontSize: 'clamp(0.75rem, 1.3vw, 0.85rem)',
+          color: selectedTheme?.colors?.text,
+          opacity: 0.6,
+          cursor: 'pointer',
+          transition: 'opacity 0.3s ease'
+        }}>
+          Terms of Service
+        </span>
+        <span style={{
+          fontSize: 'clamp(0.75rem, 1.3vw, 0.85rem)',
+          color: selectedTheme?.colors?.text,
+          opacity: 0.6,
+          cursor: 'pointer',
+          transition: 'opacity 0.3s ease'
+        }}>
+          Shipping Info
+        </span>
+        <span style={{
+          fontSize: 'clamp(0.75rem, 1.3vw, 0.85rem)',
+          color: selectedTheme?.colors?.text,
+          opacity: 0.6,
+          cursor: 'pointer',
+          transition: 'opacity 0.3s ease'
+        }}>
+          Returns
+        </span>
+      </div>
+    </div>
+  </div>
+</SectionWrapper>
+
+      
+    </MainContent>
+  );
+};
 
   const renderCommunityView = () => (
     <MainContent>
@@ -3131,6 +3604,14 @@ const handleSave = async () => {
     </MainContent>
   );
 
+  const handleTabChange = (tabName) => {
+    setActiveTab(tabName);
+    // The useEffect above will handle the scroll, but we can also add immediate scroll here
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+  };
+
   return (
     <ThemeProvider theme={selectedTheme}>
       <GlobalStyles />
@@ -3138,15 +3619,21 @@ const handleSave = async () => {
         <Header theme={selectedTheme}>
           <HeaderLeft>
             <Logo onClick={() => navigate('/')} theme={selectedTheme}>
-              {shopData?.name || 'Your Brand Name'}
+              {shopData?.name || 'Brand Name'}
             </Logo>
-          </HeaderLeft>
+          </HeaderLeft    > 
 
           <HeaderRight>
             <HeaderTabButton
               theme={selectedTheme}
               active={activeTab === 'home'}
-              onClick={() => setActiveTab('home')}
+              onClick={() => {
+                setActiveTab('home');
+                // Force scroll to top immediately
+                setTimeout(() => {
+                  window.scrollTo({ top: 0, behavior: 'instant' });
+                }, 0);
+              }}
               title="Home"
             >
               <Home size={22} />
@@ -3156,7 +3643,13 @@ const handleSave = async () => {
             <HeaderTabButton
               theme={selectedTheme}
               active={activeTab === 'shop'}
-              onClick={() => setActiveTab('shop')}
+              onClick={() => {
+                setActiveTab('shop');
+                // Force scroll to top immediately
+                setTimeout(() => {
+                  window.scrollTo({ top: 0, behavior: 'instant' });
+                }, 0);
+              }}
               title="Shop"
             >
               <Store size={22} />
@@ -3166,7 +3659,13 @@ const handleSave = async () => {
             <HeaderTabButton
               theme={selectedTheme}
               active={activeTab === 'community'}
-              onClick={() => setActiveTab('community')}
+              onClick={() => {
+                setActiveTab('community');
+                // Force scroll to top immediately
+                setTimeout(() => {
+                  window.scrollTo({ top: 0, behavior: 'instant' });
+                }, 0);
+              }}
               title="Community"
             >
               <Users size={22} />
@@ -3186,7 +3685,7 @@ const handleSave = async () => {
           </HeaderRight>
         </Header>
           
-        {/* ADD Floating Controls before closing PageContainer */}
+        {/* Floating Controls */}
         <FloatingControls>
           <FloatingButton
             onClick={refreshTheme}
@@ -3205,11 +3704,20 @@ const handleSave = async () => {
           >
             <Pin size={24} />
           </FloatingButton>
-        </FloatingControls>
+        </FloatingControls    > 
 
-        {activeTab === 'shop' && renderShopView()}
-        {activeTab === 'home' && renderHomeView()}
-        {activeTab === 'community' && renderCommunityView()}
+        {/* Tab Content with independent display */}
+        <TabContentContainer active={activeTab === 'shop'}>
+          {renderShopView()}
+        </TabContentContainer>
+          
+        <TabContentContainer active={activeTab === 'home'}>
+          {renderHomeView()}
+        </TabContentContainer>
+          
+        <TabContentContainer active={activeTab === 'community'}>
+          {renderCommunityView()}
+        </TabContentContainer>      
 
         {/* Save Button */}
         <SaveButtonContainer>
