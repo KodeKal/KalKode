@@ -32,12 +32,8 @@ import {
   MapPin
 } from 'lucide-react';
 import { useTempStore } from '../../contexts/TempStoreContext';
-import EditableText from './components/EditableComponents/EditableText';
 import EditableImage from './components/EditableComponents/EditableImage';
 import EditableItem from './components/EditableComponents/EditableItem';
-import TabPositioner from './components/TabPositioner';
-import { DEFAULT_THEME } from '../../theme/config/themes';
-import ThemeSelector from '../../components/ThemeSelector/ThemeSelector';
 import AddressInput from '../../components/shop/AddressInput';
 import { WELCOME_STYLES } from '../../theme/welcomeStyles';
 import QuantitySelector from '../../components/shop/QuantitySelector';
@@ -256,27 +252,6 @@ const ItemsContainer = styled.div`
   }
 `;
 
-// UPDATE the ShopTabContainer styled component
-const ShopTabContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin: 2rem 0 1.5rem;
-  padding: 1rem;
-  background: ${props => `${props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'}30`};
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(128, 0, 0, 0.3)'};
-  position: relative;
-  z-index: 2;
-  max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
-
-  @media (min-width: 768px) {
-    padding: 1.5rem;
-  }
-`;
 
 // UPDATE the AddItemButton styled component
 const AddItemButton = styled.button`
@@ -695,94 +670,6 @@ const CancelButton = styled.button`
   }
 `;
 
-// Add these new components
-const TemplateCard = styled.div`
-  background: ${props => props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'};
-  border-radius: ${props => props.theme?.styles?.borderRadius || '12px'};
-  overflow: hidden;
-  border: 1px solid ${props => `${props.theme?.colors?.accent}30` || 'rgba(255, 255, 255, 0.1)'};
-  position: relative;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  min-height: 280px;
-  display: flex;
-  flex-direction: column;
-
-  &:hover {
-    transform: translateY(-5px);
-    border-color: ${props => props.theme?.colors?.accent};
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-
-    .delete-button {
-      opacity: 1;
-    }
-  }
-
-  @media (max-width: 640px) {
-    min-height: 260px;
-  }
-`;
-
-const TemplateImageContainer = styled.div`
-  position: relative;
-  height: 180px;
-  overflow: hidden;
-  background: ${props => `${props.theme?.colors?.background || '#000000'}50`};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .placeholder {
-    color: ${props => props.theme?.colors?.text || '#fff'};
-    opacity: 0.3;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  @media (max-width: 640px) {
-    height: 160px;
-  }
-`;
-
-const TemplateContent = styled.div`
-  padding: 1rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-
-  .item-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: ${props => props.theme?.colors?.text || '#FFFFFF'};
-    margin-bottom: 0.5rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .item-price {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: ${props => props.theme?.colors?.accent || '#800000'};
-    text-align: right;
-  }
-
-  .empty-text {
-    font-size: 0.9rem;
-    color: ${props => `${props.theme?.colors?.text}60` || 'rgba(255, 255, 255, 0.4)'};
-    font-style: italic;
-  }
-`;
-
 const Logo = styled.div`
   color: ${props => props.theme?.colors?.accent || '#800000'};
   font-family: ${props => props.theme?.fonts?.heading || "'Impact', sans-serif"};
@@ -887,46 +774,6 @@ const ShopNameInput = styled.input`
   }
 `;
 
-// View toggle container
-const ViewToggleContainer = styled.div`
-  position: fixed;
-  bottom: 1rem;
-  left: 24%;
-  transform: translateX(-50%);
-  z-index: 90;
-  display: flex;
-  background: ${props => `${props.theme?.colors?.background || '#000000'}E5`};
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  border: 1px solid ${props => `${props.theme?.colors?.accent}40` || 'rgba(128, 0, 0, 0.4)'};
-  padding: 0.25rem;
-  
-  @media (min-width: 768px) {
-    bottom: 2rem;
-  }
-`;
-
-const ViewToggleButton = styled.button`
-  background: ${props => props.active ? props.theme?.colors?.accent || '#800000' : 'transparent'};
-  border: none;
-  color: ${props => props.active ? 'white' : props.theme?.colors?.text || '#FFFFFF'};
-  padding: 0.5rem 1rem;
-  border-radius: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  
-  &:active {
-    transform: scale(0.95);
-  }
-`;
-
-
-
-// CHANGE 3: Update ItemCard styled component (around line 346)
 // REPLACE the entire ItemCard component with:
 const ItemCard = styled.div`
   background: ${props => props.theme?.colors?.surface || 'rgba(255, 255, 255, 0.05)'};
@@ -1330,18 +1177,6 @@ const ActionButton = styled.button`
   }
 `;
 
-const TabControlsContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  margin: 2rem 0;
-  padding: 0 1rem;
-  
-  @media (min-width: 768px) {
-    margin: 3rem 0;
-    padding: 0;
-  }
-`;
-
 const GlobalStyles = createGlobalStyle`
   .ping {
     position: absolute;
@@ -1595,33 +1430,6 @@ const MobileDeleteButton = styled.button`
 `;
 
 
-// Add after existing styled components (around line 800)
-const TemplateSelectorWrapper = styled.div`
-  display: flex;
-  justify-content: center;
-  margin-bottom: 2rem;
-  padding: 0 1rem;
-  
-  @media (max-width: 768px) {
-    margin-bottom: 1.5rem;
-    padding: 0 0.5rem;
-  }
-`;
-
-const TemplateSelectorContainer = styled.div`
-  background: ${props => `${props.theme?.colors?.surface}50`};
-  border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px solid ${props => `${props.theme?.colors?.accent}40`};
-  max-width: 900px;
-  width: 100%;
-  
-  @media (max-width: 768px) {
-    padding: 1rem;
-    border-radius: 8px;
-  }
-`;
-
 // Main Component
 const LiveShopCreation = () => {
   const navigate = useNavigate();
@@ -1637,14 +1445,17 @@ const LiveShopCreation = () => {
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [validationErrors, setValidationErrors] = useState({});
   const [editingItem, setEditingItem] = useState(null);
+  
 
   // Add these new state variables at the top of LiveShopCreation component (around line 1000)
   const [shopNameError, setShopNameError] = useState('');
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
-  const [heroBackgroundImage, setHeroBackgroundImage] = useState(null);
   const [shopContentType, setShopContentType] = useState('products');
   const [currentGalleryImage, setCurrentGalleryImage] = useState(0);
+
+  
+
 
   useEffect(() => {
     // Use requestAnimationFrame for reliable scroll reset
@@ -2037,157 +1848,160 @@ const toggleItemExpansion = (itemId) => {
 
 // UPDATE handleSave function in LiveShopCreation.js (around line 1200)
 const handleSave = async () => {
-  // Check if shop name is still default or empty
-  let finalShopName = shopData.name;
-  
-  if (!finalShopName || finalShopName === '') {
-    const adjectives = ['Cool', 'Great', 'Super', 'Amazing', 'Awesome', 'Epic', 'Prime', 'Elite'];
-    const nouns = ['Shop', 'Store', 'Market', 'Bazaar', 'Outlet', 'Hub', 'Spot', 'Place'];
-    const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-    const randomNumber = Math.floor(Math.random() * 1000);
+    // Check if shop name is still default or empty
+    let finalShopName = shopData.name;
     
-    finalShopName = `${randomAdjective}${randomNoun}${randomNumber}`;
-  }
+    if (!finalShopName || finalShopName === '') {
+      const adjectives = ['Cool', 'Great', 'Super', 'Amazing', 'Awesome', 'Epic', 'Prime', 'Elite'];
+      const nouns = ['Shop', 'Store', 'Market', 'Bazaar', 'Outlet', 'Hub', 'Spot', 'Place'];
+      const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+      const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+      const randomNumber = Math.floor(Math.random() * 1000);
 
-  if (shopNameError || usernameAvailable === false) {
-    alert('Please choose a different shop name - this one is already taken');
-    return;
-  }
+      finalShopName = `${randomAdjective}${randomNoun}${randomNumber}`;
+    }
 
-  const shopValidation = validateShopData({ ...shopData, name: finalShopName });
-  const itemsValidation = validateAllItems(shopData.items);
+    if (shopNameError || usernameAvailable === false) {
+      alert('Please choose a different shop name - this one is already taken');
+      return;
+    }
 
-  if (!shopValidation.isValid || !itemsValidation.isValid) {
-    setValidationErrors({
-      shop: shopValidation.errors,
-      items: itemsValidation.itemErrors
+    const shopValidation = validateShopData({ ...shopData, name: finalShopName });
+    const itemsValidation = validateAllItems(shopData.items);
+
+    if (!shopValidation.isValid || !itemsValidation.isValid) {
+      setValidationErrors({
+        shop: shopValidation.errors,
+        items: itemsValidation.itemErrors
+      });
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      alert('Please fix validation errors before saving');
+      return;
+    }
+
+
+
+    // Template home sections that will be saved
+    const homeSections = [
+      {
+        id: 'hero-1',
+        type: 'hero-banner',
+        order: 0,
+        config: {
+          headline: finalShopName,
+          subtitle: 'Welcome to ' + finalShopName,
+          backgroundImage: null,
+          height: '70vh'
+        }
+      },
+      {
+        id: 'mission-1',
+        type: 'mission-statement',
+        order: 1,
+        config: {
+          title: 'Our Mission',
+          content: 'We are dedicated to providing exceptional products and outstanding customer service. Every item in our collection is carefully selected to ensure the highest quality and value for our customers.'
+        }
+      },
+      {
+        id: 'featured-1',
+        type: 'featured-items',
+        order: 2,
+        config: {
+          title: 'Featured Products',
+          itemCount: 4
+        }
+      },
+      {
+        id: 'gallery-1',
+        type: 'photo-gallery',
+        order: 3,
+        config: {
+          title: 'Shop Gallery',
+          images: [
+            'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800',
+            'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800',
+            'https://images.unsplash.com/photo-1556742044-3c52d6e88c62?w=800'
+          ]
+        }
+      }
+    ];
+
+    const dataToSave = {
+      ...shopData,
+      name: finalShopName,
+      theme: selectedTheme,
+      selectedHomeTemplate: 1,
+      homeSections: homeSections, // This will be used in the actual shop
+      layout: {
+        namePosition: shopData.layout.namePosition,
+        tabPosition: 'top',
+        nameSize: shopNameFontSize
+      },
+      items: shopData.items || [],
+      services: shopData.services || [],
+      createdAt: new Date().toISOString()
+    };
+
+    // Handle profile image - ensure it's in the correct format
+    if (shopData.profile) {
+      if (typeof shopData.profile === 'string') {
+        dataToSave.profile = shopData.profile;
+      } else if (shopData.profile.file) {
+        dataToSave.profile = {
+          file: shopData.profile.file,
+          preview: shopData.profile.preview,
+          type: shopData.profile.type,
+          name: shopData.profile.name
+        };
+      }
+    }
+
+    console.log('Saving data with profile:', dataToSave.profile);
+    console.log('Saving data with home widgets:', dataToSave.homeWidgets);
+
+    // Generate username
+    if (dataToSave.name) {
+      try {
+        const { generateUsername } = await import('../../firebase/firebaseService');
+        dataToSave.username = await generateUsername(dataToSave.name);
+      } catch (error) {
+        console.error('Error generating username:', error);
+        dataToSave.username = dataToSave.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '')
+          .substring(0, 20) || 'shop';
+      }
+    }
+
+    saveTempStore(dataToSave);
+
+    navigate('/auth', {
+      state: { 
+        mode: 'signup', 
+        tempData: dataToSave 
+      }
     });
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    alert('Please fix validation errors before saving');
-    return;
-  }
-
   
-
-  // Template home sections that will be saved
-  const homeSections = [
-    {
-      id: 'hero-1',
-      type: 'hero-banner',
-      order: 0,
-      config: {
-        headline: finalShopName,
-        subtitle: 'Welcome to ' + finalShopName,
-        backgroundImage: null,
-        height: '70vh'
-      }
-    },
-    {
-      id: 'mission-1',
-      type: 'mission-statement',
-      order: 1,
-      config: {
-        title: 'Our Mission',
-        content: 'We are dedicated to providing exceptional products and outstanding customer service. Every item in our collection is carefully selected to ensure the highest quality and value for our customers.'
-      }
-    },
-    {
-      id: 'featured-1',
-      type: 'featured-items',
-      order: 2,
-      config: {
-        title: 'Featured Products',
-        itemCount: 4
-      }
-    },
-    {
-      id: 'gallery-1',
-      type: 'photo-gallery',
-      order: 3,
-      config: {
-        title: 'Shop Gallery',
-        images: [
-          'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800',
-          'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800',
-          'https://images.unsplash.com/photo-1556742044-3c52d6e88c62?w=800'
-        ]
-      }
-    }
-  ];
-
-  const dataToSave = {
-    ...shopData,
-    name: finalShopName,
-    theme: selectedTheme,
-    selectedHomeTemplate: 1,
-    homeSections: homeSections, // This will be used in the actual shop
-    layout: {
-      namePosition: shopData.layout.namePosition,
-      tabPosition: 'top',
-      nameSize: shopNameFontSize
-    },
-    items: shopData.items || [],
-    services: shopData.services || [],
-    createdAt: new Date().toISOString()
-  };
-
-  // Handle profile image - ensure it's in the correct format
-  if (shopData.profile) {
-    if (typeof shopData.profile === 'string') {
-      dataToSave.profile = shopData.profile;
-    } else if (shopData.profile.file) {
-      dataToSave.profile = {
-        file: shopData.profile.file,
-        preview: shopData.profile.preview,
-        type: shopData.profile.type,
-        name: shopData.profile.name
-      };
-    }
-  }
-
-  console.log('Saving data with profile:', dataToSave.profile);
-  console.log('Saving data with home widgets:', dataToSave.homeWidgets);
-
-  // Generate username
-  if (dataToSave.name) {
-    try {
-      const { generateUsername } = await import('../../firebase/firebaseService');
-      dataToSave.username = await generateUsername(dataToSave.name);
-    } catch (error) {
-      console.error('Error generating username:', error);
-      dataToSave.username = dataToSave.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '')
-        .substring(0, 20) || 'shop';
-    }
-  }
-
-  saveTempStore(dataToSave);
-
-  navigate('/auth', {
-    state: { 
-      mode: 'signup', 
-      tempData: dataToSave 
-    }
-  });
 };
 
   const renderShopView = () => (
   <MainContent>
     {/* Profile Section with Backdrop */}
     <ShopProfileSection fontSize={shopNameFontSize}>
-      <div className="profile-image">
-        <EditableImage
-          value={shopData.profile}
-          onChange={(value) => handleShopDataChange('profile', value)}
-          theme={selectedTheme}
-          round
-          width="100%"
-          height="100%"
-        />
-      </div>
+  <div className="profile-image">
+    <EditableImage
+      value={shopData.profile}
+      onChange={(value) => handleShopDataChange('profile', value)}
+      theme={selectedTheme}
+      round
+      width="100%"
+      height="100%"
+    />
+  </div>
+  
+  
       <div className="shop-name-container">
         <ShopNameInputContainer>
           <ShopNameInput
@@ -2227,13 +2041,14 @@ const handleSave = async () => {
           theme={selectedTheme}
         />
       </div>
-    </ShopProfileSection>
+    
+</ShopProfileSection>
+    
+      {/* Section Divider */}
+      <SectionDivider theme={selectedTheme} />
 
-    {/* Section Divider */}
-    <SectionDivider theme={selectedTheme} />
-
-    {/* Shop Content Type Tabs with Backdrop */}
-    <ShopTabContainer>
+      {/* Shop Content Type Tabs with Backdrop */}
+      <ShopTabContainer>
       <ShopTab
         active={shopContentType === 'products'}
         onClick={() => setShopContentType('products')}
@@ -2250,13 +2065,13 @@ const handleSave = async () => {
         <Store size={18} />
         Services
       </ShopTab>
-    </ShopTabContainer>
+      </ShopTabContainer>
 
-    {/* Section Divider */}
-    <SectionDivider theme={selectedTheme} />
+      {/* Section Divider */}
+      <SectionDivider theme={selectedTheme} />
 
-    {/* Conditional Rendering based on shopContentType */}
-    {shopContentType === 'products' ? (
+      {/* Conditional Rendering based on shopContentType */}
+      {shopContentType === 'products' ? (
       <>
         <AddItemButton onClick={handleItemAdd} theme={selectedTheme}>
           <Plus size={20} />
@@ -2547,295 +2362,296 @@ const handleSave = async () => {
           </ItemsGrid>
         </ItemsContainer>
       </>
-    ) : (
-      <>
-        <AddItemButton onClick={handleAddService} theme={selectedTheme}>
+      ) : (
+        <>
+          <AddItemButton onClick={handleAddService} theme={selectedTheme}>
           <Plus size={20} />
           Add Service
-        </AddItemButton>
+          </AddItemButton>
 
-        <ItemsContainer>
-          <ItemsGrid>
-            {shopData.services.map(service => {
-              const isExpanded = expandedItems.has(service.id);
-              const currentService = shopData.services.find(s => s.id === service.id);
-              const validImages = currentService.images.filter(Boolean);
-              const currentImageIndex = currentService.currentImageIndex || 0;
-              const currentImage = validImages[currentImageIndex] || null;
+          <ItemsContainer>
+            <ItemsGrid>
+              {shopData.services.map(service => {
+                const isExpanded = expandedItems.has(service.id);
+                const currentService = shopData.services.find(s => s.id === service.id);
+                const validImages = currentService.images.filter(Boolean);
+                const currentImageIndex = currentService.currentImageIndex || 0;
+                const currentImage = validImages[currentImageIndex] || null;
 
-              return (
-                <React.Fragment key={service.id}>
-                  {/* Mobile Service Card */}
-                  <MobileTemplateCard 
-                    theme={selectedTheme}
-                    onClick={() => {
-                      const serviceToEdit = shopData.services.find(s => s.id === service.id);
-                      setEditingItem({
-                        ...serviceToEdit,
-                        images: [...serviceToEdit.images],
-                        currentImageIndex: serviceToEdit.currentImageIndex || 0,
-                        isService: true
-                      });
-                    }}
-                  >
-                    <MobileTemplateImageContainer theme={selectedTheme}>
-                      {currentImage ? (
-                        <img src={currentImage} alt={currentService.name || 'Service'} />
-                      ) : (
-                        <div className="placeholder">
-                          <div style={{
-                            width: '50px',
-                            height: '50px',
-                            borderRadius: '50%',
-                            background: `${selectedTheme?.colors?.accent}15`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginBottom: '0.5rem'
-                          }}>
-                            <Store size={24} color={selectedTheme?.colors?.accent} />
-                          </div>
-                          <span>Add Photo</span>
-                        </div>
-                      )}
-
-                      {validImages.length > 1 && (
-                        <>
-                          <button 
-                            className="mobile-carousel-arrow left"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const newIndex = ((currentImageIndex - 1) + validImages.length) % validImages.length;
-                              handleServiceUpdate(currentService.id, { currentImageIndex: newIndex });
-                            }}
-                          >
-                            <ChevronLeft size={12} />
-                          </button>
-                          <button 
-                            className="mobile-carousel-arrow right"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const newIndex = (currentImageIndex + 1) % validImages.length;
-                              handleServiceUpdate(currentService.id, { currentImageIndex: newIndex });
-                            }}
-                          >
-                            <ChevronRight size={12} />
-                          </button>
-                          <div className="image-dots">
-                            {validImages.map((_, index) => (
-                              <div 
-                                key={index}
-                                className={`dot ${index === currentImageIndex ? 'active' : ''}`}
-                              />
-                            ))}
-                          </div>
-                        </>
-                      )}
-
-                      <MobileDeleteButton 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleServiceDelete(currentService.id);
-                        }}
-                      >
-                        <X size={12} />
-                      </MobileDeleteButton>
-                    </MobileTemplateImageContainer>
-                    
-                    <MobileTemplateContent theme={selectedTheme}>
-                      <div className="item-name">
-                        {currentService.name && currentService.name !== 'Service Name' ? 
-                          currentService.name : 
-                          <span style={{ opacity: 0.5 }}>Service Name</span>
-                        }
-                      </div>
-                      <div className="item-price">
-                        {currentService.price ? `$${parseFloat(currentService.price).toFixed(2)}` : 
-      <                   span className="empty-text">$0.00</span>}
-                      </div>
-                    </MobileTemplateContent>
-                  </MobileTemplateCard>
-
-                  {/* Desktop Service Card */}
-                  <DesktopItemCard theme={selectedTheme}>
-                    <DeleteButton onClick={() => handleServiceDelete(service.id)}>
-                      <X size={16} />
-                    </DeleteButton>
-                    
-                    <ItemImageContainer theme={selectedTheme}>
-                      <div className="image-container">
-                        {service.images[service.currentImageIndex] ? (
-                          <EditableImage
-                            value={service.images[service.currentImageIndex]}
-                            onChange={(value) => {
-                              const newImages = [...service.images];
-                              newImages[service.currentImageIndex] = value;
-                              handleServiceUpdate(service.id, { images: newImages });
-                            }}
-                            theme={selectedTheme}
-                            height="100%"
-                            width="100%"
-                          />
+                return (
+                  <React.Fragment key={service.id}>
+                    {/* Mobile Service Card */}
+                    <MobileTemplateCard 
+                      theme={selectedTheme}
+                      onClick={() => {
+                        const serviceToEdit = shopData.services.find(s => s.id === service.id);
+                        setEditingItem({
+                          ...serviceToEdit,
+                          images: [...serviceToEdit.images],
+                          currentImageIndex: serviceToEdit.currentImageIndex || 0,
+                          isService: true
+                        });
+                      }}
+                    >
+                      <MobileTemplateImageContainer theme={selectedTheme}>
+                        {currentImage ? (
+                          <img src={currentImage} alt={currentService.name || 'Service'} />
                         ) : (
-                          <div 
-                            className="placeholder"
-                            onClick={() => document.getElementById(`service-image-upload-${service.id}-${service.currentImageIndex}`).click()}
-                          >
+                          <div className="placeholder">
                             <div style={{
-                              width: '80px',
-                              height: '80px',
+                              width: '50px',
+                              height: '50px',
                               borderRadius: '50%',
                               background: `${selectedTheme?.colors?.accent}15`,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              marginBottom: '0.75rem'
+                              marginBottom: '0.5rem'
                             }}>
-                              <Store size={36} color={selectedTheme?.colors?.accent} />
+                              <Store size={24} color={selectedTheme?.colors?.accent} />
                             </div>
-                            <span>Add Service Photo</span>
+                            <span>Add Photo</span>
                           </div>
                         )}
-                      </div>
-                      
-                      <input
-                        type="file"
-                        id={`service-image-upload-${service.id}-${service.currentImageIndex}`}
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={async (e) => {
-                          if (e.target.files?.[0]) {
-                            const file = e.target.files[0];
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              const newImages = [...service.images];
-                              newImages[service.currentImageIndex] = {
-                                file: file,
-                                preview: reader.result,
-                                type: file.type,
-                                name: file.name
-                              };
-                              handleServiceUpdate(service.id, { images: newImages });
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
 
-                      {validImages.length > 0 && (
-                        <>
-                          <button 
-                            className="carousel-arrow left"
-                            onClick={() => {
-                              const newIndex = ((service.currentImageIndex - 1) + 3) % 3;
-                              handleServiceUpdate(service.id, { currentImageIndex: newIndex });
-                            }}
-                          >
-                            <ChevronLeft size={16} />
-                          </button>
-                          <button 
-                            className="carousel-arrow right"
-                            onClick={() => {
-                              const newIndex = (service.currentImageIndex + 1) % 3;
-                              handleServiceUpdate(service.id, { currentImageIndex: newIndex });
-                            }}
-                          >
-                            <ChevronRight size={16} />
-                          </button>
-                        </>
-                      )}
-                    </ItemImageContainer>
-                    
-                    <ItemContent>
-                      <ItemHeader onClick={() => toggleItemExpansion(service.id)}>
-                        <h4>
-                          {service.name && service.name !== 'Service Name' ? 
-                            service.name : 
+                        {validImages.length > 1 && (
+                          <>
+                            <button 
+                              className="mobile-carousel-arrow left"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newIndex = ((currentImageIndex - 1) + validImages.length) % validImages.length;
+                                handleServiceUpdate(currentService.id, { currentImageIndex: newIndex });
+                              }}
+                            >
+                              <ChevronLeft size={12} />
+                            </button>
+                            <button 
+                              className="mobile-carousel-arrow right"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newIndex = (currentImageIndex + 1) % validImages.length;
+                                handleServiceUpdate(currentService.id, { currentImageIndex: newIndex });
+                              }}
+                            >
+                              <ChevronRight size={12} />
+                            </button>
+                            <div className="image-dots">
+                              {validImages.map((_, index) => (
+                                <div 
+                                  key={index}
+                                  className={`dot ${index === currentImageIndex ? 'active' : ''}`}
+                                />
+                              ))}
+                            </div>
+                          </>
+                        )}
+
+                        <MobileDeleteButton 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleServiceDelete(currentService.id);
+                          }}
+                        >
+                          <X size={12} />
+                        </MobileDeleteButton>
+                      </MobileTemplateImageContainer>
+                        
+                      <MobileTemplateContent theme={selectedTheme}>
+                        <div className="item-name">
+                          {currentService.name && currentService.name !== 'Service Name' ? 
+                            currentService.name : 
                             <span style={{ opacity: 0.5 }}>Service Name</span>
                           }
-                        </h4>
-                        <ExpandButton>
-                          {expandedItems.has(service.id) ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                        </ExpandButton>
-                      </ItemHeader>
-                      
-                      <ItemDetails expanded={expandedItems.has(service.id)}>
-                        <div className="details-content">
-                          <ValidatedEditableText
-                            value={service.name}
-                            onChange={(value) => handleServiceUpdate(service.id, { name: value })}
-                            placeholder="Service Name"
-                            validationRules={VALIDATION_RULES.item.name}
-                            theme={selectedTheme}
-                          />
-                          <ValidatedEditableText
-                            value={service.price}
-                            onChange={(value) => handleServiceUpdate(service.id, { price: value })}
-                            placeholder="Cost"
-                            validationRules={VALIDATION_RULES.item.price}
-                            theme={selectedTheme}
-                          />
-                          <ValidatedEditableText
-                            value={service.description}
-                            onChange={(value) => handleServiceUpdate(service.id, { description: value })}
-                            placeholder="Service Description"
-                            validationRules={VALIDATION_RULES.item.description}
-                            multiline
-                            theme={selectedTheme}
-                          />
-                          <CategorySelect
-                            value={service.category || 'Other'}
-                            onChange={(e) => handleServiceUpdate(service.id, { category: e.target.value })}
-                            theme={selectedTheme}
-                          >
-                            {SERVICE_CATEGORIES.map(category => (
-                              <option key={category} value={category}>
-                                {category}
-                              </option>
-                            ))}
-                          </CategorySelect>
-                          <div style={{ marginBottom: '1rem' }}>
-                            <QuantitySelector 
-                              value={parseInt(service.slots) || 1}
-                              onChange={(value) => handleServiceUpdate(service.id, { slots: value })}
+                        </div>
+                        <div className="item-price">
+                          {currentService.price ? `$${parseFloat(currentService.price).toFixed(2)}` : 
+        <                   span className="empty-text">$0.00</span>}
+                        </div>
+                      </MobileTemplateContent>
+                    </MobileTemplateCard>
+
+                    {/* Desktop Service Card */}
+                    <DesktopItemCard theme={selectedTheme}>
+                      <DeleteButton onClick={() => handleServiceDelete(service.id)}>
+                        <X size={16} />
+                      </DeleteButton>
+                        
+                      <ItemImageContainer theme={selectedTheme}>
+                        <div className="image-container">
+                          {service.images[service.currentImageIndex] ? (
+                            <EditableImage
+                              value={service.images[service.currentImageIndex]}
+                              onChange={(value) => {
+                                const newImages = [...service.images];
+                                newImages[service.currentImageIndex] = value;
+                                handleServiceUpdate(service.id, { images: newImages });
+                              }}
                               theme={selectedTheme}
-                              min={0}
-                              max={9999}
+                              height="100%"
+                              width="100%"
+                            />
+                          ) : (
+                            <div 
+                              className="placeholder"
+                              onClick={() => document.getElementById(`service-image-upload-${service.id}-${service.currentImageIndex}`).click()}
+                            >
+                              <div style={{
+                                width: '80px',
+                                height: '80px',
+                                borderRadius: '50%',
+                                background: `${selectedTheme?.colors?.accent}15`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginBottom: '0.75rem'
+                              }}>
+                                <Store size={36} color={selectedTheme?.colors?.accent} />
+                              </div>
+                              <span>Add Service Photo</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <input
+                          type="file"
+                          id={`service-image-upload-${service.id}-${service.currentImageIndex}`}
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={async (e) => {
+                            if (e.target.files?.[0]) {
+                              const file = e.target.files[0];
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                const newImages = [...service.images];
+                                newImages[service.currentImageIndex] = {
+                                  file: file,
+                                  preview: reader.result,
+                                  type: file.type,
+                                  name: file.name
+                                };
+                                handleServiceUpdate(service.id, { images: newImages });
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+
+                        {validImages.length > 0 && (
+                          <>
+                            <button 
+                              className="carousel-arrow left"
+                              onClick={() => {
+                                const newIndex = ((service.currentImageIndex - 1) + 3) % 3;
+                                handleServiceUpdate(service.id, { currentImageIndex: newIndex });
+                              }}
+                            >
+                              <ChevronLeft size={16} />
+                            </button>
+                            <button 
+                              className="carousel-arrow right"
+                              onClick={() => {
+                                const newIndex = (service.currentImageIndex + 1) % 3;
+                                handleServiceUpdate(service.id, { currentImageIndex: newIndex });
+                              }}
+                            >
+                              <ChevronRight size={16} />
+                            </button>
+                          </>
+                        )}
+                      </ItemImageContainer>
+                      
+                      <ItemContent>
+                        <ItemHeader onClick={() => toggleItemExpansion(service.id)}>
+                          <h4>
+                            {service.name && service.name !== 'Service Name' ? 
+                              service.name : 
+                              <span style={{ opacity: 0.5 }}>Service Name</span>
+                            }
+                          </h4>
+                          <ExpandButton>
+                            {expandedItems.has(service.id) ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                          </ExpandButton>
+                        </ItemHeader>
+                          
+                        <ItemDetails expanded={expandedItems.has(service.id)}>
+                          <div className="details-content">
+                            <ValidatedEditableText
+                              value={service.name}
+                              onChange={(value) => handleServiceUpdate(service.id, { name: value })}
+                              placeholder="Service Name"
+                              validationRules={VALIDATION_RULES.item.name}
+                              theme={selectedTheme}
+                            />
+                            <ValidatedEditableText
+                              value={service.price}
+                              onChange={(value) => handleServiceUpdate(service.id, { price: value })}
+                              placeholder="Cost"
+                              validationRules={VALIDATION_RULES.item.price}
+                              theme={selectedTheme}
+                            />
+                            <ValidatedEditableText
+                              value={service.description}
+                              onChange={(value) => handleServiceUpdate(service.id, { description: value })}
+                              placeholder="Service Description"
+                              validationRules={VALIDATION_RULES.item.description}
+                              multiline
+                              theme={selectedTheme}
+                            />
+                            <CategorySelect
+                              value={service.category || 'Other'}
+                              onChange={(e) => handleServiceUpdate(service.id, { category: e.target.value })}
+                              theme={selectedTheme}
+                            >
+                              {SERVICE_CATEGORIES.map(category => (
+                                <option key={category} value={category}>
+                                  {category}
+                                </option>
+                              ))}
+                            </CategorySelect>
+                            <div style={{ marginBottom: '1rem' }}>
+                              <QuantitySelector 
+                                value={parseInt(service.slots) || 1}
+                                onChange={(value) => handleServiceUpdate(service.id, { slots: value })}
+                                theme={selectedTheme}
+                                min={0}
+                                max={9999}
+                              />
+                            </div>
+                            <AddressInput
+                              address={service.address || ''}
+                              onAddressChange={(value) => handleServiceUpdate(service.id, { 
+                                address: value
+                              })}
+                              onLocationSelect={(location) => {
+                                if (location?.coordinates) {
+                                  handleServiceUpdate(service.id, {
+                                    address: location.address,
+                                    coordinates: location.coordinates
+                                  });
+                                } else if (!location?.address) {
+                                  handleServiceUpdate(service.id, {
+                                    address: '',
+                                    coordinates: null
+                                  });
+                                }
+                              }}
                             />
                           </div>
-                          <AddressInput
-                            address={service.address || ''}
-                            onAddressChange={(value) => handleServiceUpdate(service.id, { 
-                              address: value
-                            })}
-                            onLocationSelect={(location) => {
-                              if (location?.coordinates) {
-                                handleServiceUpdate(service.id, {
-                                  address: location.address,
-                                  coordinates: location.coordinates
-                                });
-                              } else if (!location?.address) {
-                                handleServiceUpdate(service.id, {
-                                  address: '',
-                                  coordinates: null
-                                });
-                              }
-                            }}
-                          />
-                        </div>
-                      </ItemDetails>
-                    </ItemContent>
-                  </DesktopItemCard>
-                </React.Fragment>
-              );
-            })}
-          </ItemsGrid>
-        </ItemsContainer>
-      </>
-    )}
+                        </ItemDetails>
+                      </ItemContent>
+                    </DesktopItemCard>
+                  </React.Fragment>
+                );
+              })}
+            </ItemsGrid>
+          </ItemsContainer>
+        </>
+      )}
+    
 
-    {/* Mobile Edit Modal */}
-    {editingItem && (
+      {/* Mobile Edit Modal */}
+      {editingItem && (
       <EditModal onClick={() => setEditingItem(null)}>
         <EditModalContent 
           theme={selectedTheme}
@@ -2997,7 +2813,8 @@ const handleSave = async () => {
           </EditModalScrollContent>
         </EditModalContent>
       </EditModal>
-    )}
+      )}
+    
   </MainContent>
 );
 
@@ -3009,7 +2826,7 @@ const renderHomeView = () => {
   const featuredItems = shopData?.items?.filter(item => 
     item && 
     item.name && 
-    item.name !== 'Item Name' && 
+    item.name !== '' && 
     !item.deleted
   ).slice(0, 4) || [];
 
@@ -3059,7 +2876,7 @@ const renderHomeView = () => {
               textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
               color: selectedTheme?.colors?.text
             }}>
-              {shopData?.name || 'Your Brand Name'}
+              {shopData?.name || 'Brand Name'}
             </h1>
             <p style={{
               fontSize: 'clamp(0.9rem, 2.5vw, 1.5rem)',
@@ -3723,10 +3540,10 @@ const renderHomeView = () => {
         <SaveButtonContainer>
           <ActionButton
             onClick={handleSave}
-            disabled={!shopData.name}
+            disabled={ !shopData.name}
             theme={selectedTheme}
           >
-            Save / LogIn
+             'Save / LogIn'
             <ChevronRight size={20} />
           </ActionButton>
         </SaveButtonContainer>
